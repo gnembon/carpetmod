@@ -1,0 +1,13 @@
+import groovy.json.JsonSlurper
+
+def settings = new JsonSlurper().parseText(file('conf/settings.json').text)
+
+rootProject.name = settings.modname.substring(0, 1).toUpperCase(Locale.ENGLISH) + settings.modname.substring(1)
+
+include ':mcp'
+include ':clean'
+include ':' + settings.modname
+
+project(':mcp').projectDir = file('projects/mcp')
+project(':clean').projectDir = file('projects/clean')
+project(':' + settings.modname).projectDir = file('projects/' + settings.modname)
