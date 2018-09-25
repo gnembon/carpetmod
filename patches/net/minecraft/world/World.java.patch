@@ -1,0 +1,39 @@
+--- a/net/minecraft/world/World.java
++++ b/net/minecraft/world/World.java
+@@ -1,5 +1,6 @@
+ package net.minecraft.world;
+ 
++import carpet.helpers.TickSpeed;
+ import com.google.common.base.MoreObjects;
+ import com.google.common.collect.Lists;
+ import it.unimi.dsi.fastutil.longs.LongSet;
+@@ -1277,7 +1278,8 @@
+ 
+             this.profiler.startSection("tick");
+ 
+-            if (!entity2.removed && !(entity2 instanceof EntityPlayerMP))
++            // [CM] Tick Freeze
++            if (!entity2.removed && !(entity2 instanceof EntityPlayerMP) && TickSpeed.process_entities)
+             {
+                 try
+                 {
+@@ -1332,15 +1334,16 @@
+             {
+                 BlockPos blockpos = tileentity.getPos();
+ 
+-                if (this.isBlockLoaded(blockpos) && this.worldBorder.contains(blockpos))
++                // [CM extra check to process entities]
++                if (this.isBlockLoaded(blockpos) && this.worldBorder.contains(blockpos) && TickSpeed.process_entities)
+                 {
+                     try
+                     {
+                         this.profiler.startSection(() ->
+                         {
+-                            return String.valueOf((Object)TileEntityType.getId(tileentity.getType()));
++                            return String.valueOf((Object) TileEntityType.getId(tileentity.getType()));
+                         });
+-                        ((ITickable)tileentity).tick();
++                        ((ITickable) tileentity).tick();
+                         this.profiler.endSection();
+                     }
+                     catch (Throwable throwable)

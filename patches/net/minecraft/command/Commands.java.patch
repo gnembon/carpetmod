@@ -1,0 +1,19 @@
+--- a/net/minecraft/command/Commands.java
++++ b/net/minecraft/command/Commands.java
+@@ -95,6 +95,8 @@
+ import org.apache.logging.log4j.LogManager;
+ import org.apache.logging.log4j.Logger;
+ 
++import carpet.CarpetServer;
++
+ public class Commands
+ {
+     private static final Logger LOGGER = LogManager.getLogger();
+@@ -169,6 +171,7 @@
+             StopCommand.register(this.dispatcher);
+             WhitelistCommand.register(this.dispatcher);
+         }
++        CarpetServer.registerCarpetCommands(this.dispatcher);
+ 
+         this.dispatcher.findAmbiguities((p_201302_1_, p_201302_2_, p_201302_3_, p_201302_4_) ->
+         {

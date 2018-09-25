@@ -1,0 +1,63 @@
+--- a/net/minecraft/server/MinecraftServer.java
++++ b/net/minecraft/server/MinecraftServer.java
+@@ -1,5 +1,7 @@
+ package net.minecraft.server;
+ 
++import carpet.CarpetServer;
++import carpet.helpers.TickSpeed;
+ import com.google.common.base.Stopwatch;
+ import com.google.common.collect.Lists;
+ import com.google.common.collect.Maps;
+@@ -197,6 +199,9 @@
+ 
+     public MinecraftServer(@Nullable File anvilFileIn, Proxy serverProxyIn, DataFixer dataFixerIn, Commands commandManagerIn, YggdrasilAuthenticationService authServiceIn, MinecraftSessionService sessionServiceIn, GameProfileRepository profileRepoIn, PlayerProfileCache profileCacheIn)
+     {
++        //CM
++        CarpetServer.init(this);
++
+         this.serverProxy = serverProxyIn;
+         this.commandManager = commandManagerIn;
+         this.authService = authServiceIn;
+@@ -648,18 +653,30 @@
+ 
+                 while (this.serverRunning)
+                 {
++                    /* carpet mod commandTick */
++                    //todo check if this check is necessary
++                    if (TickSpeed.time_warp_start_time != 0)
++                    {
++                        if (TickSpeed.continueWarp())
++                        {
++                            this.tick( ()->true );
++                            this.serverTime = Util.milliTime();
++                            this.serverIsRunning = true;
++                        }
++                        continue;
++                    }
+                     long i = Util.milliTime() - this.serverTime;
+ 
+                     if (i > 2000L && this.serverTime - this.timeOfLastWarning >= 15000L)
+                     {
+-                        long j = i / 50L;
++                        long j = i / TickSpeed.mspt;//50L;
+                         LOGGER.warn("Can't keep up! Is the server overloaded? Running {}ms or {} ticks behind", i, j);
+-                        this.serverTime += j * 50L;
++                        this.serverTime += j * TickSpeed.mspt;//50L;
+                         this.timeOfLastWarning = this.serverTime;
+                     }
+ 
+                     this.tick(this::func_212379_aT);
+-                    this.serverTime += 50L;
++                    this.serverTime += TickSpeed.mspt;//50L;
+ 
+                     while (this.func_212379_aT())
+                     {
+@@ -782,6 +799,8 @@
+     {
+         long i = Util.nanoTime();
+         ++this.tickCounter;
++        //[CM]
++        CarpetServer.tick(this);
+ 
+         if (this.startProfiling)
+         {

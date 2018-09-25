@@ -1,0 +1,34 @@
+--- a/net/minecraft/network/NetHandlerPlayServer.java
++++ b/net/minecraft/network/NetHandlerPlayServer.java
+@@ -1,5 +1,6 @@
+ package net.minecraft.network;
+ 
++import carpet.helpers.TickSpeed;
+ import com.google.common.primitives.Doubles;
+ import com.google.common.primitives.Floats;
+ import com.google.common.util.concurrent.Futures;
+@@ -296,6 +297,11 @@
+     {
+         PacketThreadUtil.checkThreadAndEnqueue(packetIn, this, this.player.getServerWorld());
+         this.player.setEntityActionState(packetIn.getStrafeSpeed(), packetIn.getForwardSpeed(), packetIn.isJumping(), packetIn.isSneaking());
++        //CM checking if player is moving, for commandTick
++        if (packetIn.getStrafeSpeed() != 0.0F || packetIn.getForwardSpeed() != 0.0F || packetIn.isJumping() || packetIn.isSneaking())
++        {
++            TickSpeed.reset_player_active_timeout();
++        }
+     }
+ 
+     private static boolean isMovePlayerPacketInvalid(CPacketPlayer packetIn)
+@@ -831,6 +837,12 @@
+                         double d10 = this.player.motionX * this.player.motionX + this.player.motionY * this.player.motionY + this.player.motionZ * this.player.motionZ;
+                         double d11 = d7 * d7 + d8 * d8 + d9 * d9;
+ 
++                        // [CM] for commandTick
++                        if (d11 > 0.0001D)
++                        {
++                            TickSpeed.reset_player_active_timeout();
++                        }
++
+                         if (this.player.isPlayerSleeping())
+                         {
+                             if (d11 > 1.0D)

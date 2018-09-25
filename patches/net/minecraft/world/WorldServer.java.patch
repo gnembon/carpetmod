@@ -1,0 +1,71 @@
+--- a/net/minecraft/world/WorldServer.java
++++ b/net/minecraft/world/WorldServer.java
+@@ -1,5 +1,6 @@
+ package net.minecraft.world;
+ 
++import carpet.helpers.TickSpeed;
+ import com.google.common.collect.Lists;
+ import com.google.common.collect.Maps;
+ import com.google.common.util.concurrent.ListenableFuture;
+@@ -192,6 +193,8 @@
+             this.wakeAllPlayers();
+         }
+ 
++        if (TickSpeed.process_entities)
++        { // [CM] extra indent to skip processing of entities
+         this.profiler.startSection("spawner");
+ 
+         if (this.getGameRules().getBoolean("doMobSpawning") && this.worldInfo.getTerrainType() != WorldType.DEBUG_ALL_BLOCK_STATES)
+@@ -199,6 +202,8 @@
+             this.entitySpawner.findChunksForSpawning(this, this.spawnHostileMobs, this.spawnPeacefulMobs, this.worldInfo.getGameTime() % 400L == 0L);
+             this.getChunkProvider().spawnMobs(this, this.spawnHostileMobs, this.spawnPeacefulMobs);
+         }
++        }
++        // [CM] end extra indent
+ 
+         this.profiler.endStartSection("chunkSource");
+         this.chunkProvider.tick(p_72835_1_);
+@@ -209,6 +214,8 @@
+             this.setSkylightSubtracted(j);
+         }
+ 
++        if (TickSpeed.process_entities)
++        { // CM extra indent to skip processing of entities
+         this.worldInfo.setWorldTotalTime(this.worldInfo.getGameTime() + 1L);
+ 
+         if (this.getGameRules().getBoolean("doDaylightCycle"))
+@@ -218,15 +225,20 @@
+ 
+         this.profiler.endStartSection("tickPending");
+         this.tickPending();
++        }
+         this.profiler.endStartSection("tickBlocks");
+         this.tickBlocks();
+         this.profiler.endStartSection("chunkMap");
+         this.playerChunkMap.tick();
++
++        if (TickSpeed.process_entities)
++        { // CM extra indent to skip processing of entities
+         this.profiler.endStartSection("village");
+         this.villageCollection.tick();
+         this.villageSiege.tick();
+         this.profiler.endStartSection("portalForcer");
+         this.worldTeleporter.removeStalePortalLocations(this.getGameTime());
++        }
+         this.profiler.endSection();
+         this.sendQueuedBlockEvents();
+         this.insideTick = false;
+@@ -408,6 +420,13 @@
+                 chunk.enqueueRelightChecks();
+                 this.profiler.endStartSection("tickChunk");
+                 chunk.tick(false);
++                //[CM] tick freeze
++                if (!TickSpeed.process_entities)
++                { // skipping the rest of the block processing
++                    this.profiler.endSection();
++                    continue;
++                }
++
+                 this.profiler.endStartSection("thunder");
+ 
+                 if (flag && flag1 && this.rand.nextInt(100000) == 0)
