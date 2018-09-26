@@ -222,13 +222,13 @@ public class CarpetSettings
   //rule("calmNetherFires",       "experimental", "Permanent fires don't schedule random updates"),
   //rule("observersDoNonUpdate",  "creative", "Observers don't pulse when placed"),
   //rule("flyingMachineTransparent", "creative", "Transparent observers, TNT and redstone blocks. May cause lighting artifacts"),
-  //rule("fillUpdates",           "creative", "fill/clone/setblock and structure blocks cause block updates").defaultTrue(),
+  rule("fillUpdates",           "creative", "fill/clone/setblock and structure blocks cause block updates").defaultTrue(),
   rule("pushLimit",             "creative","Customizable piston push limit")
                                 .choices("12","10 12 14 100").setNotStrict().numAccelerate(),
   //rule("railPowerLimit",        "creative", "Customizable powered rail power range")
   //                              .choices("9","9 15 30").setNotStrict(),
-  //rule("fillLimit",             "creative","Customizable fill/clone volume limit")
-  //                              .choices("32768","32768 250000 1000000").setNotStrict(),
+  rule("fillLimit",             "creative","Customizable fill/clone volume limit")
+                                .choices("32768","32768 250000 1000000").setNotStrict(),
   //rule("maxEntityCollisions",   "optimizations", "Customizable maximal entity collision limits, 0 for no limits")
   //                              .choices("0","0 1 20").setNotStrict(),
   //rule("pistonGhostBlocksFix",  "fix", "Fix for piston ghost blocks")

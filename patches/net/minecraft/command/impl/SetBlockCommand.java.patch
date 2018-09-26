@@ -1,0 +1,29 @@
+--- a/net/minecraft/command/impl/SetBlockCommand.java
++++ b/net/minecraft/command/impl/SetBlockCommand.java
+@@ -1,5 +1,6 @@
+ package net.minecraft.command.impl;
+ 
++import carpet.CarpetSettings;
+ import com.mojang.brigadier.CommandDispatcher;
+ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+ import com.mojang.brigadier.builder.RequiredArgumentBuilder;
+@@ -75,13 +76,18 @@
+                 flag = true;
+             }
+ 
+-            if (flag && !p_198683_2_.place(worldserver, p_198683_1_, 2))
++            if (flag && !p_198683_2_.place(worldserver, p_198683_1_, 2 | (CarpetSettings.getBool("fillUpdates")?0:128))) // [CM]
+             {
+                 throw field_198689_a.create();
+             }
+             else
+             {
++                // CM
++                if (CarpetSettings.getBool("fillUpdates"))
++                {
+                 worldserver.notifyNeighbors(p_198683_1_, p_198683_2_.getBlockState().getBlock());
++                }
++                // CM end
+                 p_198683_0_.sendFeedback(new TextComponentTranslation("commands.setblock.success", new Object[] {p_198683_1_.getX(), p_198683_1_.getY(), p_198683_1_.getZ()}), true);
+                 return 1;
+             }

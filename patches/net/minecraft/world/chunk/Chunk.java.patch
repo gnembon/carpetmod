@@ -1,0 +1,29 @@
+--- a/net/minecraft/world/chunk/Chunk.java
++++ b/net/minecraft/world/chunk/Chunk.java
+@@ -499,9 +499,16 @@
+         }
+     }
+ 
++    // [CM] wrapper to add no update flag
+     @Nullable
+     public IBlockState setBlockState(BlockPos pos, IBlockState state, boolean isMoving)
+     {
++        return setBlockState(pos, state, isMoving, false);
++    }
++
++    @Nullable
++    public IBlockState setBlockState(BlockPos pos, IBlockState state, boolean isMoving, boolean skipUpdates)
++    {
+         int i = pos.getX() & 15;
+         int j = pos.getY();
+         int k = pos.getZ() & 15;
+@@ -578,7 +585,8 @@
+                     }
+                 }
+ 
+-                if (!this.world.isRemote)
++                //if (!this.world.isRemote) // CM added support for placing without updates
++                if (!skipUpdates && !this.world.isRemote)
+                 {
+                     state.onBlockAdded(this.world, pos, iblockstate);
+                 }
