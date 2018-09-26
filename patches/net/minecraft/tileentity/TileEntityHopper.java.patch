@@ -1,0 +1,52 @@
+--- a/net/minecraft/tileentity/TileEntityHopper.java
++++ b/net/minecraft/tileentity/TileEntityHopper.java
+@@ -4,6 +4,10 @@
+ import java.util.function.Supplier;
+ import java.util.stream.Collectors;
+ import javax.annotation.Nullable;
++
++import carpet.CarpetSettings;
++import carpet.helpers.HopperCounter;
++import carpet.utils.WoolTool;
+ import net.minecraft.block.Block;
+ import net.minecraft.block.BlockChest;
+ import net.minecraft.block.BlockHopper;
+@@ -17,6 +21,7 @@
+ import net.minecraft.inventory.IInventory;
+ import net.minecraft.inventory.ISidedInventory;
+ import net.minecraft.inventory.ItemStackHelper;
++import net.minecraft.item.EnumDyeColor;
+ import net.minecraft.item.ItemStack;
+ import net.minecraft.nbt.NBTTagCompound;
+ import net.minecraft.util.EntitySelectors;
+@@ -197,6 +202,30 @@
+ 
+     private boolean transferItemsOut()
+     {
++        /* carpet mod */
++        if (CarpetSettings.b_hopperCounters)
++        {
++            EnumDyeColor wool_color = WoolTool.getWoolColorAtPosition(
++                    getWorld(),
++                    new BlockPos(getXPos(),getYPos(),getZPos() ).offset(this.getBlockState().get(BlockHopper.FACING)));
++
++
++            if (wool_color != null)
++            {
++                for (int i = 0; i < this.getSizeInventory(); ++i)
++                {
++                    if (!this.getStackInSlot(i).isEmpty())
++                    {
++                        ItemStack itemstack = this.getStackInSlot(i);//.copy();
++                        HopperCounter.count_hopper_items(this.getWorld(), wool_color, itemstack);
++                        this.setInventorySlotContents(i, ItemStack.EMPTY);
++                    }
++                }
++                return true;
++            }
++        }
++        /* end */
++
+         IInventory iinventory = this.getInventoryForHopperTransfer();
+ 
+         if (iinventory == null)

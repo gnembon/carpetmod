@@ -1,5 +1,6 @@
 package carpet.commands;
 
+import carpet.CarpetSettings;
 import carpet.helpers.TickSpeed;
 import carpet.utils.Messenger;
 import com.mojang.brigadier.CommandDispatcher;
@@ -17,7 +18,7 @@ public class TickCommand
     public static void register(CommandDispatcher<CommandSource> dispatcher)
     {
         LiteralArgumentBuilder<CommandSource> literalargumentbuilder = Commands.literal("tick").requires((player) ->
-                player.hasPermissionLevel(2));
+                CarpetSettings.getBool("commandTick"));
 
 
         literalargumentbuilder.
@@ -27,7 +28,7 @@ public class TickCommand
                     setTps(p_198490_1_.getSource(), FloatArgumentType.getFloat(p_198490_1_, "rate")))));
         literalargumentbuilder.
                 then((Commands.literal("warp").
-                then(Commands.argument("ticks",IntegerArgumentType.integer(10,4000000)).executes((p_198490_1_) ->
+                then(Commands.argument("ticks",IntegerArgumentType.integer(0,4000000)).executes((p_198490_1_) ->
                     setWarp(p_198490_1_.getSource(),IntegerArgumentType.getInteger(p_198490_1_,"ticks"))))));
         literalargumentbuilder.
                 then((Commands.literal("freeze").executes( (p_198489_1_)-> toggleFreeze(p_198489_1_.getSource()))));
