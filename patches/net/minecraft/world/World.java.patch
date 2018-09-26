@@ -17,7 +17,7 @@
              {
                  try
                  {
-@@ -1332,15 +1334,16 @@
+@@ -1332,7 +1334,8 @@
              {
                  BlockPos blockpos = tileentity.getPos();
  
@@ -27,13 +27,3 @@
                  {
                      try
                      {
-                         this.profiler.startSection(() ->
-                         {
--                            return String.valueOf((Object)TileEntityType.getId(tileentity.getType()));
-+                            return String.valueOf((Object) TileEntityType.getId(tileentity.getType()));
-                         });
--                        ((ITickable)tileentity).tick();
-+                        ((ITickable) tileentity).tick();
-                         this.profiler.endSection();
-                     }
-                     catch (Throwable throwable)
