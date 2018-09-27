@@ -54,7 +54,7 @@ public class TickCommand
 
     private static int queryTps(CommandSource source)
     {
-        source.sendFeedback(Messenger.m(null, "w Current tps is: ",String.format("wb %.1f", TickSpeed.tickrate)), false);
+        Messenger.m(source, "w Current tps is: ",String.format("wb %.1f", TickSpeed.tickrate));
         return (int)TickSpeed.tickrate;
     }
 
@@ -83,11 +83,11 @@ public class TickCommand
         TickSpeed.is_paused = !TickSpeed.is_paused;
         if (TickSpeed.is_paused)
         {
-            source.sendFeedback(Messenger.m(null, "gi Game is paused"),false);
+            Messenger.m(source, "gi Game is paused");
         }
         else
         {
-            source.sendFeedback(Messenger.m(null, "gi Game runs normally"), false);
+            Messenger.m(source, "gi Game runs normally");
         }
         return 1;
     }
@@ -103,11 +103,11 @@ public class TickCommand
         TickSpeed.is_superHot = !TickSpeed.is_superHot;
         if (TickSpeed.is_superHot)
         {
-            source.sendFeedback(Messenger.m(null,"gi Superhot enabled"), false);
+            Messenger.m(source,"gi Superhot enabled");
         }
         else
         {
-            source.sendFeedback(Messenger.m(null, "gi Superhot disabled"), false);
+            Messenger.m(source, "gi Superhot disabled");
         }
         return 1;
     }

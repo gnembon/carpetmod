@@ -76,12 +76,12 @@ public class HopperCounter
             if (temp.size() > 1)
             {
                 lst.addAll(temp);
-                lst.add(Messenger.s(null, ""));
+                lst.add(Messenger.s(""));
             }
         }
         if (lst.size() == 0)
         {
-            lst.add(Messenger.s(null, "No items have been counted yet."));
+            lst.add(Messenger.s("No items have been counted yet."));
         }
         return lst;
     }
@@ -96,11 +96,11 @@ public class HopperCounter
         {
             if (brief)
             {
-                lst.add(Messenger.m(null, "g "+color+": -, -/h, - min "));
+                lst.add(Messenger.c("g "+color+": -, -/h, - min "));
             }
             else
             {
-                lst.add(Messenger.s(null, String.format("No items for %s yet", color)));
+                lst.add(Messenger.s(String.format("No items for %s yet", color)));
             }
             return lst;
         }
@@ -122,14 +122,12 @@ public class HopperCounter
         {
             if (brief)
             {
-                lst.add(Messenger.m(null,
-                        String.format("c %s: 0, 0/h, %.1f min ",color,total_ticks*1.0/(20*60))));
+                lst.add(Messenger.c(String.format("c %s: 0, 0/h, %.1f min ",color,total_ticks*1.0/(20*60))));
             }
             else
             {
-                lst.add(Messenger.m(null,
-                        String.format("w No items for %s yet (%.2f min.%s)",
-                                color, total_ticks*1.0/(20*60), (realtime?" - real time":"")),
+                lst.add(Messenger.c(String.format("w No items for %s yet (%.2f min.%s)",
+                        color, total_ticks*1.0/(20*60), (realtime?" - real time":"")),
                         "nb  [X]", "^g reset", "!/counter "+color+" reset"));
             }
             return lst;
@@ -137,13 +135,13 @@ public class HopperCounter
 
         if (!brief)
         {
-            lst.add(Messenger.m(null, String.format("w Items for %s (%.2f min.%s), total: %d, (%.1f/h):",
+            lst.add(Messenger.c(String.format("w Items for %s (%.2f min.%s), total: %d, (%.1f/h):",
                             color, total_ticks*1.0/(20*60), (realtime?" - real time":""), total, total*1.0*(20*60*60)/total_ticks),
                     "nb [X]", "^g reset", "!/counter "+color+" reset"
                     ));
             for (String item_name : hopper_counter.get(color).keySet())
             {
-                lst.add(Messenger.s(null, String.format(" - %s: %d, %.1f/h",
+                lst.add(Messenger.s(String.format(" - %s: %d, %.1f/h",
                         item_name,
                         hopper_counter.get(color).get(item_name),
                         hopper_counter.get(color).get(item_name) * 1.0 * (20 * 60 * 60) / total_ticks)));
@@ -151,9 +149,8 @@ public class HopperCounter
         }
         else
         {
-            lst.add(Messenger.m(null,
-                    String.format("c %s: %d, %d/h, %.1f min ",
-                            color, total, total*(20*60*60)/total_ticks, total_ticks*1.0/(20*60))));
+            lst.add(Messenger.c(String.format("c %s: %d, %d/h, %.1f min ",
+                    color, total, total*(20*60*60)/total_ticks, total_ticks*1.0/(20*60))));
         }
         return lst;
     }

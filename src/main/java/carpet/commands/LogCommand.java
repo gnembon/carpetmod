@@ -52,20 +52,6 @@ public class LogCommand
                                         StringArgumentType.getString(c, "player"),
                                         StringArgumentType.getString(c, "log name"),
                                         StringArgumentType.getString(c, "option"))))));
-        /*
-        for (String logname: LoggerRegistry.getLoggerNames())
-        {
-            for (String option: LoggerRegistry.getLogger(logname).getOptions())
-            {
-                literalargumentbuilder.then(Commands.literal(logname).
-                        then(Commands.literal(option).
-                                executes( (c) -> subscribePlayer(c.getSource().getName(),logname, option ) ).
-                                then(Commands.argument("player", StringArgumentType.word()).
-                                        suggests( (c, b)->ISuggestionProvider.suggest(c.getSource().getPlayerNames(),b)).
-                                        executes( (c) -> subscribePlayer(StringArgumentType.getString(c, "player"), logname, option) ))));
-            }
-        }
-        */
 
         dispatcher.register(literalargumentbuilder);
     }
@@ -78,7 +64,7 @@ public class LogCommand
         }
         catch (CommandSyntaxException e)
         {
-            source.sendFeedback(Messenger.m(null, "For players only"), false);
+            Messenger.m(source, "For players only");
             return 0;
         }
         Map<String,String> subs = LoggerRegistry.getPlayerSubscriptions(source.getName());
@@ -141,14 +127,14 @@ public class LogCommand
         EntityPlayer player = source.getServer().getPlayerList().getPlayerByUsername(player_name);
         if (player == null)
         {
-            source.sendFeedback(Messenger.m(null, "r No player specified"), false);
+            Messenger.m(source, "r No player specified");
             return 0;
         }
         for (String logname : LoggerRegistry.getLoggerNames())
         {
             LoggerRegistry.unsubscribePlayer(player_name, logname);
         }
-        source.sendFeedback(Messenger.m(null, "gi Unsubscribed from all logs"), false);
+        Messenger.m(source, "gi Unsubscribed from all logs");
         return 1;
     }
     private static int unsubFromLogger(CommandSource source, String player_name, String logname)
@@ -156,11 +142,11 @@ public class LogCommand
         EntityPlayer player = source.getServer().getPlayerList().getPlayerByUsername(player_name);
         if (player == null)
         {
-            source.sendFeedback(Messenger.m(null, "r No player specified"), false);
+            Messenger.m(source, "r No player specified");
             return 0;
         }
         LoggerRegistry.unsubscribePlayer(player_name, logname);
-        source.sendFeedback(Messenger.m(null, "gi Unsubscribed from "+logname), false);
+        Messenger.m(source, "gi Unsubscribed from "+logname);
         return 1;
     }
 
@@ -169,17 +155,17 @@ public class LogCommand
         EntityPlayer player = source.getServer().getPlayerList().getPlayerByUsername(player_name);
         if (player == null)
         {
-            source.sendFeedback(Messenger.m(null, "r No player specified"), false);
+            Messenger.m(source, "r No player specified");
             return 0;
         }
         boolean subscribed = LoggerRegistry.togglePlayerSubscription(player_name, logName);
         if (subscribed)
         {
-            source.sendFeedback(Messenger.m(null, "gi "+player_name+" subscribed to " + logName + "."), false);
+            Messenger.m(source, "gi "+player_name+" subscribed to " + logName + ".");
         }
         else
         {
-            source.sendFeedback(Messenger.m(null, "gi "+player_name+" unsubscribed from " + logName + "."), false);
+            Messenger.m(source, "gi "+player_name+" unsubscribed from " + logName + ".");
         }
         return 1;
     }
@@ -188,17 +174,17 @@ public class LogCommand
         EntityPlayer player = source.getServer().getPlayerList().getPlayerByUsername(player_name);
         if (player == null)
         {
-            source.sendFeedback(Messenger.m(null, "r No player specified"), false);
+            Messenger.m(source, "r No player specified");
             return 0;
         }
         LoggerRegistry.subscribePlayer(player_name, logname, option);
         if (option!=null)
         {
-            source.sendFeedback(Messenger.m(null, "gi Subscribed to " + logname + "(" + option + ")"), false);
+            Messenger.m(source, "gi Subscribed to " + logname + "(" + option + ")");
         }
         else
         {
-            source.sendFeedback(Messenger.m(null, "gi Subscribed to " + logname), false);
+            Messenger.m(source, "gi Subscribed to " + logname);
         }
             return 1;
     }

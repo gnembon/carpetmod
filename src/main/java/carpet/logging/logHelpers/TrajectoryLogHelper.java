@@ -43,7 +43,7 @@ public class TrajectoryLogHelper
             switch (option)
             {
                 case "brief":
-                    comp.add(Messenger.s(null, ""));
+                    comp.add(Messenger.s(""));
                     List<String> line = new ArrayList<>();
 
                     for (int i = 0; i < positions.size(); i++)
@@ -55,18 +55,18 @@ public class TrajectoryLogHelper
                                 i, pos.x, pos.y, pos.z, mot.x, mot.y, mot.z));
                         if ((((i+1) % MAX_TICKS_PER_LINE)==0) || i == positions.size()-1)
                         {
-                            comp.add(Messenger.m(null, line.toArray(new Object[0])));
+                            comp.add(Messenger.c(line.toArray(new Object[0])));
                             line.clear();
                         }
                     }
                     break;
                 case "full":
-                    comp.add(Messenger.m(null,"w ---------"));
+                    comp.add(Messenger.c("w ---------"));
                     for (int i = 0; i < positions.size(); i++)
                     {
                         Vec3d pos = positions.get(i);
                         Vec3d mot = motions.get(i);
-                        comp.add(Messenger.m(null ,
+                        comp.add(Messenger.c(
                                 String.format("w tick: %3d pos",i),Messenger.dblt("w",pos.x, pos.y, pos.z),
                                 "w   mot",Messenger.dblt("w",mot.x, mot.y, mot.z)));
                     }

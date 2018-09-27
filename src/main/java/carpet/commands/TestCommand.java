@@ -22,7 +22,7 @@ public class TestCommand
     {
         try
         {
-            Messenger.m(c.getSource().asPlayer(),"w dimension is: ","wb "+c.getSource().asPlayer().dimension.toString());
+            Messenger.m(c.getSource(),"w dimension is: ","wb "+c.getSource().asPlayer().dimension.toString());
         } catch (CommandSyntaxException e)
         {
             e.printStackTrace();

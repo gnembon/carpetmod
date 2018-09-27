@@ -86,7 +86,7 @@ public class SpawnReporter
     public static List<ITextComponent> printMobcapsForDimension(World world, int dim, String name)
     {
         List<ITextComponent> lst = new ArrayList<>();
-        lst.add(Messenger.s(null, String.format("Mobcaps for %s:",name)));
+        lst.add(Messenger.s(String.format("Mobcaps for %s:",name)));
         for (EnumCreatureType enumcreaturetype : EnumCreatureType.values())
         {
             String type_code = String.format("%s", enumcreaturetype);
@@ -94,8 +94,7 @@ public class SpawnReporter
             int cur = stat.getA();
             int max = stat.getB();
             int rounds = spawn_tries.get(type_code);
-            lst.add( Messenger.m(null,
-                    String.format("w   %s: ",type_code),
+            lst.add( Messenger.c(String.format("w   %s: ",type_code),
                     (cur+max==0)?"g -/-":String.format("%s %d/%d", (cur >= max)?"r":((cur >= 8*max/10)?"y":"l") ,cur, max),
                     (rounds == 1)?"w ":String.format("fi  (%d rounds/tick)",spawn_tries.get(type_code))
             ));
@@ -116,26 +115,26 @@ public class SpawnReporter
         List<ITextComponent> lst = new ArrayList<>();
         if ((track_spawns == 0L))
         {
-            lst.add(Messenger.s(null, "Spawn tracking not started"));
+            lst.add(Messenger.s("Spawn tracking not started"));
             return lst;
         }
         if (creature_type == null)
         {
-            lst.add(Messenger.s(null, String.format("Incorrect creature type: %s",creature_type_code)));
+            lst.add(Messenger.s(String.format("Incorrect creature type: %s",creature_type_code)));
             return lst;
         }
 
         String type_code = get_type_string(creature_type);
         
-        lst.add(Messenger.s(null, String.format("Recent %s spawns:",type_code)));
+        lst.add(Messenger.s(String.format("Recent %s spawns:",type_code)));
         for (SpawnPos entry: spawned_mobs.get(type_code).keySet())
         {
-            lst.add( Messenger.m(null, String.format("w  - %s ",entry.mob), Messenger.tp("wb",entry.pos)));
+            lst.add( Messenger.c(String.format("w  - %s ",entry.mob), Messenger.tp("wb",entry.pos)));
         }
         
         if (lst.size()==1)
         {
-            lst.add(Messenger.s(null, " - Nothing spawned yet, sorry."));
+            lst.add(Messenger.s(" - Nothing spawned yet, sorry."));
         }
         return lst;
 
@@ -236,22 +235,22 @@ public class SpawnReporter
         List<ITextComponent> lst = new ArrayList<>();
         if (typ == null)
         {
-            lst.add(Messenger.m(null, String.format("r Incorrect creature type: %s",creature_type_code)));
+            lst.add(Messenger.c(String.format("r Incorrect creature type: %s",creature_type_code)));
             return lst;
         }
         Class<?> cls = typ.getBaseClass();// getCreatureClass();
-        lst.add( Messenger.s(null, String.format("Loaded entities for %s class:", get_type_string(typ))));
+        lst.add( Messenger.s(String.format("Loaded entities for %s class:", get_type_string(typ))));
         for (Entity entity : worldIn.loadedEntityList)
         {
             if ((!(entity instanceof EntityLiving) || !((EntityLiving)entity).isNoDespawnRequired()) && cls.isAssignableFrom(entity.getClass()))
             {
-                lst.add(Messenger.m(null,
-                        "w  - ",Messenger.tp("w", entity.posX, entity.posY, entity.posZ),"w  : "+EntityType.getId(entity.getType())));
+                lst.add(Messenger.c("w  - ",
+                        Messenger.tp("w", entity.posX, entity.posY, entity.posZ),"w  : "+EntityType.getId(entity.getType())));
             }
         }
         if (lst.size()==1)
         {
-            lst.add(Messenger.s(null, " - Empty."));
+            lst.add(Messenger.s(" - Empty."));
         }
         return lst;
     }
@@ -305,19 +304,19 @@ public class SpawnReporter
         List<ITextComponent> report = new ArrayList<>();
         if (track_spawns == 0L)
         {
-            report.add(Messenger.m(null,
+            report.add(Messenger.c(
                     "w Spawn tracking disabled, type '",
                     "wi /spawn tracking start","/spawn tracking start",
                     "w ' to enable"));
             return report;
         }
         Long duration = (long) worldIn.getServer().getTickCounter() - track_spawns;
-        report.add(Messenger.m(null, "bw --------------------"));
+        report.add(Messenger.c("bw --------------------"));
         String simulated = mock_spawns?"[SIMULATED] ":"";
         String location = (lower_spawning_limit != null)?String.format("[in (%d, %d, %d)x(%d, %d, %d)]",
                 lower_spawning_limit.getX(),lower_spawning_limit.getY(),lower_spawning_limit.getZ(),
                 upper_spawning_limit.getX(),upper_spawning_limit.getY(),upper_spawning_limit.getZ() ):"";
-        report.add(Messenger.s(null, String.format("%sSpawn statistics %s: for %.1f min", simulated, location, (duration/72000.0)*60)));
+        report.add(Messenger.s(String.format("%sSpawn statistics %s: for %.1f min", simulated, location, (duration/72000.0)*60)));
         for (EnumCreatureType enumcreaturetype : EnumCreatureType.values())
         {
             String type_code = String.format("%s", enumcreaturetype);
@@ -329,7 +328,7 @@ public class SpawnReporter
                 {
                     there_are_mobs_to_list = true;
                     double hours = overall_spawn_ticks.get(code)/72000.0;
-                    report.add(Messenger.s(null, String.format(" > %s (%.1f min), %.1f m/t, {%.1f%%F / %.1f%%- / %.1f%%+}; %.2f s/att",
+                    report.add(Messenger.s(String.format(" > %s (%.1f min), %.1f m/t, {%.1f%%F / %.1f%%- / %.1f%%+}; %.2f s/att",
                         code,
                         60*hours,
                         (1.0D*spawn_cap_count.get(code))/ spawn_attempts.get(code),
@@ -344,7 +343,7 @@ public class SpawnReporter
             {
                 for (String creature_name : spawn_stats.get(type_code).keySet())
                 {
-                    report.add(Messenger.s(null, String.format("   - %s: %d spawns, %d per hour",
+                    report.add(Messenger.s(String.format("   - %s: %d spawns, %d per hour",
                             creature_name,
                             spawn_stats.get(type_code).get(creature_name),
                             (72000 * spawn_stats.get(type_code).get(creature_name)/duration ))));

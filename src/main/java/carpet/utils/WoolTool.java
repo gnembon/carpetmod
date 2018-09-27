@@ -74,7 +74,7 @@ public class WoolTool
     public static EnumDyeColor getWoolColorAtPosition(World worldIn, BlockPos pos)
     {
         IBlockState state = worldIn.getBlockState(pos);
-        if (state.getMaterial() != Material.CLOTH || !state.isNormalCube())
+        if (state.getMaterial() != Material.CLOTH || !state.isFullCube())
             return null;
         return Material2Dye.get(state.getMapColor(worldIn, pos));
     }

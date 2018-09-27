@@ -83,7 +83,7 @@ public class HUDController
         {
             SPacketPlayerListHeaderFooter packet = new SPacketPlayerListHeaderFooter();
             packet.header = new TextComponentString("");
-            packet.footer = Messenger.m(null, player_huds.get(player).toArray(new Object[0]));
+            packet.footer = Messenger.c(player_huds.get(player).toArray(new Object[0]));
             ((EntityPlayerMP)player).connection.sendPacket(packet);
         }
     }
@@ -92,7 +92,7 @@ public class HUDController
         double MSPT = MathHelper.average(server.tickTimeArray) * 1.0E-6D;
         double TPS = 1000.0D / Math.max((TickSpeed.time_warp_start_time != 0)?0.0:TickSpeed.mspt, MSPT);
         String color = Messenger.heatmap_color(MSPT,TickSpeed.mspt);
-        return new ITextComponent[]{Messenger.m(null,
+        return new ITextComponent[]{Messenger.c(
                 "g TPS: ", String.format(Locale.US, "%s %.1f",color, TPS),
                 "g  MSPT: ", String.format(Locale.US,"%s %.1f", color, MSPT))};
     }
@@ -104,25 +104,25 @@ public class HUDController
         {
             Tuple<Integer,Integer> counts = SpawnReporter.mobcaps.get(dim).getOrDefault(type, new Tuple<>(0,0));
             int actual = counts.getA(); int limit = counts.getB();
-            components.add(Messenger.m(null,
+            components.add(Messenger.c(
                     (actual+limit == 0)?"g -":Messenger.heatmap_color(actual,limit)+" "+actual,
                     Messenger.creatureTypeColor(type)+" /"+((actual+limit == 0)?"-":limit)
                     ));
-            components.add(Messenger.m(null, "w  "));
+            components.add(Messenger.c("w  "));
         }
         components.remove(components.size()-1);
-        return new ITextComponent[]{Messenger.m(null, components.toArray(new Object[0]))};
+        return new ITextComponent[]{Messenger.c(components.toArray(new Object[0]))};
     }
 
     private static ITextComponent [] send_counter_info(MinecraftServer server, String color)
     {
         List <ITextComponent> res = HopperCounter.query_hopper_stats_for_color(server, color, false, true);
-        return new ITextComponent[]{ Messenger.m(null, res.toArray(new Object[0]))};
+        return new ITextComponent[]{ Messenger.c(res.toArray(new Object[0]))};
     }
     private static ITextComponent [] packetCounter()
     {
         ITextComponent [] ret =  new ITextComponent[]{
-                Messenger.m(null, "w I/" + PacketCounter.totalIn + " O/" + PacketCounter.totalOut),
+                Messenger.c("w I/" + PacketCounter.totalIn + " O/" + PacketCounter.totalOut),
         };
         PacketCounter.reset();
         return ret;

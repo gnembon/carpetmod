@@ -70,39 +70,39 @@ public class CarpetCommand
         }
         catch (CommandSyntaxException e)
         {
-            source.sendFeedback(Messenger.m(null, "w "+rule.getName() +" is set to: ","wb "+rule.getStringValue()), false);
+            Messenger.m(source, "w "+rule.getName() +" is set to: ","wb "+rule.getStringValue());
             return 1;
         }
 
-        Messenger.s(player, "");
+        Messenger.m(player, "");
         Messenger.m(player, "wb "+rule.getName(),"!/carpet "+rule.getName(),"^g refresh");
-        Messenger.s(player, rule.getToast());
+        Messenger.m(player, "w "+rule.getToast());
 
-        Arrays.stream(rule.getInfo()).forEach(s -> Messenger.s(player, " "+s,"g"));
+        Arrays.stream(rule.getInfo()).forEach(s -> Messenger.m(player, "g  "+s));
 
         List<ITextComponent> tags = new ArrayList<>();
-        tags.add(Messenger.m(null, "w Tags: "));
+        tags.add(Messenger.c("w Tags: "));
         for (String t: rule.getTags())
         {
-            tags.add(Messenger.m(null, "c ["+t+"]", "^g list all "+t+" settings","!/carpet list "+t));
-            tags.add(Messenger.s(null, ", "));
+            tags.add(Messenger.c("c ["+t+"]", "^g list all "+t+" settings","!/carpet list "+t));
+            tags.add(Messenger.c("w , "));
         }
         tags.remove(tags.size()-1);
         Messenger.m(player, tags.toArray(new Object[0]));
 
         Messenger.m(player, "w Current value: ",String.format("%s %s (%s value)",rule.getBoolValue()?"lb":"nb", rule.getStringValue(),rule.isDefault()?"default":"modified"));
         List<ITextComponent> options = new ArrayList<>();
-        options.add(Messenger.m(null, "w Options: ", "y [ "));
+        options.add(Messenger.c("w Options: ", "y [ "));
         for (String o: rule.getOptions())
         {
-            options.add(Messenger.m(null,
+            options.add(Messenger.c(
                     String.format("%s%s %s",(o.equals(rule.getDefault()))?"u":"", (o.equals(rule.getStringValue()))?"bl":"y", o ),
                     "^g switch to "+o,
                     String.format("?/carpet %s %s",rule.getName(),o)));
-            options.add(Messenger.s(null, " "));
+            options.add(Messenger.c("w  "));
         }
         options.remove(options.size()-1);
-        options.add(Messenger.m(null, "y  ]"));
+        options.add(Messenger.c("y  ]"));
         Messenger.m(player, options.toArray(new Object[0]));
 
         return 1;
@@ -111,21 +111,21 @@ public class CarpetCommand
     private static int setRule(CommandSource source, CarpetSettingEntry rule, String newValue)
     {
         CarpetSettings.set(rule.getName(), newValue);
-        source.sendFeedback(Messenger.m(null, "w "+rule.toString()+", ", "c [change permanently?]",
+        Messenger.m(source, "w "+rule.toString()+", ", "c [change permanently?]",
                 "^w Click to keep the settings in carpet.conf to save across restarts",
-                "?/carpet setDefault "+rule.getName()+" "+rule.getStringValue()), false);
+                "?/carpet setDefault "+rule.getName()+" "+rule.getStringValue());
         return 1;
     }
     private static int setDefault(CommandSource source, CarpetSettingEntry rule, String defaultValue)
     {
         CarpetSettings.setDefaultRule(source.getServer(), rule.getName(), defaultValue);
-        source.sendFeedback(Messenger.m(null ,"gi rule "+ rule.getName()+" will now default to "+ defaultValue), false);
+        Messenger.m(source ,"gi rule "+ rule.getName()+" will now default to "+ defaultValue);
         return 1;
     }
     private static int removeDefault(CommandSource source, CarpetSettingEntry rule)
     {
         CarpetSettings.removeDefaultRule(source.getServer(), rule.getName());
-        source.sendFeedback(Messenger.m(null ,"gi rule "+ rule.getName()+" defaults to Vanilla"), false);
+        Messenger.m(source ,"gi rule "+ rule.getName()+" defaults to Vanilla");
         return 1;
     }
 
@@ -152,7 +152,7 @@ public class CarpetCommand
             args.add("w  ");
         }
         args.remove(args.size()-1);
-        return Messenger.m(null, args.toArray(new Object[0]));
+        return Messenger.c(args.toArray(new Object[0]));
     }
 
     private static int listSettings(CommandSource source, String title, CarpetSettingEntry[] settings_list)
@@ -166,8 +166,8 @@ public class CarpetCommand
         }
         catch (CommandSyntaxException e)
         {
-            source.sendFeedback(Messenger.m(null, "w s:"+title), false);
-            Arrays.stream(settings_list).forEach(r -> source.sendFeedback(Messenger.m(null, "w  - "+ r.toString()), false));
+            Messenger.m(source, "w s:"+title);
+            Arrays.stream(settings_list).forEach(r -> Messenger.m(source, "w  - "+ r.toString()));
         }
         return 1;
     }
@@ -175,7 +175,7 @@ public class CarpetCommand
     {
         listSettings(source, "Current CarpetMod Settings", CarpetSettings.find_nondefault(source.getServer()));
 
-        source.sendFeedback(Messenger.m(null, "Carpet Mod version: "+CarpetSettings.carpetVersion), false);
+        Messenger.m(source, "Carpet Mod version: "+CarpetSettings.carpetVersion);
         try
         {
             EntityPlayer player = source.asPlayer();

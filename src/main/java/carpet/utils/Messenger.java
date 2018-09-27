@@ -1,5 +1,6 @@
 package carpet.utils;
 
+import net.minecraft.command.CommandSource;
 import net.minecraft.entity.EnumCreatureType;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.math.BlockPos;
@@ -102,6 +103,10 @@ public class Messenger
 
     private static ITextComponent _getChatComponentFromDesc(String message, ITextComponent previous_message)
     {
+        if (message.equalsIgnoreCase(""))
+        {
+            return new TextComponentString("");
+        }
         String parts[] = message.split("\\s", 2);
         String desc = parts[0];
         String str = "";
@@ -127,7 +132,7 @@ public class Messenger
         if (desc.charAt(0) == '^')
         {
             if (previous_message != null)
-                previous_message.getStyle().setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Messenger.m(null, message.substring(1))));
+                previous_message.getStyle().setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, c(message.substring(1))));
             return previous_message;
         }
         ITextComponent txt = new TextComponentString(str);
@@ -147,7 +152,7 @@ public class Messenger
     /// to be continued
     public static ITextComponent dbl(String style, double double_value)
     {
-        return m(null, String.format("%s %.1f",style,double_value),String.format("^w %f",double_value));
+        return c(String.format("%s %.1f",style,double_value),String.format("^w %f",double_value));
     }
     public static ITextComponent dbls(String style, double ... doubles)
     {
@@ -159,7 +164,7 @@ public class Messenger
             prefix = ", ";
         }
         str.append(" ]");
-        return m(null, str.toString());
+        return c(str.toString());
     }
     public static ITextComponent dblf(String style, double ... doubles)
     {
@@ -171,7 +176,7 @@ public class Messenger
             prefix = ", ";
         }
         str.append(" ]");
-        return m(null, str.toString());
+        return c(str.toString());
     }
     public static ITextComponent dblt(String style, double ... doubles)
     {
@@ -188,7 +193,7 @@ public class Messenger
         }
         //components.remove(components.size()-1);
         components.add(style+"  ]");
-        return m(null, components.toArray(new Object[0]));
+        return c(components.toArray(new Object[0]));
     }
 
     private static ITextComponent _getCoordsTextComponent(String style, float x, float y, float z, boolean isInt)
@@ -205,12 +210,23 @@ public class Messenger
             text = String.format("%s [ %.2f, %.2f, %.2f]",style, x, y, z);
             command = String.format("!/tp %f %f %f",x, y, z);
         }
-        return m(null, text, command);
+        return c(text, command);
     }
+
+    //message source
+    public static void m(CommandSource source, Object ... fields)
+    {
+        source.sendFeedback(Messenger.c(fields),false);
+    }
+    public static void m(EntityPlayer player, Object ... fields)
+    {
+        player.sendMessage(Messenger.c(fields));
+    }
+
     /*
-    builds single line, multicomponent message, optionally returns it to sender, and returns as one chat messagge
+    composes single line, multicomponent message, and returns as one chat messagge
      */
-    public static ITextComponent m(EntityPlayer player, Object ... fields)
+    public static ITextComponent c(Object ... fields)
     {
         ITextComponent message = new TextComponentString("");
         ITextComponent previous_component = null;
@@ -223,41 +239,42 @@ public class Messenger
                 continue;
             }
             String txt = o.toString();
-            //CarpetSettings.LOG.error(txt);
             ITextComponent comp = _getChatComponentFromDesc(txt,previous_component);
             if (comp != previous_component) message.appendSibling(comp);
             previous_component = comp;
         }
-        if (player != null)
-            player.sendMessage(message);
         return message;
     }
 
-    public static ITextComponent s(EntityPlayer player,String text)
+    //simple text
+
+    public static ITextComponent s(String text)
     {
-        return s(player,text,"");
+        return s(text,"");
     }
-    public static ITextComponent s(EntityPlayer player,String text, String style)
+    public static ITextComponent s(String text, String style)
     {
         ITextComponent message = new TextComponentString(text);
         _applyStyleToTextComponent(message, style);
-        if (player != null)
-            player.sendMessage(message);
         return message;
     }
 
+
+
+    /*
     public static void send(EntityPlayer player, ITextComponent ... messages) { send(player, Arrays.asList(messages)); }
     public static void send(EntityPlayer player, List<ITextComponent> list)
     {
         list.forEach(player::sendMessage);
     }
+    */
 
     public static void print_server_message(MinecraftServer server, String message)
     {
         if (server == null)
             LOG.error("Message not delivered: "+message);
         server.sendMessage(new TextComponentString(message));
-        ITextComponent txt = m(null, "gi "+message);
+        ITextComponent txt = c("gi "+message);
         for (EntityPlayer entityplayer : server.getPlayerList().getPlayers())
         {
             entityplayer.sendMessage(txt);

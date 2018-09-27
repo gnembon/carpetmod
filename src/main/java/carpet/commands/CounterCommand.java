@@ -51,13 +51,11 @@ public class CounterCommand
         HopperCounter.reset_hopper_counter(source.getWorld(), color);
         if (color == null)
         {
-            source.sendFeedback(Messenger.m(null, "w Restarted all counters"), false);
-
+            Messenger.m(source, "w Restarted all counters");
         }
         else
         {
-            source.sendFeedback(Messenger.m(null, "w Restarted "+color+" counter"), false);
-
+            Messenger.m(source, "w Restarted "+color+" counter");
         }
         return 1;
     }

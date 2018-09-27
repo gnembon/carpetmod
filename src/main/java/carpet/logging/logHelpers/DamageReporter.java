@@ -29,8 +29,7 @@ public class DamageReporter
         if (!LoggerRegistry.__damage) return true;
         LoggerRegistry.getLogger("damage").log( (option, player)->
             verifyAndProduceMessage(option, player, source, target, () ->
-                Messenger.m(null,
-                        source.getDisplayName(),
+                Messenger.c(source.getDisplayName(),
                         "g  attacking ", target.getDisplayName(),"g  for ",
                         String.format("r %.2f",amount), "g  points of damage")
             )
@@ -46,8 +45,7 @@ public class DamageReporter
             return;
         LoggerRegistry.getLogger("damage").log( (option, player)->
             verifyAndProduceMessage(option, player, source.getTrueSource(), target, () ->
-                Messenger.m(null,
-                        target.getDisplayName(),
+                Messenger.c(target.getDisplayName(),
                         "g  receiving ",
                         String.format("r %.2f", amount),
                         String.format("g  points of damage from %s", source.getDamageType()))
@@ -60,8 +58,7 @@ public class DamageReporter
         if (!LoggerRegistry.__damage) return;
         LoggerRegistry.getLogger("damage").log( (option, player)->
             verifyAndProduceMessage(option, player, source.getTrueSource(), target, () ->
-                Messenger.m(null,
-                        "g  - total received ",
+                Messenger.c("g  - total received ",
                         String.format("r %.2f", amount),
                         "g  points of damage")
             )
@@ -82,19 +79,19 @@ public class DamageReporter
                 {
                     if (final_amount == 0.0f)
                     {
-                        return Messenger.m(null, "g  - reduced to ","r 0.0","g  due to: "+component);
+                        return Messenger.c("g  - reduced to ","r 0.0","g  due to: "+component);
                     }
                     else if (previous_amount > final_amount)
                     {
                         float reduction = previous_amount-final_amount;
-                        return Messenger.m(null,"g  - reduced to ",
+                        return Messenger.c("g  - reduced to ",
                                 String.format("l %.2f",final_amount),
                                 String.format("g  by %.2f (%.1f%% less) due to: %s",reduction,100.0*reduction/previous_amount, component));
                     }
                     else
                     {
                         float increase = final_amount-previous_amount;
-                        return Messenger.m(null,"g  - increased to ",
+                        return Messenger.c("g  - increased to ",
                                 String.format("r %.2f",final_amount),
                                 String.format("g  by %.2f (%.1f%% more) due to: %s",increase,100.0*increase/previous_amount, component));
                     }

@@ -55,11 +55,11 @@ public class TickSpeed
             tick_warp_callback = null;
             tick_warp_sender = null;
             finish_time_warp();
-            return Messenger.m(null, "gi Warp interrupted");
+            return Messenger.c("gi Warp interrupted");
         }
         if (time_bias > 0)
         {
-            return Messenger.m(null, "l Another player is already advancing time at the moment. Try later or talk to them");
+            return Messenger.c("l Another player is already advancing time at the moment. Try later or talk to them");
         }
         time_advancerer = player;
         time_warp_start_time = System.nanoTime();
@@ -67,7 +67,7 @@ public class TickSpeed
         time_bias = advance;
         tick_warp_callback = callback;
         tick_warp_sender = source;
-        return Messenger.m(null, "gi Warp speed ....");
+        return Messenger.c("gi Warp speed ....");
     }
 
     public static void finish_time_warp()

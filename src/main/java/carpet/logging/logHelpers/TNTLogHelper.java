@@ -26,11 +26,12 @@ public class TNTLogHelper
             switch (option)
             {
                 case "brief":
-                    return new ITextComponent[]{Messenger.m(null,
+                    return new ITextComponent[]{Messenger.c(
                             "l P ",Messenger.dblt("l",primedX,primedY,primedZ,primedAngle),
                             "r  E ",Messenger.dblt("r",x, y, z))};
                 case "full":
-                    return new ITextComponent[]{Messenger.m(null, "l P ",Messenger.dblf("l",primedX,primedY,primedZ,primedAngle),
+                    return new ITextComponent[]{Messenger.c(
+                            "l P ",Messenger.dblf("l",primedX,primedY,primedZ,primedAngle),
                             "r  E ",Messenger.dblf("r",x, y, z))};
             }
             return null;
