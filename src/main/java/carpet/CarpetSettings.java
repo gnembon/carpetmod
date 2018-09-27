@@ -198,7 +198,7 @@ public class CarpetSettings
   //rule("renewablePackedIce",    "experimental", "Multiple ice crushed by falling anvils make packed ice"),
   //rule("renewableDragonEggs",   "experimental", "Dragon eggs when fed meet items spawn more eggs"),
   //rule("summonNaturalLightning","creative", "summoning a lightning bolt has all the side effects of natural lightning"),
-  //rule("commandSpawn",          "commands", "Enables /spawn command for spawn tracking").defaultTrue(),
+  rule("commandSpawn",          "commands", "Enables /spawn command for spawn tracking").defaultTrue(),
   rule("commandTick",           "commands", "Enables /tick command to control game speed").defaultTrue(),
   rule("commandLog",            "commands", "Enables /log command to monitor events in the game via chat and overlays").defaultTrue(),
   //rule("commandDistance",       "commands", "Enables /distance command to measure in game distance between points").defaultTrue()
