@@ -73,6 +73,7 @@ public class CarpetServer // static for now - easier to handle all around the co
         TickCommand.register(dispatcher);
         CounterCommand.register(dispatcher);
         LogCommand.register(dispatcher);
+        SpawnCommand.register(dispatcher);
 
         TestCommand.register(dispatcher);
     }
