@@ -1,0 +1,47 @@
+--- a/net/minecraft/entity/item/EntityTNTPrimed.java
++++ b/net/minecraft/entity/item/EntityTNTPrimed.java
+@@ -1,6 +1,9 @@
+ package net.minecraft.entity.item;
+ 
+ import javax.annotation.Nullable;
++
++import carpet.logging.LoggerRegistry;
++import carpet.logging.logHelpers.TNTLogHelper;
+ import net.minecraft.entity.Entity;
+ import net.minecraft.entity.EntityLivingBase;
+ import net.minecraft.entity.EntityType;
+@@ -19,6 +22,9 @@
+     private EntityLivingBase tntPlacedBy;
+     private int fuse;
+ 
++    // ----- Carpet Start ----- //
++    private TNTLogHelper logHelper = null;
++
+     public EntityTNTPrimed(World worldIn)
+     {
+         super(EntityType.TNT, worldIn);
+@@ -36,6 +42,13 @@
+         this.motionX = (double)(-((float)Math.sin((double)f)) * 0.02F);
+         this.motionY = (double)0.2F;
+         this.motionZ = (double)(-((float)Math.cos((double)f)) * 0.02F);
++        // ----- Carpet Start ----- //
++        if (LoggerRegistry.__tnt)
++        {
++            logHelper = new TNTLogHelper();
++            logHelper.onPrimed(x, y, z, f);
++        }
++        // ----- Carpet End ----- //
+         this.setFuse(80);
+         this.prevPosX = x;
+         this.prevPosY = y;
+@@ -101,6 +114,10 @@
+ 
+     private void explode()
+     {
++        // ----- Carpet Start ----- //
++        if (LoggerRegistry.__tnt && logHelper != null)
++            logHelper.onExploded(posX, posY, posZ);
++        // ----- Carpet End ----- //
+         float f = 4.0F;
+         this.world.createExplosion(this, this.posX, this.posY + (double)(this.height / 16.0F), this.posZ, 4.0F, true);
+     }

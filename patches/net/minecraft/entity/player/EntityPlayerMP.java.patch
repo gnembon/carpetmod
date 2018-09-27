@@ -1,0 +1,33 @@
+--- a/net/minecraft/entity/player/EntityPlayerMP.java
++++ b/net/minecraft/entity/player/EntityPlayerMP.java
+@@ -1,5 +1,6 @@
+ package net.minecraft.entity.player;
+ 
++import carpet.logging.logHelpers.DamageReporter;
+ import com.google.common.collect.Lists;
+ import com.mojang.authlib.GameProfile;
+ import io.netty.buffer.Unpooled;
+@@ -616,6 +617,7 @@
+ 
+             if (!flag && this.respawnInvulnerabilityTicks > 0 && source != DamageSource.OUT_OF_WORLD)
+             {
++                DamageReporter.modify_damage(this, source, amount, 0.0F, "respawn protection");
+                 return false;
+             }
+             else
+@@ -626,6 +628,7 @@
+ 
+                     if (entity instanceof EntityPlayer && !this.canAttackPlayer((EntityPlayer)entity))
+                     {
++                        DamageReporter.modify_damage(this, source, amount, 0.0F, "PVP disabled");
+                         return false;
+                     }
+ 
+@@ -636,6 +639,7 @@
+ 
+                         if (entity1 instanceof EntityPlayer && !this.canAttackPlayer((EntityPlayer)entity1))
+                         {
++                            DamageReporter.modify_damage(this, source, amount, 0.0F, "PVP disabled (projectile)");
+                             return false;
+                         }
+                     }

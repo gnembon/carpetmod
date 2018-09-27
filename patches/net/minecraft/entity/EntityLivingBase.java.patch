@@ -1,0 +1,94 @@
+--- a/net/minecraft/entity/EntityLivingBase.java
++++ b/net/minecraft/entity/EntityLivingBase.java
+@@ -1,5 +1,6 @@
+ package net.minecraft.entity;
+ 
++import carpet.logging.logHelpers.DamageReporter;
+ import com.google.common.base.Objects;
+ import com.google.common.collect.Maps;
+ import java.util.Collection;
+@@ -917,12 +918,14 @@
+         }
+         else
+         {
++            DamageReporter.register_damage(this, source, amount); //CM
+             this.idleTime = 0;
+             float f = amount;
+ 
+             if ((source == DamageSource.ANVIL || source == DamageSource.FALLING_BLOCK) && !this.getItemStackFromSlot(EntityEquipmentSlot.HEAD).isEmpty())
+             {
+                 this.getItemStackFromSlot(EntityEquipmentSlot.HEAD).damageItem((int)(amount * 4.0F + this.rand.nextFloat() * amount * 2.0F), this);
++                DamageReporter.modify_damage(this, source, amount, amount*0.75f, "wearing a helmet"); //CM
+                 amount *= 0.75F;
+             }
+ 
+@@ -932,6 +935,7 @@
+             if (amount > 0.0F && this.canBlockDamageSource(source))
+             {
+                 this.damageShield(amount);
++                DamageReporter.modify_damage(this, source, amount, 0.0f, "using a shield"); //CM
+                 f1 = amount;
+                 amount = 0.0F;
+ 
+@@ -955,8 +959,10 @@
+             {
+                 if (amount <= this.lastDamage)
+                 {
++                    DamageReporter.modify_damage(this, source, amount, 0.0f, "Recently hit"); //CM
+                     return false;
+                 }
++                DamageReporter.modify_damage(this, source, amount, amount - this.lastDamage, "Recently hit"); //CM
+ 
+                 this.damageEntity(source, amount - this.lastDamage);
+                 this.lastDamage = amount;
+@@ -1407,6 +1413,9 @@
+                 int j = 25 - i;
+                 float f = damage * (float)j;
+                 float f1 = damage;
++
++                DamageReporter.modify_damage(this, source, damage, Math.max(f / 25.0F, 0.0F), "Resistance status effect"); //CM
++
+                 damage = Math.max(f / 25.0F, 0.0F);
+                 float f2 = f1 - damage;
+ 
+@@ -1433,7 +1442,10 @@
+ 
+                 if (k > 0)
+                 {
++                    float previous_damage = damage; // CM store
+                     damage = CombatRules.getDamageAfterMagicAbsorb(damage, (float)k);
++                    DamageReporter.modify_damage(this, source, previous_damage, damage,
++                            String.format("enchantments (%.1f total points)", (float)k)); // CM
+                 }
+ 
+                 return damage;
+@@ -1445,11 +1457,21 @@
+     {
+         if (!this.isInvulnerableTo(damageSrc))
+         {
++            float previous_amount = damageAmount; //CM
+             damageAmount = this.applyArmorCalculations(damageSrc, damageAmount);
++
++            DamageReporter.modify_damage(this, damageSrc, previous_amount, damageAmount, //CM
++                    String.format("Armour %.1f, Toughness %.1f", (float)this.getTotalArmorValue(), (float)this.getAttribute(SharedMonsterAttributes.ARMOR_TOUGHNESS).getValue())); //CM
++
++
+             damageAmount = this.applyPotionDamageCalculations(damageSrc, damageAmount);
+             float f = damageAmount;
+             damageAmount = Math.max(damageAmount - this.getAbsorptionAmount(), 0.0F);
+             this.setAbsorptionAmount(this.getAbsorptionAmount() - (f - damageAmount));
++
++            DamageReporter.modify_damage(this, damageSrc, damageAmount, f, "Absorbtion"); //CM
++
++
+             float f1 = f - damageAmount;
+ 
+             if (f1 > 0.0F && f1 < 3.4028235E37F && damageSrc.getTrueSource() instanceof EntityPlayerMP)
+@@ -1460,6 +1482,7 @@
+             if (damageAmount != 0.0F)
+             {
+                 float f2 = this.getHealth();
++                DamageReporter.register_final_damage(this, damageSrc, damageAmount); //CM
+                 this.setHealth(f2 - damageAmount);
+                 this.getCombatTracker().trackDamage(damageSrc, f2, damageAmount);
+                 this.setAbsorptionAmount(this.getAbsorptionAmount() - damageAmount);

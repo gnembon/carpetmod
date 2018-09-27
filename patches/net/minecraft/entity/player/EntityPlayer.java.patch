@@ -1,0 +1,118 @@
+--- a/net/minecraft/entity/player/EntityPlayer.java
++++ b/net/minecraft/entity/player/EntityPlayer.java
+@@ -1,5 +1,8 @@
+ package net.minecraft.entity.player;
+ 
++import carpet.logging.LoggerRegistry;
++import carpet.logging.logHelpers.DamageReporter;
++import carpet.logging.logHelpers.KillLogHelper;
+ import com.google.common.collect.Lists;
+ import com.mojang.authlib.GameProfile;
+ import java.nio.charset.StandardCharsets;
+@@ -995,6 +998,7 @@
+ 
+                 if (source.isDifficultyScaled())
+                 {
++                    float prevamount = amount; //CM
+                     if (this.world.getDifficulty() == EnumDifficulty.PEACEFUL)
+                     {
+                         amount = 0.0F;
+@@ -1009,6 +1013,8 @@
+                     {
+                         amount = amount * 3.0F / 2.0F;
+                     }
++                    DamageReporter.modify_damage(this, source, prevamount, amount, "difficulty"); //CM
++
+                 }
+ 
+                 return amount == 0.0F ? false : super.attackEntityFrom(source, amount);
+@@ -1091,11 +1097,19 @@
+     {
+         if (!this.isInvulnerableTo(damageSrc))
+         {
++            float previous_amount = damageAmount; //CM
+             damageAmount = this.applyArmorCalculations(damageSrc, damageAmount);
++
++            DamageReporter.modify_damage(this, damageSrc, previous_amount, damageAmount, //CM
++                    String.format("armour %.1f and toughness %.1f", (float)this.getTotalArmorValue(), (float)this.getAttribute(SharedMonsterAttributes.ARMOR_TOUGHNESS).getValue())); //CM
++
+             damageAmount = this.applyPotionDamageCalculations(damageSrc, damageAmount);
+             float f = damageAmount;
+             damageAmount = Math.max(damageAmount - this.getAbsorptionAmount(), 0.0F);
+             this.setAbsorptionAmount(this.getAbsorptionAmount() - (f - damageAmount));
++
++            DamageReporter.modify_damage(this, damageSrc, damageAmount, f, "Absorbtion"); //CM
++
+             float f1 = f - damageAmount;
+ 
+             if (f1 > 0.0F && f1 < 3.4028235E37F)
+@@ -1107,6 +1121,7 @@
+             {
+                 this.addExhaustion(damageSrc.getHungerDamage());
+                 float f2 = this.getHealth();
++                DamageReporter.register_final_damage(this, damageSrc, damageAmount); //CM
+                 this.setHealth(this.getHealth() - damageAmount);
+                 this.getCombatTracker().trackDamage(damageSrc, f2, damageAmount);
+ 
+@@ -1116,6 +1131,12 @@
+                 }
+             }
+         }
++        //CM
++        else
++        {
++            DamageReporter.modify_damage(this, damageSrc, damageAmount, 0.0f, "invulnerability to the damage source");
++        }
++        //CM end
+     }
+ 
+     public void openSignEditor(TileEntitySign signTile)
+@@ -1316,18 +1337,34 @@
+                         {
+                             float f3 = 1.0F + EnchantmentHelper.getSweepingDamageRatio(this) * f;
+ 
++                            //CM
++                            int mobs_smashed = 1;
++
+                             for (EntityLivingBase entitylivingbase : this.world.getEntitiesWithinAABB(EntityLivingBase.class, targetEntity.getBoundingBox().grow(1.0D, 0.25D, 1.0D)))
+                             {
+                                 if (entitylivingbase != this && entitylivingbase != targetEntity && !this.isOnSameTeam(entitylivingbase) && (!(entitylivingbase instanceof EntityArmorStand) || !((EntityArmorStand)entitylivingbase).hasMarker()) && this.getDistanceSq(entitylivingbase) < 9.0D)
+                                 {
+                                     entitylivingbase.knockBack(this, 0.4F, (double)MathHelper.sin(this.rotationYaw * ((float)Math.PI / 180F)), (double)(-MathHelper.cos(this.rotationYaw * ((float)Math.PI / 180F))));
+                                     entitylivingbase.attackEntityFrom(DamageSource.causePlayerDamage(this), f3);
++                                    //CM
++                                    mobs_smashed ++;
+                                 }
+                             }
+ 
++                            if (LoggerRegistry.__kills)
++                                KillLogHelper.onSweep(this.getGameProfile().getName(), mobs_smashed);
++
++
+                             this.world.playSound((EntityPlayer)null, this.posX, this.posY, this.posZ, SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, this.getSoundCategory(), 1.0F, 1.0F);
+                             this.spawnSweepParticles();
+                         }
++                        //CM
++                        else
++                        {
++                            if (LoggerRegistry.__kills)
++                                KillLogHelper.onNonSweepAttack(this.getGameProfile().getName());
++                        }
++                        //CM end
+ 
+                         if (targetEntity instanceof EntityPlayerMP && targetEntity.velocityChanged)
+                         {
+@@ -1422,6 +1459,13 @@
+                     }
+                 }
+             }
++            //CM
++            else
++            {
++                if (LoggerRegistry.__kills)
++                    KillLogHelper.onDudHit(this.getGameProfile().getName());
++            }
++            //CM END
+         }
+     }
+ 

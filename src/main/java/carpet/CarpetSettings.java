@@ -200,7 +200,7 @@ public class CarpetSettings
   //rule("summonNaturalLightning","creative", "summoning a lightning bolt has all the side effects of natural lightning"),
   //rule("commandSpawn",          "commands", "Enables /spawn command for spawn tracking").defaultTrue(),
   rule("commandTick",           "commands", "Enables /tick command to control game speed").defaultTrue(),
-  //rule("commandLog",            "commands", "Enables /log command to monitor events in the game via chat and overlays").defaultTrue(),
+  rule("commandLog",            "commands", "Enables /log command to monitor events in the game via chat and overlays").defaultTrue(),
   //rule("commandDistance",       "commands", "Enables /distance command to measure in game distance between points").defaultTrue()
   //                              .extraInfo("Also enables brown carpet placement action if 'carpets' rule is turned on as well"),
   //rule("commandBlockInfo",      "commands", "Enables /blockinfo command").defaultTrue()
@@ -602,7 +602,7 @@ public class CarpetSettings
     {
         return get(setting_name).getFloatValue();
     }
-    public static CarpetSettingEntry[] find_all(String tag)
+    public static CarpetSettingEntry[] findAll(String tag)
     {
         ArrayList<CarpetSettingEntry> res = new ArrayList<CarpetSettingEntry>();
         for (String rule: settings_store.keySet().stream().sorted().collect(Collectors.toList()))
@@ -627,7 +627,7 @@ public class CarpetSettings
         }
         return res.toArray(new CarpetSettingEntry[0]);
     }
-    public static CarpetSettingEntry[] find_startup_overrides(MinecraftServer server)
+    public static CarpetSettingEntry[] findStartupOverrides(MinecraftServer server)
     {
         ArrayList<CarpetSettingEntry> res = new ArrayList<CarpetSettingEntry>();
         if (locked) return res.toArray(new CarpetSettingEntry[0]);

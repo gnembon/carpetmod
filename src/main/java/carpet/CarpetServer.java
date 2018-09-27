@@ -4,9 +4,9 @@ package carpet;
 //import carpet.utils.PluginChannelTracker;
 //import carpet.utils.TickingArea;
 
-import carpet.commands.CarpetCommand;
-import carpet.commands.CounterCommand;
-import carpet.commands.TickCommand;
+import carpet.commands.*;
+import carpet.logging.LoggerRegistry;
+import carpet.utils.HUDController;
 import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import java.util.List;
@@ -44,7 +44,7 @@ public class CarpetServer // static for now - easier to handle all around the co
     {
         CarpetSettings.apply_settings_from_conf(server);
         //CarpetSettings.reload_all_statics(); // not needed anymore due to validators
-        //LoggerRegistry.initLoggers(server);
+        LoggerRegistry.initLoggers(server);
     }
     /*public static void onLoadAllWorlds(MinecraftServer server)
     {
@@ -64,7 +64,7 @@ public class CarpetServer // static for now - easier to handle all around the co
         //{
         //    TickStartEventDispatcher.dispatchEvent(server.getTickCounter());
         //}
-        //HUDController.update_hud(server);
+        HUDController.update_hud(server);
     }
 
     public static void registerCarpetCommands(CommandDispatcher<CommandSource> dispatcher)
@@ -72,6 +72,9 @@ public class CarpetServer // static for now - easier to handle all around the co
         CarpetCommand.register(dispatcher);
         TickCommand.register(dispatcher);
         CounterCommand.register(dispatcher);
+        LogCommand.register(dispatcher);
+
+        TestCommand.register(dispatcher);
     }
     /*
     public static void playerConnected(EntityPlayerMP player)

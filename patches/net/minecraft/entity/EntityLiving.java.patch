@@ -1,0 +1,26 @@
+--- a/net/minecraft/entity/EntityLiving.java
++++ b/net/minecraft/entity/EntityLiving.java
+@@ -1,5 +1,6 @@
+ package net.minecraft.entity;
+ 
++import carpet.logging.logHelpers.DamageReporter;
+ import com.google.common.collect.Maps;
+ import java.util.Arrays;
+ import java.util.Map;
+@@ -1447,10 +1448,16 @@
+         float f = (float)this.getAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).getValue();
+         int i = 0;
+ 
++        // CM
++        DamageReporter.register_damage_attacker( entityIn, this, f);
++        float ff = f;
++        // end CM
++
+         if (entityIn instanceof EntityLivingBase)
+         {
+             f += EnchantmentHelper.getModifierForCreature(this.getHeldItemMainhand(), ((EntityLivingBase)entityIn).getCreatureAttribute());
+             i += EnchantmentHelper.getKnockbackModifier(this);
++            DamageReporter.modify_damage((EntityLivingBase)entityIn, DamageSource.causeMobDamage(this), ff, f, "attacker enchants"); // CM
+         }
+ 
+         boolean flag = entityIn.attackEntityFrom(DamageSource.causeMobDamage(this), f);

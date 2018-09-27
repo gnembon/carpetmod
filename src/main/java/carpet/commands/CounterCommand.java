@@ -4,6 +4,7 @@ import carpet.CarpetSettings;
 import carpet.helpers.HopperCounter;
 import carpet.utils.Messenger;
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.minecraft.command.CommandSource;
 import net.minecraft.command.Commands;
@@ -19,10 +20,11 @@ public class CounterCommand
                 CarpetSettings.getBool("hopperCounters"));
 
         literalargumentbuilder.
-                then((Commands.literal("reset").executes( (p_198489_1_)-> resetCounter(p_198489_1_.getSource(), null))));
-        for (EnumDyeColor enumDyeColorolor: EnumDyeColor.values())
+                then((Commands.literal("reset").executes( (p_198489_1_)->
+                        resetCounter(p_198489_1_.getSource(), null))));
+        for (EnumDyeColor enumDyeColor: EnumDyeColor.values())
         {
-            String color = enumDyeColorolor.toString();
+            String color = enumDyeColor.toString();
             literalargumentbuilder.
                     then((Commands.literal(color).executes( (p_198489_1_)-> displayCounter(p_198489_1_.getSource(), color, false))));
             literalargumentbuilder.then(Commands.literal(color).

@@ -1,0 +1,53 @@
+--- a/net/minecraft/entity/item/EntityFallingBlock.java
++++ b/net/minecraft/entity/item/EntityFallingBlock.java
+@@ -1,5 +1,7 @@
+ package net.minecraft.entity.item;
+ 
++import carpet.logging.LoggerRegistry;
++import carpet.logging.logHelpers.TrajectoryLogHelper;
+ import com.google.common.collect.Lists;
+ import java.util.List;
+ import net.minecraft.block.Block;
+@@ -44,6 +46,20 @@
+     public NBTTagCompound tileEntityData;
+     protected static final DataParameter<BlockPos> ORIGIN = EntityDataManager.<BlockPos>createKey(EntityFallingBlock.class, DataSerializers.BLOCK_POS);
+ 
++    // ----- Carpet Start ----- //
++    private TrajectoryLogHelper logHelper = null;
++
++    /**
++     * Will get destroyed next tick.
++     */
++    @Override
++    public void remove() {
++        if (LoggerRegistry.__fallingBlocks && logHelper != null)
++            logHelper.onFinish();
++        super.remove();
++    }
++    // ----- Carpet End ----- //
++
+     public EntityFallingBlock(World worldIn)
+     {
+         super(EntityType.FALLING_BLOCK, worldIn);
+@@ -67,6 +83,9 @@
+         this.prevPosY = y;
+         this.prevPosZ = z;
+         this.setOrigin(new BlockPos(this));
++        //CM
++        if (LoggerRegistry.__fallingBlocks)
++            logHelper = new TrajectoryLogHelper("fallingBlocks");
+     }
+ 
+     public boolean canBeAttackedWithItem()
+@@ -102,6 +121,11 @@
+ 
+     public void tick()
+     {
++        // ----- Carpet Start ----- //
++        if (LoggerRegistry.__fallingBlocks && logHelper != null)
++            logHelper.onTick(posX, posY, posZ, motionX, motionY, motionZ);
++        // ----- Carpet End ----- //
++
+         if (this.fallTile.isAir())
+         {
+             this.remove();

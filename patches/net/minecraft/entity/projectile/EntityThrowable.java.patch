@@ -1,0 +1,63 @@
+--- a/net/minecraft/entity/projectile/EntityThrowable.java
++++ b/net/minecraft/entity/projectile/EntityThrowable.java
+@@ -3,6 +3,9 @@
+ import java.util.List;
+ import java.util.UUID;
+ import javax.annotation.Nullable;
++
++import carpet.logging.LoggerRegistry;
++import carpet.logging.logHelpers.TrajectoryLogHelper;
+ import net.minecraft.entity.Entity;
+ import net.minecraft.entity.EntityLivingBase;
+ import net.minecraft.entity.EntityType;
+@@ -32,6 +35,10 @@
+     public Entity ignoreEntity;
+     private int ignoreTime;
+ 
++    //CM
++    private TrajectoryLogHelper logHelper = null;
++
++
+     protected EntityThrowable(EntityType<?> type, World p_i48540_2_)
+     {
+         super(type, p_i48540_2_);
+@@ -39,6 +46,11 @@
+         this.yTile = -1;
+         this.zTile = -1;
+         this.setSize(0.25F, 0.25F);
++        //CM
++        if (LoggerRegistry.__projectiles)
++        {
++            logHelper = new TrajectoryLogHelper("projectiles");
++        }
+     }
+ 
+     protected EntityThrowable(EntityType<?> type, double p_i48541_2_, double p_i48541_4_, double p_i48541_6_, World p_i48541_8_)
+@@ -277,9 +289,27 @@
+             this.motionY -= (double)f2;
+         }
+ 
++        /// ----- Carpet Start ----- //
++        if (LoggerRegistry.__projectiles && logHelper != null)
++        {
++            logHelper.onTick(posX, posY, posZ, motionX, motionY, motionZ);
++        }
++        // ----- Carpet End ----- //
+         this.setPosition(this.posX, this.posY, this.posZ);
+     }
+ 
++    /**
++     * Will get destroyed next tick.
++     */
++    @Override
++    public void remove() {
++        super.remove();
++        // ----- Carpet Start ----- //
++        if (LoggerRegistry.__projectiles && logHelper != null)
++            logHelper.onFinish();
++        // ----- Carpet End ----- //
++    }
++
+     protected float getGravityVelocity()
+     {
+         return 0.03F;

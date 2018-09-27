@@ -1,0 +1,25 @@
+--- a/net/minecraft/network/NetworkManager.java
++++ b/net/minecraft/network/NetworkManager.java
+@@ -1,5 +1,6 @@
+ package net.minecraft.network;
+ 
++import carpet.logging.logHelpers.PacketCounter;
+ import com.google.common.collect.Queues;
+ import com.google.common.util.concurrent.ThreadFactoryBuilder;
+ import io.netty.bootstrap.Bootstrap;
+@@ -156,6 +157,7 @@
+ 
+     protected void channelRead0(ChannelHandlerContext p_channelRead0_1_, Packet<?> p_channelRead0_2_) throws Exception
+     {
++        PacketCounter.totalIn++;
+         if (this.channel.isOpen())
+         {
+             try
+@@ -215,6 +217,7 @@
+         EnumConnectionState enumconnectionstate = EnumConnectionState.getFromPacket(inPacket);
+         EnumConnectionState enumconnectionstate1 = (EnumConnectionState)this.channel.attr(PROTOCOL_ATTRIBUTE_KEY).get();
+         ++this.field_211395_r;
++        PacketCounter.totalOut++;
+ 
+         if (enumconnectionstate1 != enumconnectionstate)
+         {

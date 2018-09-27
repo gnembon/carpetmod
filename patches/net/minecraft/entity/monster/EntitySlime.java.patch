@@ -1,0 +1,23 @@
+--- a/net/minecraft/entity/monster/EntitySlime.java
++++ b/net/minecraft/entity/monster/EntitySlime.java
+@@ -1,6 +1,8 @@
+ package net.minecraft.entity.monster;
+ 
+ import javax.annotation.Nullable;
++
++import carpet.logging.logHelpers.DamageReporter;
+ import net.minecraft.entity.Entity;
+ import net.minecraft.entity.EntityLiving;
+ import net.minecraft.entity.EntityLivingBase;
+@@ -254,7 +256,10 @@
+     {
+         int i = this.getSlimeSize();
+ 
+-        if (this.canEntityBeSeen(entityIn) && this.getDistanceSq(entityIn) < 0.6D * (double)i * 0.6D * (double)i && entityIn.attackEntityFrom(DamageSource.causeMobDamage(this), (float)this.getAttackStrength()))
++        if (this.canEntityBeSeen(entityIn) &&
++                this.getDistanceSq(entityIn) < 0.6D * (double)i * 0.6D * (double)i &&
++                DamageReporter.register_damage_attacker(entityIn, this, (float)this.getAttackStrength()) && //CM
++                entityIn.attackEntityFrom(DamageSource.causeMobDamage(this), (float)this.getAttackStrength()))
+         {
+             this.playSound(SoundEvents.ENTITY_SLIME_ATTACK, 1.0F, (this.rand.nextFloat() - this.rand.nextFloat()) * 0.2F + 1.0F);
+             this.applyEnchantments(this, entityIn);
