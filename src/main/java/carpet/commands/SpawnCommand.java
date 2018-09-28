@@ -6,6 +6,7 @@ import carpet.helpers.TickSpeed;
 import carpet.utils.Messenger;
 import carpet.utils.SpawnReporter;
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -73,7 +74,8 @@ public class SpawnCommand
                                                 getInteger(c, "ticks"),
                                                 getString(c, "counter")))))).
                 then(literal("mocking").
-                        executes( (c) -> toggleMocking(c.getSource()))).
+                        then(argument("to do or not to do?", BoolArgumentType.bool()).
+                            executes( (c) -> toggleMocking(c.getSource(), BoolArgumentType.getBool(c, "to do or not to do?"))))).
                 then(literal("rates").
                         executes( (c) -> generalMobcaps(c.getSource())).
                         then(literal("reset").
@@ -191,9 +193,18 @@ public class SpawnCommand
         return 1;
     }
 
-    private static int toggleMocking(CommandSource source)
+    private static int toggleMocking(CommandSource source, boolean domock)
     {
-
+        if (domock)
+        {
+            SpawnReporter.initialize_mocking();
+            Messenger.m(source, "gi Mock spawns started, Spawn statistics reset");
+        }
+        else
+        {
+            SpawnReporter.stop_mocking();
+            Messenger.m(source, "gi  Normal mob spawning, Spawn statistics reset");
+        }
         return 1;
     }
 
@@ -205,6 +216,11 @@ public class SpawnCommand
 
     private static int resetSpawnRates(CommandSource source)
     {
+        for (String s: SpawnReporter.spawn_tries.keySet())
+        {
+            SpawnReporter.spawn_tries.put(s,1);
+        }
+        Messenger.m(source, "gi Spawn rates brought to 1 round per tick for all groups.");
 
         return 1;
     }
