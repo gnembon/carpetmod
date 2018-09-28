@@ -4,7 +4,12 @@ package carpet;
 //import carpet.utils.PluginChannelTracker;
 //import carpet.utils.TickingArea;
 
-import carpet.commands.*;
+import carpet.commands.CarpetCommand;
+import carpet.commands.CounterCommand;
+import carpet.commands.LogCommand;
+import carpet.commands.PlayerCommand;
+import carpet.commands.SpawnCommand;
+import carpet.commands.TickCommand;
 import carpet.logging.LoggerRegistry;
 import carpet.utils.HUDController;
 import com.google.common.base.Charsets;
@@ -74,6 +79,7 @@ public class CarpetServer // static for now - easier to handle all around the co
         CounterCommand.register(dispatcher);
         LogCommand.register(dispatcher);
         SpawnCommand.register(dispatcher);
+        PlayerCommand.register(dispatcher);
 
         //TestCommand.register(dispatcher);
     }

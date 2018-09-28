@@ -211,7 +211,7 @@ public class CarpetSettings
   //rule("commandCameramode",     "commands", "Enables /c and /s commands to quickly switch between camera and survival modes").defaultTrue()
   //                              .extraInfo("/c and /s commands are available to all players regardless of their permission levels"),
   //rule("commandPerimeterInfo",  "commands", "Enables /perimeterinfo command that scans the area around the block for potential spawnable spots").defaultTrue(),
-  //rule("commandPlayer",         "commands", "Enables /player command to control/spawn players").defaultTrue(),
+  rule("commandPlayer",         "commands", "Enables /player command to control/spawn players").defaultTrue(),
   //rule("commandRNG",            "commands", "Enables /rng command to manipulate and query rng").defaultTrue(),
   //rule("newLight",              "optimizations", "Uses alternative lighting engine by PhiPros. AKA NewLight mod"),
   //rule("carpets",               "survival", "Placing carpets may issue carpet commands for non-op players"),

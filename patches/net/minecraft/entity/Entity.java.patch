@@ -1,5 +1,14 @@
 --- a/net/minecraft/entity/Entity.java
 +++ b/net/minecraft/entity/Entity.java
+@@ -344,7 +344,7 @@
+         }
+     }
+ 
+-    protected void setRotation(float yaw, float pitch)
++    public void setRotation(float yaw, float pitch) //CM changed from protected to set in player action pack
+     {
+         this.rotationYaw = yaw % 360.0F;
+         this.rotationPitch = pitch % 360.0F;
 @@ -1859,7 +1859,7 @@
      }
  

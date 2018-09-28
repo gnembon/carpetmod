@@ -1,0 +1,21 @@
+--- a/net/minecraft/entity/item/EntityEnderPearl.java
++++ b/net/minecraft/entity/item/EntityEnderPearl.java
+@@ -1,6 +1,8 @@
+ package net.minecraft.entity.item;
+ 
+ import javax.annotation.Nullable;
++
++import carpet.patches.EntityPlayerMPFake;
+ import net.minecraft.advancements.CriteriaTriggers;
+ import net.minecraft.entity.Entity;
+ import net.minecraft.entity.EntityLivingBase;
+@@ -92,7 +94,8 @@
+             {
+                 EntityPlayerMP entityplayermp = (EntityPlayerMP)entitylivingbase;
+ 
+-                if (entityplayermp.connection.getNetworkManager().isChannelOpen() && entityplayermp.world == this.world && !entityplayermp.isPlayerSleeping())
++                //CM added condition for fake players to throw enderpearl
++                if ((entityplayermp.connection.getNetworkManager().isChannelOpen() || entityplayermp instanceof EntityPlayerMPFake) && entityplayermp.world == this.world && !entityplayermp.isPlayerSleeping())
+                 {
+                     if (this.rand.nextFloat() < 0.05F && this.world.getGameRules().getBoolean("doMobSpawning"))
+                     {

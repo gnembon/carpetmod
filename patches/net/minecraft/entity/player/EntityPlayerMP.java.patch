@@ -1,13 +1,44 @@
 --- a/net/minecraft/entity/player/EntityPlayerMP.java
 +++ b/net/minecraft/entity/player/EntityPlayerMP.java
-@@ -1,5 +1,6 @@
+@@ -1,5 +1,7 @@
  package net.minecraft.entity.player;
  
++import carpet.helpers.EntityPlayerActionPack;
 +import carpet.logging.logHelpers.DamageReporter;
  import com.google.common.collect.Lists;
  import com.mojang.authlib.GameProfile;
  import io.netty.buffer.Unpooled;
-@@ -616,6 +617,7 @@
+@@ -151,6 +153,9 @@
+     public int ping;
+     public boolean queuedEndExit;
+ 
++    //CM
++    public EntityPlayerActionPack actionPack;
++
+     public EntityPlayerMP(MinecraftServer server, WorldServer worldIn, GameProfile profile, PlayerInteractionManager interactionManagerIn)
+     {
+         super(worldIn, profile);
+@@ -162,6 +167,9 @@
+         this.advancements = server.getPlayerList().getPlayerAdvancements(this);
+         this.stepHeight = 1.0F;
+         this.func_205734_a(worldIn);
++
++        //CM
++        this.actionPack = new EntityPlayerActionPack(this);
+     }
+ 
+     private void func_205734_a(WorldServer p_205734_1_)
+@@ -337,6 +345,9 @@
+ 
+     public void tick()
+     {
++        //CM
++        actionPack.onUpdate();
++        //CM end
+         this.interactionManager.tick();
+         --this.respawnInvulnerabilityTicks;
+ 
+@@ -616,6 +627,7 @@
  
              if (!flag && this.respawnInvulnerabilityTicks > 0 && source != DamageSource.OUT_OF_WORLD)
              {
@@ -15,7 +46,7 @@
                  return false;
              }
              else
-@@ -626,6 +628,7 @@
+@@ -626,6 +638,7 @@
  
                      if (entity instanceof EntityPlayer && !this.canAttackPlayer((EntityPlayer)entity))
                      {
@@ -23,7 +54,7 @@
                          return false;
                      }
  
-@@ -636,6 +639,7 @@
+@@ -636,6 +649,7 @@
  
                          if (entity1 instanceof EntityPlayer && !this.canAttackPlayer((EntityPlayer)entity1))
                          {
