@@ -217,9 +217,9 @@ public class SpawnReporter
     }
     
     
-    public static String get_type_string(EnumCreatureType typ)
+    public static String get_type_string(EnumCreatureType type)
     {
-        return String.format("%s", typ);
+        return String.format("%s", type);
     }
     
     public static String get_creature_code_from_string(String str)

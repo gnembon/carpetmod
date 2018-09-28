@@ -13,6 +13,7 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.command.CommandSource;
 import net.minecraft.command.ISuggestionProvider;
 import net.minecraft.command.arguments.DimensionArgument;
+import net.minecraft.entity.EnumCreatureType;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.dimension.Dimension;
@@ -227,13 +228,17 @@ public class SpawnCommand
 
     private static int setSpawnRates(CommandSource source, String mobtype, int rounds)
     {
-
+        String code = SpawnReporter.get_creature_code_from_string(mobtype);
+        SpawnReporter.spawn_tries.put(code, rounds);
+        Messenger.m(source, "gi "+mobtype+" mobs will now spawn "+rounds+" times per tick");
         return 1;
     }
 
     private static int setMobcaps(CommandSource source, int hostile_cap)
     {
-
+        double desired_ratio = (double)hostile_cap/ EnumCreatureType.MONSTER.getMaxNumberOfCreature();
+        SpawnReporter.mobcap_exponent = 4.0*Math.log(desired_ratio)/Math.log(2.0);
+        Messenger.m(source, String.format("gi Mobcaps for hostile mobs changed to %d, other groups will follow", hostile_cap));
         return 1;
     }
 
@@ -245,7 +250,7 @@ public class SpawnCommand
 
     private static int listEntitiesOfType(CommandSource source, String mobtype)
     {
-
+        Messenger.send(source, SpawnReporter.printEntitiesByType(mobtype, source.getWorld()));
         return 1;
     }
 }

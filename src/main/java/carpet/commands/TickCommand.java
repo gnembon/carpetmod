@@ -6,39 +6,55 @@ import carpet.utils.Messenger;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.FloatArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.command.CommandSource;
 import net.minecraft.command.Commands;
+import net.minecraft.command.ISuggestionProvider;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.text.ITextComponent;
+
+import static com.mojang.brigadier.arguments.FloatArgumentType.*;
+import static com.mojang.brigadier.arguments.IntegerArgumentType.*;
+import static com.mojang.brigadier.arguments.StringArgumentType.*;
+import static net.minecraft.command.Commands.*;
 
 public class TickCommand
 {
     public static void register(CommandDispatcher<CommandSource> dispatcher)
     {
-        LiteralArgumentBuilder<CommandSource> literalargumentbuilder = Commands.literal("tick").requires((player) ->
+        LiteralArgumentBuilder<CommandSource> literalargumentbuilder = literal("tick").requires((player) ->
                 CarpetSettings.getBool("commandTick"));
 
 
         literalargumentbuilder.
-                then((Commands.literal("rate").executes((p_198489_1_) ->
-                    queryTps(p_198489_1_.getSource()))).                                  // suggests 20F
-                then(Commands.argument("rate", FloatArgumentType.floatArg(0.1F, 500.0F)).executes((p_198490_1_) ->
-                    setTps(p_198490_1_.getSource(), FloatArgumentType.getFloat(p_198490_1_, "rate")))));
+                then((literal("rate").
+                        executes((c) -> queryTps(c.getSource()))).
+                then(argument("rate", floatArg(0.1F, 500.0F)).
+                        suggests( (c, b) -> ISuggestionProvider.suggest(new String[]{"20.0"},b)).
+                        executes((c) -> setTps(c.getSource(), getFloat(c, "rate")))));
         literalargumentbuilder.
-                then((Commands.literal("warp").
-                then(Commands.argument("ticks",IntegerArgumentType.integer(0,4000000)).executes((p_198490_1_) ->
-                    setWarp(p_198490_1_.getSource(),IntegerArgumentType.getInteger(p_198490_1_,"ticks"))))));
+                then((literal("warp").
+                        executes( (c)-> setWarp(c.getSource(), 0, null)).
+                        then(argument("ticks", integer(0,4000000)).
+                                suggests( (c, b) -> ISuggestionProvider.suggest(new String[]{"3600","72000"},b)).
+                                executes((c) -> setWarp(c.getSource(), getInteger(c,"ticks"), null)).
+                                then(argument("tail command", greedyString()).
+                                        executes( (c) -> setWarp(
+                                                c.getSource(),
+                                                getInteger(c,"ticks"),
+                                                getString(c, "tail command")))))));
         literalargumentbuilder.
-                then((Commands.literal("freeze").executes( (p_198489_1_)-> toggleFreeze(p_198489_1_.getSource()))));
+                then((literal("freeze").executes( (c)-> toggleFreeze(c.getSource()))));
         literalargumentbuilder.
-                then((Commands.literal("step").executes((p_198489_1_) ->
-                        step(1))).                       // suggests 20F
-                        then(Commands.argument("ticks", IntegerArgumentType.integer(1,72000)).executes((p_198490_1_) ->
-                        step(IntegerArgumentType.getInteger(p_198490_1_,"ticks")))));
+                then((literal("step").
+                        executes((c) -> step(1))).
+                        then(argument("ticks", integer(1,72000)).
+                                suggests( (c, b) -> ISuggestionProvider.suggest(new String[]{"20"},b)).
+                                executes((c) -> step(getInteger(c,"ticks")))));
         literalargumentbuilder.
-                then((Commands.literal("superHot").executes( (p_198489_1_)-> toggleSuperHot(p_198489_1_.getSource()))));
+                then((literal("superHot").executes( (c)-> toggleSuperHot(c.getSource()))));
 
 
         dispatcher.register(literalargumentbuilder);
@@ -58,19 +74,17 @@ public class TickCommand
         return (int)TickSpeed.tickrate;
     }
 
-    private static int setWarp(CommandSource source, int advance)
+    private static int setWarp(CommandSource source, int advance, String tail_command)
     {
         EntityPlayer player = null;
         try
         {
             player = source.asPlayer();
         }
-        catch (CommandSyntaxException e)
+        catch (CommandSyntaxException ignored)
         {
         }
-        String s = null;
-        // TODO: post command
-        ITextComponent message = TickSpeed.tickrate_advance(player, advance, s, source);
+        ITextComponent message = TickSpeed.tickrate_advance(player, advance, tail_command, source);
         if (message != null)
         {
             source.sendFeedback(message, false);
