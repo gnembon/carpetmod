@@ -48,7 +48,7 @@ public class CounterCommand
 
     private static int resetCounter(CommandSource source, String color)
     {
-        HopperCounter.reset_hopper_counter(source.getWorld(), color);
+        HopperCounter.reset_hopper_counter(source.getServer(), color);
         if (color == null)
         {
             Messenger.m(source, "w Restarted all counters");

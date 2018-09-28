@@ -382,8 +382,9 @@ public class SpawnReporter
         int x = pos.getX(); int y = pos.getY(); int z = pos.getZ();
         Chunk chunk = worldIn.getChunk(pos);
         int lc = chunk.getTopBlockY(Heightmap.Type.LIGHT_BLOCKING, x, z) + 1;
-        String where = (y >= lc) ? "above" : "below";
-        rep.add(Messenger.s(String.format("Maximum spawn Y value for (%+d, %+d) is %d. You are %d blocks %s it", x, z, lc, MathHelper.abs(y-lc), where )));
+        String where = String.format((y >= lc) ? "%d blocks above it." : "%d blocks below it.",  MathHelper.abs(y-lc));
+        if (y == lc) where = "right at it.";
+        rep.add(Messenger.s(String.format("Maximum spawn Y value for (%+d, %+d) is %d. You are "+where, x, z, lc )));
         rep.add(Messenger.s("Spawns:"));
         for (EnumCreatureType enumcreaturetype : EnumCreatureType.values())
         {

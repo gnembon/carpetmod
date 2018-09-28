@@ -2,17 +2,24 @@ package carpet.commands;
 
 import carpet.CarpetSettings;
 import carpet.helpers.HopperCounter;
+import carpet.helpers.TickSpeed;
 import carpet.utils.Messenger;
 import carpet.utils.SpawnReporter;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.command.CommandSource;
 import net.minecraft.command.ISuggestionProvider;
 import net.minecraft.command.arguments.DimensionArgument;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.dimension.Dimension;
 import net.minecraft.world.dimension.DimensionType;
+
+import javax.swing.*;
+
+import java.util.Arrays;
 
 import static com.mojang.brigadier.arguments.IntegerArgumentType.getInteger;
 import static com.mojang.brigadier.arguments.IntegerArgumentType.integer;
@@ -51,14 +58,14 @@ public class SpawnCommand
                                 executes( (c) -> stopTracking(c.getSource()))).
                         then(argument("type", word()).
                                 suggests( (c, b) -> suggest(SpawnReporter.mob_groups,b)).
-                                executes( (c) -> trackReportForType(c.getSource(), getString(c, "type"))))).
+                                executes( (c) -> recentSpawnsForType(c.getSource(), getString(c, "type"))))).
                 then(literal("test").
-                        executes( (c)-> runTest(c.getSource(), 72000, "white")).
+                        executes( (c)-> runTest(c.getSource(), 72000, null)).
                         then(argument("ticks", integer(10,720000)).
                                 executes( (c)-> runTest(
                                         c.getSource(),
                                         getInteger(c, "ticks"),
-                                        "white")).
+                                        null)).
                                 then(argument("counter", word()).
                                         suggests( (c, b) -> suggest(HopperCounter.counterStringSet,b)).
                                         executes((c)-> runTest(
@@ -103,31 +110,84 @@ public class SpawnCommand
 
     private static int printTrackingReport(CommandSource source)
     {
-
+        Messenger.send(source, SpawnReporter.tracking_report(source.getWorld()));
         return 1;
     }
 
-    private static int startTracking(CommandSource source, BlockPos from, BlockPos to)
+    private static int startTracking(CommandSource source, BlockPos a, BlockPos b)
     {
-
+        if (SpawnReporter.track_spawns != 0L)
+        {
+            Messenger.m(source, "r You are already tracking spawning.");
+            return 0;
+        }
+        BlockPos lsl = null;
+        BlockPos usl = null;
+        if (a != null && b != null)
+        {
+            lsl = new BlockPos(
+                    Math.min(a.getX(), b.getX()),
+                    Math.min(a.getY(), b.getY()),
+                    Math.min(a.getZ(), b.getZ()) );
+            usl = new BlockPos(
+                    Math.max(a.getX(), b.getX()),
+                    Math.max(a.getY(), b.getY()),
+                    Math.max(a.getZ(), b.getZ()) );
+        }
+        SpawnReporter.reset_spawn_stats(false);
+        SpawnReporter.track_spawns = (long) source.getServer().getTickCounter();
+        SpawnReporter.lower_spawning_limit = lsl;
+        SpawnReporter.upper_spawning_limit = usl;
+        Messenger.m(source, "gi Spawning tracking started.");
         return 1;
     }
 
     private static int stopTracking(CommandSource source)
     {
-
+        Messenger.send(source, SpawnReporter.tracking_report(source.getWorld()));
+        SpawnReporter.reset_spawn_stats(false);
+        SpawnReporter.track_spawns = 0L;
+        SpawnReporter.lower_spawning_limit = null;
+        SpawnReporter.upper_spawning_limit = null;
+        Messenger.m(source, "gi Spawning tracking stopped.");
         return 1;
     }
 
-    private static int trackReportForType(CommandSource source, String mob_type)
+    private static int recentSpawnsForType(CommandSource source, String mob_type)
     {
-
+        if (!Arrays.asList(SpawnReporter.mob_groups).contains(mob_type))
+        {
+            Messenger.m(source, "r Wrong mob type: "+mob_type);
+            return 0;
+        }
+        Messenger.send(source, SpawnReporter.recent_spawns(source.getWorld(), mob_type));
         return 1;
     }
 
     private static int runTest(CommandSource source, int ticks, String counter)
     {
+        //stop tracking
+        SpawnReporter.reset_spawn_stats(false);
+        //start tracking
+        SpawnReporter.track_spawns = (long) source.getServer().getTickCounter();
+        //counter reset
+        HopperCounter.reset_hopper_counter(source.getServer(), counter);
 
+        // tick warp 0
+        TickSpeed.tickrate_advance(null, 0, null, null);
+        // tick warp given player
+        CommandSource csource = null;
+        EntityPlayer player = null;
+        try
+        {
+            player = source.asPlayer();
+            csource = source;
+        }
+        catch (CommandSyntaxException ignored)
+        {
+        }
+        TickSpeed.tickrate_advance(player, ticks, null, csource);
+        Messenger.m(source, String.format("gi Started spawn test for %d ticks", ticks));
         return 1;
     }
 

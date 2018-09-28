@@ -46,7 +46,7 @@ public class HopperCounter
 
     }
 
-    public static void reset_hopper_counter(World worldIn, String color)
+    public static void reset_hopper_counter(MinecraftServer server, String color)
     {
         if (color == null)
         {
@@ -54,14 +54,14 @@ public class HopperCounter
             {
 
                 hopper_counter.put(clr.toString(), new HashMap<String, Long>());
-                hopper_counter_start_tick.put(clr.toString(), (long)worldIn.getServer().getTickCounter());
+                hopper_counter_start_tick.put(clr.toString(), (long)server.getTickCounter());
                 hopper_counter_start_millis.put(clr.toString(), Util.milliTime());
             }
         }
         else
         {
             hopper_counter.put(color, new HashMap<String, Long>());
-            hopper_counter_start_tick.put(color, (long) worldIn.getServer().getTickCounter());
+            hopper_counter_start_tick.put(color, (long) server.getTickCounter());
             hopper_counter_start_millis.put(color, Util.milliTime());
         }
     }
