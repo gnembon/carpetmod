@@ -1,0 +1,141 @@
+--- a/net/minecraft/world/WorldEntitySpawner.java
++++ b/net/minecraft/world/WorldEntitySpawner.java
+@@ -1,5 +1,7 @@
+ package net.minecraft.world;
+ 
++import carpet.CarpetSettings;
++import carpet.utils.SpawnReporter;
+ import com.google.common.collect.Sets;
+ import java.util.List;
+ import java.util.Random;
+@@ -20,6 +22,7 @@
+ import net.minecraft.server.management.PlayerChunkMapEntry;
+ import net.minecraft.tags.BlockTags;
+ import net.minecraft.tags.FluidTags;
++import net.minecraft.util.Tuple;
+ import net.minecraft.util.WeightedRandom;
+ import net.minecraft.util.math.BlockPos;
+ import net.minecraft.util.math.ChunkPos;
+@@ -81,19 +84,58 @@
+                 }
+             }
+ 
++            //CM start
++            boolean optimizedDespawnRange = CarpetSettings.getBool("optimizedDespawnRange");
++            if (i==0 && optimizedDespawnRange) // worlds without valid chunks are skipped.
++            {
++                return 0;
++            }
++            //CM end
++
+             int k4 = 0;
+             BlockPos blockpos1 = worldServerIn.getSpawnPoint();
+ 
++            //CM start
++            int did = worldServerIn.dimension.getType().getId();
++            String level_suffix = (did==0)?"":((did<0?" (N)":" (E)"));
++            //CM end
++
+             for (EnumCreatureType enumcreaturetype : EnumCreatureType.values())
+             {
++                //CM start
++                String type_code = String.format("%s", enumcreaturetype);
++                String group_code = type_code+level_suffix;
++                if (SpawnReporter.track_spawns > 0L)
++                {
++                    SpawnReporter.overall_spawn_ticks.put(group_code, SpawnReporter.overall_spawn_ticks.get(group_code) + SpawnReporter.spawn_tries.get(type_code));
++                }
++                //CM end
+                 if ((!enumcreaturetype.getPeacefulCreature() || spawnPeacefulMobs) && (enumcreaturetype.getPeacefulCreature() || spawnHostileMobs) && (!enumcreaturetype.getAnimal() || spawnOnSetTickRate))
+                 {
+-                    int l4 = enumcreaturetype.getMaxNumberOfCreature() * i / MOB_COUNT_DIV;
+-                    int i5 = worldServerIn.countEntities(enumcreaturetype.getBaseClass(), l4);
++                    //CM replaced: //int l4 = enumcreaturetype.getMaxNumberOfCreature() * i / MOB_COUNT_DIV;
++                    int l4 = (int)(Math.pow(2.0,(SpawnReporter.mobcap_exponent/4)) * enumcreaturetype.getMaxNumberOfCreature() * i / MOB_COUNT_DIV);
+ 
++                    int i5 = worldServerIn.countEntities(enumcreaturetype.getBaseClass(), 100000); // CM replaced l4 with 100000 TODO consider calling it now specifically because of the limits
++
++                    SpawnReporter.mobcaps.get(did).put(enumcreaturetype, new Tuple<>(i5, l4));
++                    int tries = SpawnReporter.spawn_tries.get(type_code);
++                    if (SpawnReporter.track_spawns > 0L)
++                    {
++                        SpawnReporter.spawn_attempts.put(group_code, SpawnReporter.spawn_attempts.get(group_code) + tries);
++                        SpawnReporter.spawn_cap_count.put(group_code, SpawnReporter.spawn_cap_count.get(group_code) + i5);
++                    }
++                    if (SpawnReporter.mock_spawns) { i5 = 0; } // no mobcaps
++                    //CM end
++
+                     if (i5 <= l4)
+                     {
+                         BlockPos.MutableBlockPos blockpos$mutableblockpos = new BlockPos.MutableBlockPos();
++                      /* carpet mod -> extra indentation */
++                      for (int trie = 0; trie < tries; trie++)
++                      {
++                        long local_spawns = 0;
++                        /* end */
++
+                         label142:
+ 
+                         for (ChunkPos chunkpos1 : this.eligibleChunksForSpawning)
+@@ -170,7 +212,29 @@
+                                                         {
+                                                             ++j2;
+                                                             ++i4;
+-                                                            worldServerIn.spawnEntity(entityliving);
++                                                            //CM replacing //worldServerIn.spawnEntity(entityliving);
++                                                            if (optimizedDespawnRange && entityliving.willImmediatelyDespawn()) // Added optimized despawn mobs
++                                                            {
++                                                                entityliving.remove();
++                                                            }
++                                                            else
++                                                            {
++                                                                ++local_spawns;
++                                                                if (SpawnReporter.track_spawns > 0L)
++                                                                {
++                                                                    String species = entityliving.getEntityString();
++                                                                    SpawnReporter.registerSpawn(entityliving, type_code, species, blockpos$mutableblockpos);
++                                                                }
++                                                                if (SpawnReporter.mock_spawns)
++                                                                {
++                                                                    entityliving.remove();
++                                                                }
++                                                                else
++                                                                {
++                                                                    worldServerIn.spawnEntity(entityliving);
++                                                                }
++                                                                //CM end
++                                                            }
+                                                         }
+                                                         else
+                                                         {
+@@ -196,7 +260,30 @@
+                                 }
+                             }
+                         }
++                        /* carpet mod */
++
++                        if (SpawnReporter.track_spawns > 0L)
++                        {
++                            if (local_spawns > 0)
++                            {
++                                SpawnReporter.spawn_ticks_succ.put(group_code, SpawnReporter.spawn_ticks_succ.get(group_code) + 1L);
++                                SpawnReporter.spawn_ticks_spawns.put(group_code, SpawnReporter.spawn_ticks_spawns.get(group_code) + local_spawns);
++                            }
++                            else
++                            {
++                                SpawnReporter.spawn_ticks_fail.put(group_code, SpawnReporter.spawn_ticks_fail.get(group_code) + 1L);
++                            }
++                        }
++                      } //carpet mod <- extra indentation
+                     }
++                    else //carpet mod full mobcap
++                    {
++                        if (SpawnReporter.track_spawns > 0L)
++                        {
++                            SpawnReporter.spawn_ticks_full.put(group_code, SpawnReporter.spawn_ticks_full.get(group_code) + SpawnReporter.spawn_tries.get(type_code));
++                        }
++                    }
++                    /* end */
+                 }
+             }
+ 

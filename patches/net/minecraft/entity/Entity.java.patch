@@ -1,0 +1,11 @@
+--- a/net/minecraft/entity/Entity.java
++++ b/net/minecraft/entity/Entity.java
+@@ -1859,7 +1859,7 @@
+     }
+ 
+     @Nullable
+-    protected final String getEntityString()
++    public final String getEntityString() // CM changed from protected to public
+     {
+         EntityType<?> entitytype = this.getType();
+         ResourceLocation resourcelocation = EntityType.getId(entitytype);

@@ -1,5 +1,6 @@
 package carpet.utils;
 
+import com.sun.corba.se.impl.activation.CommandHandler;
 import net.minecraft.command.CommandSource;
 import net.minecraft.entity.EnumCreatureType;
 import net.minecraft.entity.player.EntityPlayer;
@@ -15,6 +16,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 public class Messenger
@@ -261,13 +263,16 @@ public class Messenger
 
 
 
-    /*
-    public static void send(EntityPlayer player, ITextComponent ... messages) { send(player, Arrays.asList(messages)); }
-    public static void send(EntityPlayer player, List<ITextComponent> list)
+
+    public static void send(EntityPlayer player, Collection<ITextComponent> lines)
     {
-        list.forEach(player::sendMessage);
+        lines.forEach(player::sendMessage);
     }
-    */
+    public static void send(CommandSource source, Collection<ITextComponent> lines)
+    {
+        lines.stream().forEachOrdered((s) -> source.sendFeedback(s, false));
+    }
+
 
     public static void print_server_message(MinecraftServer server, String message)
     {

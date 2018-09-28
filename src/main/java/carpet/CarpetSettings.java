@@ -171,7 +171,7 @@ public class CarpetSettings
                                            "Items counted are destroyed, count up to one stack per tick per hopper")
                                 .boolAccelerate(),
   //rule("renewableElderGuardians", "experimental feature", "Guardians turn into Elder Guardian when struck by lightning"),
-  //rule("optimizedDespawnRange", "optimizations", "Spawned mobs that would otherwise despawn immediately, won't be placed in world"),
+  rule("optimizedDespawnRange", "optimizations", "Spawned mobs that would otherwise despawn immediately, won't be placed in world"),
   //rule("redstoneMultimeter",    "creative survival", "Enables integration with redstone multimeter mod")
   //                              .extraInfo("Required clients with RSMM Mod by Narcoleptic Frog. Enables multiplayer experience with RSMM Mod"),
   //rule("movableTileEntities",   "experimental", "Pistons can push tile entities, like hoppers, chests etc."),

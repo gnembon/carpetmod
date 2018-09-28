@@ -8,12 +8,11 @@ import net.minecraft.util.text.ITextComponent;
 import net.minecraft.world.World;
 import net.minecraft.server.MinecraftServer;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 public class HopperCounter
 {
+    public static final Set<String> counterStringSet = new HashSet<>();
     public static final HashMap<String, HashMap<String,Long>> hopper_counter = new HashMap<>();
     public static final HashMap<String, Long> hopper_counter_start_tick = new HashMap<>();
     public static final HashMap<String, Long> hopper_counter_start_millis = new HashMap<>();
@@ -22,6 +21,7 @@ public class HopperCounter
         for (EnumDyeColor color : EnumDyeColor.values())
         {
             String col_str = color.toString();
+            counterStringSet.add(col_str);
             hopper_counter.put(col_str, new HashMap<>());
             hopper_counter_start_tick.put(col_str, 0L);
             hopper_counter_start_millis.put(col_str, 0L);

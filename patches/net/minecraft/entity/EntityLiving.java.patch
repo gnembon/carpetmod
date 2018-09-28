@@ -24,3 +24,32 @@
          }
  
          boolean flag = entityIn.attackEntityFrom(DamageSource.causeMobDamage(this), f);
+@@ -1522,4 +1529,28 @@
+             this.motionY += (double)0.3F;
+         }
+     }
++
++    // Added optimized despawn mobs by Luflosi
++    public boolean willImmediatelyDespawn()
++    {
++        if (!this.canDespawn() || this.persistenceRequired)
++        {
++            return false;
++        }
++        boolean playerInDimension = false;
++        for (int i = 0; i < this.world.playerEntities.size(); i++)
++        {
++            EntityPlayer entityplayer = this.world.playerEntities.get(i);
++            if (!entityplayer.isSpectator())
++            {
++                playerInDimension = true;
++                double distanceSq = entityplayer.getDistanceSq(this.posX, this.posY, this.posZ);
++                if (distanceSq <= 16384.0D)
++                {
++                    return false;
++                }
++            }
++        }
++        return playerInDimension;
++    }
+ }

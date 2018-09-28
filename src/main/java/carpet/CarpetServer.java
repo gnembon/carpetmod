@@ -75,7 +75,7 @@ public class CarpetServer // static for now - easier to handle all around the co
         LogCommand.register(dispatcher);
         SpawnCommand.register(dispatcher);
 
-        TestCommand.register(dispatcher);
+        //TestCommand.register(dispatcher);
     }
     /*
     public static void playerConnected(EntityPlayerMP player)
