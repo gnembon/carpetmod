@@ -19,24 +19,16 @@ import java.util.concurrent.CompletableFuture;
 
 public class TermArgumentType implements ArgumentType<String>
 {
-    private static final Set<String> options;
-    public static final DynamicCommandExceptionType WRONG_TYPE_EXCEPTION = new DynamicCommandExceptionType((name) ->
-    {
-        return Messenger.c("rb "+name.toString(), "r is not a valid here");
-    });
+    private final Set<String> options;
 
-    public <S> String parse(StringReader p_parse_1_) throws CommandSyntaxException
-    {
-        String type = p_parse_1_.readUnquotedString();
+    private static final DynamicCommandExceptionType WRONG_TYPE_EXCEPTION = new DynamicCommandExceptionType(
+            (term) -> Messenger.c("rb "+term.toString(), "r is not a valid here"));
 
-        if (!options.contains(type))
-        {
-            throw WRONG_TYPE_EXCEPTION.create(type);
-        }
-        else
-        {
-            return type;
-        }
+    public String parse(StringReader reader) throws CommandSyntaxException
+    {
+        String term = reader.readUnquotedString();
+        if (!options.contains(term)) throw WRONG_TYPE_EXCEPTION.create(term);
+        return term;
     }
 
     public <S> CompletableFuture<Suggestions> listSuggestions(CommandContext<S> c, SuggestionsBuilder b)
@@ -44,21 +36,13 @@ public class TermArgumentType implements ArgumentType<String>
         return ISuggestionProvider.suggest(options, b);
     }
 
-    public Collection<String> getExamples()
-    {
-        return options;
-    }
-    private TermArgumentType(Collection<String> arrr)
-    {
-        options = new HashSet(arrr);
-    }
+    public Collection<String> getExamples() { return options; }
 
-    public static TermArgumentType term(String [] arrr)
-    {
-        return new TermArgumentType(Arrays.asList(arrr));
-    }
+    private TermArgumentType(Collection<String> arrr) { options = new HashSet<>(arrr); }
 
-    public static String getType(CommandContext<CommandSource> c, String argName)
+    public static TermArgumentType term(String ... arrr) { return new TermArgumentType(Arrays.asList(arrr)); }
+
+    public static String getTerm(CommandContext<CommandSource> c, String argName)
     {
         return c.getArgument(argName, String.class);
     }

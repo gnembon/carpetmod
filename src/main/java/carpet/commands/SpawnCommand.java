@@ -15,7 +15,7 @@ public class SpawnCommand
         LiteralArgumentBuilder<CommandSource> literalargumentbuilder = Commands.literal("spawn").
                 requires((player) -> CarpetSettings.getBool("commandSpawn"));
 
-
+/*
         literalargumentbuilder.
                 then(Commands.literal("list").
                         then(Commands.argument("pos", BlockPosArgument.blockPos()).
@@ -60,7 +60,7 @@ public class SpawnCommand
                         executes().
                         then(Commands.argument("type", TermArgumentType.mobType()).
                                 executes()));
-
+*/
         dispatcher.register(literalargumentbuilder);
     }
 
