@@ -1,0 +1,21 @@
+--- a/net/minecraft/util/EnumFacing.java
++++ b/net/minecraft/util/EnumFacing.java
+@@ -1,5 +1,6 @@
+ package net.minecraft.util;
+ 
++import carpet.helpers.BlockRotator;
+ import com.google.common.collect.Iterators;
+ import java.util.Arrays;
+ import java.util.Comparator;
+@@ -76,6 +77,11 @@
+         float f8 = flag2 ? f5 : -f5;
+         float f9 = f6 * f3;
+         float f10 = f8 * f3;
++        // [CM] use rotate
++        if (BlockRotator.flippinEligibility(entityIn))
++        {
++            flag = !flag; flag1 = !flag1; flag2 = !flag2;
++        }
+         EnumFacing enumfacing = flag ? EAST : WEST;
+         EnumFacing enumfacing1 = flag1 ? UP : DOWN;
+         EnumFacing enumfacing2 = flag2 ? SOUTH : NORTH;

@@ -1,0 +1,33 @@
+--- a/net/minecraft/server/management/PlayerInteractionManager.java
++++ b/net/minecraft/server/management/PlayerInteractionManager.java
+@@ -1,5 +1,6 @@
+ package net.minecraft.server.management;
+ 
++import carpet.helpers.BlockRotator;
+ import net.minecraft.block.Block;
+ import net.minecraft.block.BlockChest;
+ import net.minecraft.block.BlockCommandBlock;
+@@ -401,11 +402,20 @@
+             boolean flag = !player.getHeldItemMainhand().isEmpty() || !player.getHeldItemOffhand().isEmpty();
+             boolean flag1 = player.isSneaking() && flag;
+ 
+-            if (!flag1 && iblockstate.onBlockActivated(worldIn, pos, player, hand, facing, hitX, hitY, hitZ))
++            if (!flag1)
+             {
+-                return EnumActionResult.SUCCESS;
++                //flip method will check for flippinCactus setting
++                Boolean flipped = BlockRotator.flipBlockWithCactus(worldIn, pos, iblockstate, player, hand, facing, hitX, hitY, hitZ);
++                if (flipped)
++                {
++                    return EnumActionResult.PASS;
++                }
++                if (iblockstate.onBlockActivated(worldIn, pos, player, hand, facing, hitX, hitY, hitZ))
++                {
++                    return EnumActionResult.SUCCESS;
++                }
+             }
+-            else if (!stack.isEmpty() && !player.getCooldownTracker().hasCooldown(stack.getItem()))
++            if (!stack.isEmpty() && !player.getCooldownTracker().hasCooldown(stack.getItem()))
+             {
+                 ItemUseContext itemusecontext = new ItemUseContext(player, player.getHeldItem(hand), pos, facing, hitX, hitY, hitZ);
+ 

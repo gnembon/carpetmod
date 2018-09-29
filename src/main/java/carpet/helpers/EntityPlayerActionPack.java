@@ -18,7 +18,12 @@ import net.minecraft.util.EntitySelectors;
 import net.minecraft.util.EnumActionResult;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
-import net.minecraft.util.math.*;
+import net.minecraft.util.math.AxisAlignedBB;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.RayTraceFluidMode;
+import net.minecraft.util.math.RayTraceResult;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameType;
 import net.minecraft.world.World;
 
@@ -290,7 +295,6 @@ public class EntityPlayerActionPack
         }
         if (doesAttack)
         {
-            CarpetSettings.LOG.error("attack cooldown: "+attackCooldown);
             if ((--attackCooldown) == 0)
             {
                 attackCooldown = attackInterval;
@@ -303,7 +307,6 @@ public class EntityPlayerActionPack
         }
         if (forward != 0.0F)
         {
-            //CarpetSettings.LOG.error("moving it forward");
             player.moveForward = forward*(sneaking?0.3F:1.0F);
         }
         if (strafing != 0.0F)
@@ -577,7 +580,6 @@ public class EntityPlayerActionPack
 
     private void clickBlockCreative(World world, BlockPos pos, EnumFacing facing)
     {
-        CarpetSettings.LOG.error("click creative");
         if (!world.extinguishFire(player, pos, facing))
         {
             onPlayerDestroyBlock(pos);

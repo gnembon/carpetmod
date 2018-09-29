@@ -1,0 +1,25 @@
+--- a/net/minecraft/block/BlockHopper.java
++++ b/net/minecraft/block/BlockHopper.java
+@@ -1,5 +1,6 @@
+ package net.minecraft.block;
+ 
++import carpet.helpers.BlockRotator;
+ import net.minecraft.block.state.BlockFaceShape;
+ import net.minecraft.block.state.IBlockState;
+ import net.minecraft.entity.Entity;
+@@ -97,6 +98,15 @@
+     public IBlockState getStateForPlacement(BlockItemUseContext context)
+     {
+         EnumFacing enumfacing = context.getFace().getOpposite();
++        //[CM]
++        if (BlockRotator.flippinEligibility(context.getPlayer()))
++            enumfacing = enumfacing.getOpposite();
++
++        if (enumfacing == EnumFacing.UP)
++        {
++            enumfacing = EnumFacing.DOWN;
++        }
++        //[CM]
+         return (IBlockState)((IBlockState)this.getDefaultState().with(FACING, enumfacing.getAxis() == EnumFacing.Axis.Y ? EnumFacing.DOWN : enumfacing)).with(ENABLED, Boolean.valueOf(true));
+     }
+ 

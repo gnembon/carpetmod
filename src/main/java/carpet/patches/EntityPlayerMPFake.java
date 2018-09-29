@@ -6,6 +6,7 @@ package carpet.patches;
  import net.minecraft.server.MinecraftServer;
  import net.minecraft.server.management.PlayerInteractionManager;
  import com.mojang.authlib.GameProfile;
+ import net.minecraft.tileentity.TileEntitySkull;
  import net.minecraft.util.DamageSource;
  import net.minecraft.util.text.TextComponentTranslation;
  import net.minecraft.world.WorldServer;
@@ -23,7 +24,12 @@ public class EntityPlayerMPFake extends EntityPlayerMP
         WorldServer worldIn = server.getWorld(dimension);
         PlayerInteractionManager interactionManagerIn = new PlayerInteractionManager(worldIn);
         GameProfile gameprofile = server.getPlayerProfileCache().getGameProfileForUsername(username);
+        if (gameprofile.getProperties().containsKey("textures"))
+        {
+            gameprofile = TileEntitySkull.updateGameProfile(gameprofile);
+        }
         EntityPlayerMPFake instance = new EntityPlayerMPFake(server, worldIn, gameprofile, interactionManagerIn);
+        instance.setLocationAndAngles(d0, d1, d2, (float)yaw, (float)pitch);
         server.getPlayerList().initializeConnectionToPlayer(new NetworkManagerFake(EnumPacketDirection.CLIENTBOUND), instance);
         if (instance.dimension != dimension) //player was logged in in a different dimension
         {
@@ -84,7 +90,7 @@ public class EntityPlayerMPFake extends EntityPlayerMP
     @Override
     public void tick()
     {
-        if(this.getServer().getTickCounter() % 20 == 0)
+        if(this.getServer().getTickCounter() % 10 == 0)
         {
             this.connection.captureCurrentPosition();
             this.getServer().getPlayerList().serverUpdateMovingPlayer(this);

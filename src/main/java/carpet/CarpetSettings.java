@@ -160,9 +160,9 @@ public class CarpetSettings
   //rule("antiCheatSpeed",        "creative surival", "Prevents players from rubberbanding when moving too fast"),
   //rule("quasiConnectivity",     "creative", "Pistons, droppers and dispensers react if block above them is powered")
   //                              .defaultTrue(),
-  //rule("flippinCactus",         "creative survival", "Players can flip and rotate blocks when holding cactus")
-  //                              .extraInfo("Doesn't cause block updates when rotated/flipped",
-  //                                         "Applies to pistons, observers, droppers, repeaters, stairs, glazed terracotta etc..."),
+  rule("flippinCactus",         "creative survival", "Players can flip and rotate blocks when holding cactus")
+                                .extraInfo("Doesn't cause block updates when rotated/flipped",
+                                           "Applies to pistons, observers, droppers, repeaters, stairs, glazed terracotta etc..."),
   rule("hopperCounters",        "commands creative survival","hoppers pointing to wool will count items passing through them")
                                 .extraInfo("Enables /counter command, and actions while placing red and green carpets on wool blocks",
                                            "Use /counter <color?> reset to reset the counter, and /counter <color?> to query",
@@ -254,8 +254,8 @@ public class CarpetSettings
   //                              .choices("_","_").setNotStrict(),
   //rule("doubleRetraction",      "experimental", "1.8 double retraction from pistons.")
   //                              .extraInfo("Gives pistons the ability to double retract without side effects."),
-  //rule("rotatorBlock",          "experimental", "Cactus in dispensers rotates blocks.")
-  //                              .extraInfo("Cactus in a dispenser gives the dispenser the ability to rotate the blocks that are in front of it anti-clockwise if possible."),
+  rule("rotatorBlock",          "experimental", "Cactus in dispensers rotates blocks.")
+                                .extraInfo("Cactus in a dispenser gives the dispenser the ability to rotate the blocks that are in front of it anti-clockwise if possible."),
   //rule("netherRNG",             "creative", "Turning nether RNG manipulation on or off.")
   //                              .extraInfo("Turning nether RNG manipulation on or off."),
   //rule("endRNG",                "creative", "Turning end RNG manipulation on or off.")
