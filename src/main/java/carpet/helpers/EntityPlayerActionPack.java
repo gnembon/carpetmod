@@ -1,10 +1,7 @@
 package carpet.helpers;
 
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
-import javax.annotation.Nullable;
-
 import carpet.CarpetSettings;
+import com.google.common.base.Predicate;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockCommandBlock;
 import net.minecraft.block.BlockStructure;
@@ -14,7 +11,6 @@ import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.fluid.IFluidState;
-import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemSword;
 import net.minecraft.network.play.client.CPacketPlayerDigging;
@@ -224,7 +220,7 @@ public class EntityPlayerActionPack
         this.doesUse = false;
         this.doesAttack = false;
         this.doesJump = false;
-        resetBlockRemoving();
+        resetBlockRemoving(false);
         setSneaking(false);
         setSprinting(false);
         forward = 0.0F;
@@ -294,6 +290,7 @@ public class EntityPlayerActionPack
         }
         if (doesAttack)
         {
+            CarpetSettings.LOG.error("attack cooldown: "+attackCooldown);
             if ((--attackCooldown) == 0)
             {
                 attackCooldown = attackInterval;
@@ -301,7 +298,7 @@ public class EntityPlayerActionPack
             }
             else
             {
-                resetBlockRemoving();
+                resetBlockRemoving(true);
             }
         }
         if (forward != 0.0F)
@@ -580,6 +577,7 @@ public class EntityPlayerActionPack
 
     private void clickBlockCreative(World world, BlockPos pos, EnumFacing facing)
     {
+        CarpetSettings.LOG.error("click creative");
         if (!world.extinguishFire(player, pos, facing))
         {
             onPlayerDestroyBlock(pos);
@@ -713,15 +711,16 @@ public class EntityPlayerActionPack
         }
     }
 
-    public void resetBlockRemoving()
+    public void resetBlockRemoving(boolean force)
     {
-        if (this.isHittingBlock)
+        if (this.isHittingBlock || force)
         {
             player.connection.processPlayerDigging(new CPacketPlayerDigging(CPacketPlayerDigging.Action.ABORT_DESTROY_BLOCK, this.currentBlock, EnumFacing.DOWN));
             this.isHittingBlock = false;
             this.curBlockDamageMP = 0.0F;
             player.getEntityWorld().sendBlockBreakProgress(player.getEntityId(), this.currentBlock, -1);
             player.resetCooldown();
+            blockHitDelay = 0;
             this.currentBlock = new BlockPos(-1,-1,-1);
         }
     }

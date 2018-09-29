@@ -17,10 +17,9 @@ package carpet.patches;
 
 public class EntityPlayerMPFake extends EntityPlayerMP
 {
-    public static EntityPlayerMPFake createFake(String username, MinecraftServer server, double d0, double d1, double d2, double yaw, double pitch, int dimid, int gamemode)
+    public static EntityPlayerMPFake createFake(String username, MinecraftServer server, double d0, double d1, double d2, double yaw, double pitch, DimensionType dimension, GameType gamemode)
     {
         //prolly half of that crap is not necessary, but it works
-        DimensionType dimension = DimensionType.getById(dimid);
         WorldServer worldIn = server.getWorld(dimension);
         PlayerInteractionManager interactionManagerIn = new PlayerInteractionManager(worldIn);
         GameProfile gameprofile = server.getPlayerProfileCache().getGameProfileForUsername(username);
@@ -42,7 +41,7 @@ public class EntityPlayerMPFake extends EntityPlayerMP
         instance.removed = false;
         instance.connection.setPlayerLocation(d0, d1, d2, (float)yaw, (float)pitch);
         instance.stepHeight = 0.6F;
-        interactionManagerIn.setGameType(GameType.getByID(gamemode));
+        interactionManagerIn.setGameType(gamemode);
         server.getPlayerList().sendPacketToAllPlayersInDimension(new SPacketEntityHeadLook(instance, (byte)(instance.rotationYawHead * 256 / 360) ),instance.dimension);
         server.getPlayerList().sendPacketToAllPlayersInDimension(new SPacketEntityTeleport(instance),instance.dimension);
         server.getPlayerList().serverUpdateMovingPlayer(instance);
@@ -85,6 +84,11 @@ public class EntityPlayerMPFake extends EntityPlayerMP
     @Override
     public void tick()
     {
+        if(this.getServer().getTickCounter() % 20 == 0)
+        {
+            this.connection.captureCurrentPosition();
+            this.getServer().getPlayerList().serverUpdateMovingPlayer(this);
+        }
         super.tick();
         this.playerTick();
     }
