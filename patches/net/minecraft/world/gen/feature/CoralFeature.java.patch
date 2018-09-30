@@ -1,0 +1,15 @@
+--- a/net/minecraft/world/gen/feature/CoralFeature.java
++++ b/net/minecraft/world/gen/feature/CoralFeature.java
+@@ -21,6 +21,12 @@
+         return this.func_204623_a(p_212245_1_, p_212245_3_, p_212245_4_, iblockstate);
+     }
+ 
++    //CM changed to public to deterministically grow coral of a specific block
++    public boolean growSpecific(IWorld p_204623_1_, Random p_204623_2_, BlockPos p_204623_3_, IBlockState p_204623_4_)
++    {
++        return func_204623_a(p_204623_1_,p_204623_2_,p_204623_3_,p_204623_4_);
++    }
++
+     protected abstract boolean func_204623_a(IWorld p_204623_1_, Random p_204623_2_, BlockPos p_204623_3_, IBlockState p_204623_4_);
+ 
+     protected boolean func_204624_b(IWorld p_204624_1_, Random p_204624_2_, BlockPos p_204624_3_, IBlockState p_204624_4_)

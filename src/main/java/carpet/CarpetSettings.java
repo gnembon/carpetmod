@@ -267,8 +267,9 @@ public class CarpetSettings
   //                              .extraInfo("As set by the /tickingarea comamnd.",
   //                              "Ticking areas work as if they are the spawn chunks."),
   //rule("disableSpawnChunks",    "creative", "Removes the spawn chunks."),
-  rule("kelpGenerationGrowLimit", "survival", "limits growth limit of newly naturally generated kelp to this amount of blocks")
+  rule("kelpGenerationGrowLimit", "feature", "limits growth limit of newly naturally generated kelp to this amount of blocks")
                                   .choices("25", "0 2 25").setNotStrict(),
+  rule("renewableCoral",          "feature", "Alternative cashing strategy for nether portals"),
 
         };
         for (CarpetSettingEntry rule: RuleList)
