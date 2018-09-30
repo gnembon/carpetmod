@@ -1,0 +1,12 @@
+--- a/net/minecraft/entity/passive/EntityVillager.java
++++ b/net/minecraft/entity/passive/EntityVillager.java
+@@ -106,7 +106,8 @@
+     private int timeUntilReset;
+     private boolean needsInitilization;
+     private boolean isWillingToMate;
+-    private int wealth;
++    //[CM] to public for entity info
++    public int wealth;
+     private String lastBuyingPlayer;
+     private int careerId;
+     private int careerLevel;

@@ -21,3 +21,12 @@
          {
              this.playSound(SoundEvents.ENTITY_SLIME_ATTACK, 1.0F, (this.rand.nextFloat() - this.rand.nextFloat()) * 0.2F + 1.0F);
              this.applyEnchantments(this, entityIn);
+@@ -275,6 +280,8 @@
+     {
+         return this.getSlimeSize();
+     }
++    //CM
++    public int getPublicAttackStrength() {return getAttackStrength();}
+ 
+     protected SoundEvent getHurtSound(DamageSource damageSourceIn)
+     {

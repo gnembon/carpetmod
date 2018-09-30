@@ -1,0 +1,16 @@
+--- a/net/minecraft/tileentity/TileEntity.java
++++ b/net/minecraft/tileentity/TileEntity.java
+@@ -26,6 +26,13 @@
+     @Nullable
+     private IBlockState cachedBlockState;
+ 
++    //CM for profiler
++    public String cm_name()
++    {
++        return "Other Tile Entity";
++    }
++
++
+     public TileEntity(TileEntityType<?> tileEntityTypeIn)
+     {
+         this.type = tileEntityTypeIn;
