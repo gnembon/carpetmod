@@ -1,6 +1,5 @@
 package carpet.utils;
 
-import com.sun.corba.se.impl.activation.CommandHandler;
 import net.minecraft.command.CommandSource;
 import net.minecraft.entity.EnumCreatureType;
 import net.minecraft.entity.player.EntityPlayer;
@@ -15,7 +14,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
