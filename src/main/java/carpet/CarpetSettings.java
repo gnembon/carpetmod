@@ -104,26 +104,26 @@ public class CarpetSettings
   //                                         "Affects hoppers, droppers and dispensers"),
   //rule("portalSuffocationFix",  "fix", "Nether portals correctly place entities going through")
   //                              .extraInfo("Entities shouldn't suffocate in obsidian"),
-  //rule("miningGhostBlocksFix",  "fix", "Removes ghost blocks when mining too fast")
+  ////rule("miningGhostBlocksFix",  "fix", "Removes ghost blocks when mining too fast")
   //                              .extraInfo("Fixed in 1.13"),
   //rule("superSecretSetting",    "experimental","Gbhs sgnf sadsgras fhskdpri!"),
-  //rule("portalTeleportationFix", "fix", "Nether portals won't teleport you on occasion to 8x coordinates")
+  //?//rule("portalTeleportationFix", "fix", "Nether portals won't teleport you on occasion to 8x coordinates")
   //                              .extraInfo("It also prevents from taking random fire damage when going through portals"),
-  //rule("inconsistentRedstoneTorchesFix", "fix", "Redstone torches respond correctly to 2 tick pulses")
+  //?//rule("inconsistentRedstoneTorchesFix", "fix", "Redstone torches respond correctly to 2 tick pulses")
   //                              .extraInfo("Fixed in 1.13"),
-  //rule("llamaOverfeedingFix",   "fix", "Prevents llamas from taking player food while breeding"),
+  //?//rule("llamaOverfeedingFix",   "fix", "Prevents llamas from taking player food while breeding"),
   //rule("invisibilityFix",       "fix", "Guardians, ghasts, blazes... honor players' invisibility effect"),
   //rule("portalCreativeDelay",   "creative",  "Portals won't let a creative player go through instantly")
   //                              .extraInfo("Holding obsidian in either hand won't let you through at all"),
-  //rule("potionsDespawnFix",     "fix", "Allows mobs with potion effects to despawn outside of player range")
+  //?//rule("potionsDespawnFix",     "fix", "Allows mobs with potion effects to despawn outside of player range")
   //                              .extraInfo("Specifically effective to let witches drinking their own stuffs despawn"),
   //rule("ctrlQCraftingFix",      "fix survival", "Dropping entire stacks works also from on the crafting UI result slot"),
-  //rule("liquidsNotRandom",      "feature", "Liquids don't ignore random tick updates")
+  //?//rule("liquidsNotRandom",      "feature", "Liquids don't ignore random tick updates")
   //                              .extraInfo("Removed in 1.13"),
-  //rule("mobsDontControlMinecarts", "feature", "Mobs no longer can control minecarts")
+  //?//rule("mobsDontControlMinecarts", "feature", "Mobs no longer can control minecarts")
   //                              .extraInfo("Removed in 1.13"),
   //rule("persistentParrots",     "survival feature", "Parrots don't get of your shoulders until you receive damage"),
-  //rule("breedingMountingDisabled", "fix", "Prevents players from mounting animals when holding breeding food"),
+  //?//rule("breedingMountingDisabled", "fix", "Prevents players from mounting animals when holding breeding food"),
   //rule("growingUpWallJump",     "fix", "Mobs growing up won't glitch into walls or go through fences"),
   //rule("reloadSuffocationFix",  "fix experimental", "Won't let mobs glitch into blocks when reloaded.")
   //                              .extraInfo("Can cause slight differences in mobs behaviour"),

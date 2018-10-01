@@ -261,30 +261,25 @@ public class EntityInfo
                     lst.add(Messenger.c("w  - Head 3 target: ", "wb "+entity_short_string(etarget) ));
                 }
 
-
-            }
-        }
-                /*
-
-
                 if (e instanceof EntityCreature)
                 {
                     EntityCreature ec = (EntityCreature) e;
                     if (ec.hasHome())
                     {
                         BlockPos pos = ec.getHomePosition();
-                        lst.add(String.format(" - Home position: %d blocks around [%d, %d, %d]", (int)ec.getMaximumHomeDistance(), pos.getX(),pos.getY(),pos.getZ()));
+                        lst.add(Messenger.c("w  - Home position: ","wb "+(int)ec.getMaximumHomeDistance(),"w  blocks around ", Messenger.tp("wb",pos)));
                     }
+
                     if (e instanceof EntityAgeable)
                     {
                         EntityAgeable eage = (EntityAgeable) e;
                         if (eage.getGrowingAge() < 0)
                         {
-                            lst.add(String.format(" - Time till adulthood: %s", makeTime(-eage.getGrowingAge())));
+                            lst.add(Messenger.c("w  - Time till adulthood: ", "wb "+makeTime(-eage.getGrowingAge())));
                         }
                         if (eage.getGrowingAge() > 0)
                         {
-                            lst.add(String.format(" - Mating cooldown: %s", makeTime(eage.getGrowingAge())));
+                            lst.add(Messenger.c("w  - Mating cooldown: ", "wb "+makeTime(eage.getGrowingAge())));
                         }
                         if (e instanceof EntityVillager)
                         {
@@ -302,46 +297,45 @@ public class EntityInfo
                             }
                             if (!("".equals(inventory_content)))
                             {
-                                lst.add(String.format(" - Inventory:%s", inventory_content));
+                                lst.add(Messenger.c("w  - Inventory:"+ inventory_content));
                             }
                             if (ev.getWealth()>0)
                             {
-                                lst.add(String.format(" - Wealth: %d emeralds", ev.getWealth()));
+                                lst.add(Messenger.c("w  - Wealth: ", "lb "+ev.getWealth()+" emeralds" ));
                             }
                         }
                         if (e instanceof AbstractHorse)
                         {
                             AbstractHorse ah = (AbstractHorse) e;
-                            lst.add(String.format(" - Horse Speed: %.2f b/s (%.1f%%%%)",
+                            lst.add(Messenger.c(String.format("w  - Horse Speed: %.2f b/s (%.1f%%%%)",
                                 get_speed(elb.getAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).getValue()),
                                 get_horse_speed_percent(elb.getAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).getValue())
-                                ));
-                            lst.add(String.format(" - Horse Jump: %.2f b/s (%.1f%%%%)",
+                                )));
+                            lst.add(Messenger.c(String.format("w  - Horse Jump: %.2f b/s (%.1f%%%%)",
                                 get_horse_jump(ah.getHorseJumpStrength()),
                                 get_horse_jump_percent(ah.getHorseJumpStrength())
-                                ));
+                                )));
                         }
                     }
                     if (e instanceof EntityMob)
                     {
-                        lst.add(String.format(" - Base attack: %.1f",elb.getAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).getValue()));
+                        lst.add(Messenger.c(String.format("w  - Base attack: %.1f",elb.getAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).getValue())));
                         if (e instanceof EntityZombieVillager)
                         {
                             EntityZombieVillager ezv = (EntityZombieVillager) e;
                             if (ezv.getConversionTime() > 0)
                             {
-                                lst.add(String.format(" - Convert to villager in: %s",makeTime(ezv.getConversionTime())));
+                                lst.add(Messenger.c("w  - Convert to villager in: ","wb "+makeTime(ezv.getConversionTime())));
                             }
                         }
                     }
                 }
                 if (e instanceof EntitySlime)
                 {
-                    lst.add(String.format(" - Base attack: %.1f",((EntitySlime)e).getPublicAttackStrength()));
+                    lst.add(Messenger.c(String.format("w  - Base attack: %.1f",((EntitySlime)e).getPublicAttackStrength())));
                 }
             }
         }
-        */
 
         return lst;
     }
