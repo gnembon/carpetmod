@@ -190,7 +190,7 @@ public class EntityInfo
             {
                 lst.add(Messenger.c(String.format("w  - Toughness: %.1f",elb.getAttribute(SharedMonsterAttributes.ARMOR_TOUGHNESS).getValue())));
             }
-            //lst.add(String.format(" - Base speed: %.1fb/s",get_speed(elb.getEntityAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).getAttributeValue())));
+            //lst.add(Messenger.c(String.format("w  - Base speed: %.1fb/s",get_speed(elb.getEntityAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).getAttributeValue()))));
 
 
 

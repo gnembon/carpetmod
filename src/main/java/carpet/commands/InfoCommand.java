@@ -1,6 +1,7 @@
 package carpet.commands;
 
 import carpet.CarpetSettings;
+import carpet.utils.BlockInfo;
 import carpet.utils.EntityInfo;
 import carpet.utils.Messenger;
 import com.mojang.brigadier.CommandDispatcher;
@@ -125,7 +126,7 @@ public class InfoCommand
     }
     private static int infoBlock(CommandSource source, BlockPos pos, String grep)
     {
-        Messenger.m(source, "r Not done yet: check.... tomorrow");
+        printBlock(BlockInfo.blockInfo(pos, source.getWorld()),source, grep);
         return 1;
     }
 
