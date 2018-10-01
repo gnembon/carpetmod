@@ -141,7 +141,7 @@ public class EntityInfo
         {
             lst.add(String.format(" - Dimension: %s", e.dimension.toString()));
         }
-        if (e.fire > 0) { lst.add(String.format(" - Fire for %d ticks",e.fire)); }
+        if (e.getFire() > 0) { lst.add(String.format(" - Fire for %d ticks",e.getFire())); }
         if (e.isImmuneToFire() ) { lst.add(" - Immune to fire"); }
         if (e.timeUntilPortal > 0) { lst.add(String.format(" - Portal cooldown for %d ticks",e.timeUntilPortal)); }
         if (e.isInvulnerable()) { lst.add(" - Invulnerable"); }
@@ -297,9 +297,9 @@ public class EntityInfo
                             {
                                 lst.add(String.format(" - Inventory:%s", inventory_content));
                             }
-                            if (ev.wealth>0)
+                            if (ev.getWealth()>0)
                             {
-                                lst.add(String.format(" - Wealth: %d emeralds", ev.wealth));
+                                lst.add(String.format(" - Wealth: %d emeralds", ev.getWealth()));
                             }
                         }
                         if (e instanceof AbstractHorse)
@@ -321,9 +321,9 @@ public class EntityInfo
                         if (e instanceof EntityZombieVillager)
                         {
                             EntityZombieVillager ezv = (EntityZombieVillager) e;
-                            if (ezv.conversionTime > 0)
+                            if (ezv.getConversionTime() > 0)
                             {
-                                lst.add(String.format(" - Convert to villager in: %s",makeTime(ezv.conversionTime)));
+                                lst.add(String.format(" - Convert to villager in: %s",makeTime(ezv.getConversionTime())));
                             }
                         }
                     }
