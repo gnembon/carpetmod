@@ -1,0 +1,10 @@
+--- a/net/minecraft/util/WeightedRandom.java
++++ b/net/minecraft/util/WeightedRandom.java
+@@ -63,5 +63,7 @@
+             {
+                 this.itemWeight = itemWeightIn;
+             }
++            //CM
++            public int getItemWeight() { return itemWeight; }
+         }
+ }
