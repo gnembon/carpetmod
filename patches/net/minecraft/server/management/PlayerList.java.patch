@@ -19,7 +19,18 @@
          nethandlerplayserver.sendPacket(new SPacketJoinGame(playerIn.getEntityId(), playerIn.interactionManager.getGameType(), worldinfo.isHardcore(), worldserver.dimension.getType(), worldserver.getDifficulty(), this.getMaxPlayers(), worldinfo.getTerrainType(), worldserver.getGameRules().getBoolean("reducedDebugInfo")));
          nethandlerplayserver.sendPacket(new SPacketCustomPayload(SPacketCustomPayload.BRAND, (new PacketBuffer(Unpooled.buffer())).writeString(this.getServer().getServerModName())));
          nethandlerplayserver.sendPacket(new SPacketServerDifficulty(worldinfo.getDifficulty(), worldinfo.isDifficultyLocked()));
-@@ -460,6 +464,12 @@
+@@ -312,6 +316,10 @@
+         {
+             nbttagcompound1 = this.playerDataManager.readPlayerData(playerIn);
+         }
++        if (playerIn instanceof EntityPlayerMPFake)
++        {
++            ((EntityPlayerMPFake) playerIn).fixStartingPosition.run();
++        }
+ 
+         return nbttagcompound1;
+     }
+@@ -460,6 +468,12 @@
  
          for (EntityPlayerMP entityplayermp1 : list)
          {

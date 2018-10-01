@@ -203,13 +203,16 @@ public class CarpetSettings
   rule("commandLog",            "commands", "Enables /log command to monitor events in the game via chat and overlays").defaultTrue(),
   //rule("commandDistance",       "commands", "Enables /distance command to measure in game distance between points").defaultTrue()
   //                              .extraInfo("Also enables brown carpet placement action if 'carpets' rule is turned on as well"),
+  rule("commandInfo",           "commands", "Enables /info command for blocks and entities").defaultTrue()
+                               .extraInfo("Also enables gray carpet placement action if 'carpets' rule is turned on as well"),
+
   //rule("commandBlockInfo",      "commands", "Enables /blockinfo command").defaultTrue()
   //                              .extraInfo("Also enables gray carpet placement action if 'carpets' rule is turned on as well"),
   //rule("commandEntityInfo",     "commands", "Enables /entityinfo command").defaultTrue()
   //                              .extraInfo("Also enables yellow carpet placement action if 'carpets' rule is turned on as well"),
   //rule("commandUnload",         "commands", "Enables /unload command to control game speed").defaultTrue(),
-  //rule("commandCameramode",     "commands", "Enables /c and /s commands to quickly switch between camera and survival modes").defaultTrue()
-  //                              .extraInfo("/c and /s commands are available to all players regardless of their permission levels"),
+  rule("commandCameramode",     "commands", "Enables /c and /s commands to quickly switch between camera and survival modes").defaultTrue()
+                                .extraInfo("/c and /s commands are available to all players regardless of their permission levels"),
   //rule("commandPerimeterInfo",  "commands", "Enables /perimeterinfo command that scans the area around the block for potential spawnable spots").defaultTrue(),
   rule("commandPlayer",         "commands", "Enables /player command to control/spawn players").defaultTrue(),
   //rule("commandRNG",            "commands", "Enables /rng command to manipulate and query rng").defaultTrue(),
