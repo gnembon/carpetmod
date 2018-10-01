@@ -1,0 +1,11 @@
+--- a/net/minecraft/world/biome/Biome.java
++++ b/net/minecraft/world/biome/Biome.java
+@@ -830,6 +830,8 @@
+             {
+                 return EntityType.getId(this.entityType) + "*(" + this.minGroupCount + "-" + this.maxGroupCount + "):" + this.itemWeight;
+             }
++            //CM
++            public int getItemWeight() { return itemWeight; }
+         }
+ 
+     public static enum TempCategory
