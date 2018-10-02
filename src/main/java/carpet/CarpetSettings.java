@@ -16,6 +16,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.FileNotFoundException;
 
+import net.minecraft.entity.player.EntityPlayerMP;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -198,24 +199,28 @@ public class CarpetSettings
   //rule("renewablePackedIce",    "experimental", "Multiple ice crushed by falling anvils make packed ice"),
   //rule("renewableDragonEggs",   "experimental", "Dragon eggs when fed meet items spawn more eggs"),
   //rule("summonNaturalLightning","creative", "summoning a lightning bolt has all the side effects of natural lightning"),
-  rule("commandSpawn",          "commands", "Enables /spawn command for spawn tracking").defaultTrue(),
-  rule("commandTick",           "commands", "Enables /tick command to control game speed").defaultTrue(),
-  rule("commandLog",            "commands", "Enables /log command to monitor events in the game via chat and overlays").defaultTrue(),
-  //rule("commandDistance",       "commands", "Enables /distance command to measure in game distance between points").defaultTrue()
-  //                              .extraInfo("Also enables brown carpet placement action if 'carpets' rule is turned on as well"),
+  rule("commandSpawn",          "commands", "Enables /spawn command for spawn tracking").defaultTrue()
+                                .validate( (s) -> notifyPlayersCommandsChanged()),
+  rule("commandTick",           "commands", "Enables /tick command to control game speed").defaultTrue()
+                                .validate( (s) -> notifyPlayersCommandsChanged()),
+  rule("commandLog",            "commands", "Enables /log command to monitor events in the game via chat and overlays").defaultTrue()
+                                .validate( (s) -> notifyPlayersCommandsChanged()),
+  rule("commandDistance",       "commands", "Enables /distance command to measure in game distance between points").defaultTrue()
+                                .extraInfo("Also enables brown carpet placement action if 'carpets' rule is turned on as well")
+                                .validate( (s) -> notifyPlayersCommandsChanged()),
   rule("commandInfo",           "commands", "Enables /info command for blocks and entities").defaultTrue()
-                               .extraInfo("Also enables gray carpet placement action if 'carpets' rule is turned on as well"),
-
-  //rule("commandBlockInfo",      "commands", "Enables /blockinfo command").defaultTrue()
-  //                              .extraInfo("Also enables gray carpet placement action if 'carpets' rule is turned on as well"),
-  //rule("commandEntityInfo",     "commands", "Enables /entityinfo command").defaultTrue()
-  //                              .extraInfo("Also enables yellow carpet placement action if 'carpets' rule is turned on as well"),
-  //rule("commandUnload",         "commands", "Enables /unload command to control game speed").defaultTrue(),
+                                .extraInfo("Also enables gray carpet placement action ")
+                                .extraInfo("and yellow carpet placement action for entities if 'carpets' rule is turned on as well")
+                                .validate( (s) -> notifyPlayersCommandsChanged()),
+  ////rule("commandUnload",         "commands", "Enables /unload command to control game speed").defaultTrue(),
   rule("commandCameramode",     "commands", "Enables /c and /s commands to quickly switch between camera and survival modes").defaultTrue()
-                                .extraInfo("/c and /s commands are available to all players regardless of their permission levels"),
-  //rule("commandPerimeterInfo",  "commands", "Enables /perimeterinfo command that scans the area around the block for potential spawnable spots").defaultTrue(),
-  rule("commandPlayer",         "commands", "Enables /player command to control/spawn players").defaultTrue(),
-  //rule("commandRNG",            "commands", "Enables /rng command to manipulate and query rng").defaultTrue(),
+                                .extraInfo("/c and /s commands are available to all players regardless of their permission levels")
+                                .validate( (s) -> notifyPlayersCommandsChanged()),
+  rule("commandPerimeterInfo",  "commands", "Enables /perimeterinfo command that scans the area around the block for potential spawnable spots").defaultTrue()
+                                .validate( (s) -> notifyPlayersCommandsChanged()),
+  rule("commandPlayer",         "commands", "Enables /player command to control/spawn players").defaultTrue()
+                                .validate( (s) -> notifyPlayersCommandsChanged()),
+  ////rule("commandRNG",            "commands", "Enables /rng command to manipulate and query rng").defaultTrue(),
   //rule("newLight",              "optimizations", "Uses alternative lighting engine by PhiPros. AKA NewLight mod"),
   //rule("carpets",               "survival", "Placing carpets may issue carpet commands for non-op players"),
   //rule("missingTools",          "survival", "Pistons, Glass and Sponge can be broken faster with their appropriate tools"),
@@ -449,6 +454,18 @@ public class CarpetSettings
         }
     }
     */
+    private static void notifyPlayersCommandsChanged()
+    {
+        if (CarpetServer.minecraft_server == null)
+        {
+            return;
+        }
+        for (EntityPlayerMP entityplayermp : CarpetServer.minecraft_server.getPlayerList().getPlayers())
+        {
+            CarpetServer.minecraft_server.getCommandManager().sendCommandListPacket(entityplayermp);
+        }
+    }
+
     public static void apply_settings_from_conf(MinecraftServer server)
     {
         Map<String, String> conf = read_conf(server);
@@ -742,7 +759,7 @@ public class CarpetSettings
         private String default_string_value;
         private boolean isFloat;
         private boolean strict;
-        private Consumer<CarpetSettingEntry> validator;
+        private Consumer<String> validator;
 
         //factory
         public static CarpetSettingEntry create(String rule_name, String tags, String toast)
@@ -769,54 +786,52 @@ public class CarpetSettings
             options = "true false".split("\\s+");
             return this;
         }
-        public CarpetSettingEntry validate(Consumer<CarpetSettingEntry> method)
+        public CarpetSettingEntry validate(Consumer<String> method)
         {
             validator = method;
             return this;
         }
         public CarpetSettingEntry boolAccelerate()
         {
-            validator = (r) -> {
-                String name = r.getName();
+            validator = (name) -> {
                 try
                 {
                     Field f = CarpetSettings.class.getDeclaredField("b_"+name);
-                    f.setBoolean(null, r.getBoolValue());
+                    f.setBoolean(null, CarpetSettings.getBool(name));
                 }
                 catch (IllegalAccessException e)
                 {
-                    CarpetSettings.LOG.error("[CM Error] rule "+r.getName()+" has wrong access to boolean accelerator");
+                    CarpetSettings.LOG.error("[CM Error] rule "+name+" has wrong access to boolean accelerator");
                 }
                 catch (NoSuchFieldException e)
                 {
-                    CarpetSettings.LOG.error("[CM Error] rule "+r.getName()+" doesn't have a boolean accelerator");
+                    CarpetSettings.LOG.error("[CM Error] rule "+name+" doesn't have a boolean accelerator");
                 }
             };
             return this;
         }
         public CarpetSettingEntry numAccelerate()
         {
-            validator = (r) -> {
-                String name = r.getName();
+            validator = (name) -> {
                 try
                 {
                     Field f = CarpetSettings.class.getDeclaredField("n_"+name);
-                    if (r.isFloat)
+                    if (CarpetSettings.get(name).isFloat)
                     {
-                        f.setDouble(null, (double) r.getFloatValue());
+                        f.setDouble(null, (double) CarpetSettings.getFloat(name));
                     }
                     else
                     {
-                        f.setInt(null, r.getIntegerValue());
+                        f.setInt(null, CarpetSettings.getInt(name));
                     }
                 }
                 catch (IllegalAccessException e)
                 {
-                    CarpetSettings.LOG.error("[CM Error] rule "+r.getName()+" wrong type of numerical accelerator");
+                    CarpetSettings.LOG.error("[CM Error] rule "+name+" wrong type of numerical accelerator");
                 }
                 catch (NoSuchFieldException e)
                 {
-                    CarpetSettings.LOG.error("[CM Error] rule "+r.getName()+" doesn't have a numerical accelerator");
+                    CarpetSettings.LOG.error("[CM Error] rule "+name+" doesn't have a numerical accelerator");
                 }
             };
             return this;
@@ -879,7 +894,7 @@ public class CarpetSettings
             bool = (integer > 0)?true:Boolean.parseBoolean(unparsed);
             if (validator != null)
             {
-                validator.accept(this);
+                validator.accept(this.getName());
             }
         }
 

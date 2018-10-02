@@ -4,6 +4,7 @@ import net.minecraft.command.CommandSource;
 import net.minecraft.entity.EnumCreatureType;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraft.util.text.ITextComponent;
@@ -138,6 +139,7 @@ public class Messenger
         ITextComponent txt = new TextComponentString(str);
         return _applyStyleToTextComponent(txt, desc);
     }
+    public static ITextComponent tp(String desc, Vec3d pos) { return tp(desc, pos.x, pos.y, pos.z); }
     public static ITextComponent tp(String desc, BlockPos pos) { return tp(desc, pos.getX(), pos.getY(), pos.getZ()); }
     public static ITextComponent tp(String desc, double x, double y, double z) { return tp(desc, (float)x, (float)y, (float)z);}
     public static ITextComponent tp(String desc, float x, float y, float z)
@@ -207,8 +209,8 @@ public class Messenger
         }
         else
         {
-            text = String.format("%s [ %.2f, %.2f, %.2f]",style, x, y, z);
-            command = String.format("!/tp %f %f %f",x, y, z);
+            text = String.format("%s [ %.1f, %.1f, %.1f]",style, x, y, z);
+            command = String.format("!/tp %.3f %.3f %.3f",x, y, z);
         }
         return c(text, command);
     }
