@@ -109,7 +109,7 @@ public class CarpetSettings
   //????rule("portalTeleportationFix", "fix", "Nether portals won't teleport you on occasion to 8x coordinates")
   //                              .extraInfo("It also prevents from taking random fire damage when going through portals"),
   //???rule("llamaOverfeedingFix",   "fix", "Prevents llamas from taking player food while breeding"),
-  //!rule("invisibilityFix",       "fix", "Guardians, ghasts, blazes... honor players' invisibility effect"),
+  rule("invisibilityFix",       "fix", "Guardians honor players' invisibility effect"),
   //!rule("portalCreativeDelay",   "creative",  "Portals won't let a creative player go through instantly")
   //                              .extraInfo("Holding obsidian in either hand won't let you through at all"),
   // !? rule("potionsDespawnFix",     "fix", "Allows mobs with potion effects to despawn outside of player range")
