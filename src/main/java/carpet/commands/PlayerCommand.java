@@ -98,6 +98,15 @@ public class PlayerCommand
                                         executes(PlayerCommand::lookDown)).
                                 then(argument("direction",RotationArgument.rotation()).
                                         executes(PlayerCommand::lookAround))).
+                        then(literal("turn").
+                                then(literal("left").
+                                        executes(PlayerCommand::turnLeft)).
+                                then(literal("right").
+                                        executes(PlayerCommand::turnRight)).
+                                then(literal("back").
+                                        executes(PlayerCommand::turnBack)).
+                                then(argument("direction",RotationArgument.rotation()).
+                                        executes(PlayerCommand::turn))).
                         then(literal("move").
                                 then(literal("forward").
                                         executes(PlayerCommand::moveForward)).
@@ -363,6 +372,31 @@ public class PlayerCommand
         if (cantReMove(context)) return 0;
         Vec2f vec2f = RotationArgument.getRotation(context, "direction").getRotation(context.getSource());
         getPlayer(context).actionPack.look(vec2f.y,vec2f.x);
+        return 1;
+    }
+    private static int turnRight(CommandContext<CommandSource> context)
+    {
+        if (cantReMove(context)) return 0;
+        getPlayer(context).actionPack.turn("right");
+        return 1;
+    }
+    private static int turnLeft(CommandContext<CommandSource> context)
+    {
+        if (cantReMove(context)) return 0;
+        getPlayer(context).actionPack.turn("left");
+        return 1;
+    }
+    private static int turnBack(CommandContext<CommandSource> context)
+    {
+        if (cantReMove(context)) return 0;
+        getPlayer(context).actionPack.turn("back");
+        return 1;
+    }
+    private static int turn(CommandContext<CommandSource> context)
+    {
+        if (cantReMove(context)) return 0;
+        Vec2f vec2f = RotationArgument.getRotation(context, "direction").getRotation(context.getSource());
+        getPlayer(context).actionPack.turn(vec2f.y,vec2f.x);
         return 1;
     }
     private static int moveForward(CommandContext<CommandSource> context)

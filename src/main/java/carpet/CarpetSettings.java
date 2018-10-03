@@ -136,7 +136,7 @@ public class CarpetSettings
   /////rule("optimizedTNT",          "tnt", "TNT causes less lag when exploding in the same spot and in liquids"),
   /////rule("huskSpawningInTemples", "experimental feature", "Only husks spawn in desert temples"),
   /////rule("shulkerSpawningInEndCities", "feature experimental", "Shulkers will respawn in end cities"),
-  //???rule("watchdogFix",           "fix", "Fixes server crashing under heavy load and low tps")
+  /////rule("watchdogFix",           "fix", "Fixes server crashing under heavy load and low tps")
   //                              .extraInfo("Won't prevent crashes if the server doesn't respond in max-tick-time ticks"),
   //!rule("wirelessRedstone",      "creative", "Repeater pointing from and to wool blocks transfer signals wirelessly")
   //                              .extraInfo("Temporary feature - repeaters need an update when reloaded",

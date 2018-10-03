@@ -205,6 +205,8 @@ public class EntityPlayerActionPack
                 turn(-90.0F,0.0F); return true;
             case "right":
                 turn (90.0F, 0.0F); return true;
+            case "back":
+                turn (180.0F, 0.0F); return true;
             case "up":
                 turn(0.0F, -5.0F); return true;
             case "down":

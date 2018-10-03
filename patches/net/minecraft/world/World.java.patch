@@ -16,7 +16,18 @@
  
              if (iblockstate == null)
              {
-@@ -1277,7 +1278,8 @@
+@@ -281,7 +282,9 @@
+                         }
+                     }
+ 
+-                    if ((flags & 16) == 0)
++                    //fillUpdates added case
++                    // if ((flags & 16) == 0)
++                    if (((flags & 16) == 0) && ((flags & 1024) == 0))
+                     {
+                         int i = flags & -2;
+                         iblockstate.updateDiagonalNeighbors(this, pos, i);
+@@ -1277,7 +1280,8 @@
  
              this.profiler.startSection("tick");
  
@@ -26,7 +37,7 @@
              {
                  try
                  {
-@@ -1332,7 +1334,8 @@
+@@ -1332,7 +1336,8 @@
              {
                  BlockPos blockpos = tileentity.getPos();
  
