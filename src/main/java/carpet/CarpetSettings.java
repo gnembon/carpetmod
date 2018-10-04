@@ -100,6 +100,8 @@ public class CarpetSettings
     private static void set_defaults()
     {
         CarpetSettingEntry[] RuleList = new CarpetSettingEntry[] {
+    rule("watchdogCrashFix", "fix", "Fixes server crashing supposedly on falling behind 60s in ONE tick, yeah bs.").
+                                   extraInfo("Fixed 1.12 watchdog crash in 1.13 pre-releases, reintroduced with 1.13, GG."),
   //!rule("extendedConnectivity",  "experimental", "Quasi Connectivity doesn't require block updates.")
   //                              .extraInfo("All redstone components will send extra updates downwards",
   //                                         "Affects hoppers, droppers and dispensers"),
