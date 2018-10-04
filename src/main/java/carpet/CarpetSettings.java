@@ -106,7 +106,7 @@ public class CarpetSettings
   //!rule("portalSuffocationFix",  "fix", "Nether portals correctly place entities going through")
   //                              .extraInfo("Entities shouldn't suffocate in obsidian"),
   //!rule("superSecretSetting",    "experimental","Gbhs sgnf sadsgras fhskdpri!"),
-  //????rule("portalTeleportationFix", "fix", "Nether portals won't teleport you on occasion to 8x coordinates")
+  /////rule("portalTeleportationFix", "fix", "Nether portals won't teleport you on occasion to 8x coordinates")
   //                              .extraInfo("It also prevents from taking random fire damage when going through portals"),
   //???rule("llamaOverfeedingFix",   "fix", "Prevents llamas from taking player food while breeding"),
   rule("invisibilityFix",       "fix", "Guardians honor players' invisibility effect"),

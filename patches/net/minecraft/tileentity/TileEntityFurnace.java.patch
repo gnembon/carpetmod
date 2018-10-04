@@ -1,0 +1,15 @@
+--- a/net/minecraft/tileentity/TileEntityFurnace.java
++++ b/net/minecraft/tileentity/TileEntityFurnace.java
+@@ -54,6 +54,12 @@
+     private ITextComponent furnaceCustomName;
+     private final Map<ResourceLocation, Integer> recipeUseCounts = Maps.<ResourceLocation, Integer>newHashMap();
+ 
++
++    //CM
++    @Override
++    public String cm_name() { return "Furnace"; }
++
++
+     private static void setBurnTime(Map<Item, Integer> map, Tag<Item> tagIn, int time)
+     {
+         for (Item item : tagIn.getAllElements())

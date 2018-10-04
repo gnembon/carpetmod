@@ -5,9 +5,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.tileentity.TileEntity;
 
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class CarpetProfiler
@@ -19,6 +17,9 @@ public class CarpetProfiler
     private static String current_section = null;
     private static long current_section_start = 0;
     private static long current_tick_start = 0;
+    private static String [] GENERAL_SECTIONS = {"Network", "Autosave"};
+    private static String [] DIMENSIONS = {"Overworld","The End","The Nether"};
+    private static String [] SECTIONS = {"Spawning","Blocks","Entities","Tile Entities","Villages"};
 
     public static void prepare_tick_report(int ticks)
     {
@@ -28,25 +29,17 @@ public class CarpetProfiler
         time_repo.put("tick",0L);
         time_repo.put("Network",0L);
         time_repo.put("Autosave",0L);
-
-        time_repo.put("overworld.spawning",0L);
-        time_repo.put("overworld.blocks",0L);
-        time_repo.put("overworld.entities",0L);
-        time_repo.put("overworld.tileentities",0L);
-
-        time_repo.put("the_nether.spawning",0L);
-        time_repo.put("the_nether.blocks",0L);
-        time_repo.put("the_nether.entities",0L);
-        time_repo.put("the_nether.tileentities",0L);
-
-        time_repo.put("the_end.spawning",0L);
-        time_repo.put("the_end.blocks",0L);
-        time_repo.put("the_end.entities",0L);
-        time_repo.put("the_end.tileentities",0L);
-        //spawning
-        //blocks
-        //entities
-        //tileentities
+        for (String section: GENERAL_SECTIONS)
+        {
+            time_repo.put(section,0L);
+        }
+        for (String level: DIMENSIONS)
+        {
+            for (String section: SECTIONS)
+            {
+                time_repo.put(level+"."+section,0L);
+            }
+        }
 
         tick_health_elapsed = ticks;
         tick_health_requested = ticks;
@@ -216,57 +209,47 @@ public class CarpetProfiler
         Messenger.print_server_message(server, String.format("Average tick time: %.3fms",divider*total_tick_time));
         long accumulated = 0L;
 
-        accumulated += time_repo.get("Autosave");
-        Messenger.print_server_message(server, String.format("Autosave: %.3fms",divider*time_repo.get("Autosave")));
+        for (String section: GENERAL_SECTIONS)
+        {
+            double amount = divider*time_repo.get(section);
+            if (amount > 0.01)
+            {
+                accumulated += time_repo.get(section);
+                Messenger.print_server_message(server, String.format("%s: %.3fms", section, amount));
+            }
+        }
 
-        accumulated += time_repo.get("Network");
-        Messenger.print_server_message(server, String.format("Network: %.3fms",divider*time_repo.get("Network")));
-
-        Messenger.print_server_message(server, "Overworld:");
-
-        accumulated += time_repo.get("overworld.entities");
-        Messenger.print_server_message(server, String.format(" - Entities: %.3fms",divider*time_repo.get("overworld.entities")));
-
-        accumulated += time_repo.get("overworld.tileentities");
-        Messenger.print_server_message(server, String.format(" - Tile Entities: %.3fms",divider*time_repo.get("overworld.tileentities")));
-
-        accumulated += time_repo.get("overworld.blocks");
-        Messenger.print_server_message(server, String.format(" - Blocks: %.3fms",divider*time_repo.get("overworld.blocks")));
-
-        accumulated += time_repo.get("overworld.spawning");
-        Messenger.print_server_message(server, String.format(" - Spawning: %.3fms",divider*time_repo.get("overworld.spawning")));
-
-        Messenger.print_server_message(server, "Nether:");
-
-        accumulated += time_repo.get("the_nether.entities");
-        Messenger.print_server_message(server, String.format(" - Entities: %.3fms",divider*time_repo.get("the_nether.entities")));
-
-        accumulated += time_repo.get("the_nether.tileentities");
-        Messenger.print_server_message(server, String.format(" - Tile Entities: %.3fms",divider*time_repo.get("the_nether.tileentities")));
-
-        accumulated += time_repo.get("the_nether.blocks");
-        Messenger.print_server_message(server, String.format(" - Blocks: %.3fms",divider*time_repo.get("the_nether.blocks")));
-
-        accumulated += time_repo.get("the_nether.spawning");
-        Messenger.print_server_message(server, String.format(" - Spawning: %.3fms",divider*time_repo.get("the_nether.spawning")));
-
-        Messenger.print_server_message(server, "End:");
-
-        accumulated += time_repo.get("the_end.entities");
-        Messenger.print_server_message(server, String.format(" - Entities: %.3fms",divider*time_repo.get("the_end.entities")));
-
-        accumulated += time_repo.get("the_end.tileentities");
-        Messenger.print_server_message(server, String.format(" - Tile Entities: %.3fms",divider*time_repo.get("the_end.tileentities")));
-
-        accumulated += time_repo.get("the_end.blocks");
-        Messenger.print_server_message(server, String.format(" - Blocks: %.3fms",divider*time_repo.get("the_end.blocks")));
-
-        accumulated += time_repo.get("the_end.spawning");
-        Messenger.print_server_message(server, String.format(" - Spawning: %.3fms",divider*time_repo.get("the_end.spawning")));
+        for (String dimension: DIMENSIONS)
+        {
+            boolean hasSomethin = false;
+            for (String section: SECTIONS)
+            {
+                double amount = divider*time_repo.get(dimension+"."+section);
+                if (amount > 0.01)
+                {
+                    hasSomethin = true;
+                    break;
+                }
+            }
+            if (!(hasSomethin))
+            {
+                continue;
+            }
+            Messenger.print_server_message(server, dimension+":");
+            for (String section: SECTIONS)
+            {
+                double amount = divider*time_repo.get(dimension+"."+section);
+                if (amount > 0.01)
+                {
+                    accumulated += time_repo.get(dimension+"."+section);
+                    Messenger.print_server_message(server, String.format(" - %s: %.3fms", section, amount));
+                }
+            }
+        }
 
         long rest = total_tick_time-accumulated;
 
-        Messenger.print_server_message(server, String.format("Rest: %.3fms",divider*rest));
+        Messenger.print_server_message(server, String.format("The Rest, whatever that might be: %.3fms",divider*rest));
     }
 
     public static void finalize_tick_report_for_entities(MinecraftServer server)

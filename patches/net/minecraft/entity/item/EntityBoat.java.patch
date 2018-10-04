@@ -1,0 +1,13 @@
+--- a/net/minecraft/entity/item/EntityBoat.java
++++ b/net/minecraft/entity/item/EntityBoat.java
+@@ -75,6 +75,10 @@
+     private float rockingAngle;
+     private float prevRockingAngle;
+ 
++    //CM
++    @Override
++    public String cm_name() { return "Boat"; }
++
+     public EntityBoat(World worldIn)
+     {
+         super(EntityType.BOAT, worldIn);

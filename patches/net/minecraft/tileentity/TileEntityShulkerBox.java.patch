@@ -1,0 +1,14 @@
+--- a/net/minecraft/tileentity/TileEntityShulkerBox.java
++++ b/net/minecraft/tileentity/TileEntityShulkerBox.java
+@@ -44,6 +44,11 @@
+     private boolean needsColorFromWorld;
+     private boolean destroyedByCreativePlayer;
+ 
++    //CM
++    @Override
++    public String cm_name() { return "Shulker Box"; }
++
++
+     public TileEntityShulkerBox(@Nullable EnumDyeColor colorIn)
+     {
+         super(TileEntityType.SHULKER_BOX);

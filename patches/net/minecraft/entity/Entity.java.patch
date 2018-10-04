@@ -20,10 +20,10 @@
      private final double[] pistonDeltas;
      private long pistonDeltasGameTime;
  
-+    // for profiler
++    // CM for profiler
 +    public String cm_name()
 +    {
-+        return "Another Entity";
++        return "Other Entity";
 +    }
 +
      public Entity(EntityType<?> entityTypeIn, World worldIn)

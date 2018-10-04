@@ -1,0 +1,13 @@
+--- a/net/minecraft/entity/item/EntityArmorStand.java
++++ b/net/minecraft/entity/item/EntityArmorStand.java
+@@ -71,6 +71,10 @@
+     private Rotations leftLegRotation;
+     private Rotations rightLegRotation;
+ 
++    // CM
++    @Override
++    public String cm_name() { return "Armor Stand"; }
++
+     public EntityArmorStand(World worldIn)
+     {
+         super(EntityType.ARMOR_STAND, worldIn);

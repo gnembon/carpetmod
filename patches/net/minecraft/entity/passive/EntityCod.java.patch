@@ -1,0 +1,14 @@
+--- a/net/minecraft/entity/passive/EntityCod.java
++++ b/net/minecraft/entity/passive/EntityCod.java
+@@ -14,6 +14,11 @@
+ 
+ public class EntityCod extends AbstractFish
+ {
++    //CM
++    @Override
++    public String cm_name() { return "Cod"; }
++
++
+     public EntityCod(World p_i48854_1_)
+     {
+         super(EntityType.COD, p_i48854_1_);
