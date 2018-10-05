@@ -302,10 +302,6 @@ public class EntityPlayerActionPack
                 attackCooldown = attackInterval;
                 if (!(used)) attackOnce();
             }
-            else
-            {
-                resetBlockRemoving(true);
-            }
         }
         if (forward != 0.0F)
         {
@@ -335,6 +331,7 @@ public class EntityPlayerActionPack
             case ENTITY:
                 player.attackTargetEntityWithCurrentItem(raytraceresult.entity);
                 this.player.swingArm(EnumHand.MAIN_HAND);
+                this.player.resetCooldown();
                 break;
             case MISS:
                 break;
@@ -344,6 +341,10 @@ public class EntityPlayerActionPack
                 {
                     onPlayerDamageBlock(blockpos,raytraceresult.sideHit.getOpposite());
                     this.player.swingArm(EnumHand.MAIN_HAND);
+                    if (attackInterval > 1)
+                    {
+                        resetBlockRemoving(true);
+                    }
                     break;
                 }
         }
