@@ -7,7 +7,7 @@ buildscript {
         //maven {url 'http://plugins.gradle.org/m2/'} // For debug purposes
     }
     dependencies {
-        classpath 'net.minecraftforge.gradle:ForgeGradle:3.+'
+        classpath 'net.minecraftforge.gradle:ForgeGradle:3.0.23'
         classpath 'com.github.abrarsyed.jastyle:jAstyle:1.3'
         classpath 'com.google.code.gson:gson:2.8.0' // because groovy JsonGenerator doesn't exist wtf
         classpath 'commons-io:commons-io:2.6'
@@ -362,6 +362,13 @@ class DistUtils {
         return false
     }
     
+    static def classUnwanted(InputStream istream, String unwanted) {
+        ClassReader reader = new ClassReader(istream)
+        ClassNode clazz = new ClassNode()
+        reader.accept(clazz, ClassReader.SKIP_CODE)
+        return containsUnwanted(clazz.visibleAnnotations, unwanted)
+    }
+    
     static def stripDist(InputStream istream, String unwanted, Closure classProvider) {
         ClassReader reader = new ClassReader(istream)
         ClassNode clazz = new ClassNode()
@@ -369,6 +376,15 @@ class DistUtils {
         
         if (containsUnwanted(clazz.visibleAnnotations, unwanted))
             return null
+        
+        if (clazz.interfaces != null) {
+            def itfItr = clazz.interfaces.iterator()
+            while (itfItr.hasNext()) {
+                def itf = classProvider.call(itfItr.next())
+                if (itf != null && classUnwanted(itf, unwanted))
+                    itfItr.remove()
+            }
+        }
         
         if (clazz.fields != null) {
             def fieldItr = clazz.fields.iterator()
@@ -388,7 +404,7 @@ class DistUtils {
             def innerClassItr = clazz.innerClasses.iterator()
             while (innerClassItr.hasNext()) {
                 def innerClass = innerClassItr.next()
-                if (innerClass.outerName == clazz.name && stripDist(classProvider.call(innerClass.name), unwanted, classProvider) == null)
+                if (innerClass.outerName == clazz.name && classUnwanted(classProvider.call(innerClass.name), unwanted))
                     innerClassItr.remove()
             }
         }
@@ -416,7 +432,10 @@ if (settings.pipeline == 'joined') {
                             if (filename.endsWith('.class')) {
                                 return DistUtils.stripDist(istream, unwantedDists[idx]) { classname ->
                                     def zip = new ZipFile(file(reobfJar.output))
-                                    return zip.getInputStream(zip.getEntry(classname + '.class'))
+                                    def entry = zip.getEntry(classname + '.class')
+                                    if (entry == null)
+                                        return null
+                                    return zip.getInputStream(entry)
                                 }
                             } else {
                                 return istream

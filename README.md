@@ -1,5 +1,5 @@
 # CarpetMod for Minecraft 1.13.1
-The most comprehensive and convoluted mod for carpets evar. However it doesn't include carpets yet. Built based on jarmod-buildsystem-2 by EarthComputer. See EarthComputer's repo for details on the build system.
+The most comprehensive and convoluted mod for carpets evar. However it doesn't include carpets yet. Built based on jarmod-buildsystem-2 by Earthcomputer. See Earthcomputer's repo for details on the build system.
 
 ## Requirements
 - You need to have at least JDK8 update 92 for recompilation to work, due to a bug in earlier versions of `javac`. You also cannot use JDK9 or JDK10 yet.
@@ -13,7 +13,6 @@ OR
 
 ## First-time setup
 - Copy all the files in this repository into your new project folder.
-- Install ForgeGradle 3.0 by running the `install_fg3.bat` batch file from the command line on Windows, or running the `install_fg3.sh` script on Linux or Mac OS.
 - Run `gradlew setup` to decompile, deobfuscate the code and apply carpet patches.
 - Run `gradlew eclipse` to setup the appropriate Eclipse projects. Do this even if you are planning on using Intellij IDEA.
 - If you use Eclipse, open Eclipse, and navigate to `File -> Import -> General -> Existing Projects into Workspace`. Navigate to and select the `projects` subdirectory, and check your mod project, and optionally the clean (unmodified) project too.
@@ -58,4 +57,4 @@ Accessible in `conf/settings.json`. Beware that changes to this may significanly
 - `customsrg` The custom tsrg file inside the `conf/` folder, to override the one in the MCPConfig distribution, used to deobfuscate even newer Minecraft versions.
 
 ## A word of warning
-1.13 modding is still in its infancy, and there are already known bugs that occur in the decompiled code which do not occur in vanilla. If you care about maintaining vanilla behaviour, then whenever making a change which may modify a certain vanilla class, make sure to weigh up the benefit of modifying said class against the risk that there might be a decompile bug in the class. This situation is expected to improve as 1.13 modding matures, but for now you can at least minimize the effect by distributing as few modified classes as possible.
+1.13 modding is still in its infancy, and there are already known bugs that occur in the decompiled code which do not occur in vanilla. If you care about maintaining vanilla behaviour, then whenever making a change which may modify a certain vanilla class, make sure to weigh up the benefit of modifying said class against the risk that there might be a decompile bug in the class. This situation is constantly improving as 1.13 modding matures, but for now you can at least minimize the effect by distributing as few modified classes as possible.
