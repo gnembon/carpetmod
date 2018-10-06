@@ -1,10 +1,11 @@
 package carpet;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.ArrayList;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -24,19 +25,12 @@ import org.apache.logging.log4j.Logger;
 //import carpet.utils.TickingArea;
 import net.minecraft.server.MinecraftServer;
 
-// gnembon to do: rename settings
 // /s /c commands tp players back where they started
 // discuss xcom accurateBlockPlacement -> flexible or alternate block placement
 // world.chunk.storage.Anvil Chunk Loader check again code on diff.
-// review unload code in world.gen.chunk.chunkproviderserver
 // check why 'test' world doesn't respond to commands while warping
-// signs display counter info via hopper actions
 // death counter
-// carpet menu interactive
-// add villages to profiler
-// other inventory commands for fake players via players command
 //unify command meter with other carpet commmands
-// make sure unload order is calculated properly
 
 public class CarpetSettings
 {
@@ -162,7 +156,7 @@ public class CarpetSettings
                                            "In survival, place green carpet on same color wool to query, red to reset the counters",
                                            "Counters are global and shared between players, 16 channels available",
                                            "Items counted are destroyed, count up to one stack per tick per hopper")
-                                .boolAccelerate(),
+                                .isACommand().boolAccelerate().defaultFalse(),
   //! rename rule("renewableElderGuardians", "experimental feature", "Guardians turn into Elder Guardian when struck by lightning"),
   rule("optimizedDespawnRange", "optimizations", "Spawned mobs that would otherwise despawn immediately, won't be placed in world"),
   //???rule("redstoneMultimeter",    "creative survival", "Enables integration with redstone multimeter mod")
@@ -744,7 +738,7 @@ public class CarpetSettings
         private String default_string_value;
         private boolean isFloat;
         private boolean strict;
-        private Consumer<String> validator;
+        private List<Consumer<String>> validators;
 
         //factory
         public static CarpetSettingEntry create(String rule_name, String tags, String toast)
@@ -762,7 +756,7 @@ public class CarpetSettings
             isFloat = false;
             extra_info = null;
             strict = true;
-            validator = null;
+            validators = null;
         }
         public CarpetSettingEntry defaultTrue()
         {
@@ -773,12 +767,16 @@ public class CarpetSettings
         }
         public CarpetSettingEntry validate(Consumer<String> method)
         {
-            validator = method;
+            if (validators == null)
+            {
+                validators = new ArrayList<>();
+            }
+            validators.add(method);
             return this;
         }
         public CarpetSettingEntry boolAccelerate()
         {
-            validator = (name) -> {
+            Consumer<String> validator = (name) -> {
                 try
                 {
                     Field f = CarpetSettings.class.getDeclaredField("b_"+name);
@@ -793,11 +791,11 @@ public class CarpetSettings
                     CarpetSettings.LOG.error("[CM Error] rule "+name+" doesn't have a boolean accelerator");
                 }
             };
-            return this;
+            return validate(validator);
         }
         public CarpetSettingEntry numAccelerate()
         {
-            validator = (name) -> {
+            Consumer<String> validator = (name) -> {
                 try
                 {
                     Field f = CarpetSettings.class.getDeclaredField("n_"+name);
@@ -819,7 +817,7 @@ public class CarpetSettings
                     CarpetSettings.LOG.error("[CM Error] rule "+name+" doesn't have a numerical accelerator");
                 }
             };
-            return this;
+            return validate(validator);
         }
 
 
@@ -882,9 +880,9 @@ public class CarpetSettings
                 flt = 0.0F;
             }
             bool = (integer > 0)?true:Boolean.parseBoolean(unparsed);
-            if (validator != null)
+            if (validators != null)
             {
-                validator.accept(this.getName());
+                validators.forEach((r) -> r.accept(this.getName()));
             }
         }
 
