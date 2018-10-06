@@ -1,0 +1,24 @@
+--- a/net/minecraft/server/dedicated/ServerHangWatchdog.java
++++ b/net/minecraft/server/dedicated/ServerHangWatchdog.java
+@@ -9,6 +9,8 @@
+ import java.util.Locale;
+ import java.util.Timer;
+ import java.util.TimerTask;
++
++import carpet.CarpetSettings;
+ import net.minecraft.crash.CrashReport;
+ import net.minecraft.crash.CrashReportCategory;
+ import net.minecraft.util.Util;
+@@ -32,6 +34,12 @@
+         while (this.server.isServerRunning())
+         {
+             long i = this.server.getServerTime();
++            if (CarpetSettings.getBool("watchdogCrashFix"))
++            {
++                //actual last reported server time, if there is more than 60s between this and now
++                //that's actually when single tick took this.maxTickTime ticks
++                i = this.server.actualServerTime;
++            }
+             long j = Util.milliTime();
+             long k = j - i;
+ 

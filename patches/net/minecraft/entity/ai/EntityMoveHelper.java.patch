@@ -1,12 +1,11 @@
 --- a/net/minecraft/entity/ai/EntityMoveHelper.java
 +++ b/net/minecraft/entity/ai/EntityMoveHelper.java
-@@ -16,7 +16,8 @@
-     protected double speed;
+@@ -17,6 +17,8 @@
      protected float moveForward;
      protected float moveStrafe;
--    protected EntityMoveHelper.Action action = EntityMoveHelper.Action.WAIT;
+     protected EntityMoveHelper.Action action = EntityMoveHelper.Action.WAIT;
 +    //CM need public access for ghast helper
-+    public EntityMoveHelper.Action action = EntityMoveHelper.Action.WAIT;
++    public void setAction(Action action) { this.action = action; }
  
      public EntityMoveHelper(EntityLiving entitylivingIn)
      {

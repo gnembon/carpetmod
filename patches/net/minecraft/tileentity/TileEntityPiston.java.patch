@@ -1,0 +1,14 @@
+--- a/net/minecraft/tileentity/TileEntityPiston.java
++++ b/net/minecraft/tileentity/TileEntityPiston.java
+@@ -40,6 +40,11 @@
+     private float lastProgress;
+     private long lastTicked;
+ 
++    //CM
++    @Override
++    public String cm_name() { return "Moving Piston"; }
++
++
+     public TileEntityPiston()
+     {
+         super(TileEntityType.PISTON);

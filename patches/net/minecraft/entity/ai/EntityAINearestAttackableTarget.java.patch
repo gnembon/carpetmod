@@ -1,0 +1,53 @@
+--- a/net/minecraft/entity/ai/EntityAINearestAttackableTarget.java
++++ b/net/minecraft/entity/ai/EntityAINearestAttackableTarget.java
+@@ -6,6 +6,8 @@
+ import java.util.function.Function;
+ import java.util.function.Predicate;
+ import javax.annotation.Nullable;
++
++import carpet.CarpetSettings;
+ import net.minecraft.entity.Entity;
+ import net.minecraft.entity.EntityCreature;
+ import net.minecraft.entity.EntityLivingBase;
+@@ -71,6 +73,9 @@
+         }
+         else if (this.targetClass != EntityPlayer.class && this.targetClass != EntityPlayerMP.class)
+         {
++            // except guardians have player baked in their more general predicate together with squidi
++            // maybe its a good idea that invisibility should be honored for other mob classes as well?
++            // just a thought Mojang ;-)
+             List<T> list = this.taskOwner.world.<T>getEntitiesWithinAABB(this.targetClass, this.getTargetableArea(this.getTargetDistance()), this.targetEntitySelector);
+ 
+             if (list.isEmpty())
+@@ -80,12 +85,18 @@
+             else
+             {
+                 Collections.sort(list, this.sorter);
+-                this.targetEntity = list.get(0);
+-                return true;
++                //this.targetEntity = list.get(0);
++                //return true;
++                //CM replaced with
++                if (!CarpetSettings.getBool("invisibilityFix") || !(list.get(0) instanceof EntityPlayer))
++                {
++                    this.targetEntity = list.get(0);
++                    return true;
++                }
+             }
+         }
+-        else
+-        {
++        //else    // [CM] brackets not needed in general, needed not to be here for invisibilityFix
++        //{       // in case general predicate returned a player we need to use a more fancy way of selecting a target player
+             this.targetEntity = (T)this.taskOwner.world.getNearestAttackablePlayer(this.taskOwner.posX, this.taskOwner.posY + (double)this.taskOwner.getEyeHeight(), this.taskOwner.posZ, this.getTargetDistance(), this.getTargetDistance(), new Function<EntityPlayer, Double>()
+             {
+                 @Nullable
+@@ -96,7 +107,7 @@
+                 }
+             }, (Predicate<EntityPlayer>)this.targetEntitySelector);
+             return this.targetEntity != null;
+-        }
++        //} [CM] brackets not needed in general, needed not to be here for invisibilityFix
+     }
+ 
+     protected AxisAlignedBB getTargetableArea(double targetDistance)

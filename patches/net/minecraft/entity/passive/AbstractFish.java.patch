@@ -1,0 +1,14 @@
+--- a/net/minecraft/entity/passive/AbstractFish.java
++++ b/net/minecraft/entity/passive/AbstractFish.java
+@@ -37,6 +37,11 @@
+     public int groupSize;
+     private boolean following;
+ 
++    //CM
++    @Override
++    public String cm_name() { return "Fish"; }
++
++
+     public AbstractFish(EntityType<?> type, World p_i48855_2_)
+     {
+         super(type, p_i48855_2_);

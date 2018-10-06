@@ -5,10 +5,6 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
 import net.minecraft.command.CommandSource;
 
-import java.util.Random;
-
-import static carpet.commands.arguments.TermArgumentType.getTerm;
-import static carpet.commands.arguments.TermArgumentType.term;
 import static com.mojang.brigadier.arguments.StringArgumentType.getString;
 import static com.mojang.brigadier.arguments.StringArgumentType.word;
 import static net.minecraft.command.Commands.argument;

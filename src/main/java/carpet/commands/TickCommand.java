@@ -2,6 +2,7 @@ package carpet.commands;
 
 import carpet.CarpetSettings;
 import carpet.helpers.TickSpeed;
+import carpet.utils.CarpetProfiler;
 import carpet.utils.Messenger;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.FloatArgumentType;
@@ -24,18 +25,14 @@ public class TickCommand
 {
     public static void register(CommandDispatcher<CommandSource> dispatcher)
     {
-        LiteralArgumentBuilder<CommandSource> literalargumentbuilder = literal("tick").requires((player) ->
-                CarpetSettings.getBool("commandTick"));
-
-
-        literalargumentbuilder.
-                then((literal("rate").
-                        executes((c) -> queryTps(c.getSource()))).
-                then(argument("rate", floatArg(0.1F, 500.0F)).
-                        suggests( (c, b) -> ISuggestionProvider.suggest(new String[]{"20.0"},b)).
-                        executes((c) -> setTps(c.getSource(), getFloat(c, "rate")))));
-        literalargumentbuilder.
-                then((literal("warp").
+        LiteralArgumentBuilder<CommandSource> literalargumentbuilder = literal("tick").
+                requires((player) -> CarpetSettings.getBool("commandTick")).
+                then(literal("rate").
+                        executes((c) -> queryTps(c.getSource())).
+                        then(argument("rate", floatArg(0.1F, 500.0F)).
+                                suggests( (c, b) -> ISuggestionProvider.suggest(new String[]{"20.0"},b)).
+                                executes((c) -> setTps(c.getSource(), getFloat(c, "rate"))))).
+                then(literal("warp").
                         executes( (c)-> setWarp(c.getSource(), 0, null)).
                         then(argument("ticks", integer(0,4000000)).
                                 suggests( (c, b) -> ISuggestionProvider.suggest(new String[]{"3600","72000"},b)).
@@ -44,17 +41,22 @@ public class TickCommand
                                         executes( (c) -> setWarp(
                                                 c.getSource(),
                                                 getInteger(c,"ticks"),
-                                                getString(c, "tail command")))))));
-        literalargumentbuilder.
-                then((literal("freeze").executes( (c)-> toggleFreeze(c.getSource()))));
-        literalargumentbuilder.
-                then((literal("step").
+                                                getString(c, "tail command")))))).
+                then(literal("freeze").executes( (c)-> toggleFreeze(c.getSource()))).
+                then(literal("step").
                         executes((c) -> step(1))).
                         then(argument("ticks", integer(1,72000)).
                                 suggests( (c, b) -> ISuggestionProvider.suggest(new String[]{"20"},b)).
-                                executes((c) -> step(getInteger(c,"ticks")))));
-        literalargumentbuilder.
-                then((literal("superHot").executes( (c)-> toggleSuperHot(c.getSource()))));
+                                executes((c) -> step(getInteger(c,"ticks")))).
+                then(literal("superHot").executes( (c)-> toggleSuperHot(c.getSource()))).
+                then(literal("health").
+                        executes( (c) -> healthReport(c.getSource(), 100)).
+                        then(argument("ticks", integer(20,24000)).
+                                executes( (c) -> healthReport(c.getSource(), getInteger(c, "ticks"))))).
+                then(literal("entities").
+                        executes((c) -> healthEntities(c.getSource(), 100)).
+                        then(argument("ticks", integer(20,24000)).
+                                executes((c) -> healthEntities(c.getSource(), getInteger(c, "ticks")))));
 
 
         dispatcher.register(literalargumentbuilder);
@@ -123,6 +125,18 @@ public class TickCommand
         {
             Messenger.m(source, "gi Superhot disabled");
         }
+        return 1;
+    }
+
+    private static int healthReport(CommandSource source, int ticks)
+    {
+        CarpetProfiler.prepare_tick_report(ticks);
+        return 1;
+    }
+
+    private static int healthEntities(CommandSource source, int ticks)
+    {
+        CarpetProfiler.prepare_entity_report(ticks);
         return 1;
     }
 

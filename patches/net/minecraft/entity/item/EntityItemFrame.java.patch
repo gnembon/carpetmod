@@ -1,0 +1,14 @@
+--- a/net/minecraft/entity/item/EntityItemFrame.java
++++ b/net/minecraft/entity/item/EntityItemFrame.java
+@@ -36,6 +36,11 @@
+     private static final DataParameter<Integer> ROTATION = EntityDataManager.<Integer>createKey(EntityItemFrame.class, DataSerializers.VARINT);
+     private float itemDropChance = 1.0F;
+ 
++    //CM
++    @Override
++    public String cm_name() { return "Item Frame"; }
++
++
+     public EntityItemFrame(World worldIn)
+     {
+         super(EntityType.ITEM_FRAME, worldIn);

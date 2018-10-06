@@ -1,11 +1,10 @@
 --- a/net/minecraft/util/WeightedRandom.java
 +++ b/net/minecraft/util/WeightedRandom.java
-@@ -57,7 +57,7 @@
- 
-     public static class Item
-         {
--            protected int itemWeight;
-+            public int itemWeight; // CM changed from protected to public
- 
-             public Item(int itemWeightIn)
+@@ -63,5 +63,7 @@
              {
+                 this.itemWeight = itemWeightIn;
+             }
++            //CM
++            public int getItemWeight() { return itemWeight; }
+         }
+ }

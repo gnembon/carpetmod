@@ -1,15 +1,27 @@
 --- a/net/minecraft/server/MinecraftServer.java
 +++ b/net/minecraft/server/MinecraftServer.java
-@@ -1,5 +1,7 @@
+@@ -1,5 +1,8 @@
  package net.minecraft.server;
  
 +import carpet.CarpetServer;
 +import carpet.helpers.TickSpeed;
++import carpet.utils.CarpetProfiler;
  import com.google.common.base.Stopwatch;
  import com.google.common.collect.Lists;
  import com.google.common.collect.Maps;
-@@ -197,6 +199,9 @@
+@@ -178,6 +181,7 @@
+     public final Queue < FutureTask<? >> futureTaskQueue = Queues. < FutureTask<? >> newConcurrentLinkedQueue();
+     private Thread serverThread;
+     private long serverTime = Util.milliTime();
++    public long actualServerTime = Util.milliTime();
+     @OnlyIn(Dist.CLIENT)
+     private boolean worldIconSet;
+     private final IReloadableResourceManager resourceManager = new SimpleReloadableResourceManager(ResourcePackType.SERVER_DATA);
+@@ -195,8 +199,12 @@
+     private boolean forceWorldUpgrade;
+     private float tickTime;
  
++
      public MinecraftServer(@Nullable File anvilFileIn, Proxy serverProxyIn, DataFixer dataFixerIn, Commands commandManagerIn, YggdrasilAuthenticationService authServiceIn, MinecraftSessionService sessionServiceIn, GameProfileRepository profileRepoIn, PlayerProfileCache profileCacheIn)
      {
 +        //CM
@@ -18,7 +30,7 @@
          this.serverProxy = serverProxyIn;
          this.commandManager = commandManagerIn;
          this.authService = authServiceIn;
-@@ -648,18 +653,30 @@
+@@ -648,18 +656,35 @@
  
                  while (this.serverRunning)
                  {
@@ -30,6 +42,7 @@
 +                        {
 +                            this.tick( ()->true );
 +                            this.serverTime = Util.milliTime();
++                            this.actualServerTime = Util.milliTime();
 +                            this.serverIsRunning = true;
 +                        }
 +                        continue;
@@ -48,16 +61,61 @@
  
                      this.tick(this::func_212379_aT);
 -                    this.serverTime += 50L;
++                    //[CM] NOTE: serverTime doesn't indicate current time, but server wannabe-time
++                    // only corrected if it falls behind more than 2000 and manages to catch the warning
++                    // which releases accrued time it falls behind, not 1 tick, but MULTIPLE ticks
++                    this.actualServerTime = Util.milliTime();
 +                    this.serverTime += TickSpeed.mspt;//50L;
  
                      while (this.func_212379_aT())
                      {
-@@ -782,6 +799,8 @@
+@@ -782,6 +807,12 @@
      {
          long i = Util.nanoTime();
          ++this.tickCounter;
 +        //[CM]
 +        CarpetServer.tick(this);
++        if (CarpetProfiler.tick_health_requested != 0L)
++        {
++            CarpetProfiler.start_tick_profiling();
++        }
  
          if (this.startProfiling)
          {
+@@ -810,10 +841,12 @@
+ 
+         if (this.tickCounter % 900 == 0)
+         {
++            CarpetProfiler.start_section(null, "Autosave");
+             this.profiler.startSection("save");
+             this.playerList.saveAllPlayerData();
+             this.saveAllWorlds(true);
+             this.profiler.endSection();
++            CarpetProfiler.end_current_section();
+         }
+ 
+         this.profiler.startSection("snooper");
+@@ -834,6 +867,10 @@
+         this.tickTime = this.tickTime * 0.8F + (float)l / 1000000.0F * 0.19999999F;
+         this.profiler.endSection();
+         this.profiler.endSection();
++        if (CarpetProfiler.tick_health_requested != 0L)
++        {
++            CarpetProfiler.end_tick_profiling(this);
++        }
+     }
+ 
+     public void updateTimeLightAndEntities(BooleanSupplier p_71190_1_)
+@@ -905,10 +942,12 @@
+             }))[this.tickCounter % 100] = Util.nanoTime() - i;
+         }
+ 
++        CarpetProfiler.start_section(null, "Network");
+         this.profiler.endStartSection("connection");
+         this.getNetworkSystem().tick();
+         this.profiler.endStartSection("players");
+         this.playerList.tick();
++        CarpetProfiler.end_current_section();
+         this.profiler.endStartSection("tickables");
+ 
+         for (int j = 0; j < this.tickables.size(); ++j)

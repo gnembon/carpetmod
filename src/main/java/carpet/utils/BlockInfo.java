@@ -131,40 +131,40 @@ public class BlockInfo
             metastring += ", "+iproperty.getName() + '='+state.get(iproperty);
         }
         List<ITextComponent> lst = new ArrayList<>();
-        lst.add(Messenger.s(null, ""));
-        lst.add(Messenger.s(null, "====================================="));
-        lst.add(Messenger.s(null, String.format("Block info for %s%s (id %d%s):",IRegistry.field_212618_g.getKey(block),metastring, IRegistry.field_212618_g.getId(block), metastring )));
-        lst.add(Messenger.s(null, String.format(" - Material: %s", getMaterialName(material))));
-        lst.add(Messenger.s(null, String.format(" - Map colour: %s", getMapColourName(state.getMapColor(world, pos)))));
-        lst.add(Messenger.s(null, String.format(" - Sound type: %s", getSoundName(block.getSoundType()))));
-        lst.add(Messenger.s(null, ""));
-        lst.add(Messenger.s(null, String.format(" - Full block: %s", state.isFullCube() )));
-        lst.add(Messenger.s(null, String.format(" - Normal cube: %s", state.isNormalCube())));
-        lst.add(Messenger.s(null, String.format(" - Is liquid: %s", material.isLiquid())));
-        lst.add(Messenger.s(null, String.format(" - Is solid: %s", material.isSolid())));
-        lst.add(Messenger.s(null, ""));
-        lst.add(Messenger.s(null, String.format(" - Light in: %d, above: %d", world.getLight(pos), world.getLight(pos.up()))));
-        lst.add(Messenger.s(null, String.format(" - Brightness in: %.2f, above: %.2f", world.getBrightness(pos), world.getBrightness(pos.up()))));
-        lst.add(Messenger.s(null, String.format(" - Is opaque: %s", material.isOpaque() )));
-        lst.add(Messenger.s(null, String.format(" - Light opacity: %d", state.getOpacity(world,pos))));
-        lst.add(Messenger.s(null, String.format(" - Blocks light: %s", state.propagatesSkylightDown(world, pos))));
-        lst.add(Messenger.s(null, String.format(" - Emitted light: %d", state.getLightValue())));
-        lst.add(Messenger.s(null, String.format(" - Picks neighbour light value: %s", state.useNeighborBrightness(world, pos))));
-        lst.add(Messenger.s(null, ""));
-        lst.add(Messenger.s(null, String.format(" - Causes suffocation: %s", state.causesSuffocation())));
-        lst.add(Messenger.s(null, String.format(" - Blocks movement on land: %s", !state.allowsMovement(world,pos, PathType.LAND))));
-        lst.add(Messenger.s(null, String.format(" - Blocks movement in air: %s", !state.allowsMovement(world,pos, PathType.AIR))));
-        lst.add(Messenger.s(null, String.format(" - Blocks movement in liquids: %s", !state.allowsMovement(world,pos, PathType.WATER))));
-        lst.add(Messenger.s(null, String.format(" - Can burn: %s", material.isFlammable())));
-        lst.add(Messenger.s(null, String.format(" - Requires a tool: %s", !material.isToolNotRequired())));
-        lst.add(Messenger.s(null, String.format(" - Hardness: %.2f", state.getBlockHardness(world, pos))));
-        lst.add(Messenger.s(null, String.format(" - Blast resistance: %.2f", block.getExplosionResistance())));
-        lst.add(Messenger.s(null, String.format(" - Ticks randomly: %s", block.getTickRandomly(state))));
-        lst.add(Messenger.s(null, ""));
-        lst.add(Messenger.s(null, String.format(" - Can provide power: %s", state.canProvidePower())));
-        lst.add(Messenger.s(null, String.format(" - Strong power level: %d", world.getStrongPower(pos))));
-        lst.add(Messenger.s(null, String.format(" - Redstone power level: %d", world.getRedstonePowerFromNeighbors(pos))));
-        lst.add(Messenger.s(null, ""));
+        lst.add(Messenger.s(""));
+        lst.add(Messenger.s("====================================="));
+        lst.add(Messenger.s(String.format("Block info for %s%s (id %d%s):",IRegistry.field_212618_g.getKey(block),metastring, IRegistry.field_212618_g.getId(block), metastring )));
+        lst.add(Messenger.s(String.format(" - Material: %s", getMaterialName(material))));
+        lst.add(Messenger.s(String.format(" - Map colour: %s", getMapColourName(state.getMapColor(world, pos)))));
+        lst.add(Messenger.s(String.format(" - Sound type: %s", getSoundName(block.getSoundType()))));
+        lst.add(Messenger.s(""));
+        lst.add(Messenger.s(String.format(" - Full block: %s", state.isFullCube() )));
+        lst.add(Messenger.s(String.format(" - Normal cube: %s", state.isNormalCube())));
+        lst.add(Messenger.s(String.format(" - Is liquid: %s", material.isLiquid())));
+        lst.add(Messenger.s(String.format(" - Is solid: %s", material.isSolid())));
+        lst.add(Messenger.s(""));
+        lst.add(Messenger.s(String.format(" - Light in: %d, above: %d", world.getLight(pos), world.getLight(pos.up()))));
+        lst.add(Messenger.s(String.format(" - Brightness in: %.2f, above: %.2f", world.getBrightness(pos), world.getBrightness(pos.up()))));
+        lst.add(Messenger.s(String.format(" - Is opaque: %s", material.isOpaque() )));
+        lst.add(Messenger.s(String.format(" - Light opacity: %d", state.getOpacity(world,pos))));
+        lst.add(Messenger.s(String.format(" - Blocks light: %s", state.propagatesSkylightDown(world, pos))));
+        lst.add(Messenger.s(String.format(" - Emitted light: %d", state.getLightValue())));
+        lst.add(Messenger.s(String.format(" - Picks neighbour light value: %s", state.useNeighborBrightness(world, pos))));
+        lst.add(Messenger.s(""));
+        lst.add(Messenger.s(String.format(" - Causes suffocation: %s", state.causesSuffocation())));
+        lst.add(Messenger.s(String.format(" - Blocks movement on land: %s", !state.allowsMovement(world,pos, PathType.LAND))));
+        lst.add(Messenger.s(String.format(" - Blocks movement in air: %s", !state.allowsMovement(world,pos, PathType.AIR))));
+        lst.add(Messenger.s(String.format(" - Blocks movement in liquids: %s", !state.allowsMovement(world,pos, PathType.WATER))));
+        lst.add(Messenger.s(String.format(" - Can burn: %s", material.isFlammable())));
+        lst.add(Messenger.s(String.format(" - Requires a tool: %s", !material.isToolNotRequired())));
+        lst.add(Messenger.s(String.format(" - Hardness: %.2f", state.getBlockHardness(world, pos))));
+        lst.add(Messenger.s(String.format(" - Blast resistance: %.2f", block.getExplosionResistance())));
+        lst.add(Messenger.s(String.format(" - Ticks randomly: %s", block.getTickRandomly(state))));
+        lst.add(Messenger.s(""));
+        lst.add(Messenger.s(String.format(" - Can provide power: %s", state.canProvidePower())));
+        lst.add(Messenger.s(String.format(" - Strong power level: %d", world.getStrongPower(pos))));
+        lst.add(Messenger.s(String.format(" - Redstone power level: %d", world.getRedstonePowerFromNeighbors(pos))));
+        lst.add(Messenger.s(""));
         lst.add(wander_chances(pos.up(), world));
 
         return lst;
@@ -202,7 +202,7 @@ public class BlockInfo
         }
         creature.remove();
         long total_time = (total_ticks)/1000/20;
-        return Messenger.s(null, String.format(" - Wander chance above: %.1f%%%%\n - Average standby above: %s",
+        return Messenger.s(String.format(" - Wander chance above: %.1f%%%%\n - Average standby above: %s",
                 (100.0F*success)/1000,
                 ((total_time>5000)?"INFINITY":(Long.toString(total_time)+" s"))
         ));

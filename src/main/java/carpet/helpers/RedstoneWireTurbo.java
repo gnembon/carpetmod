@@ -842,14 +842,14 @@ public class RedstoneWireTurbo
         j = this.getMaxCurrentStrength(upd, j);
         int l = 0;
  
-        wire.canProvidePower = false;
+        wire.setCanProvidePower(false);
         // Unfortunately, World.isBlockIndirectlyGettingPowered is complicated,
         // and I'm not ready to try to replicate even more functionality from
         // elsewhere in Minecraft into this accelerator.  So sadly, we must
         // suffer the performance hit of this very expensive call.  If there
         // is consistency to what this call returns, we may be able to cache it.
         final int k = worldIn.getRedstonePowerFromNeighbors(upd.self);
-        wire.canProvidePower = true;
+        wire.setCanProvidePower(true);
  
         // The variable 'k' holds the maximum redstone power value of any adjacent blocks.
         // If 'k' has the highest level of all neighbors, then the power level of this 

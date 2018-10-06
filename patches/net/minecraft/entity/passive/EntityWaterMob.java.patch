@@ -1,0 +1,13 @@
+--- a/net/minecraft/entity/passive/EntityWaterMob.java
++++ b/net/minecraft/entity/passive/EntityWaterMob.java
+@@ -10,6 +10,10 @@
+ 
+ public abstract class EntityWaterMob extends EntityCreature implements IAnimal
+ {
++    //CM
++    @Override
++    public String cm_name() { return "Other Water Mob"; }
++
+     protected EntityWaterMob(EntityType<?> type, World p_i48565_2_)
+     {
+         super(type, p_i48565_2_);

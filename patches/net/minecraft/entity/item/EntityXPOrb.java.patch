@@ -1,0 +1,14 @@
+--- a/net/minecraft/entity/item/EntityXPOrb.java
++++ b/net/minecraft/entity/item/EntityXPOrb.java
+@@ -27,6 +27,11 @@
+     private EntityPlayer closestPlayer;
+     private int xpTargetColor;
+ 
++    //CM
++    @Override
++    public String cm_name() { return "XP Orb"; }
++
++
+     public EntityXPOrb(World worldIn, double x, double y, double z, int expValue)
+     {
+         super(EntityType.EXPERIENCE_ORB, worldIn);

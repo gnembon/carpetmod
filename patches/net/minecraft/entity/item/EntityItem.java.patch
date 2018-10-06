@@ -1,0 +1,14 @@
+--- a/net/minecraft/entity/item/EntityItem.java
++++ b/net/minecraft/entity/item/EntityItem.java
+@@ -37,6 +37,11 @@
+     private UUID owner;
+     public float hoverStart;
+ 
++    //CM
++    @Override
++    public String cm_name() { return "Item"; }
++
++
+     public EntityItem(World worldIn)
+     {
+         super(EntityType.ITEM, worldIn);

@@ -8,6 +8,8 @@ package carpet.patches;
  import com.mojang.authlib.GameProfile;
  import net.minecraft.tileentity.TileEntitySkull;
  import net.minecraft.util.DamageSource;
+ import net.minecraft.util.math.Vec2f;
+ import net.minecraft.util.math.Vec3d;
  import net.minecraft.util.text.TextComponentTranslation;
  import net.minecraft.world.WorldServer;
  import net.minecraft.entity.player.EntityPlayerMP;
@@ -16,8 +18,12 @@ package carpet.patches;
  import net.minecraft.world.GameType;
  import net.minecraft.world.dimension.DimensionType;
 
+ import java.util.function.BiConsumer;
+
 public class EntityPlayerMPFake extends EntityPlayerMP
 {
+    public Runnable fixStartingPosition = () -> {};
+
     public static EntityPlayerMPFake createFake(String username, MinecraftServer server, double d0, double d1, double d2, double yaw, double pitch, DimensionType dimension, GameType gamemode)
     {
         //prolly half of that crap is not necessary, but it works
@@ -29,7 +35,7 @@ public class EntityPlayerMPFake extends EntityPlayerMP
             gameprofile = TileEntitySkull.updateGameProfile(gameprofile);
         }
         EntityPlayerMPFake instance = new EntityPlayerMPFake(server, worldIn, gameprofile, interactionManagerIn);
-        instance.setLocationAndAngles(d0, d1, d2, (float)yaw, (float)pitch);
+        instance.fixStartingPosition = () -> instance.setLocationAndAngles(d0, d1, d2, (float)yaw, (float)pitch);
         server.getPlayerList().initializeConnectionToPlayer(new NetworkManagerFake(EnumPacketDirection.CLIENTBOUND), instance);
         if (instance.dimension != dimension) //player was logged in in a different dimension
         {

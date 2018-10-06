@@ -458,7 +458,7 @@ public class SpawnReporter
                     
                     String creature_name = entityliving.getEntityString();
                     String pack_size = String.format("%d", entityliving.getMaxSpawnedInChunk());//String.format("%d-%d", animal.minGroupCount, animal.maxGroupCount);
-                    int weight = animal.itemWeight;
+                    int weight = animal.getItemWeight();
                     if (canspawn)
                     {
                         String c = (fits_true && will_spawn>0)?"e":"gi";

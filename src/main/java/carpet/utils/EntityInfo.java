@@ -25,8 +25,11 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.potion.PotionEffect;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.registry.IRegistry;
+import net.minecraft.util.text.ITextComponent;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldServer;
 
+import javax.swing.*;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -59,7 +62,7 @@ public class EntityInfo
         {
             return null;
         } // func_190916_E()
-        String stackname = item.getCount()>1?String.format("%dx%s",item.getCount(), item.getDisplayName()):item.getDisplayName().getString();
+        String stackname = item.getCount()>1?String.format("%dx%s",item.getCount(), item.getDisplayName().getString()):item.getDisplayName().getString();
         if (item.isDamaged())
         {
             stackname += String.format(" %d/%d", item.getMaxDamage()-item.getDamage(), item.getMaxDamage());
@@ -113,108 +116,105 @@ public class EntityInfo
         return 100*(internal-min)/(max-min);
     }
 
-    public static List<String> entityInfo(Entity e, World ws)
+    public static List<ITextComponent> entityInfo(Entity e, World source_world)
     {
-        List<String> lst = new ArrayList<String>();
+        List<ITextComponent> lst = new ArrayList<>();
         World world = e.getEntityWorld();
-        lst.add(entity_short_string(e));
-        if (e.isPassenger()) { lst.add(String.format(" - Rides: %s", e.getRidingEntity().getDisplayName().getString())); }
+        lst.add(Messenger.c("w "+entity_short_string(e)));
+        if (e.isPassenger()) { lst.add(Messenger.c("w  - Rides: ", "wb "+e.getRidingEntity().getDisplayName().getString())); }
         if (e.isBeingRidden())
         {
             List<Entity> passengers = e.getPassengers();
             if (passengers.size() == 1)
             {
-                lst.add(String.format(" - Is being ridden by: %s", passengers.get(0).getDisplayName().getString()));
+                lst.add(Messenger.c("w  - Is being ridden by: ", "wb "+passengers.get(0).getDisplayName().getString()));
             }
             else
             {
-                lst.add(" - Is being ridden by:");
+                lst.add(Messenger.c("w  - Is being ridden by:"));
                 for (Entity ei: passengers)
                 {
-                    lst.add(String.format("   * %s", ei.getDisplayName().getString()));
+                    lst.add(Messenger.c("wb    * "+ ei.getDisplayName().getString()));
                 }
             }
         }
-        lst.add(String.format(" - Height: %.2f, Width: %.2f, Eye height: %.2f",e.height, e.width, e.getEyeHeight()));
-        lst.add(String.format(" - Age: %s", makeTime(e.ticksExisted)));
-        if (ws.dimension.getType() != e.dimension)
+        lst.add(Messenger.c(String.format("w  - Height: %.2f, Width: %.2f, Eye height: %.2f",e.height, e.width, e.getEyeHeight())));
+        lst.add(Messenger.c("w  - Age: ", "wb "+makeTime(e.ticksExisted)));
+        if (source_world.dimension.getType() != e.dimension)
         {
-            lst.add(String.format(" - Dimension: %s", e.dimension.toString()));
+            lst.add(Messenger.c("w  - Dimension: ", "wb "+e.dimension.toString()));
         }
-        if (e.fire > 0) { lst.add(String.format(" - Fire for %d ticks",e.fire)); }
-        if (e.isImmuneToFire() ) { lst.add(" - Immune to fire"); }
-        if (e.timeUntilPortal > 0) { lst.add(String.format(" - Portal cooldown for %d ticks",e.timeUntilPortal)); }
-        if (e.isInvulnerable()) { lst.add(" - Invulnerable"); }
-        if (e.isImmuneToExplosions()) { lst.add(" - Immune to explosions"); }
+        if (e.getFire() > 0) { lst.add(Messenger.c("w  - Fire for ","wb "+e.getFire(),"w  ticks")); }
+        if (e.isImmuneToFire() ) { lst.add(Messenger.c("w  - Immune to fire")); }
+        if (e.timeUntilPortal > 0) { lst.add(Messenger.c("w  - Portal cooldown for ","wb "+e.timeUntilPortal," ticks")); }
+        if (e.isInvulnerable()) { lst.add(Messenger.c("w  - Invulnerable")); }
+        if (e.isImmuneToExplosions()) { lst.add(Messenger.c("w  - Immune to explosions")); }
 
         if (e instanceof EntityItem)
         {
             EntityItem ei = (EntityItem)e;
             ItemStack stack = ei.getItem();// getEntityItem();
             String stackname = stack.getCount()>1?String.format("%dx%s",stack.getCount(), stack.getDisplayName().getString()):stack.getDisplayName().getString();
-            lst.add(String.format(" - Content: %s", stackname));
-            lst.add(String.format(" - Despawn Timer: %s", makeTime(ei.getAge())));
+            lst.add(Messenger.c("w  - Content: ", "wb "+stackname));
+            lst.add(Messenger.c("w  - Despawn Timer: ", "wb "+makeTime(ei.getAge())));
         }
         if (e instanceof EntityXPOrb)
         {
             EntityXPOrb exp = (EntityXPOrb)e;
-            lst.add(String.format(" - Despawn Timer: %s", makeTime(exp.xpOrbAge)));
-            lst.add(String.format(" - Xp Value: %s", exp.getXpValue()));
+            lst.add(Messenger.c("w  - Despawn Timer: ", "wb "+makeTime(exp.xpOrbAge)));
+            lst.add(Messenger.c("w  - Xp Value: ", "wb "+exp.getXpValue()));
         }
         if (e instanceof EntityItemFrame)
         {
             EntityItemFrame eif = (EntityItemFrame)e;
-            lst.add(String.format(" - Content: %s", eif.getDisplayedItem().getDisplayName()));
-            lst.add(String.format(" - Rotation: %d", eif.getRotation()));
+            lst.add(Messenger.c("w  - Content: ", "wb "+eif.getDisplayedItem().getDisplayName()));
+            lst.add(Messenger.c("w  - Rotation: ", "wb "+eif.getRotation()));
         }
         if (e instanceof EntityPainting)
         {
             EntityPainting ep = (EntityPainting)e;
-            lst.add(String.format(" - Art: %s", IRegistry.field_212620_i.getKey(ep.art).toString()));
+            lst.add(Messenger.c("w  - Art: ", "wb "+IRegistry.field_212620_i.getKey(ep.art).toString()));
         }
-
-
-
 
         if (e instanceof EntityLivingBase)
         {
             EntityLivingBase elb = (EntityLivingBase)e;
-            lst.add(String.format(" - Despawn timer: %s", makeTime(elb.getIdleTime())));
+            lst.add(Messenger.c("w  - Despawn timer: ", "wb "+makeTime(elb.getIdleTime())));
 
-            lst.add(String.format(" - Health: %.2f/%.2f", elb.getHealth(), elb.getMaxHealth()));
+            lst.add(Messenger.c(String.format("w  - Health: %.2f/%.2f", elb.getHealth(), elb.getMaxHealth())));
             if (elb.getAttribute(SharedMonsterAttributes.ARMOR).getValue() > 0.0)
             {
-                lst.add(String.format(" - Armour: %.1f",elb.getAttribute(SharedMonsterAttributes.ARMOR).getValue()));
+                lst.add(Messenger.c(String.format("w  - Armour: %.1f",elb.getAttribute(SharedMonsterAttributes.ARMOR).getValue())));
             }
             if (elb.getAttribute(SharedMonsterAttributes.ARMOR_TOUGHNESS).getValue() > 0.0)
             {
-                lst.add(String.format(" - Toughness: %.1f",elb.getAttribute(SharedMonsterAttributes.ARMOR_TOUGHNESS).getValue()));
+                lst.add(Messenger.c(String.format("w  - Toughness: %.1f",elb.getAttribute(SharedMonsterAttributes.ARMOR_TOUGHNESS).getValue())));
             }
-            //lst.add(String.format(" - Base speed: %.1fb/s",get_speed(elb.getEntityAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).getAttributeValue())));
+            //lst.add(Messenger.c(String.format("w  - Base speed: %.1fb/s",get_speed(elb.getEntityAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).getAttributeValue()))));
 
 
 
             Collection<PotionEffect> potions = elb.getActivePotionEffects();
             if (!potions.isEmpty())
             {
-                lst.add(" - Potion effects:");
+                lst.add(Messenger.c("w  - Potion effects:"));
                 for (PotionEffect pe : potions)
                 {
-                    lst.add(String.format("   * %s%s %s",
+                    lst.add(Messenger.c(String.format("w    * %s%s %s",
                             pe.getEffectName().substring(7),
                             (pe.getAmplifier()>1)?String.format("x%d",pe.getAmplifier()):"",
-                            makeTime(pe.getDuration())));
+                            makeTime(pe.getDuration()))));
                 }
             }
             ItemStack mainhand = elb.getHeldItemMainhand();
             if (!(mainhand.isEmpty()))
             {
-                lst.add(String.format(" - Main hand: %s", display_item(mainhand)));
+                lst.add(Messenger.c("w  - Main hand: ", "wb "+display_item(mainhand)));
             }
             ItemStack offhand = elb.getHeldItemOffhand();
             if (!(offhand.isEmpty()))
             {
-                lst.add(String.format(" - Off hand: %s", display_item(offhand)));
+                lst.add(Messenger.c("w  - Off hand: ", "wb "+display_item(offhand)));
             }
             String armour = "";
             for (ItemStack armourpiece: elb.getArmorInventoryList())
@@ -226,58 +226,60 @@ public class EntityInfo
             }
             if (!("".equals(armour)))
             {
-                lst.add(String.format(" - Armour:%s", armour));
+                lst.add(Messenger.c("w  - Armour:"+ armour));
             }
             if (e instanceof EntityLiving)
             {
                 EntityLiving el = (EntityLiving)elb;
-                lst.add(String.format(" - Follow range: %.1f",el.getAttribute(SharedMonsterAttributes.FOLLOW_RANGE).getValue()));
+                lst.add(Messenger.c(String.format("w  - Follow range: %.1f",el.getAttribute(SharedMonsterAttributes.FOLLOW_RANGE).getValue())));
 
-                lst.add(String.format(" - Movement speed factor: %.2f",el.getMoveHelper().getSpeed()));
+                lst.add(Messenger.c(String.format("w  - Movement speed factor: %.2f",el.getMoveHelper().getSpeed())));
 
 
                 EntityLivingBase target_elb = el.getAttackTarget();
                 if (target_elb != null)
                 {
-                    lst.add(String.format(" - Attack target: %s", entity_short_string(target_elb)));
+                    lst.add(Messenger.c("w  - Attack target: ", "wb "+entity_short_string(target_elb)));
                 }
                 if (el.canPickUpLoot())
                 {
-                    lst.add(" - Can pick up loot");
+                    lst.add(Messenger.c("w  - Can pick up loot"));
                 }
                 if (el.isNoDespawnRequired())
                 {
-                    lst.add(" - Won't despawn");
+                    lst.add((Messenger.c("w  - Won't despawn")));
                 }
 
                 if (e instanceof EntityWither)
                 {
                     EntityWither ew = (EntityWither)e;
                     Entity etarget = world.getEntityByID(ew.getWatchedTargetId(0));
-                    lst.add(String.format(" - Head 1 target: %s", entity_short_string(etarget) ));
+                    lst.add(Messenger.c("w  - Head 1 target: ", "wb "+entity_short_string(etarget) ));
                     etarget = world.getEntityByID(ew.getWatchedTargetId(1));
-                    lst.add(String.format(" - Head 2 target: %s", entity_short_string(etarget) ));
+                    lst.add(Messenger.c("w  - Head 2 target: ", "wb "+entity_short_string(etarget) ));
                     etarget = world.getEntityByID(ew.getWatchedTargetId(2));
-                    lst.add(String.format(" - Head 3 target: %s", entity_short_string(etarget) ));
+                    lst.add(Messenger.c("w  - Head 3 target: ", "wb "+entity_short_string(etarget) ));
                 }
+
                 if (e instanceof EntityCreature)
                 {
                     EntityCreature ec = (EntityCreature) e;
                     if (ec.hasHome())
                     {
                         BlockPos pos = ec.getHomePosition();
-                        lst.add(String.format(" - Home position: %d blocks around [%d, %d, %d]", (int)ec.getMaximumHomeDistance(), pos.getX(),pos.getY(),pos.getZ()));
+                        lst.add(Messenger.c("w  - Home position: ","wb "+(int)ec.getMaximumHomeDistance(),"w  blocks around ", Messenger.tp("wb",pos)));
                     }
+
                     if (e instanceof EntityAgeable)
                     {
                         EntityAgeable eage = (EntityAgeable) e;
                         if (eage.getGrowingAge() < 0)
                         {
-                            lst.add(String.format(" - Time till adulthood: %s", makeTime(-eage.getGrowingAge())));
+                            lst.add(Messenger.c("w  - Time till adulthood: ", "wb "+makeTime(-eage.getGrowingAge())));
                         }
                         if (eage.getGrowingAge() > 0)
                         {
-                            lst.add(String.format(" - Mating cooldown: %s", makeTime(eage.getGrowingAge())));
+                            lst.add(Messenger.c("w  - Mating cooldown: ", "wb "+makeTime(eage.getGrowingAge())));
                         }
                         if (e instanceof EntityVillager)
                         {
@@ -295,42 +297,42 @@ public class EntityInfo
                             }
                             if (!("".equals(inventory_content)))
                             {
-                                lst.add(String.format(" - Inventory:%s", inventory_content));
+                                lst.add(Messenger.c("w  - Inventory:"+ inventory_content));
                             }
-                            if (ev.wealth>0)
+                            if (ev.getWealth()>0)
                             {
-                                lst.add(String.format(" - Wealth: %d emeralds", ev.wealth));
+                                lst.add(Messenger.c("w  - Wealth: ", "lb "+ev.getWealth()+" emeralds" ));
                             }
                         }
                         if (e instanceof AbstractHorse)
                         {
                             AbstractHorse ah = (AbstractHorse) e;
-                            lst.add(String.format(" - Horse Speed: %.2f b/s (%.1f%%%%)",
+                            lst.add(Messenger.c(String.format("w  - Horse Speed: %.2f b/s (%.1f%%%%)",
                                 get_speed(elb.getAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).getValue()),
                                 get_horse_speed_percent(elb.getAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).getValue())
-                                ));
-                            lst.add(String.format(" - Horse Jump: %.2f b/s (%.1f%%%%)",
+                                )));
+                            lst.add(Messenger.c(String.format("w  - Horse Jump: %.2f b/s (%.1f%%%%)",
                                 get_horse_jump(ah.getHorseJumpStrength()),
                                 get_horse_jump_percent(ah.getHorseJumpStrength())
-                                ));
+                                )));
                         }
                     }
                     if (e instanceof EntityMob)
                     {
-                        lst.add(String.format(" - Base attack: %.1f",elb.getAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).getValue()));
+                        lst.add(Messenger.c(String.format("w  - Base attack: %.1f",elb.getAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).getValue())));
                         if (e instanceof EntityZombieVillager)
                         {
                             EntityZombieVillager ezv = (EntityZombieVillager) e;
-                            if (ezv.conversionTime > 0)
+                            if (ezv.getConversionTime() > 0)
                             {
-                                lst.add(String.format(" - Convert to villager in: %s",makeTime(ezv.conversionTime)));
+                                lst.add(Messenger.c("w  - Convert to villager in: ","wb "+makeTime(ezv.getConversionTime())));
                             }
                         }
                     }
                 }
                 if (e instanceof EntitySlime)
                 {
-                    lst.add(String.format(" - Base attack: %.1f",((EntitySlime)e).getPublicAttackStrength()));
+                    lst.add(Messenger.c(String.format("w  - Base attack: %.1f",((EntitySlime)e).getPublicAttackStrength())));
                 }
             }
         }
@@ -342,7 +344,7 @@ public class EntityInfo
     {
         try
         {
-            player.getServer().getCommandManager().handleCommand (player.getCommandSource(), "entityinfo @e[r=5,c=5,type=!player]"); // TODO fix command call
+            player.getServer().getCommandManager().handleCommand (player.getCommandSource(), "info entity @e[r=5,c=5,type=!player]"); // TODO fix command call
         }
         catch (Throwable ignored)
         {

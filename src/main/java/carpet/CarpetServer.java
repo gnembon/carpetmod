@@ -75,6 +75,10 @@ public class CarpetServer // static for now - easier to handle all around the co
         LogCommand.register(dispatcher);
         SpawnCommand.register(dispatcher);
         PlayerCommand.register(dispatcher);
+        CameraModeCommand.register(dispatcher);
+        InfoCommand.register(dispatcher);
+        DistanceCommand.register(dispatcher);
+        PerimeterInfoCommand.register(dispatcher);
 
         TestCommand.register(dispatcher);
     }

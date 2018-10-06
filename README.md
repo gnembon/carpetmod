@@ -1,11 +1,15 @@
-# CarpetMod for Minecraft 1.13
-The most comprehensive and convoluted mod for carpets evar. Built based on jarmod-buildsystem-2 by Earthcomputer. See Earthcomputer's repo for details on the build system.
+# CarpetMod for Minecraft 1.13.1
+The most comprehensive and convoluted mod for carpets evar. However it doesn't include carpets yet. Built based on jarmod-buildsystem-2 by Earthcomputer. See Earthcomputer's repo for details on the build system.
 
 ## Requirements
 - You need to have at least JDK8 update 92 for recompilation to work, due to a bug in earlier versions of `javac`. You also cannot use JDK9 or JDK10 yet.
 - You need to have `git` installed.
 - Eclipse Oxygen.3 or later, due to [this Eclipse bug](https://bugs.eclipse.org/bugs/show_bug.cgi?id=526911).
 - Or Intellij
+
+OR
+
+- Download the patches from the releases section and apply them directly to game's or server's jars.
 
 ## First-time setup
 - Copy all the files in this repository into your new project folder.
