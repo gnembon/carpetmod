@@ -44,10 +44,10 @@ public class TickCommand
                                                 getString(c, "tail command")))))).
                 then(literal("freeze").executes( (c)-> toggleFreeze(c.getSource()))).
                 then(literal("step").
-                        executes((c) -> step(1))).
+                        executes((c) -> step(1)).
                         then(argument("ticks", integer(1,72000)).
                                 suggests( (c, b) -> ISuggestionProvider.suggest(new String[]{"20"},b)).
-                                executes((c) -> step(getInteger(c,"ticks")))).
+                                executes((c) -> step(getInteger(c,"ticks"))))).
                 then(literal("superHot").executes( (c)-> toggleSuperHot(c.getSource()))).
                 then(literal("health").
                         executes( (c) -> healthReport(c.getSource(), 100)).
