@@ -29,19 +29,19 @@ public class LoggerRegistry
     public static boolean __packets;
     public static boolean __weather;
 
-    public static void initLoggers(MinecraftServer server)
+    public static void initLoggers()
     {
-        registerLogger("tnt", new Logger(server, "tnt", "brief", new String[]{"brief", "full"}));
-        registerLogger("projectiles", new Logger(server, "projectiles", "brief",  new String[]{"brief", "full"}));
-        registerLogger("fallingBlocks",new Logger(server, "fallingBlocks", "brief", new String[]{"brief", "full"}));
-        registerLogger("kills", new Logger(server, "kills", null, null));
-        registerLogger("damage", new Logger(server, "damage", "all", new String[]{"all","players","me"}));
-        registerLogger("weather", new Logger(server, "weather", null, null));
+        registerLogger("tnt", new Logger("tnt", "brief", new String[]{"brief", "full"}));
+        registerLogger("projectiles", new Logger("projectiles", "brief",  new String[]{"brief", "full"}));
+        registerLogger("fallingBlocks",new Logger("fallingBlocks", "brief", new String[]{"brief", "full"}));
+        registerLogger("kills", new Logger("kills", null, null));
+        registerLogger("damage", new Logger("damage", "all", new String[]{"all","players","me"}));
+        registerLogger("weather", new Logger("weather", null, null));
 
-        registerLogger("tps", new HUDLogger(server, "tps", null, null));
-        registerLogger("packets", new HUDLogger(server, "packets", null, null));
-        registerLogger("counter",new HUDLogger(server, "counter","white", Arrays.stream(EnumDyeColor.values()).map(Object::toString).toArray(String[]::new)));
-        registerLogger("mobcaps", new HUDLogger(server, "mobcaps", "dynamic",new String[]{"dynamic", "overworld", "nether","end"}));
+        registerLogger("tps", new HUDLogger("tps", null, null));
+        registerLogger("packets", new HUDLogger("packets", null, null));
+        registerLogger("counter",new HUDLogger("counter","white", Arrays.stream(EnumDyeColor.values()).map(Object::toString).toArray(String[]::new)));
+        registerLogger("mobcaps", new HUDLogger("mobcaps", "dynamic",new String[]{"dynamic", "overworld", "nether","end"}));
     }
 
     /**

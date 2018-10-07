@@ -1,0 +1,20 @@
+--- a/net/minecraft/server/integrated/IntegratedServer.java
++++ b/net/minecraft/server/integrated/IntegratedServer.java
+@@ -38,6 +38,8 @@
+ import org.apache.logging.log4j.LogManager;
+ import org.apache.logging.log4j.Logger;
+ 
++import carpet.CarpetServer;
++
+ @OnlyIn(Dist.CLIENT)
+ public class IntegratedServer extends MinecraftServer
+ {
+@@ -101,6 +103,8 @@
+         this.setAllowFlight(true);
+         LOGGER.info("Generating keypair");
+         this.setKeyPair(CryptManager.generateKeyPair());
++        //CM init - all stuff loaded from the server, just before worlds loading
++        CarpetServer.onServerLoaded(this);
+         this.loadAllWorlds(this.getFolderName(), this.getWorldName(), this.worldSettings.getSeed(), this.worldSettings.getTerrainType(), this.worldSettings.getGeneratorOptions());
+         this.setMOTD(this.getServerOwner() + " - " + this.getWorld(DimensionType.OVERWORLD).getWorldInfo().getWorldName());
+         return true;
