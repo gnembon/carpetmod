@@ -7,9 +7,9 @@ import net.minecraft.util.text.ITextComponent;
 
 public class HUDLogger extends Logger
 {
-    public HUDLogger(MinecraftServer server, String logName, String def, String[] options)
+    public HUDLogger(String logName, String def, String[] options)
     {
-        super(server, logName, def, options);
+        super(logName, def, options);
     }
 
     @Override

@@ -1,5 +1,6 @@
 package carpet.logging;
 
+import carpet.CarpetServer;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.text.ITextComponent;
@@ -11,9 +12,6 @@ import java.util.function.Supplier;
 
 public class Logger
 {
-    // Reference to the minecraft server. Used to look players up by name.
-    private MinecraftServer server;
-
     // The set of subscribed and online players.
     private Map<String, String> subscribedOnlinePlayers;
 
@@ -27,9 +25,8 @@ public class Logger
 
     private String[] options;
 
-    public Logger(MinecraftServer server, String logName, String def, String [] options)
+    public Logger(String logName, String def, String [] options)
     {
-        this.server = server;
         subscribedOnlinePlayers = new HashMap<>();
         subscribedOfflinePlayers = new HashMap<>();
         this.logName = logName;
@@ -160,7 +157,7 @@ public class Logger
      */
     protected EntityPlayer playerFromName(String name)
     {
-        return server.getPlayerList().getPlayerByUsername(name);
+        return CarpetServer.minecraft_server.getPlayerList().getPlayerByUsername(name);
     }
 
     // ----- Event Handlers ----- //
