@@ -1,0 +1,120 @@
+--- a/net/minecraft/world/Teleporter.java
++++ b/net/minecraft/world/Teleporter.java
+@@ -1,5 +1,6 @@
+ package net.minecraft.world;
+ 
++import carpet.CarpetSettings;
+ import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
+ import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+ import it.unimi.dsi.fastutil.objects.ObjectIterator;
+@@ -10,6 +11,7 @@
+ import net.minecraft.entity.Entity;
+ import net.minecraft.entity.player.EntityPlayerMP;
+ import net.minecraft.init.Blocks;
++import net.minecraft.server.MinecraftServer;
+ import net.minecraft.util.EnumFacing;
+ import net.minecraft.util.math.BlockPos;
+ import net.minecraft.util.math.ChunkPos;
+@@ -22,6 +24,8 @@
+     private final WorldServer world;
+     private final Random random;
+     private final Long2ObjectMap<Teleporter.PortalPosition> destinationCoordinateCache = new Long2ObjectOpenHashMap<Teleporter.PortalPosition>(4096);
++    //CM var portalCaching
++    private final Long2ObjectMap<Teleporter.PortalPosition> destinationHistoryCache = new Long2ObjectOpenHashMap<>(4096); //carpet mod
+ 
+     public Teleporter(WorldServer worldIn)
+     {
+@@ -76,6 +80,7 @@
+         int j = MathHelper.floor(entityIn.posX);
+         int k = MathHelper.floor(entityIn.posZ);
+         boolean flag = true;
++        boolean flag_cm = true; // CM portalCaching
+         BlockPos blockpos = BlockPos.ORIGIN;
+         long l = ChunkPos.asLong(j, k);
+ 
+@@ -87,8 +92,23 @@
+             teleporter$portalposition.lastUpdateTime = this.world.getGameTime();
+             flag = false;
+         }
+-        else
++        else if (CarpetSettings.getBool("portalCaching") && this.destinationHistoryCache.containsKey(l)) // potential best candidate for linkage.
+         {
++            Teleporter.PortalPosition teleporter$portalposition_cm = (Teleporter.PortalPosition)this.destinationHistoryCache.get(l);
++            if (this.world.getBlockState(teleporter$portalposition_cm).getBlock() == Blocks.NETHER_PORTAL)
++            //just to verify nobody is cheating the system with update suppression
++            {
++                d0 = 0.0D;
++                blockpos = teleporter$portalposition_cm;
++                flag_cm = false;
++            }
++        }
++
++
++
++        //else portalCaching
++        if (d0 < 0.0D)
++        {
+             BlockPos blockpos3 = new BlockPos(entityIn);
+ 
+             for (int i1 = -128; i1 <= 128; ++i1)
+@@ -128,6 +148,14 @@
+                 this.destinationCoordinateCache.put(l, new Teleporter.PortalPosition(blockpos, this.world.getGameTime()));
+             }
+ 
++            /* carpet mod */
++            if (CarpetSettings.getBool("portalCaching") && (flag || flag_cm))
++            {
++                //its timeless
++                this.destinationHistoryCache.put(l, new Teleporter.PortalPosition(blockpos, 0L));
++            }
++            /* carpet mod end */
++
+             double d5 = (double)blockpos.getX() + 0.5D;
+             double d7 = (double)blockpos.getZ() + 0.5D;
+             BlockPattern.PatternHelper blockpattern$patternhelper = BLOCK_NETHER_PORTAL.createPatternHelper(this.world, blockpos);
+@@ -394,6 +422,13 @@
+             }
+         }
+ 
++        /* carpet mod */
++        if (CarpetSettings.getBool("portalCaching"))
++        {
++            clearHistoryCache();
++        }
++        /* carpet mod */
++
+         return true;
+     }
+ 
+@@ -413,9 +448,31 @@
+                     objectiterator.remove();
+                 }
+             }
++            /* carpet mod */
++            //failsafe - arbitrary, but will never happen in normal circumstances,
++            //but who knows these freekin players.
++            if (CarpetSettings.getBool("portalCaching") && this.destinationHistoryCache.size()> 65000 )
++            {
++                removeAllCachedEntries();
++            }
++            /* carpet mod end */
+         }
+     }
+ 
++    //carpet mod portalCaching
++    public void clearHistoryCache()
++    {
++        MinecraftServer minecraftserver = this.world.getServer();
++        minecraftserver.func_212370_w().forEach( (w) -> w.getDefaultTeleporter().removeAllCachedEntries());
++    }
++
++    //carpet mod portalCaching
++    public void removeAllCachedEntries()
++    {
++        this.destinationHistoryCache.clear();
++    }
++
++
+     public class PortalPosition extends BlockPos
+     {
+         public long lastUpdateTime;

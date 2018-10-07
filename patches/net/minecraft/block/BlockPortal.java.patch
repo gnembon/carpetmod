@@ -1,0 +1,51 @@
+--- a/net/minecraft/block/BlockPortal.java
++++ b/net/minecraft/block/BlockPortal.java
+@@ -1,5 +1,6 @@
+ package net.minecraft.block;
+ 
++import carpet.CarpetSettings;
+ import com.google.common.cache.LoadingCache;
+ import java.util.Random;
+ import javax.annotation.Nullable;
+@@ -28,6 +29,7 @@
+ import net.minecraft.world.IBlockReader;
+ import net.minecraft.world.IWorld;
+ import net.minecraft.world.World;
++import net.minecraft.world.WorldServer;
+ import net.minecraftforge.api.distmarker.Dist;
+ import net.minecraftforge.api.distmarker.OnlyIn;
+ 
+@@ -91,6 +93,12 @@
+         if (blockportal$size != null)
+         {
+             blockportal$size.placePortalBlocks();
++            //CM
++            if (CarpetSettings.getBool("portalCaching"))
++            {
++                ((WorldServer) worldIn).getDefaultTeleporter().clearHistoryCache();
++            }
++            //CM END
+             return true;
+         }
+         else
+@@ -120,6 +128,20 @@
+         EnumFacing.Axis enumfacing$axis = facing.getAxis();
+         EnumFacing.Axis enumfacing$axis1 = (EnumFacing.Axis)stateIn.get(AXIS);
+         boolean flag = enumfacing$axis1 != enumfacing$axis && enumfacing$axis.isHorizontal();
++        //CM
++        if (CarpetSettings.getBool("portalCaching")) // broken down statement below to accomodate for clear cache call
++        {
++            if (!flag && facingState.getBlock() != this && !(new BlockPortal.Size(worldIn, currentPos, enumfacing$axis1)).func_208508_f())
++            {
++                ((WorldServer) worldIn).getDefaultTeleporter().clearHistoryCache();
++                return Blocks.AIR.getDefaultState();
++            }
++            else
++            {
++                return super.updatePostPlacement(stateIn, facing, facingState, worldIn, currentPos, facingPos);
++            }
++        }
++        //
+         return !flag && facingState.getBlock() != this && !(new BlockPortal.Size(worldIn, currentPos, enumfacing$axis1)).func_208508_f() ? Blocks.AIR.getDefaultState() : super.updatePostPlacement(stateIn, facing, facingState, worldIn, currentPos, facingPos);
+     }
+ 
