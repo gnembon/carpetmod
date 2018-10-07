@@ -1,13 +1,23 @@
 --- a/net/minecraft/entity/EntityLiving.java
 +++ b/net/minecraft/entity/EntityLiving.java
-@@ -1,5 +1,6 @@
+@@ -1,5 +1,7 @@
  package net.minecraft.entity;
  
++import carpet.CarpetSettings;
 +import carpet.logging.logHelpers.DamageReporter;
  import com.google.common.collect.Maps;
  import java.util.Arrays;
  import java.util.Map;
-@@ -1447,10 +1448,16 @@
+@@ -836,7 +838,7 @@
+ 
+     public boolean isNotColliding(IWorldReaderBase worldIn)
+     {
+-        return !worldIn.containsAnyLiquid(this.getBoundingBox()) && worldIn.isCollisionBoxesEmpty(this, this.getBoundingBox()) && worldIn.checkNoEntityCollision(this, this.getBoundingBox());
++        return !worldIn.containsAnyLiquid(this.getBoundingBox()) && worldIn.isCollisionBoxesEmpty(this, this.getBoundingBox()) && (CarpetSettings.n_mobSpawningAlgorithm == 112 || worldIn.checkNoEntityCollision(this, this.getBoundingBox()));
+     }
+ 
+     @OnlyIn(Dist.CLIENT)
+@@ -1447,10 +1449,16 @@
          float f = (float)this.getAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).getValue();
          int i = 0;
  
@@ -24,32 +34,3 @@
          }
  
          boolean flag = entityIn.attackEntityFrom(DamageSource.causeMobDamage(this), f);
-@@ -1522,4 +1529,28 @@
-             this.motionY += (double)0.3F;
-         }
-     }
-+
-+    // Added optimized despawn mobs by Luflosi
-+    public boolean willImmediatelyDespawn()
-+    {
-+        if (!this.canDespawn() || this.persistenceRequired)
-+        {
-+            return false;
-+        }
-+        boolean playerInDimension = false;
-+        for (int i = 0; i < this.world.playerEntities.size(); i++)
-+        {
-+            EntityPlayer entityplayer = this.world.playerEntities.get(i);
-+            if (!entityplayer.isSpectator())
-+            {
-+                playerInDimension = true;
-+                double distanceSq = entityplayer.getDistanceSq(this.posX, this.posY, this.posZ);
-+                if (distanceSq <= 16384.0D)
-+                {
-+                    return false;
-+                }
-+            }
-+        }
-+        return playerInDimension;
-+    }
- }

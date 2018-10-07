@@ -77,38 +77,68 @@
                          label142:
  
                          for (ChunkPos chunkpos1 : this.eligibleChunksForSpawning)
-@@ -170,7 +212,29 @@
+@@ -117,6 +159,10 @@
+                                     Biome.SpawnListEntry biome$spawnlistentry = null;
+                                     IEntityLivingData ientitylivingdata = null;
+                                     int l3 = MathHelper.ceil(Math.random() * 4.0D);
++                                    if (CarpetSettings.n_mobSpawningAlgorithm < 19)
++                                    {
++                                        l3 = 4;
++                                    }
+                                     int i4 = 0;
+ 
+                                     for (int j4 = 0; j4 < l3; ++j4)
+@@ -127,8 +173,17 @@
+                                         blockpos$mutableblockpos.setPos(l2, i3, j3);
+                                         float f = (float)l2 + 0.5F;
+                                         float f1 = (float)j3 + 0.5F;
++                                        boolean player_distance_check;
++                                        if (CarpetSettings.n_mobSpawningAlgorithm == 114)
++                                        {
++                                            player_distance_check = SpawnReporter.check_player_within_spawning_range(worldServerIn, f, i3, f1); // 24 to 128 blocks
++                                        }
++                                        else
++                                        {
++                                            player_distance_check = !worldServerIn.isAnyPlayerWithinRangeAt((double)f, (double)i3, (double)f1, 24.0D);
++                                        }
+ 
+-                                        if (!worldServerIn.isAnyPlayerWithinRangeAt((double)f, (double)i3, (double)f1, 24.0D) && !(blockpos1.distanceSq((double)f, (double)i3, (double)f1) < 576.0D))
++                                        if (player_distance_check && !(blockpos1.distanceSq((double)f, (double)i3, (double)f1) < 576.0D))
+                                         {
+                                             if (biome$spawnlistentry == null)
+                                             {
+@@ -139,6 +194,7 @@
+                                                     break;
+                                                 }
+ 
++                                                if (CarpetSettings.n_mobSpawningAlgorithm >= 113)
+                                                 l3 = biome$spawnlistentry.minGroupCount + worldServerIn.rand.nextInt(1 + biome$spawnlistentry.maxGroupCount - biome$spawnlistentry.minGroupCount);
+                                             }
+ 
+@@ -170,7 +226,21 @@
                                                          {
                                                              ++j2;
                                                              ++i4;
 -                                                            worldServerIn.spawnEntity(entityliving);
-+                                                            //CM replacing //worldServerIn.spawnEntity(entityliving);
-+                                                            if (optimizedDespawnRange && entityliving.willImmediatelyDespawn()) // Added optimized despawn mobs
++                                                            //CM replacing //worldServerIn.spawnEntity(entityliving)
++                                                            ++local_spawns;
++                                                            if (SpawnReporter.track_spawns > 0L)
++                                                            {
++                                                                String species = entityliving.getEntityString();
++                                                                SpawnReporter.registerSpawn(entityliving, type_code, species, blockpos$mutableblockpos);
++                                                            }
++                                                            if (SpawnReporter.mock_spawns)
 +                                                            {
 +                                                                entityliving.remove();
 +                                                            }
 +                                                            else
 +                                                            {
-+                                                                ++local_spawns;
-+                                                                if (SpawnReporter.track_spawns > 0L)
-+                                                                {
-+                                                                    String species = entityliving.getEntityString();
-+                                                                    SpawnReporter.registerSpawn(entityliving, type_code, species, blockpos$mutableblockpos);
-+                                                                }
-+                                                                if (SpawnReporter.mock_spawns)
-+                                                                {
-+                                                                    entityliving.remove();
-+                                                                }
-+                                                                else
-+                                                                {
-+                                                                    worldServerIn.spawnEntity(entityliving);
-+                                                                }
-+                                                                //CM end
++                                                                worldServerIn.spawnEntity(entityliving);
 +                                                            }
                                                          }
                                                          else
                                                          {
-@@ -196,7 +260,30 @@
+@@ -196,7 +266,30 @@
                                  }
                              }
                          }
@@ -139,3 +169,14 @@
                  }
              }
  
+@@ -210,6 +303,10 @@
+         int i = x * 16 + worldIn.rand.nextInt(16);
+         int j = z * 16 + worldIn.rand.nextInt(16);
+         int k = chunk.getTopBlockY(Heightmap.Type.LIGHT_BLOCKING, i, j) + 1;
++        if (CarpetSettings.n_mobSpawningAlgorithm < 113)
++        {
++            k = MathHelper.roundUp(k, 16);
++        }
+         int l = worldIn.rand.nextInt(k + 1);
+         return new BlockPos(i, l, j);
+     }

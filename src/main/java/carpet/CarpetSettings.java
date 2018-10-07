@@ -17,6 +17,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.FileNotFoundException;
 
+import net.minecraft.client.settings.CreativeSettings;
 import net.minecraft.entity.player.EntityPlayerMP;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -52,6 +53,7 @@ public class CarpetSettings
     //static store
     public static int n_pushLimit = 12;
     public static boolean b_hopperCounters = false;
+    public static int n_mobSpawningAlgorithm = 112;
 
     /*
     public static boolean extendedConnectivity = false;
@@ -158,7 +160,7 @@ public class CarpetSettings
                                            "Items counted are destroyed, count up to one stack per tick per hopper")
                                 .isACommand().boolAccelerate().defaultFalse(),
   //! rename rule("renewableElderGuardians", "experimental feature", "Guardians turn into Elder Guardian when struck by lightning"),
-  rule("optimizedDespawnRange", "optimizations", "Spawned mobs that would otherwise despawn immediately, won't be placed in world"),
+  //rule("optimizedDespawnRange", "optimizations", "Spawned mobs that would otherwise despawn immediately, won't be placed in world"), // use 1.14 spawning instead
   //???rule("redstoneMultimeter",    "creative survival", "Enables integration with redstone multimeter mod")
   //                              .extraInfo("Required clients with RSMM Mod by Narcoleptic Frog. Enables multiplayer experience with RSMM Mod"),
   //! will try rule("movableTileEntities",   "experimental", "Pistons can push tile entities, like hoppers, chests etc."),
@@ -203,9 +205,27 @@ public class CarpetSettings
   ////rule("newLight",              "optimizations", "Uses alternative lighting engine by PhiPros. AKA NewLight mod"),
   //!rule("carpets",               "survival", "Placing carpets may issue carpet commands for non-op players"),
   //!rule("missingTools",          "survival", "Pistons, Glass and Sponge can be broken faster with their appropriate tools"),
-  //! renamed to 1.12 rule("1.8Spawning",           "experimental","Using old 1.8 spawning rules: always 4 mobs per pack and honoring entity collisions while spawning"),
+  rule("mobSpawningAlgorithm","experimental","Using version appropriate spawning rules: ")
+                                .extraInfo(" - 1.8 : fixed 4 mobs per pack for all mobs, 'subchunk' rule",
+                                           " - 1.12 : fixed 1 to 4 pack size, ignoring entity collisions while spawning, and subchunk rule",
+                                           " - 1.13 : vanilla",
+                                           " - 1.14 : no mobs don't spawn outside of 128 sphere")
+                                .validate( (s) -> {
+                                    String value = CarpetSettings.getString("mobSpawningAlgorithm");
+                                    CarpetSettings.n_mobSpawningAlgorithm = 113;
+                                    switch (value)
+                                    {
+                                        case "1.8":
+                                            CarpetSettings.n_mobSpawningAlgorithm = 18;
+                                            break;
+                                        case "1.12":
+                                            CarpetSettings.n_mobSpawningAlgorithm = 112;
+                                        case "1.14":
+                                            CarpetSettings.n_mobSpawningAlgorithm = 114;
+                                    }
+                                }),
   /////rule("pocketPushing",         "experimental", "Reintroduces piston warping/translocation bug"),
-  //!rule("portalCaching",         "survival experimental", "Alternative cashing strategy for nether portals"),
+  rule("portalCaching",         "survival experimental", "Alternative, persistent cashing strategy for nether portals"),
   //!rule("calmNetherFires",       "experimental", "Permanent fires don't schedule random updates"),
   /////rule("observersDoNonUpdate",  "creative", "Observers don't pulse when placed"),
   //!rule("flyingMachineTransparent", "creative", "Transparent observers, TNT and redstone blocks. May cause lighting artifacts"),

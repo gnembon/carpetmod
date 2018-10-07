@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.util.EntitySelectors;
 import net.minecraft.util.Tuple;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.world.World;
@@ -481,5 +483,27 @@ public class SpawnReporter
         }
         return rep;
     }
+
+    public static boolean check_player_within_spawning_range(World worldServerIn, float x, float y, float z)
+    {
+
+        for (int i = 0; i < worldServerIn.playerEntities.size(); ++i)
+        {
+            EntityPlayer entityplayer = worldServerIn.playerEntities.get(i);
+
+            if (EntitySelectors.NOT_SPECTATING.test(entityplayer))
+            {
+                double d0 = entityplayer.getDistanceSq(x, y, z);
+
+                if ( d0 > 24.0*24.0 && d0 < 128.0*128.0)
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
 
 }
