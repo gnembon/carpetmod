@@ -1,0 +1,17 @@
+--- a/net/minecraft/network/play/client/CPacketPlayerDigging.java
++++ b/net/minecraft/network/play/client/CPacketPlayerDigging.java
+@@ -19,6 +19,14 @@
+     {
+     }
+ 
++    //CM
++    public CPacketPlayerDigging(BlockPos posIn, EnumFacing facingIn, CPacketPlayerDigging.Action actionIn)
++    {
++        this.action = actionIn;
++        this.position = posIn;
++        this.facing = facingIn;
++    }
++
+     @OnlyIn(Dist.CLIENT)
+     public CPacketPlayerDigging(CPacketPlayerDigging.Action actionIn, BlockPos posIn, EnumFacing facingIn)
+     {

@@ -600,7 +600,7 @@ public class EntityPlayerActionPack
         if (player.interactionManager.getGameType()==GameType.CREATIVE && world.getWorldBorder().contains(posBlock))
         {
             this.blockHitDelay = 5;
-            player.connection.processPlayerDigging(new CPacketPlayerDigging(CPacketPlayerDigging.Action.START_DESTROY_BLOCK, posBlock, directionFacing));
+            player.connection.processPlayerDigging(new CPacketPlayerDigging(posBlock, directionFacing, CPacketPlayerDigging.Action.START_DESTROY_BLOCK));
             clickBlockCreative(world, posBlock, directionFacing);
             return true;
         }
@@ -720,7 +720,7 @@ public class EntityPlayerActionPack
     {
         if (this.isHittingBlock || force)
         {
-            player.connection.processPlayerDigging(new CPacketPlayerDigging(CPacketPlayerDigging.Action.ABORT_DESTROY_BLOCK, this.currentBlock, EnumFacing.DOWN));
+            player.connection.processPlayerDigging(new CPacketPlayerDigging(this.currentBlock, EnumFacing.DOWN, CPacketPlayerDigging.Action.ABORT_DESTROY_BLOCK));
             this.isHittingBlock = false;
             this.curBlockDamageMP = 0.0F;
             player.getEntityWorld().sendBlockBreakProgress(player.getEntityId(), this.currentBlock, -1);
