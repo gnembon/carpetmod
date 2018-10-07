@@ -1,0 +1,12 @@
+--- a/net/minecraft/client/gui/GuiIngame.java
++++ b/net/minecraft/client/gui/GuiIngame.java
+@@ -353,7 +353,8 @@
+             GlStateManager.popMatrix();
+             scoreobjective1 = scoreboard.getObjectiveInDisplaySlot(0);
+ 
+-            if (!this.mc.gameSettings.keyBindPlayerList.isKeyDown() || this.mc.isIntegratedServerRunning() && this.mc.player.connection.getPlayerInfoMap().size() <= 1 && scoreobjective1 == null)
++            //CM display player list if footer or header exists to make logs visible in singleplayer
++            if (!this.mc.gameSettings.keyBindPlayerList.isKeyDown() || this.mc.isIntegratedServerRunning() && this.mc.player.connection.getPlayerInfoMap().size() <= 1 && scoreobjective1 == null && !overlayPlayerList.hasFooterOrHeader())
+             {
+                 this.overlayPlayerList.setVisible(false);
+             }

@@ -1,0 +1,15 @@
+--- a/net/minecraft/client/gui/GuiPlayerTabOverlay.java
++++ b/net/minecraft/client/gui/GuiPlayerTabOverlay.java
+@@ -375,6 +375,12 @@
+         this.footer = null;
+     }
+ 
++    //CM accessor
++    public boolean hasFooterOrHeader()
++    {
++        return footer != null || header != null;
++    }
++
+     @OnlyIn(Dist.CLIENT)
+     static class PlayerComparator implements Comparator<NetworkPlayerInfo>
+         {
