@@ -1,6 +1,5 @@
 package carpet.commands;
 
-import carpet.CarpetServer;
 import carpet.CarpetSettings;
 import carpet.logging.Logger;
 import carpet.logging.LoggerRegistry;
@@ -11,10 +10,16 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.command.CommandSource;
 import net.minecraft.command.Commands;
-import net.minecraft.command.ISuggestionProvider;
 import net.minecraft.entity.player.EntityPlayer;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static com.mojang.brigadier.arguments.StringArgumentType.getString;
+import static net.minecraft.command.ISuggestionProvider.suggest;
 
 public class LogCommand
 {
@@ -26,32 +31,35 @@ public class LogCommand
                 then(Commands.literal("clear").
                         executes( (c) -> unsubFromAll(c.getSource(), c.getSource().getName())).
                         then(Commands.argument("player", StringArgumentType.word()).
-                                suggests( (c, b)->ISuggestionProvider.suggest(c.getSource().getPlayerNames(),b)).
-                                executes( (c) -> unsubFromAll(c.getSource(), StringArgumentType.getString(c, "player")))));
+                                suggests( (c, b)->suggest(c.getSource().getPlayerNames(),b)).
+                                executes( (c) -> unsubFromAll(c.getSource(), getString(c, "player")))));
 
         literalargumentbuilder.then(Commands.argument("log name",StringArgumentType.word()).
-                suggests( (c, b)-> ISuggestionProvider.suggest(LoggerRegistry.getLoggerNames(),b)).
-                executes( (c)-> toggleSubscription(c.getSource(), c.getSource().getName(), StringArgumentType.getString(c, "log name"))).
+                suggests( (c, b)-> suggest(LoggerRegistry.getLoggerNames(),b)).
+                executes( (c)-> toggleSubscription(c.getSource(), c.getSource().getName(), getString(c, "log name"))).
                 then(Commands.literal("clear").
                         executes( (c) -> unsubFromLogger(
                                 c.getSource(),
                                 c.getSource().getName(),
-                                StringArgumentType.getString(c, "log name")))).
+                                getString(c, "log name")))).
                 then(Commands.argument("option", StringArgumentType.word()).
-                        suggests( (c, b) -> ISuggestionProvider.suggest(
-                                LoggerRegistry.getLogger(StringArgumentType.getString(c, "log name")).getOptions(),b)).
+                        suggests( (c, b) -> suggest(
+                                (LoggerRegistry.getLogger(getString(c, "log name"))==null
+                                        ?new String[]{}
+                                        :LoggerRegistry.getLogger(getString(c, "log name")).getOptions()),
+                                b)).
                         executes( (c) -> subscribePlayer(
                                 c.getSource(),
                                 c.getSource().getName(),
-                                StringArgumentType.getString(c, "log name"),
-                                StringArgumentType.getString(c, "option"))).
+                                getString(c, "log name"),
+                                getString(c, "option"))).
                         then(Commands.argument("player", StringArgumentType.word()).
-                                suggests( (c, b) -> ISuggestionProvider.suggest(c.getSource().getPlayerNames(),b)).
+                                suggests( (c, b) -> suggest(c.getSource().getPlayerNames(),b)).
                                 executes( (c) -> subscribePlayer(
                                         c.getSource(),
-                                        StringArgumentType.getString(c, "player"),
-                                        StringArgumentType.getString(c, "log name"),
-                                        StringArgumentType.getString(c, "option"))))));
+                                        getString(c, "player"),
+                                        getString(c, "log name"),
+                                        getString(c, "option"))))));
 
         dispatcher.register(literalargumentbuilder);
     }
@@ -143,6 +151,12 @@ public class LogCommand
         if (player == null)
         {
             Messenger.m(source, "r No player specified");
+            return 0;
+        }
+        Logger log = LoggerRegistry.getLogger(logname);
+        if (log == null)
+        {
+            Messenger.m(source, "r Unknown logger: ","rb "+logname);
             return 0;
         }
         LoggerRegistry.unsubscribePlayer(player_name, logname);
