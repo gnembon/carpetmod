@@ -17,3 +17,14 @@
  
          this.dispatcher.findAmbiguities((p_201302_1_, p_201302_2_, p_201302_3_, p_201302_4_) ->
          {
+@@ -259,6 +262,10 @@
+                         itextcomponent.appendText("\n\n").appendText(astacktraceelement[j].getMethodName()).appendText("\n ").appendText(astacktraceelement[j].getFileName()).appendText(":").appendText(String.valueOf(astacktraceelement[j].getLineNumber()));
+                     }
+                 }
++                else //CM print errors in production too
++                {
++                    exception.printStackTrace();
++                }
+ 
+                 p_197059_1_.sendErrorMessage((new TextComponentTranslation("command.failed", new Object[0])).applyTextStyle((p_211704_1_) ->
+                 {

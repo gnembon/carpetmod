@@ -1,0 +1,21 @@
+--- a/net/minecraft/client/Minecraft.java
++++ b/net/minecraft/client/Minecraft.java
+@@ -195,6 +195,8 @@
+ import org.lwjgl.glfw.GLFW;
+ import org.lwjgl.glfw.GLFWErrorCallback;
+ 
++import carpet.CarpetServer;
++
+ @OnlyIn(Dist.CLIENT)
+ public class Minecraft implements IThreadListener, ISnooperInfo, IGuiEventListenerDeferred
+ {
+@@ -516,6 +518,9 @@
+         this.mainWindow.updateVsyncFromGameSettings();
+         this.mainWindow.setLogOnGlError();
+         this.renderGlobal.makeEntityOutlineShader();
++
++        //CM start game hook
++        CarpetServer.onGameStarted();
+     }
+ 
+     private void checkForGLFWInitError()
