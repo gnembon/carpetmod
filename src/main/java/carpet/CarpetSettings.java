@@ -36,7 +36,7 @@ import net.minecraft.server.MinecraftServer;
 public class CarpetSettings
 {
     public static boolean locked = false;
-    public static final String carpetVersion = "v18_10_01";
+    public static final String carpetVersion = "v18_10_09";
 
     public static final Logger LOG = LogManager.getLogger();
     private static final Map<String, CarpetSettingEntry> settings_store;
