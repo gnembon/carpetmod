@@ -153,8 +153,7 @@ public class LogCommand
             Messenger.m(source, "r No player specified");
             return 0;
         }
-        Logger log = LoggerRegistry.getLogger(logname);
-        if (log == null)
+        if (LoggerRegistry.getLogger(logname) == null)
         {
             Messenger.m(source, "r Unknown logger: ","rb "+logname);
             return 0;
@@ -170,6 +169,11 @@ public class LogCommand
         if (player == null)
         {
             Messenger.m(source, "r No player specified");
+            return 0;
+        }
+        if (LoggerRegistry.getLogger(logName) == null)
+        {
+            Messenger.m(source, "r Unknown logger: ","rb "+logName);
             return 0;
         }
         boolean subscribed = LoggerRegistry.togglePlayerSubscription(player_name, logName);
@@ -189,6 +193,11 @@ public class LogCommand
         if (player == null)
         {
             Messenger.m(source, "r No player specified");
+            return 0;
+        }
+        if (LoggerRegistry.getLogger(logname) == null)
+        {
+            Messenger.m(source, "r Unknown logger: ","rb "+logname);
             return 0;
         }
         LoggerRegistry.subscribePlayer(player_name, logname, option);
