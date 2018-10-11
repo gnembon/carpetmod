@@ -15,11 +15,13 @@ public class TestCommand
     public static void register(CommandDispatcher<CommandSource> dispatcher)
     {
         dispatcher.register(literal("test").
-                then(argument("other", word()).
-                        executes( (c)-> test_dim(c, getString(c, "other")+" 2"))));
+                then(argument("first",word()).
+                        executes( (c)-> test(c, getString(c, "first")+" 1"))).
+                then(argument("second", word()).
+                        executes( (c)-> test(c, getString(c, "second")+" 2"))));
     }
 
-    private static int test_dim(CommandContext<CommandSource> c, String term)
+    private static int test(CommandContext<CommandSource> c, String term)
     {
         Messenger.m(c.getSource(),"w term is: ",term.substring(0,1)+"b "+term);
         return 1;

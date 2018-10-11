@@ -53,7 +53,7 @@ public class CarpetSettings
     //static store
     public static int n_pushLimit = 12;
     public static boolean b_hopperCounters = false;
-    public static int n_mobSpawningAlgorithm = 112;
+    public static int n_mobSpawningAlgorithm = 113;
 
     /*
     public static boolean extendedConnectivity = false;
