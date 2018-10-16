@@ -240,12 +240,12 @@ public class EntityPlayerActionPack
 
     public void swapHands()
     {
-        player.connection.processPlayerDigging(new CPacketPlayerDigging(CPacketPlayerDigging.Action.SWAP_HELD_ITEMS,null, null));
+        player.connection.processPlayerDigging(new CPacketPlayerDigging(null, null, CPacketPlayerDigging.Action.SWAP_HELD_ITEMS));
     }
 
     public void dropItem()
     {
-        player.connection.processPlayerDigging(new CPacketPlayerDigging(CPacketPlayerDigging.Action.DROP_ITEM,null, null));
+        player.connection.processPlayerDigging(new CPacketPlayerDigging(null, null, CPacketPlayerDigging.Action.DROP_ITEM));
     }
     public void mount()
     {
@@ -544,7 +544,7 @@ public class EntityPlayerActionPack
         {
             if (player.interactionManager.getGameType()==GameType.CREATIVE)
             {
-                player.connection.processPlayerDigging(new CPacketPlayerDigging(CPacketPlayerDigging.Action.START_DESTROY_BLOCK, loc, face));
+                player.connection.processPlayerDigging(new CPacketPlayerDigging(loc, face, CPacketPlayerDigging.Action.START_DESTROY_BLOCK));
                 clickBlockCreative(world, loc, face);
                 this.blockHitDelay = 5;
             }
@@ -552,11 +552,11 @@ public class EntityPlayerActionPack
             {
                 if (this.isHittingBlock)
                 {
-                    player.connection.processPlayerDigging(new CPacketPlayerDigging(CPacketPlayerDigging.Action.ABORT_DESTROY_BLOCK, this.currentBlock, face));
+                    player.connection.processPlayerDigging(new CPacketPlayerDigging(this.currentBlock, face, CPacketPlayerDigging.Action.ABORT_DESTROY_BLOCK));
                 }
 
                 IBlockState iblockstate = world.getBlockState(loc);
-                player.connection.processPlayerDigging(new CPacketPlayerDigging(CPacketPlayerDigging.Action.START_DESTROY_BLOCK, loc, face));
+                player.connection.processPlayerDigging(new CPacketPlayerDigging(loc, face, CPacketPlayerDigging.Action.START_DESTROY_BLOCK));
                 boolean flag = iblockstate.getMaterial() != Material.AIR;
 
                 if (flag && this.curBlockDamageMP == 0.0F)
@@ -620,7 +620,7 @@ public class EntityPlayerActionPack
                 if (this.curBlockDamageMP >= 1.0F)
                 {
                     this.isHittingBlock = false;
-                    player.connection.processPlayerDigging(new CPacketPlayerDigging(CPacketPlayerDigging.Action.STOP_DESTROY_BLOCK, posBlock, directionFacing));
+                    player.connection.processPlayerDigging(new CPacketPlayerDigging(posBlock, directionFacing, CPacketPlayerDigging.Action.STOP_DESTROY_BLOCK));
                     this.onPlayerDestroyBlock(posBlock);
                     this.curBlockDamageMP = 0.0F;
                     this.blockHitDelay = 5;
