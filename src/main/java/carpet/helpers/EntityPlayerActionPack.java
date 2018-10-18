@@ -393,8 +393,6 @@ public class EntityPlayerActionPack
 
                         if (player.getEntityWorld().getBlockState(blockpos).getMaterial() != Material.AIR)
                         {
-                            if(itemstack.isEmpty())
-                                continue;
                             float x = (float) raytraceresult.hitVec.x;
                             float y = (float) raytraceresult.hitVec.y;
                             float z = (float) raytraceresult.hitVec.z;
