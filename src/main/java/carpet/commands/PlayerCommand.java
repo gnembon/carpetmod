@@ -147,11 +147,6 @@ public class PlayerCommand
     private static boolean cantSpawn(CommandContext<CommandSource> context)
     {
         String playerName = getString(context,"player");
-        if (playerName.length()<3 || playerName.length()>11)
-        {
-            Messenger.m(context.getSource(),"r Player names can only be 3 to 11 chars long");
-            return true;
-        }
         EntityPlayer player = context.getSource().getServer().getPlayerList().getPlayerByUsername(playerName);
         if (player != null)
         {
@@ -462,15 +457,18 @@ public class PlayerCommand
         catch (CommandSyntaxException ignored)
         {
         }
-
-
-        EntityPlayerMPFake.createFake(
+        EntityPlayer p = EntityPlayerMPFake.createFake(
                 getString(context,"player"),
                 context.getSource().getServer(),
                 pos.x, pos.y, pos.z,
                 facing.y, facing.x,
                 dim,
                 mode);
+        if (p == null)
+        {
+            Messenger.m(context.getSource(), "rb Player "+getString(context,"player")+" doesn't exist " +
+                    "and cannot spawn in online mode. Turn the server offline to spawn non-existing players");
+        }
         return 1;
     }
 }

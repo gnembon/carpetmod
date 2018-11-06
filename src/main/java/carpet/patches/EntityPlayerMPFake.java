@@ -30,6 +30,10 @@ public class EntityPlayerMPFake extends EntityPlayerMP
         WorldServer worldIn = server.getWorld(dimension);
         PlayerInteractionManager interactionManagerIn = new PlayerInteractionManager(worldIn);
         GameProfile gameprofile = server.getPlayerProfileCache().getGameProfileForUsername(username);
+        if (gameprofile == null)
+        {
+            return null;
+        }
         if (gameprofile.getProperties().containsKey("textures"))
         {
             gameprofile = TileEntitySkull.updateGameProfile(gameprofile);
