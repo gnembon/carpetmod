@@ -43,12 +43,12 @@ public class PlayerCommand
                         then(literal("use").
                                 executes(PlayerCommand::useOnce).
                                 then(literal("once").
-                                        executes( PlayerCommand::useOnce).
+                                        executes( PlayerCommand::useOnce)).
                                 then(literal("continuous").
                                         executes( PlayerCommand::useContinuous)).
                                 then(literal("interval").
                                         then(argument("ticks",integer(2)).
-                                                executes( PlayerCommand::useInterval))))).
+                                                executes( PlayerCommand::useInterval)))).
                         then(literal("jump").
                                 executes( PlayerCommand::jumpOnce).
                                 then(literal("once").
