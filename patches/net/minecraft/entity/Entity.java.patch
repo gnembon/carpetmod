@@ -38,7 +38,21 @@
      {
          this.rotationYaw = yaw % 360.0F;
          this.rotationPitch = pitch % 360.0F;
-@@ -1859,7 +1868,7 @@
+@@ -1566,6 +1575,13 @@
+         return partialTicks == 1.0F ? this.rotationYaw : this.prevRotationYaw + (this.rotationYaw - this.prevRotationYaw) * partialTicks;
+     }
+ 
++    // [CM] start useMainYaw fix
++    public float getMainYaw(float partialTicks)
++    {
++        return partialTicks == 1.0F ? this.rotationYaw : this.prevRotationYaw + (this.rotationYaw - this.prevRotationYaw) * partialTicks;
++    }
++    // [CM] end
++
+     protected final Vec3d getVectorForRotation(float pitch, float yaw)
+     {
+         float f = pitch * ((float)Math.PI / 180F);
+@@ -1859,7 +1875,7 @@
      }
  
      @Nullable
@@ -47,7 +61,7 @@
      {
          EntityType<?> entitytype = this.getType();
          ResourceLocation resourcelocation = EntityType.getId(entitytype);
-@@ -2821,6 +2830,10 @@
+@@ -2821,6 +2837,10 @@
  
      public EnumFacing getHorizontalFacing()
      {

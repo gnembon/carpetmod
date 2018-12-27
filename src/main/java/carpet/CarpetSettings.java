@@ -283,7 +283,7 @@ public class CarpetSettings
   rule("kelpGenerationGrowLimit", "feature", "limits growth limit of newly naturally generated kelp to this amount of blocks")
                                   .choices("25", "0 2 25").setNotStrict(),
   rule("renewableCoral",          "feature", "Alternative cashing strategy for nether portals"),
-
+  rule("useMainYaw",              "fix", "Use default yaw for facing direction"),
         };
         for (CarpetSettingEntry rule: RuleList)
         {
