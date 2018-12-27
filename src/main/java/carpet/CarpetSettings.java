@@ -204,7 +204,7 @@ public class CarpetSettings
   ////rule("commandRNG",            "commands", "Enables /rng command to manipulate and query rng").defaultTrue(),
   ////rule("newLight",              "optimizations", "Uses alternative lighting engine by PhiPros. AKA NewLight mod"),
   //!rule("carpets",               "survival", "Placing carpets may issue carpet commands for non-op players"),
-  //!rule("missingTools",          "survival", "Pistons, Glass and Sponge can be broken faster with their appropriate tools"),
+  rule("missingTools",          "survival", "Pistons, Glass and Sponge can be broken faster with their appropriate tools"),
   rule("mobSpawningAlgorithm","experimental","Using version appropriate spawning rules: ")
                                 .extraInfo(" - 1.8 : fixed 4 mobs per pack for all mobs, 'subchunk' rule",
                                            " - 1.12 : fixed 1 to 4 pack size, ignoring entity collisions, subchunk rule",

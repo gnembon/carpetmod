@@ -1,0 +1,21 @@
+--- a/net/minecraft/item/ItemShears.java
++++ b/net/minecraft/item/ItemShears.java
+@@ -1,6 +1,8 @@
+ package net.minecraft.item;
+ 
++import carpet.CarpetSettings;
+ import net.minecraft.block.Block;
++import net.minecraft.block.material.Material;
+ import net.minecraft.block.state.IBlockState;
+ import net.minecraft.entity.EntityLivingBase;
+ import net.minecraft.init.Blocks;
+@@ -36,7 +38,8 @@
+     {
+         Block block = state.getBlock();
+ 
+-        if (block != Blocks.COBWEB && !state.isIn(BlockTags.LEAVES))
++        //[CM] Added MissingTool For Sponge
++        if (block != Blocks.COBWEB && !state.isIn(BlockTags.LEAVES) && (!CarpetSettings.getBool("missingTools") || state.getMaterial() != Material.SPONGE))
+         {
+             return block.isIn(BlockTags.WOOL) ? 5.0F : super.getDestroySpeed(stack, state);
+         }
