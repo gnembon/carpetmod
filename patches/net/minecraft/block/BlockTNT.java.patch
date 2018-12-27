@@ -1,0 +1,21 @@
+--- a/net/minecraft/block/BlockTNT.java
++++ b/net/minecraft/block/BlockTNT.java
+@@ -1,6 +1,8 @@
+ package net.minecraft.block;
+ 
+ import javax.annotation.Nullable;
++
++import carpet.CarpetSettings;
+ import net.minecraft.block.state.IBlockState;
+ import net.minecraft.entity.Entity;
+ import net.minecraft.entity.EntityLivingBase;
+@@ -36,7 +38,8 @@
+     {
+         if (oldState.getBlock() != state.getBlock())
+         {
+-            if (worldIn.isBlockPowered(pos))
++            // Carpet setting to remove updates when tnt is placed
++            if (!CarpetSettings.getBool("TNTDoNotUpdate") && worldIn.isBlockPowered(pos))
+             {
+                 this.explode(worldIn, pos);
+                 worldIn.removeBlock(pos);
