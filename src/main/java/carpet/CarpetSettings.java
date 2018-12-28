@@ -147,8 +147,8 @@ public class CarpetSettings
   //!rule("unloadedEntityFix",     "experimental creative", "Entities pushed or moved into unloaded chunks no longer disappear"),
   //!rule("TNTDoNotUpdate",        "tnt", "TNT doesn't update when placed against a power source"),
   //!rule("antiCheatSpeed",        "creative surival", "Prevents players from rubberbanding when moving too fast"),
-  //!rule("quasiConnectivity",     "creative", "Pistons, droppers and dispensers react if block above them is powered")
-  //                              .defaultTrue(),
+  rule("quasiConnectivity",     "creative", "Pistons, droppers and dispensers react if block above them is powered")
+                                  .defaultTrue(),
   rule("flippinCactus",         "creative survival", "Players can flip and rotate blocks when holding cactus")
                                 .extraInfo("Doesn't cause block updates when rotated/flipped",
                                            "Applies to pistons, observers, droppers, repeaters, stairs, glazed terracotta etc..."),

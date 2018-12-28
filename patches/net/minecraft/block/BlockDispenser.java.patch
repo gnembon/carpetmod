@@ -1,0 +1,32 @@
+--- a/net/minecraft/block/BlockDispenser.java
++++ b/net/minecraft/block/BlockDispenser.java
+@@ -1,5 +1,6 @@
+ package net.minecraft.block;
+ 
++import carpet.CarpetSettings;
+ import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+ import java.util.Map;
+ import java.util.Random;
+@@ -119,7 +120,21 @@
+ 
+     public void neighborChanged(IBlockState state, World worldIn, BlockPos pos, Block blockIn, BlockPos fromPos)
+     {
+-        boolean flag = worldIn.isBlockPowered(pos) || worldIn.isBlockPowered(pos.up());
++     // boolean flag = worldIn.isBlockPowered(pos) || worldIn.isBlockPowered(pos.up()); //[CM] Removed Line
++
++        boolean flag = false;   // [CM] Added line in place of the removed line
++
++     // [CM] Added QuasiConnectivity Tweak For Droppers And Dispensers
++        if (CarpetSettings.getBool("quasiConnectivity"))
++        {
++            flag = worldIn.isBlockPowered(pos) || worldIn.isBlockPowered(pos.up());
++        }
++        else
++        {
++            flag = worldIn.isBlockPowered(pos);
++        }
++     // [CM] End
++
+         boolean flag1 = state.get(TRIGGERED);
+ 
+         if (flag && !flag1)
