@@ -1,0 +1,28 @@
+--- a/net/minecraft/block/BlockSilverfish.java
++++ b/net/minecraft/block/BlockSilverfish.java
+@@ -1,10 +1,12 @@
+ package net.minecraft.block;
+ 
++import carpet.CarpetSettings;
+ import com.google.common.collect.Maps;
+ import java.util.Map;
+ import java.util.Random;
+ import net.minecraft.block.state.IBlockState;
+ import net.minecraft.entity.monster.EntitySilverfish;
++import net.minecraft.init.Blocks;
+ import net.minecraft.item.ItemStack;
+ import net.minecraft.util.math.BlockPos;
+ import net.minecraft.world.World;
+@@ -49,6 +51,12 @@
+             entitysilverfish.setLocationAndAngles((double)pos.getX() + 0.5D, (double)pos.getY(), (double)pos.getZ() + 0.5D, 0.0F, 0.0F);
+             worldIn.spawnEntity(entitysilverfish);
+             entitysilverfish.spawnExplosionParticle();
++            
++            // [CM] Silverfish will drop gravel when breaking out of a block. CARPET-XCOM
++            if (CarpetSettings.getBool("silverFishDropGravel"))
++            {
++                spawnAsEntity(worldIn, pos, new ItemStack(Blocks.GRAVEL));
++            }
+         }
+     }
+ 

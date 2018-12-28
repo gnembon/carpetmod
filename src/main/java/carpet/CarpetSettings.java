@@ -183,7 +183,7 @@ public class CarpetSettings
   //                              .extraInfo("By Theosib"),
   /////rule("itemFrameDuplicationFix", "fix", "Fixes duplication of items when using item frames"),
   /////rule("craftingWindowDuplicationFix", "fix", "Fixes the recipe book duplication caused by clicking to fast while crafting"),
-  //!rule("silverFishDropGravel",  "experimental", "Silverfish drop a gravel item when breaking out of a block"),
+  rule("silverFishDropGravel",  "experimental", "Silverfish drop a gravel item when breaking out of a block"),
   /////rule("renewablePackedIce",    "experimental", "Multiple ice crushed by falling anvils make packed ice"),
   /////rule("renewableDragonEggs",   "experimental", "Dragon eggs when fed meet items spawn more eggs"),
   //!rule("summonNaturalLightning","creative", "summoning a lightning bolt has all the side effects of natural lightning"),
