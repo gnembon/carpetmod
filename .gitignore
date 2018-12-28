@@ -5,3 +5,6 @@
 /ForgeGradle/
 /.idea/
 /out/
+/saves/
+/logs/
+usercache.json
