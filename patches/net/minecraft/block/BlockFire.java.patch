@@ -1,0 +1,24 @@
+--- a/net/minecraft/block/BlockFire.java
++++ b/net/minecraft/block/BlockFire.java
+@@ -1,5 +1,6 @@
+ package net.minecraft.block;
+ 
++import carpet.CarpetSettings;
+ import it.unimi.dsi.fastutil.objects.Object2IntMap;
+ import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
+ import java.util.Map;
+@@ -141,10 +142,13 @@
+                     worldIn.setBlockState(pos, state, 4);
+                 }
+ 
+-                if (!flag)
++                // [CM] Added if statement around
++                if (!flag || !CarpetSettings.getBool("calmNetherFires"))
+                 {
+                     worldIn.getPendingBlockTicks().scheduleTick(pos, this, this.tickRate(worldIn) + random.nextInt(10));
++                }
+ 
++                if (!flag) {
+                     if (!this.func_196447_a(worldIn, pos))
+                     {
+                         if (!worldIn.getBlockState(pos.down()).isTopSolid() || i > 3)

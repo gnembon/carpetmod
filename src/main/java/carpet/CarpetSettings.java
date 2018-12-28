@@ -232,7 +232,7 @@ public class CarpetSettings
                                 }),
   /////rule("pocketPushing",         "experimental", "Reintroduces piston warping/translocation bug"),
   rule("portalCaching",         "survival experimental", "Alternative, persistent cashing strategy for nether portals"),
-  //!rule("calmNetherFires",       "experimental", "Permanent fires don't schedule random updates"),
+  rule("calmNetherFires",       "experimental", "Permanent fires don't schedule random updates"),
   /////rule("observersDoNonUpdate",  "creative", "Observers don't pulse when placed"),
   //!rule("flyingMachineTransparent", "creative", "Transparent observers, TNT and redstone blocks. May cause lighting artifacts"),
   rule("fillUpdates",           "creative", "fill/clone/setblock and structure blocks cause block updates").defaultTrue(),
