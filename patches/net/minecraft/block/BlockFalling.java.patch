@@ -1,0 +1,23 @@
+--- a/net/minecraft/block/BlockFalling.java
++++ b/net/minecraft/block/BlockFalling.java
+@@ -1,6 +1,8 @@
+ package net.minecraft.block;
+ 
+ import java.util.Random;
++
++import carpet.CarpetSettings;
+ import net.minecraft.block.material.Material;
+ import net.minecraft.block.state.IBlockState;
+ import net.minecraft.entity.item.EntityFallingBlock;
+@@ -74,7 +76,10 @@
+ 
+                 if (blockpos.getY() > 0)
+                 {
+-                    worldIn.setBlockState(blockpos.up(), this.getDefaultState());
++                    // [CM] reintroduce dragon egg bedrock breaking
++                    boolean dragonEggHandling = (CarpetSettings.getBool("dragonEggBedrockRemoval") && this instanceof BlockDragonEgg);
++                    worldIn.setBlockState((!dragonEggHandling ? blockpos.up() : blockpos), this.getDefaultState());
++                    // [CM] end
+                 }
+             }
+         }
