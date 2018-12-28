@@ -144,7 +144,7 @@ public class CarpetSettings
   /////rule("mergeTNT",              "tnt", "Merges stationary primed TNT entities"),
   //???<no block data anymore> rule("repeaterPoweredTerracota", "experimental creative", "Repeater delays depends on stained hardened clay aka terracotta on which they are placed")
   //                              .extraInfo("1 to 15 gt per delay added (1-15 block data), 0 (white) adds 100gt per tick"),
-  //!rule("unloadedEntityFix",     "experimental creative", "Entities pushed or moved into unloaded chunks no longer disappear"),
+  rule("unloadedEntityFix",     "experimental creative", "Entities pushed or moved into unloaded chunks no longer disappear"),
   //!rule("TNTDoNotUpdate",        "tnt", "TNT doesn't update when placed against a power source"),
   //!rule("antiCheatSpeed",        "creative surival", "Prevents players from rubberbanding when moving too fast"),
   //!rule("quasiConnectivity",     "creative", "Pistons, droppers and dispensers react if block above them is powered")

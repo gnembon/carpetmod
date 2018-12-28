@@ -1,6 +1,15 @@
 --- a/net/minecraft/tileentity/TileEntityPiston.java
 +++ b/net/minecraft/tileentity/TileEntityPiston.java
-@@ -40,6 +40,11 @@
+@@ -1,6 +1,8 @@
+ package net.minecraft.tileentity;
+ 
+ import java.util.List;
++
++import carpet.CarpetSettings;
+ import net.minecraft.block.Block;
+ import net.minecraft.block.BlockPistonBase;
+ import net.minecraft.block.BlockPistonExtension;
+@@ -40,6 +42,11 @@
      private float lastProgress;
      private long lastTicked;
  
@@ -12,3 +21,17 @@
      public TileEntityPiston()
      {
          super(TileEntityType.PISTON);
+@@ -178,6 +185,13 @@
+                             {
+                                 this.fixEntityWithinPistonBase(entity, enumfacing, d0);
+                             }
++
++                            // [CM] Added UnloadedEntityFix
++                            if (CarpetSettings.getBool("unloadedEntityFix"))
++                            {
++                                world.tickEntity(entity, false);
++                            }
++                            // [CM] End
+                         }
+                     }
+                 }
