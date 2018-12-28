@@ -1,14 +1,28 @@
 --- a/net/minecraft/entity/player/EntityPlayer.java
 +++ b/net/minecraft/entity/player/EntityPlayer.java
-@@ -1,5 +1,8 @@
+@@ -1,5 +1,10 @@
  package net.minecraft.entity.player;
  
++import carpet.CarpetSettings;
++import carpet.helpers.PortalHelper;
 +import carpet.logging.LoggerRegistry;
 +import carpet.logging.logHelpers.DamageReporter;
 +import carpet.logging.logHelpers.KillLogHelper;
  import com.google.common.collect.Lists;
  import com.mojang.authlib.GameProfile;
  import java.nio.charset.StandardCharsets;
+@@ -436,6 +441,14 @@
+ 
+     public int getMaxInPortalTime()
+     {
++        if (CarpetSettings.getBool("portalCreativeDelay"))
++        {
++            if ( PortalHelper.player_holds_obsidian(this))
++            {
++                return 72000;
++            }
++            return 80;
++        }
 @@ -995,6 +998,7 @@
  
                  if (source.isDifficultyScaled())
