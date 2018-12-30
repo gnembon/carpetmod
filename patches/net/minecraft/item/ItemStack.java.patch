@@ -15,15 +15,13 @@
  import net.minecraft.block.state.BlockWorldState;
  import net.minecraft.block.state.IBlockState;
  import net.minecraft.client.util.ITooltipFlag;
-@@ -224,6 +226,11 @@
- 
-     public int getMaxStackSize()
+@@ -1157,4 +1159,9 @@
      {
-+        if (this.getItem() instanceof ItemBlock && ((ItemBlock) this.getItem()).getBlock() instanceof BlockShulkerBox && CarpetSettings.getBool("stackableEmptyShulkerBoxes"))
-+        {
-+            return hasTag() ? 1 : 64;
-+        }
-+
-         return this.getItem().getMaxStackSize();
+         this.grow(-count);
      }
- 
++
++    // Check for ground stacking CARPET-XCOM
++    public boolean isGroundStackable() {
++        return this.getItem().itemGroundStacking(hasTag());
++    }
+ }
