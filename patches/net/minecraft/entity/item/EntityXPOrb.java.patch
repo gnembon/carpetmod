@@ -1,6 +1,15 @@
 --- a/net/minecraft/entity/item/EntityXPOrb.java
 +++ b/net/minecraft/entity/item/EntityXPOrb.java
-@@ -27,6 +27,11 @@
+@@ -17,6 +17,8 @@
+ import net.minecraftforge.api.distmarker.Dist;
+ import net.minecraftforge.api.distmarker.OnlyIn;
+ 
++import carpet.CarpetSettings;
++
+ public class EntityXPOrb extends Entity
+ {
+     public int xpColor;
+@@ -27,6 +29,11 @@
      private EntityPlayer closestPlayer;
      private int xpTargetColor;
  
@@ -12,3 +21,13 @@
      public EntityXPOrb(World worldIn, double x, double y, double z, int expValue)
      {
          super(EntityType.EXPERIENCE_ORB, worldIn);
+@@ -218,7 +225,8 @@
+     {
+         if (!this.world.isRemote)
+         {
+-            if (this.delayBeforeCanPickup == 0 && entityIn.xpCooldown == 0)
++            // CM added ORed condition
++            if (this.delayBeforeCanPickup == 0 && (entityIn.xpCooldown == 0 || CarpetSettings.getBool("xpNoCooldown")))
+             {
+                 entityIn.xpCooldown = 2;
+                 entityIn.onItemPickup(this, 1);
