@@ -1,0 +1,11 @@
+--- a/net/minecraft/block/BlockTNT.java
++++ b/net/minecraft/block/BlockTNT.java
+@@ -36,7 +36,7 @@
+     {
+         if (oldState.getBlock() != state.getBlock())
+         {
+-            if (worldIn.isBlockPowered(pos))
++            if (!CarpetSettings.getBool("TNTDoNotUpdate") && worldIn.isBlockPowered(pos))
+             {
+                 this.explode(worldIn, pos);
+                 worldIn.removeBlock(pos);
