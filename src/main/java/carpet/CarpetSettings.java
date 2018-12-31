@@ -113,7 +113,7 @@ public class CarpetSettings
   // !? rule("potionsDespawnFix",     "fix", "Allows mobs with potion effects to despawn outside of player range")
   //                              .extraInfo("Specifically effective to let witches drinking their own stuffs despawn"),
   rule("ctrlQCraftingFix",      "fix survival", "Dropping entire stacks works also from on the crafting UI result slot"),
-  //!rule("persistentParrots",     "survival feature", "Parrots don't get of your shoulders until you receive damage"),
+  rule("persistentParrots",     "survival feature", "Parrots don't get of your shoulders until you receive damage"),
   //???rule("breedingMountingDisabled", "fix", "Prevents players from mounting animals when holding breeding food"),
   //!rule("growingUpWallJump",     "fix", "Mobs growing up won't glitch into walls or go through fences"),
   //!rule("reloadSuffocationFix",  "fix experimental", "Won't let mobs glitch into blocks when reloaded.")
