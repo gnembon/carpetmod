@@ -108,17 +108,17 @@ public class CarpetSettings
   //                              .extraInfo("It also prevents from taking random fire damage when going through portals"),
   //???rule("llamaOverfeedingFix",   "fix", "Prevents llamas from taking player food while breeding"),
   rule("invisibilityFix",       "fix", "Guardians honor players' invisibility effect"),
-  //!rule("portalCreativeDelay",   "creative",  "Portals won't let a creative player go through instantly")
+  rule("portalCreativeDelay",   "creative",  "Portals won't let a creative player go through instantly"),
   //                              .extraInfo("Holding obsidian in either hand won't let you through at all"),
   // !? rule("potionsDespawnFix",     "fix", "Allows mobs with potion effects to despawn outside of player range")
   //                              .extraInfo("Specifically effective to let witches drinking their own stuffs despawn"),
-  //!rule("ctrlQCraftingFix",      "fix survival", "Dropping entire stacks works also from on the crafting UI result slot"),
+  rule("ctrlQCraftingFix",      "fix survival", "Dropping entire stacks works also from on the crafting UI result slot"),
   //!rule("persistentParrots",     "survival feature", "Parrots don't get of your shoulders until you receive damage"),
   //???rule("breedingMountingDisabled", "fix", "Prevents players from mounting animals when holding breeding food"),
   //!rule("growingUpWallJump",     "fix", "Mobs growing up won't glitch into walls or go through fences"),
   //!rule("reloadSuffocationFix",  "fix experimental", "Won't let mobs glitch into blocks when reloaded.")
   //                              .extraInfo("Can cause slight differences in mobs behaviour"),
-  ////rule("xpNoCooldown",          "creative", "Players absorb XP instantly, without delay"),
+  rule("xpNoCooldown",          "creative", "Players absorb XP instantly, without delay"),
   rule("combineXPOrbs",         "creative", "XP orbs combine with other into bigger orbs"),
   //!rule("stackableEmptyShulkerBoxes", "survival", "Empty shulker boxes can stack to 64 when dropped on the ground")
   //                              .extraInfo("To move them around between inventories, use shift click to move entire stacks"),
@@ -146,9 +146,9 @@ public class CarpetSettings
   //                              .extraInfo("1 to 15 gt per delay added (1-15 block data), 0 (white) adds 100gt per tick"),
   //!rule("unloadedEntityFix",     "experimental creative", "Entities pushed or moved into unloaded chunks no longer disappear"),
   //!rule("TNTDoNotUpdate",        "tnt", "TNT doesn't update when placed against a power source"),
-  //!rule("antiCheatSpeed",        "creative surival", "Prevents players from rubberbanding when moving too fast"),
-  //!rule("quasiConnectivity",     "creative", "Pistons, droppers and dispensers react if block above them is powered")
-  //                              .defaultTrue(),
+  rule("antiCheatSpeed",        "creative surival", "Prevents players from rubberbanding when moving too fast"),
+  rule("quasiConnectivity",     "creative", "Pistons, droppers and dispensers react if block above them is powered")
+                                .defaultTrue(),
   rule("flippinCactus",         "creative survival", "Players can flip and rotate blocks when holding cactus")
                                 .extraInfo("Doesn't cause block updates when rotated/flipped",
                                            "Applies to pistons, observers, droppers, repeaters, stairs, glazed terracotta etc..."),
@@ -183,7 +183,7 @@ public class CarpetSettings
   //                              .extraInfo("By Theosib"),
   /////rule("itemFrameDuplicationFix", "fix", "Fixes duplication of items when using item frames"),
   /////rule("craftingWindowDuplicationFix", "fix", "Fixes the recipe book duplication caused by clicking to fast while crafting"),
-  //!rule("silverFishDropGravel",  "experimental", "Silverfish drop a gravel item when breaking out of a block"),
+  rule("silverFishDropGravel",  "experimental", "Silverfish drop a gravel item when breaking out of a block"),
   /////rule("renewablePackedIce",    "experimental", "Multiple ice crushed by falling anvils make packed ice"),
   /////rule("renewableDragonEggs",   "experimental", "Dragon eggs when fed meet items spawn more eggs"),
   //!rule("summonNaturalLightning","creative", "summoning a lightning bolt has all the side effects of natural lightning"),
@@ -204,7 +204,7 @@ public class CarpetSettings
   ////rule("commandRNG",            "commands", "Enables /rng command to manipulate and query rng").defaultTrue(),
   ////rule("newLight",              "optimizations", "Uses alternative lighting engine by PhiPros. AKA NewLight mod"),
   //!rule("carpets",               "survival", "Placing carpets may issue carpet commands for non-op players"),
-  //!rule("missingTools",          "survival", "Pistons, Glass and Sponge can be broken faster with their appropriate tools"),
+  rule("missingTools",          "survival", "Pistons, Glass and Sponge can be broken faster with their appropriate tools"),
   rule("mobSpawningAlgorithm","experimental","Using version appropriate spawning rules: ")
                                 .extraInfo(" - 1.8 : fixed 4 mobs per pack for all mobs, 'subchunk' rule",
                                            " - 1.12 : fixed 1 to 4 pack size, ignoring entity collisions, subchunk rule",
@@ -232,7 +232,7 @@ public class CarpetSettings
                                 }),
   /////rule("pocketPushing",         "experimental", "Reintroduces piston warping/translocation bug"),
   rule("portalCaching",         "survival experimental", "Alternative, persistent cashing strategy for nether portals"),
-  //!rule("calmNetherFires",       "experimental", "Permanent fires don't schedule random updates"),
+  rule("calmNetherFires",       "experimental", "Permanent fires don't schedule random updates"),
   /////rule("observersDoNonUpdate",  "creative", "Observers don't pulse when placed"),
   //!rule("flyingMachineTransparent", "creative", "Transparent observers, TNT and redstone blocks. May cause lighting artifacts"),
   rule("fillUpdates",           "creative", "fill/clone/setblock and structure blocks cause block updates").defaultTrue(),

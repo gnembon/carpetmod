@@ -77,7 +77,17 @@
          float f = 0.98F;
  
          if (this.onGround)
-@@ -251,6 +295,10 @@
+@@ -218,7 +262,8 @@
+     {
+         if (!this.world.isRemote)
+         {
+-            if (this.delayBeforeCanPickup == 0 && entityIn.xpCooldown == 0)
++            // CM added ORed condition
++            if (this.delayBeforeCanPickup == 0 && (entityIn.xpCooldown == 0 || CarpetSettings.getBool("xpNoCooldown")))
+             {
+                 entityIn.xpCooldown = 2;
+                 entityIn.onItemPickup(this, 1);
+@@ -251,6 +296,10 @@
          return xp * 2;
      }
  
