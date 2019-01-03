@@ -18,7 +18,7 @@
              worldIn.spawnEntity(entitysilverfish);
              entitysilverfish.spawnExplosionParticle();
 +            
-+            // [CM] Silverfish will drop gravel when breaking out of a block. CARPET-XCOM
++            // [CM] Silverfish will drop gravel when breaking out of a block. Xcom/Salandora
 +            if (CarpetSettings.getBool("silverFishDropGravel"))
 +            {
 +                spawnAsEntity(worldIn, pos, new ItemStack(Blocks.GRAVEL));
