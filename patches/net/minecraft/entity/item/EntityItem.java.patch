@@ -12,3 +12,26 @@
      public EntityItem(World worldIn)
      {
          super(EntityType.ITEM, worldIn);
+@@ -229,8 +234,22 @@
+                     }
+                     else if (itemstack1.getCount() + itemstack.getCount() > itemstack1.getMaxStackSize())
+                     {
++                        // Add check for stacking shoulkers without NBT on the ground CARPET-XCOM
++                        if (itemstack1.isGroundStackable() && itemstack.isGroundStackable())
++                        {
++                            itemstack1.grow(itemstack.getCount());
++                            other.pickupDelay = Math.max(other.pickupDelay, this.pickupDelay);
++                            other.age = Math.min(other.age, this.age);
++                            other.setItem(itemstack1);
++                            this.remove();
++                            return true;
++                        }
+                         return false;
+                     }
++                    else if (!itemstack1.isStackable() && !itemstack.isStackable())
++                    {
++                        return false;
++                    }
+                     else
+                     {
+                         itemstack1.grow(itemstack.getCount());
