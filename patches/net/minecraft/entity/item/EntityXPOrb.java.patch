@@ -1,15 +1,20 @@
 --- a/net/minecraft/entity/item/EntityXPOrb.java
 +++ b/net/minecraft/entity/item/EntityXPOrb.java
-@@ -17,6 +17,8 @@
+@@ -17,16 +17,25 @@
  import net.minecraftforge.api.distmarker.Dist;
  import net.minecraftforge.api.distmarker.OnlyIn;
  
 +import carpet.CarpetSettings;
++import carpet.helpers.XPcombine;
 +
  public class EntityXPOrb extends Entity
  {
      public int xpColor;
-@@ -27,6 +29,11 @@
+     public int xpOrbAge;
+     public int delayBeforeCanPickup;
++    public int delayBeforeCombine;
+     private int xpOrbHealth = 5;
+     private int xpValue;
      private EntityPlayer closestPlayer;
      private int xpTargetColor;
  
@@ -21,7 +26,58 @@
      public EntityXPOrb(World worldIn, double x, double y, double z, int expValue)
      {
          super(EntityType.EXPERIENCE_ORB, worldIn);
-@@ -218,7 +225,8 @@
+@@ -37,8 +46,26 @@
+         this.motionY = (double)((float)(Math.random() * 0.2D) * 2.0F);
+         this.motionZ = (double)((float)(Math.random() * (double)0.2F - (double)0.1F) * 2.0F);
+         this.xpValue = expValue;
++
++        // add combine delay CARPET-XCOM
++        this.delayBeforeCombine = 50;
+     }
+ 
++    public EntityXPOrb(World worldIn, int expValue, EntityXPOrb old)
++    {
++        super(EntityType.EXPERIENCE_ORB, worldIn);
++        this.setSize(0.5F, 0.5F);
++        this.setPosition(old.posX, old.posY, old.posZ);
++        this.rotationYaw = old.rotationYaw;
++        this.motionX = old.motionX;
++        this.motionY = old.motionY;
++        this.motionZ = old.motionZ;
++        this.xpValue = expValue;
++
++        // add combine delay CARPET-XCOM
++        this.delayBeforeCombine = 50;
++    }
++
+     public EntityXPOrb(World worldIn)
+     {
+         super(EntityType.EXPERIENCE_ORB, worldIn);
+@@ -138,6 +165,23 @@
+         }
+ 
+         this.move(MoverType.SELF, this.motionX, this.motionY, this.motionZ);
++
++        /*
++         * Adding code here for combining XP orbs. CARPET-XCOM
++         */
++        if (CarpetSettings.getBool("combineXPOrbs"))
++        {
++            if (this.delayBeforeCombine > 0)
++            {
++                --this.delayBeforeCombine;
++            }
++
++            if (this.delayBeforeCombine == 0)
++            {
++                XPcombine.searchForOtherXPNearbyCarpet(this);
++            }
++        }
++
+         float f = 0.98F;
+ 
+         if (this.onGround)
+@@ -218,7 +262,8 @@
      {
          if (!this.world.isRemote)
          {
@@ -31,3 +87,14 @@
              {
                  entityIn.xpCooldown = 2;
                  entityIn.onItemPickup(this, 1);
+@@ -251,6 +296,10 @@
+         return xp * 2;
+     }
+ 
++    public void setXpValue(int xpValue)
++    {
++        this.xpValue = xpValue;
++    }
+     public int getXpValue()
+     {
+         return this.xpValue;

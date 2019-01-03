@@ -119,7 +119,7 @@ public class CarpetSettings
   //!rule("reloadSuffocationFix",  "fix experimental", "Won't let mobs glitch into blocks when reloaded.")
   //                              .extraInfo("Can cause slight differences in mobs behaviour"),
   rule("xpNoCooldown",          "creative", "Players absorb XP instantly, without delay"),
-  //!rule("combineXPOrbs",         "creative", "XP orbs combine with other into bigger orbs"),
+  rule("combineXPOrbs",         "creative", "XP orbs combine with other into bigger orbs"),
   //!rule("stackableEmptyShulkerBoxes", "survival", "Empty shulker boxes can stack to 64 when dropped on the ground")
   //                              .extraInfo("To move them around between inventories, use shift click to move entire stacks"),
   //!rule("rideableGhasts",        "survival feature", "Named ghasts won't attack players and allow to be ridden and controlled")
