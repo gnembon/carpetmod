@@ -1,0 +1,29 @@
+--- a/net/minecraft/item/ItemBlock.java
++++ b/net/minecraft/item/ItemBlock.java
+@@ -3,8 +3,11 @@
+ import java.util.List;
+ import java.util.Map;
+ import javax.annotation.Nullable;
++
++import carpet.CarpetSettings;
+ import net.minecraft.advancements.CriteriaTriggers;
+ import net.minecraft.block.Block;
++import net.minecraft.block.BlockShulkerBox;
+ import net.minecraft.block.SoundType;
+ import net.minecraft.block.state.IBlockState;
+ import net.minecraft.client.util.ITooltipFlag;
+@@ -178,4 +181,14 @@
+     {
+         blockToItemMap.put(this.getBlock(), itemIn);
+     }
++
++    /*
++     * Stack empty shulkers on the ground CARPET-XCOM
++     * Moved and adjusted by Salandora, because ItemShulkerBox got removed
++     */
++    @Override
++    public boolean itemGroundStacking(boolean hasTag)
++    {
++        return getBlock() instanceof BlockShulkerBox && !hasTag && CarpetSettings.getBool("stackableEmptyShulkerBoxes");
++    }
+ }

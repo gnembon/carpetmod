@@ -1,0 +1,28 @@
+--- a/net/minecraft/block/BlockShulkerBox.java
++++ b/net/minecraft/block/BlockShulkerBox.java
+@@ -2,6 +2,8 @@
+ 
+ import java.util.List;
+ import javax.annotation.Nullable;
++
++import carpet.CarpetSettings;
+ import net.minecraft.block.material.EnumPushReaction;
+ import net.minecraft.block.state.BlockFaceShape;
+ import net.minecraft.block.state.IBlockState;
+@@ -177,7 +179,15 @@
+                 if (!tileentityshulkerbox.isCleared() && tileentityshulkerbox.shouldDrop())
+                 {
+                     ItemStack itemstack = new ItemStack(this);
+-                    itemstack.getOrCreateTag().setTag("BlockEntityTag", ((TileEntityShulkerBox)tileentity).saveToNbt(new NBTTagCompound()));
++                    // [CM] Added nbttagcompound and if
++                    NBTTagCompound nbttagcompound = new NBTTagCompound();
++                    NBTTagCompound nbttagcompound1 = new NBTTagCompound();
++                    nbttagcompound.setTag("BlockEntityTag", ((TileEntityShulkerBox)tileentity).saveToNbt(nbttagcompound1));
++                    if(!CarpetSettings.getBool("stackableEmptyShulkerBoxes") || nbttagcompound1.size() > 0)
++                    {
++                        itemstack.setTag(nbttagcompound);
++                    }
++                    // [CM] end
+ 
+                     if (tileentityshulkerbox.hasCustomName())
+                     {
