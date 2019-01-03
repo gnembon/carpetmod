@@ -1,13 +1,33 @@
 --- a/net/minecraft/util/EnumFacing.java
 +++ b/net/minecraft/util/EnumFacing.java
-@@ -1,5 +1,6 @@
+@@ -1,5 +1,7 @@
  package net.minecraft.util;
  
++import carpet.CarpetSettings;
 +import carpet.helpers.BlockRotator;
  import com.google.common.collect.Iterators;
  import java.util.Arrays;
  import java.util.Comparator;
-@@ -76,6 +77,11 @@
+@@ -63,7 +65,17 @@
+     public static EnumFacing[] getFacingDirections(Entity entityIn)
+     {
+         float f = entityIn.getPitch(1.0F) * ((float)Math.PI / 180F);
+-        float f1 = -entityIn.getYaw(1.0F) * ((float)Math.PI / 180F);
++        // [CM] start useMainYaw fix
++        float f1;
++        if (!CarpetSettings.getBool("placementRotationFix"))
++        {
++            f1 = -entityIn.getYaw(1.0F) * ((float)Math.PI / 180F);
++        }
++        else
++        {
++            f1 = -entityIn.getMainYaw(1.0F) * ((float)Math.PI / 180F);
++        }
++        // [CM] end
+         float f2 = MathHelper.sin(f);
+         float f3 = MathHelper.cos(f);
+         float f4 = MathHelper.sin(f1);
+@@ -76,6 +88,11 @@
          float f8 = flag2 ? f5 : -f5;
          float f9 = f6 * f3;
          float f10 = f8 * f3;
