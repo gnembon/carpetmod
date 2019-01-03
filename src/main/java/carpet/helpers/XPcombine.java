@@ -43,6 +43,7 @@ public class XPcombine
         return true;
     }
 
+    // COPY FROM CLIENT CODE
     private static int getTextureByXP(int xpValue)
     {
         if (xpValue >= 2477)
