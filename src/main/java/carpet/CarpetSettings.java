@@ -36,7 +36,7 @@ import net.minecraft.server.MinecraftServer;
 public class CarpetSettings
 {
     public static boolean locked = false;
-    public static final String carpetVersion = "v18_10_11";
+    public static final String carpetVersion = "v19_01_01";
 
     public static final Logger LOG = LogManager.getLogger();
     private static final Map<String, CarpetSettingEntry> settings_store;
@@ -209,8 +209,8 @@ public class CarpetSettings
                                 .extraInfo(" - 1.8 : fixed 4 mobs per pack for all mobs, 'subchunk' rule",
                                            " - 1.12 : fixed 1 to 4 pack size, ignoring entity collisions, subchunk rule",
                                            " - 1.13 : vanilla",
-                                           " - 1.14 : mobs don't spawn outside of 128 sphere around players")
-                                .choices("1.13","1.8 1.12 1.13 1.14")
+                                           " - 1.13.2 : mobs don't spawn outside of 128 sphere around players")
+                                .choices("1.13","1.8 1.12 1.13 1.13.2")
                                 .validate( (s) -> {
                                     String value = CarpetSettings.getString("mobSpawningAlgorithm");
                                     CarpetSettings.n_mobSpawningAlgorithm = 113;
@@ -225,13 +225,13 @@ public class CarpetSettings
                                         case "1.12":
                                             CarpetSettings.n_mobSpawningAlgorithm = 112;
                                             break;
-                                        case "1.14":
+                                        case "1.13.2":
                                             CarpetSettings.n_mobSpawningAlgorithm = 114;
                                             break;
                                     }
                                 }),
   /////rule("pocketPushing",         "experimental", "Reintroduces piston warping/translocation bug"),
-  rule("portalCaching",         "survival experimental", "Alternative, persistent cashing strategy for nether portals"),
+  rule("portalCaching",         "survival experimental", "Alternative, persistent caching strategy for nether portals"),
   rule("calmNetherFires",       "experimental", "Permanent fires don't schedule random updates"),
   /////rule("observersDoNonUpdate",  "creative", "Observers don't pulse when placed"),
   //!rule("flyingMachineTransparent", "creative", "Transparent observers, TNT and redstone blocks. May cause lighting artifacts"),
@@ -268,7 +268,8 @@ public class CarpetSettings
   /////rule("doubleRetraction",      "experimental", "1.8 double retraction from pistons.")
   //                              .extraInfo("Gives pistons the ability to double retract without side effects."),
   rule("rotatorBlock",          "experimental", "Cactus in dispensers rotates blocks.")
-                                .extraInfo("Cactus in a dispenser gives the dispenser the ability to rotate the blocks that are in front of it anti-clockwise if possible."),
+                                .extraInfo("Cactus in a dispenser gives the dispenser the ability to rotate the blocks " +
+                                           "that are in front of it anti-clockwise if possible."),
   /////rule("netherRNG",             "creative", "Turning nether RNG manipulation on or off.")
   //                              .extraInfo("Turning nether RNG manipulation on or off."),
   /////rule("endRNG",                "creative", "Turning end RNG manipulation on or off.")
@@ -282,8 +283,8 @@ public class CarpetSettings
   //!rule("disableSpawnChunks",    "creative", "Removes the spawn chunks."),
   rule("kelpGenerationGrowLimit", "feature", "limits growth limit of newly naturally generated kelp to this amount of blocks")
                                   .choices("25", "0 2 25").setNotStrict(),
-  rule("renewableCoral",          "feature", "Alternative cashing strategy for nether portals"),
-  rule("placementRotationFix",              "fix", "fixes block placement rotation issue when player rotates quickly while placing blocks"),
+  rule("renewableCoral",          "feature", "Coral structures will grow with bonemeal from coral plants"),
+  rule("placementRotationFix",    "fix", "fixes block placement rotation issue when player rotates quickly while placing blocks"),
         };
         for (CarpetSettingEntry rule: RuleList)
         {
