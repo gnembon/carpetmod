@@ -1,6 +1,15 @@
 --- a/net/minecraft/block/BlockTNT.java
 +++ b/net/minecraft/block/BlockTNT.java
-@@ -36,7 +36,7 @@
+@@ -1,6 +1,8 @@
+ package net.minecraft.block;
+ 
+ import javax.annotation.Nullable;
++
++import carpet.CarpetSettings;
+ import net.minecraft.block.state.IBlockState;
+ import net.minecraft.entity.Entity;
+ import net.minecraft.entity.EntityLivingBase;
+@@ -36,7 +38,7 @@
      {
          if (oldState.getBlock() != state.getBlock())
          {

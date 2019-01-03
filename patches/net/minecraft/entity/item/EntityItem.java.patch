@@ -16,7 +16,7 @@
                      }
                      else if (itemstack1.getCount() + itemstack.getCount() > itemstack1.getMaxStackSize())
                      {
-+                        // Add check for stacking shoulkers without NBT on the ground CARPET-XCOM
++                        // Add check for stackableShulkerBoxes without NBT on the ground Xcom/Salandora
 +                        if (itemstack1.isGroundStackable() && itemstack.isGroundStackable())
 +                        {
 +                            itemstack1.grow(itemstack.getCount());

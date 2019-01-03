@@ -20,7 +20,7 @@
          this.grow(-count);
      }
 +
-+    // Check for ground stacking CARPET-XCOM
++    // Check for ground stacking [stackableShulkerBoxes CM]
 +    public boolean isGroundStackable() {
 +        return this.getItem().itemGroundStacking(hasTag());
 +    }

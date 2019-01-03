@@ -12,15 +12,12 @@
  import net.minecraft.block.SoundType;
  import net.minecraft.block.state.IBlockState;
  import net.minecraft.client.util.ITooltipFlag;
-@@ -178,4 +181,14 @@
+@@ -178,4 +181,11 @@
      {
          blockToItemMap.put(this.getBlock(), itemIn);
      }
 +
-+    /*
-+     * Stack empty shulkers on the ground CARPET-XCOM
-+     * Moved and adjusted by Salandora, because ItemShulkerBox got removed
-+     */
++    // Stack empty shulkers on the ground by Xcom/Salandora
 +    @Override
 +    public boolean itemGroundStacking(boolean hasTag)
 +    {
