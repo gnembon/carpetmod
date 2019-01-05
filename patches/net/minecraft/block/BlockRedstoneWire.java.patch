@@ -31,7 +31,7 @@
 +    private IBlockState updateSurroundingRedstone(World worldIn, BlockPos pos, IBlockState state, BlockPos source)
      {
 +        // [CM] FastRedstoneDust -- UpdateSurroundingRedstone based on carpet rule.
-+        if (CarpetSettings.getBool("fastRedstoneDust"))
++        if (CarpetSettings.b_fastRedstoneDust)
 +            this.wireTurbo.updateSurroundingRedstone(worldIn, pos, state, source);
 +
          state = this.func_212568_b(worldIn, pos, state);
@@ -53,7 +53,7 @@
  
 -        if (k > 0 && k > j - 1)
 +        // [CM] FastRedstoneDust -- if statement around unnecessary check
-+        if (!CarpetSettings.getBool("fastRedstoneDust"))
++        if (!CarpetSettings.b_fastRedstoneDust)
          {
 -            j = k;
 +            if (k > 0 && k > j - 1) {
@@ -65,7 +65,7 @@
  
 -        for (EnumFacing enumfacing : EnumFacing.Plane.HORIZONTAL)
 +        // [CM] FastRedstoneDust -- if statement around
-+        if (!CarpetSettings.getBool("fastRedstoneDust") || k < 15)
++        if (!CarpetSettings.b_fastRedstoneDust || k < 15)
          {
 -            BlockPos blockpos = p_212568_2_.offset(enumfacing);
 -            boolean flag = blockpos.getX() != p_212568_2_.getX() || blockpos.getZ() != p_212568_2_.getZ();
@@ -104,7 +104,7 @@
  
 -        if (l > j)
 +        // [CM] FastRedstoneDust -- if statement around with an else statement
-+        if (!CarpetSettings.getBool("fastRedstoneDust"))
++        if (!CarpetSettings.b_fastRedstoneDust)
          {
 -            j = l - 1;
 +            if (l > j) {
@@ -146,7 +146,7 @@
 -
 -            for (EnumFacing enumfacing1 : EnumFacing.values())
 +            // [CM] FastRedstoneDust -- if statement around unnecessary check
-+            if (!CarpetSettings.getBool("fastRedstoneDust"))
++            if (!CarpetSettings.b_fastRedstoneDust)
              {
 -                this.blocksNeedingUpdate.add(p_212568_2_.offset(enumfacing1));
 +                this.blocksNeedingUpdate.add(p_212568_2_);
