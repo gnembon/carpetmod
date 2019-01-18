@@ -1,0 +1,19 @@
+--- a/net/minecraft/block/BlockRailPowered.java
++++ b/net/minecraft/block/BlockRailPowered.java
+@@ -1,5 +1,6 @@
+ package net.minecraft.block;
+ 
++import carpet.CarpetSettings;
+ import net.minecraft.block.state.IBlockState;
+ import net.minecraft.state.BooleanProperty;
+ import net.minecraft.state.EnumProperty;
+@@ -25,7 +26,8 @@
+ 
+     protected boolean findPoweredRailSignal(World worldIn, BlockPos pos, IBlockState state, boolean p_176566_4_, int p_176566_5_)
+     {
+-        if (p_176566_5_ >= 8)
++        // [CM] Changed if statement values -- RailPowerLimit
++        if (p_176566_5_ >= CarpetSettings.getInt("railPowerLimit"))
+         {
+             return false;
+         }

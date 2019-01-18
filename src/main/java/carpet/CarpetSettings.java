@@ -236,8 +236,8 @@ public class CarpetSettings
   rule("fillUpdates",           "creative", "fill/clone/setblock and structure blocks cause block updates").defaultTrue(),
   rule("pushLimit",             "creative","Customizable piston push limit")
                                 .choices("12","10 12 14 100").setNotStrict().numAccelerate(),
-  //!rule("railPowerLimit",        "creative", "Customizable powered rail power range")
-  //                              .choices("9","9 15 30").setNotStrict(),
+  rule("railPowerLimit",        "creative", "Customizable powered rail power range")
+                                .choices("9","9 15 30").setNotStrict(),
   rule("fillLimit",             "creative","Customizable fill/clone volume limit")
                                 .choices("32768","32768 250000 1000000").setNotStrict(),
   //!rule("maxEntityCollisions",   "optimizations", "Customizable maximal entity collision limits, 0 for no limits")
