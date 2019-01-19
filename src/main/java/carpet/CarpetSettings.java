@@ -256,9 +256,9 @@ public class CarpetSettings
   //                              .extraInfo("Set to -1 for default behaviour")
   //                              .choices("-1","-1")
   //                              .setFloat(),
-  //!rule("sleepingThreshold",     "experimental", "The percentage of required sleeping players to skip the night")
-  //                              .extraInfo("Use values from 0 to 100, 100 for default (all players needed)")
-  //                              .choices("100","0 10 50 100").setNotStrict(),
+  rule("sleepingThreshold",     "experimental", "The percentage of required sleeping players to skip the night")
+                                .extraInfo("Use values from 0 to 100, 100 for default (all players needed)")
+                                .choices("100","0 10 50 100").setNotStrict(),
   //???rule("spongeRandom",          "experimental feature", "sponge responds to random ticks"),
   //!rule("customMOTD",            "creative","Sets a different motd message on client trying to connect to the server")
   //                              .extraInfo("use '_' to use the startup setting from server.properties")
