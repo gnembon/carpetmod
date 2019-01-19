@@ -260,9 +260,9 @@ public class CarpetSettings
   //                              .extraInfo("Use values from 0 to 100, 100 for default (all players needed)")
   //                              .choices("100","0 10 50 100").setNotStrict(),
   //???rule("spongeRandom",          "experimental feature", "sponge responds to random ticks"),
-  //!rule("customMOTD",            "creative","Sets a different motd message on client trying to connect to the server")
-  //                              .extraInfo("use '_' to use the startup setting from server.properties")
-  //                              .choices("_","_").setNotStrict(),
+  rule("customMOTD",            "creative","Sets a different motd message on client trying to connect to the server")
+                                .extraInfo("use '_' to use the startup setting from server.properties")
+                                .choices("_","_").setNotStrict(),
   /////rule("doubleRetraction",      "experimental", "1.8 double retraction from pistons.")
   //                              .extraInfo("Gives pistons the ability to double retract without side effects."),
   rule("rotatorBlock",          "experimental", "Cactus in dispensers rotates blocks.")
