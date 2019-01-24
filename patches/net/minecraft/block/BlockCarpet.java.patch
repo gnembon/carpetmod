@@ -1,0 +1,28 @@
+--- a/net/minecraft/block/BlockCarpet.java
++++ b/net/minecraft/block/BlockCarpet.java
+@@ -1,8 +1,10 @@
+ package net.minecraft.block;
+ 
++import carpet.utils.WoolTool;
+ import net.minecraft.block.state.BlockFaceShape;
+ import net.minecraft.block.state.IBlockState;
+ import net.minecraft.init.Blocks;
++import net.minecraft.item.BlockItemUseContext;
+ import net.minecraft.item.EnumDyeColor;
+ import net.minecraft.util.EnumFacing;
+ import net.minecraft.util.math.BlockPos;
+@@ -51,4 +53,14 @@
+     {
+         return face == EnumFacing.DOWN ? BlockFaceShape.SOLID : BlockFaceShape.UNDEFINED;
+     }
++
++    public IBlockState getStateForPlacement(BlockItemUseContext context)
++    {
++        IBlockState state = super.getStateForPlacement(context);
++        if (context.getPlayer() != null)
++        {
++            WoolTool.carpetPlacedAction(this.color, context.getPlayer(), context.getPos(), context.getWorld());
++        }
++        return state;
++    }
+ }

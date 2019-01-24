@@ -13,6 +13,11 @@ public class DistanceCalculator
 {
     public static final HashMap<String, Vec3d> START_POINT_STORAGE = new HashMap<>();
 
+    public static boolean hasStartingPoint(CommandSource source)
+    {
+        return START_POINT_STORAGE.containsKey(source.getName());
+    }
+
     public static List<ITextComponent> findDistanceBetweenTwoPoints(Vec3d pos1, Vec3d pos2)
     {
         double dx = MathHelper.abs((float)pos1.x-(float)pos2.x);
@@ -46,7 +51,7 @@ public class DistanceCalculator
 
     public static int setEnd(CommandSource source, Vec3d pos)
     {
-        if ( !(START_POINT_STORAGE.containsKey(source.getName()) ) )
+        if ( !hasStartingPoint(source) )
         {
             START_POINT_STORAGE.put(source.getName(), pos);
             Messenger.m(source,"gi There was no initial point for "+source.getName());
