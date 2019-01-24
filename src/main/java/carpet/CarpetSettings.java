@@ -54,6 +54,7 @@ public class CarpetSettings
     public static int n_pushLimit = 12;
     public static boolean b_hopperCounters = false;
     public static int n_mobSpawningAlgorithm = 113;
+    public static int n_railPowerLimit = 8;
 
     /*
     public static boolean extendedConnectivity = false;
@@ -237,7 +238,7 @@ public class CarpetSettings
   rule("pushLimit",             "creative","Customizable piston push limit")
                                 .choices("12","10 12 14 100").setNotStrict().numAccelerate(),
   rule("railPowerLimit",        "creative", "Customizable powered rail power range")
-                                .choices("9","9 15 30").setNotStrict(),
+                                .choices("9","9 15 30").setNotStrict().numAccelerate(),
   rule("fillLimit",             "creative","Customizable fill/clone volume limit")
                                 .choices("32768","32768 250000 1000000").setNotStrict(),
   //!rule("maxEntityCollisions",   "optimizations", "Customizable maximal entity collision limits, 0 for no limits")

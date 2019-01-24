@@ -13,7 +13,7 @@
      {
 -        if (p_176566_5_ >= 8)
 +        // [CM] Changed if statement values -- RailPowerLimit
-+        if (p_176566_5_ >= CarpetSettings.getInt("railPowerLimit"))
++        if (p_176566_5_ >= CarpetSettings.n_railPowerLimit)
          {
              return false;
          }
