@@ -41,17 +41,4 @@ public class DistanceCommand
                                 executes( (c) -> DistanceCalculator.setEnd(c.getSource(), Vec3Argument.getVec3(c, "to")))));
         dispatcher.register(command);
     }
-    public static int setStart(CommandSource source, Vec3d pos)
-    {
-        return 1;
-    }
-    public static int setEnd(CommandSource source, Vec3d pos)
-    {
-        return 1;
-    }
-    public static int distance(CommandSource source, Vec3d pos, Vec3d pos2)
-    {
-        Messenger.send(source, DistanceCalculator.findDistanceBetweenTwoPoints(pos, pos2));
-        return 1;
-    }
 }

@@ -344,7 +344,7 @@ public class EntityInfo
     {
         try
         {
-            player.getServer().getCommandManager().handleCommand (player.getCommandSource(), "info entity @e[r=5,c=5,type=!player]"); // TODO fix command call
+            player.getServer().getCommandManager().handleCommand (player.getCommandSource(), "info entity @e[type=!minecraft:player,distance=..5,limit=5]");
         }
         catch (Throwable ignored)
         {
