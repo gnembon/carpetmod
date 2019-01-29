@@ -17,7 +17,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.FileNotFoundException;
 
-import net.minecraft.client.settings.CreativeSettings;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.dedicated.DedicatedServer;
 import org.apache.logging.log4j.LogManager;
@@ -55,6 +54,7 @@ public class CarpetSettings
     public static int n_pushLimit = 12;
     public static boolean b_hopperCounters = false;
     public static int n_mobSpawningAlgorithm = 113;
+    public static int n_viewDistance = 0; // Used for Client Only
 
     /*
     public static boolean extendedConnectivity = false;
@@ -279,13 +279,32 @@ public class CarpetSettings
                                 .extraInfo("Set to 0 to not override the value in server settings.")
                                 .choices("0", "0 12 16 32 64").setNotStrict()
                                 .validate( (s) -> {
-                                      int viewDistance = getInt("viewDistance");
-                                      if (viewDistance < 2)
-                                          viewDistance = ((DedicatedServer) CarpetServer.minecraft_server).getIntProperty("view-distance", 10);
-                                      if (viewDistance > 64)
-                                          viewDistance = 64;
-                                      if (viewDistance != CarpetServer.minecraft_server.getPlayerList().getViewDistance())
-                                          CarpetServer.minecraft_server.getPlayerList().setViewDistance(viewDistance);
+                                    int viewDistance = getInt("viewDistance");
+                                    if (CarpetServer.minecraft_server.isDedicatedServer())
+                                    {
+                                        if (viewDistance < 2)
+                                        {
+                                            viewDistance = ((DedicatedServer) CarpetServer.minecraft_server).getIntProperty("view-distance", 10);
+                                        }
+                                        if (viewDistance > 64)
+                                        {
+                                            viewDistance = 64;
+                                        }
+                                        if (viewDistance != CarpetServer.minecraft_server.getPlayerList().getViewDistance())
+                                            CarpetServer.minecraft_server.getPlayerList().setViewDistance(viewDistance);
+                                    }
+                                    else
+                                    {
+                                        if (viewDistance < 2)
+                                        {
+                                            viewDistance = 0;
+                                        }
+                                        if (viewDistance > 64)
+                                        {
+                                            viewDistance = 64;
+                                        }
+                                        n_viewDistance = viewDistance;
+                                    }
                                 }),
   /////rule("tickingAreas",          "creative", "Enable use of ticking areas.")
   //                              .extraInfo("As set by the /tickingarea comamnd.",
