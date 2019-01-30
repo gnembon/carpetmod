@@ -216,7 +216,7 @@ public class Expression {
 	/**
 	 * Construct a LazyNumber from a BigDecimal
 	 */
-	private LazyNumber CreateLazyNumber(final BigDecimal bigDecimal) {
+	public static LazyNumber CreateLazyNumber(final BigDecimal bigDecimal) {
 		return new LazyNumber() {
 			@Override
 			public String getString() {
@@ -439,11 +439,11 @@ public class Expression {
 					ch = pos == input.length() ? 0 : input.charAt(pos);
 				}
 				token.type = isHex ? TokenType.HEX_LITERAL : TokenType.LITERAL;
-			} else if (ch == '"') {
+			} else if (ch == '\'') {
 				pos++;
 				if (previousToken.type != TokenType.STRINGPARAM) {
 					ch = input.charAt(pos);
-					while (ch != '"') {
+					while (ch != '\'') {
 						token.append(input.charAt(pos++));
 						ch = pos == input.length() ? 0 : input.charAt(pos);
 					}
