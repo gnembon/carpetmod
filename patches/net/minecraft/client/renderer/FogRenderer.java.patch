@@ -1,0 +1,37 @@
+--- a/net/minecraft/client/renderer/FogRenderer.java
++++ b/net/minecraft/client/renderer/FogRenderer.java
+@@ -1,6 +1,8 @@
+ package net.minecraft.client.renderer;
+ 
+ import java.nio.FloatBuffer;
++
++import carpet.CarpetSettings;
+ import net.minecraft.client.Minecraft;
+ import net.minecraft.client.entity.EntityPlayerSP;
+ import net.minecraft.entity.Entity;
+@@ -156,7 +158,15 @@
+ 
+     private void updateSurfaceFog(Entity entityIn, World worldIn, float partialTicks)
+     {
+-        float f = 0.25F + 0.75F * (float)this.mc.gameSettings.renderDistanceChunks / 32.0F;
++        //[CM] viewDistance override
++        int renderDistance;
++        if (CarpetSettings.n_viewDistance == 0)
++            renderDistance = this.mc.gameSettings.renderDistanceChunks;
++        else {
++            renderDistance = CarpetSettings.n_viewDistance;
++        }
++
++        float f = 0.25F + 0.75F * (float)renderDistance / 32.0F; //[CM] replaced this.mc.gameSettings.renderDistanceChunks with renderDistance
+         f = 1.0F - (float)Math.pow((double)f, 0.25D);
+         Vec3d vec3d = worldIn.getSkyColor(this.mc.getRenderViewEntity(), partialTicks);
+         float f1 = (float)vec3d.x;
+@@ -167,7 +177,7 @@
+         this.green = (float)vec3d1.y;
+         this.blue = (float)vec3d1.z;
+ 
+-        if (this.mc.gameSettings.renderDistanceChunks >= 4)
++        if (renderDistance >= 4) //[CM] replaced this.mc.gameSettings.renderDistanceChunks with renderDistance
+         {
+             double d0 = MathHelper.sin(worldIn.getCelestialAngleRadians(partialTicks)) > 0.0F ? -1.0D : 1.0D;
+             Vec3d vec3d2 = new Vec3d(d0, 0.0D, 0.0D);
