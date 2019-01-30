@@ -55,6 +55,8 @@ public class CarpetSettings
     public static boolean b_hopperCounters = false;
     public static int n_mobSpawningAlgorithm = 113;
     public static int n_viewDistance = 0; // Used for Client Only
+    public static boolean b_fastRedstoneDust = false;
+    public static int railPowerLimitAdjusted = 8;
 
     /*
     public static boolean extendedConnectivity = false;
@@ -129,7 +131,7 @@ public class CarpetSettings
   //                                         "Requires flying to be enabled on the server"),
   //!rule("explosionNoBlockDamage", "tnt", "Explosions won't destroy blocks"),
   //!rule("tntPrimerMomentumRemoved", "tnt", "Removes random TNT momentum when primed"),
-  //!rule("fastRedstoneDust",      "experimental optimizations", "Lag optimizations for redstone Dust. By Theosib"),
+  rule("fastRedstoneDust",      "experimental optimizations", "Lag optimizations for redstone Dust. By Theosib").boolAccelerate().defaultFalse(),
   //<with modified protocol> rule("accurateBlockPlacement", "creative", "Allows to place blocks in different orientations. Requires Carpet Client")
   //                              .extraInfo("Also prevents rotations upon placement of dispensers and furnaces","when placed into a world by commands"),
   /////rule("optimizedTNT",          "tnt", "TNT causes less lag when exploding in the same spot and in liquids"),
@@ -239,8 +241,9 @@ public class CarpetSettings
   rule("fillUpdates",           "creative", "fill/clone/setblock and structure blocks cause block updates").defaultTrue(),
   rule("pushLimit",             "creative","Customizable piston push limit")
                                 .choices("12","10 12 14 100").setNotStrict().numAccelerate(),
-  //!rule("railPowerLimit",        "creative", "Customizable powered rail power range")
-  //                              .choices("9","9 15 30").setNotStrict(),
+  rule("railPowerLimit",        "creative", "Customizable powered rail power range")
+                                .choices("9","9 15 30").setNotStrict().validate( (s) ->
+                                    railPowerLimitAdjusted = CarpetSettings.getInt("railPowerLimit") - 1),
   rule("fillLimit",             "creative","Customizable fill/clone volume limit")
                                 .choices("32768","32768 250000 1000000").setNotStrict(),
   //!rule("maxEntityCollisions",   "optimizations", "Customizable maximal entity collision limits, 0 for no limits")
