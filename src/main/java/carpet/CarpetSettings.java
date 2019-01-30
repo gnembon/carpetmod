@@ -55,6 +55,7 @@ public class CarpetSettings
     public static boolean b_hopperCounters = false;
     public static int n_mobSpawningAlgorithm = 113;
     public static boolean b_fastRedstoneDust = false;
+    public static int railPowerLimitAdjusted = 8;
 
     /*
     public static boolean extendedConnectivity = false;
@@ -135,8 +136,6 @@ public class CarpetSettings
   /////rule("optimizedTNT",          "tnt", "TNT causes less lag when exploding in the same spot and in liquids"),
   /////rule("huskSpawningInTemples", "experimental feature", "Only husks spawn in desert temples"),
   /////rule("shulkerSpawningInEndCities", "feature experimental", "Shulkers will respawn in end cities"),
-  /////rule("watchdogFix",           "fix", "Fixes server crashing under heavy load and low tps")
-  //                              .extraInfo("Won't prevent crashes if the server doesn't respond in max-tick-time ticks"),
   //!rule("wirelessRedstone",      "creative", "Repeater pointing from and to wool blocks transfer signals wirelessly")
   //                              .extraInfo("Temporary feature - repeaters need an update when reloaded",
   //                                         "By Narcoleptic Frog"),
@@ -145,7 +144,7 @@ public class CarpetSettings
   /////rule("mergeTNT",              "tnt", "Merges stationary primed TNT entities"),
   //???<no block data anymore> rule("repeaterPoweredTerracota", "experimental creative", "Repeater delays depends on stained hardened clay aka terracotta on which they are placed")
   //                              .extraInfo("1 to 15 gt per delay added (1-15 block data), 0 (white) adds 100gt per tick"),
-  //!rule("unloadedEntityFix",     "experimental creative", "Entities pushed or moved into unloaded chunks no longer disappear"),
+  rule("unloadedEntityFix",     "experimental creative", "Entities pushed or moved into unloaded chunks no longer disappear"),
   rule("TNTDoNotUpdate",        "tnt", "TNT doesn't update when placed against a power source"),
   rule("antiCheatSpeed",        "creative surival", "Prevents players from rubberbanding when moving too fast"),
   rule("quasiConnectivity",     "creative", "Pistons, droppers and dispensers react if block above them is powered")
@@ -201,10 +200,12 @@ public class CarpetSettings
                                 .extraInfo("/c and /s commands are available to all players regardless of their permission levels"),
   rule("commandPerimeterInfo",  "commands", "Enables /perimeterinfo command").isACommand()
                                 .extraInfo("... that scans the area around the block for potential spawnable spots"),
+  rule("commandDraw",  "commands", "Enables /draw command").isACommand()
+                        .extraInfo("... allows to paste simple shapes"),
   rule("commandPlayer",         "commands", "Enables /player command to control/spawn players").isACommand(),
   ////rule("commandRNG",            "commands", "Enables /rng command to manipulate and query rng").defaultTrue(),
   ////rule("newLight",              "optimizations", "Uses alternative lighting engine by PhiPros. AKA NewLight mod"),
-  //!rule("carpets",               "survival", "Placing carpets may issue carpet commands for non-op players"),
+  rule("carpets",               "survival", "Placing carpets may issue carpet commands for non-op players"),
   rule("missingTools",          "survival", "Pistons, Glass and Sponge can be broken faster with their appropriate tools"),
   rule("mobSpawningAlgorithm","experimental","Using version appropriate spawning rules: ")
                                 .extraInfo(" - 1.8 : fixed 4 mobs per pack for all mobs, 'subchunk' rule",
@@ -239,8 +240,9 @@ public class CarpetSettings
   rule("fillUpdates",           "creative", "fill/clone/setblock and structure blocks cause block updates").defaultTrue(),
   rule("pushLimit",             "creative","Customizable piston push limit")
                                 .choices("12","10 12 14 100").setNotStrict().numAccelerate(),
-  //!rule("railPowerLimit",        "creative", "Customizable powered rail power range")
-  //                              .choices("9","9 15 30").setNotStrict(),
+  rule("railPowerLimit",        "creative", "Customizable powered rail power range")
+                                .choices("9","9 15 30").setNotStrict().validate( (s) ->
+                                    railPowerLimitAdjusted = CarpetSettings.getInt("railPowerLimit") - 1),
   rule("fillLimit",             "creative","Customizable fill/clone volume limit")
                                 .choices("32768","32768 250000 1000000").setNotStrict(),
   //!rule("maxEntityCollisions",   "optimizations", "Customizable maximal entity collision limits, 0 for no limits")
