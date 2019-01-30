@@ -13,10 +13,10 @@
  
 +            //[CM] viewDistance override
 +            int renderDistance;
-+            if (CarpetSettings.n_viewDistance == 0)
++            if (CarpetSettings.clientViewDistance == 0)
 +                renderDistance = this.mc.gameSettings.renderDistanceChunks;
 +            else {
-+                renderDistance = CarpetSettings.n_viewDistance;
++                renderDistance = CarpetSettings.clientViewDistance;
 +            }
 +
              this.displayListEntitiesDirty = true;
@@ -43,10 +43,10 @@
 -        if (this.mc.gameSettings.renderDistanceChunks != this.renderDistanceChunks)
 +        //[CM] viewDistance override
 +        int renderDistance;
-+        if (CarpetSettings.n_viewDistance == 0)
++        if (CarpetSettings.clientViewDistance == 0)
 +            renderDistance = this.mc.gameSettings.renderDistanceChunks;
 +        else {
-+            renderDistance = CarpetSettings.n_viewDistance;
++            renderDistance = CarpetSettings.clientViewDistance;
 +        }
 +
 +        // [CM] viewDistance override
@@ -71,10 +71,10 @@
  
 +        //[CM] viewDistance override
 +        int renderDistance;
-+        if (CarpetSettings.n_viewDistance == 0)
++        if (CarpetSettings.clientViewDistance == 0)
 +            renderDistance = this.mc.gameSettings.renderDistanceChunks;
 +        else {
-+            renderDistance = CarpetSettings.n_viewDistance;
++            renderDistance = CarpetSettings.clientViewDistance;
 +        }
 +        double d0 = (double)(renderDistance * 16); //[CM] replaced this.mc.gameSettings.renderDistanceChunks with renderDistance
 +

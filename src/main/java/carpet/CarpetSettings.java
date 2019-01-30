@@ -54,7 +54,7 @@ public class CarpetSettings
     public static int n_pushLimit = 12;
     public static boolean b_hopperCounters = false;
     public static int n_mobSpawningAlgorithm = 113;
-    public static int n_viewDistance = 0; // Used for Client Only
+    public static int clientViewDistance = 0; // Used for Client Only
     public static boolean b_fastRedstoneDust = false;
     public static int railPowerLimitAdjusted = 8;
 
@@ -307,7 +307,7 @@ public class CarpetSettings
                                         {
                                             viewDistance = 64;
                                         }
-                                        n_viewDistance = viewDistance;
+                                        clientViewDistance = viewDistance;
                                     }
                                 }),
   /////rule("tickingAreas",          "creative", "Enable use of ticking areas.")

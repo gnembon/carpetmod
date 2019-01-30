@@ -119,7 +119,7 @@
 +                return sleepingThreshold <= (int) ((sleepingPlayerCount / numberOfPlayers) * 100);
 +            }
 +
-+            // ↓↓↓↓ Vanilla Code ↓↓↓↓
++            // [CM] end
              for (EntityPlayer entityplayer : this.playerEntities)
              {
                  if (!entityplayer.isSpectator() && !entityplayer.isPlayerFullyAsleep())

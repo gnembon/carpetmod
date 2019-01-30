@@ -32,10 +32,10 @@
 -            if (this.mc.gameSettings.renderDistanceChunks != this.getPlayerList().getViewDistance())
 +            //[CM] viewDistance override
 +            int viewDistance;
-+            if (CarpetSettings.n_viewDistance == 0)
++            if (CarpetSettings.clientViewDistance == 0)
 +                viewDistance = this.mc.gameSettings.renderDistanceChunks;
 +            else {
-+                viewDistance = CarpetSettings.n_viewDistance;
++                viewDistance = CarpetSettings.clientViewDistance;
 +            }
 +
 +            //[CM] replaced this.mc.gameSettings.renderDistanceChunks with viewDistance
