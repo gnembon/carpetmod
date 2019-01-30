@@ -130,8 +130,9 @@ public class CarpetSettings
   //                                         "Use fire charges when riding to shoot fireballs",
   //                                         "Requires flying to be enabled on the server"),
   //!rule("explosionNoBlockDamage", "tnt", "Explosions won't destroy blocks"),
-  //!rule("tntPrimerMomentumRemoved", "tnt", "Removes random TNT momentum when primed"),
-  rule("fastRedstoneDust",      "experimental optimizations", "Lag optimizations for redstone Dust. By Theosib").boolAccelerate().defaultFalse(),
+  rule("tntPrimerMomentumRemoved", "tnt", "Removes random TNT momentum when primed"),
+  rule("fastRedstoneDust",      "experimental optimizations", "Lag optimizations for redstone dust")
+                                .extraInfo("by Theosib").boolAccelerate().defaultFalse(),
   //<with modified protocol> rule("accurateBlockPlacement", "creative", "Allows to place blocks in different orientations. Requires Carpet Client")
   //                              .extraInfo("Also prevents rotations upon placement of dispensers and furnaces","when placed into a world by commands"),
   /////rule("optimizedTNT",          "tnt", "TNT causes less lag when exploding in the same spot and in liquids"),
