@@ -1,16 +1,17 @@
 --- a/net/minecraft/entity/item/EntityTNTPrimed.java
 +++ b/net/minecraft/entity/item/EntityTNTPrimed.java
-@@ -1,6 +1,9 @@
+@@ -1,6 +1,10 @@
  package net.minecraft.entity.item;
  
  import javax.annotation.Nullable;
 +
++import carpet.CarpetSettings;
 +import carpet.logging.LoggerRegistry;
 +import carpet.logging.logHelpers.TNTLogHelper;
  import net.minecraft.entity.Entity;
  import net.minecraft.entity.EntityLivingBase;
  import net.minecraft.entity.EntityType;
-@@ -19,6 +22,14 @@
+@@ -19,6 +23,14 @@
      private EntityLivingBase tntPlacedBy;
      private int fuse;
  
@@ -25,10 +26,22 @@
      public EntityTNTPrimed(World worldIn)
      {
          super(EntityType.TNT, worldIn);
-@@ -36,6 +47,13 @@
-         this.motionX = (double)(-((float)Math.sin((double)f)) * 0.02F);
-         this.motionY = (double)0.2F;
-         this.motionZ = (double)(-((float)Math.cos((double)f)) * 0.02F);
+@@ -32,10 +44,21 @@
+     {
+         this(worldIn);
+         this.setPosition(x, y, z);
+-        float f = (float)(Math.random() * (double)((float)Math.PI * 2F));
+-        this.motionX = (double)(-((float)Math.sin((double)f)) * 0.02F);
+-        this.motionY = (double)0.2F;
+-        this.motionZ = (double)(-((float)Math.cos((double)f)) * 0.02F);
++        // [CM] Changed value of float 'f' and if statement around vanilla code.
++        float f = 0F;
++        if(!CarpetSettings.getBool("tntPrimerMomentumRemoved")) {
++            f = (float) (Math.random() * (double) ((float) Math.PI * 2F));
++            this.motionX = (double) (-((float) Math.sin((double) f)) * 0.02F);
++            this.motionY = (double) 0.2F;
++            this.motionZ = (double) (-((float) Math.cos((double) f)) * 0.02F);
++        }
 +        // ----- Carpet Start ----- //
 +        if (LoggerRegistry.__tnt)
 +        {
@@ -39,7 +52,7 @@
          this.setFuse(80);
          this.prevPosX = x;
          this.prevPosY = y;
-@@ -101,6 +119,10 @@
+@@ -101,6 +124,10 @@
  
      private void explode()
      {

@@ -1,15 +1,11 @@
 package carpet.helpers;
 //Author: theosib
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
-
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.concurrent.ThreadLocalRandom;
-import javax.annotation.Nullable;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockRedstoneWire;

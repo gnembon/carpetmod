@@ -1,14 +1,15 @@
 --- a/net/minecraft/world/WorldServer.java
 +++ b/net/minecraft/world/WorldServer.java
-@@ -1,5 +1,7 @@
+@@ -1,5 +1,8 @@
  package net.minecraft.world;
  
++import carpet.CarpetSettings;
 +import carpet.helpers.TickSpeed;
 +import carpet.utils.CarpetProfiler;
  import com.google.common.collect.Lists;
  import com.google.common.collect.Maps;
  import com.google.common.util.concurrent.ListenableFuture;
-@@ -192,13 +194,25 @@
+@@ -192,13 +195,25 @@
              this.wakeAllPlayers();
          }
  
@@ -35,7 +36,7 @@
  
          this.profiler.endStartSection("chunkSource");
          this.chunkProvider.tick(p_72835_1_);
-@@ -209,6 +223,8 @@
+@@ -209,6 +224,8 @@
              this.setSkylightSubtracted(j);
          }
  
@@ -44,7 +45,7 @@
          this.worldInfo.setWorldTotalTime(this.worldInfo.getGameTime() + 1L);
  
          if (this.getGameRules().getBoolean("doDaylightCycle"))
-@@ -217,16 +233,27 @@
+@@ -217,16 +234,27 @@
          }
  
          this.profiler.endStartSection("tickPending");
@@ -72,7 +73,57 @@
          this.profiler.endSection();
          this.sendQueuedBlockEvents();
          this.insideTick = false;
-@@ -408,6 +435,13 @@
+@@ -270,8 +298,18 @@
+                     ++j;
+                 }
+             }
+-
+-            this.allPlayersSleeping = j > 0 && j >= this.playerEntities.size() - i;
++            // [CM] Added variable int & Conditional statement -- SleepingThreshold
++            int sleepingThreshold = CarpetSettings.getInt("sleepingThreshold");
++            if (sleepingThreshold < 100)
++            {
++                // Custom Amount
++                this.allPlayersSleeping = j > 0;
++            }
++            else
++            {
++                // Vanilla Amount
++                this.allPlayersSleeping = j > 0 && j >= this.playerEntities.size() - i;
++            }
+         }
+     }
+ 
+@@ -307,6 +345,28 @@
+     {
+         if (this.allPlayersSleeping && !this.isRemote)
+         {
++            // [CM] Added variable int and conditional statement -- SleepingThreshold
++            int sleepingThreshold = CarpetSettings.getInt("sleepingThreshold");
++            if (sleepingThreshold < 100)
++            {
++                float numberOfPlayers = 0;
++                float sleepingPlayerCount = 0;
++
++                for (EntityPlayer entityplayer : this.playerEntities)
++                {
++                    if (!entityplayer.isSpectator())
++                    {
++                        numberOfPlayers++;
++                        if (entityplayer.isPlayerFullyAsleep())
++                        {
++                            sleepingPlayerCount++;
++                        }
++                    }
++                }
++                return sleepingThreshold <= (int) ((sleepingPlayerCount / numberOfPlayers) * 100);
++            }
++
++            // [CM] end
+             for (EntityPlayer entityplayer : this.playerEntities)
+             {
+                 if (!entityplayer.isSpectator() && !entityplayer.isPlayerFullyAsleep())
+@@ -408,6 +468,13 @@
                  chunk.enqueueRelightChecks();
                  this.profiler.endStartSection("tickChunk");
                  chunk.tick(false);

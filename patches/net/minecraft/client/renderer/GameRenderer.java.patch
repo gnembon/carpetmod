@@ -1,0 +1,43 @@
+--- a/net/minecraft/client/renderer/GameRenderer.java
++++ b/net/minecraft/client/renderer/GameRenderer.java
+@@ -1,5 +1,6 @@
+ package net.minecraft.client.renderer;
+ 
++import carpet.CarpetSettings;
+ import com.google.gson.JsonSyntaxException;
+ import java.io.IOException;
+ import java.util.List;
+@@ -610,7 +611,15 @@
+ 
+     private void setupCameraTransform(float partialTicks)
+     {
+-        this.farPlaneDistance = (float)(this.mc.gameSettings.renderDistanceChunks * 16);
++        //[CM] viewDistance override
++        int renderDistance;
++        if (CarpetSettings.clientViewDistance == 0)
++            renderDistance = this.mc.gameSettings.renderDistanceChunks;
++        else {
++            renderDistance = CarpetSettings.clientViewDistance;
++        }
++
++        this.farPlaneDistance = (float)(renderDistance * 16); //[CM] replaced this.mc.gameSettings.renderDistanceChunks with renderDistance
+         GlStateManager.matrixMode(5889);
+         GlStateManager.loadIdentity();
+ 
+@@ -938,7 +947,15 @@
+         double d2 = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * (double)partialTicks;
+         icamera.setPosition(d0, d1, d2);
+ 
+-        if (this.mc.gameSettings.renderDistanceChunks >= 4)
++        //[CM] viewDistance override
++        int renderDistance;
++        if (CarpetSettings.clientViewDistance == 0)
++            renderDistance = this.mc.gameSettings.renderDistanceChunks;
++        else {
++            renderDistance = CarpetSettings.clientViewDistance;
++        }
++
++        if (renderDistance >= 4) //[CM] replaced this.mc.gameSettings.renderDistanceChunks with renderDistance
+         {
+             this.fogRenderer.setupFog(-1, partialTicks);
+             this.mc.profiler.endStartSection("sky");
