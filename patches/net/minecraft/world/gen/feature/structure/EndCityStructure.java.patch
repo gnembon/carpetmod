@@ -19,7 +19,7 @@
  
  public class EndCityStructure extends Structure<EndCityConfig>
  {
-+    private static final List<Biome.SpawnListEntry> spawnList = Lists.newArrayList(new Biome.SpawnListEntry(EntityType.SHULKER, 10, 1, 1));
++    private static final List<Biome.SpawnListEntry> spawnList = Lists.newArrayList(new Biome.SpawnListEntry(EntityType.SHULKER, 10, 4, 4));
 +
      protected ChunkPos getStartPositionForPosition(IChunkGenerator<?> chunkGenerator, Random random, int x, int z, int spacingOffsetsX, int spacingOffsetsZ)
      {
