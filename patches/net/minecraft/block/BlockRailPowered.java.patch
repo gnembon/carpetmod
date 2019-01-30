@@ -12,8 +12,8 @@
      protected boolean findPoweredRailSignal(World worldIn, BlockPos pos, IBlockState state, boolean p_176566_4_, int p_176566_5_)
      {
 -        if (p_176566_5_ >= 8)
-+        // [CM] Changed if statement values -- RailPowerLimit
-+        if (p_176566_5_ >= CarpetSettings.n_railPowerLimit)
++        // [CM] Changed if statement values -- RailPowerLimit, defaults to 8
++        if (p_176566_5_ >= CarpetSettings.railPowerLimitAdjusted)
          {
              return false;
          }
