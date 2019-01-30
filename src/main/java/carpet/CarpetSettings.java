@@ -17,8 +17,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.FileNotFoundException;
 
-import net.minecraft.client.settings.CreativeSettings;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.server.dedicated.DedicatedServer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -54,6 +54,9 @@ public class CarpetSettings
     public static int n_pushLimit = 12;
     public static boolean b_hopperCounters = false;
     public static int n_mobSpawningAlgorithm = 113;
+    public static int n_viewDistance = 0; // Used for Client Only
+    public static boolean b_fastRedstoneDust = false;
+    public static int railPowerLimitAdjusted = 8;
 
     /*
     public static boolean extendedConnectivity = false;
@@ -128,7 +131,8 @@ public class CarpetSettings
   //                                         "Requires flying to be enabled on the server"),
   //!rule("explosionNoBlockDamage", "tnt", "Explosions won't destroy blocks"),
   rule("tntPrimerMomentumRemoved", "tnt", "Removes random TNT momentum when primed"),
-  //!rule("fastRedstoneDust",      "experimental optimizations", "Lag optimizations for redstone Dust. By Theosib"),
+  rule("fastRedstoneDust",      "experimental optimizations", "Lag optimizations for redstone dust")
+                                .extraInfo("by Theosib").boolAccelerate().defaultFalse(),
   //<with modified protocol> rule("accurateBlockPlacement", "creative", "Allows to place blocks in different orientations. Requires Carpet Client")
   //                              .extraInfo("Also prevents rotations upon placement of dispensers and furnaces","when placed into a world by commands"),
   /////rule("optimizedTNT",          "tnt", "TNT causes less lag when exploding in the same spot and in liquids"),
@@ -198,10 +202,12 @@ public class CarpetSettings
                                 .extraInfo("/c and /s commands are available to all players regardless of their permission levels"),
   rule("commandPerimeterInfo",  "commands", "Enables /perimeterinfo command").isACommand()
                                 .extraInfo("... that scans the area around the block for potential spawnable spots"),
+  rule("commandDraw",  "commands", "Enables /draw command").isACommand()
+                        .extraInfo("... allows to paste simple shapes"),
   rule("commandPlayer",         "commands", "Enables /player command to control/spawn players").isACommand(),
   ////rule("commandRNG",            "commands", "Enables /rng command to manipulate and query rng").defaultTrue(),
   ////rule("newLight",              "optimizations", "Uses alternative lighting engine by PhiPros. AKA NewLight mod"),
-  //!rule("carpets",               "survival", "Placing carpets may issue carpet commands for non-op players"),
+  rule("carpets",               "survival", "Placing carpets may issue carpet commands for non-op players"),
   rule("missingTools",          "survival", "Pistons, Glass and Sponge can be broken faster with their appropriate tools"),
   rule("mobSpawningAlgorithm","experimental","Using version appropriate spawning rules: ")
                                 .extraInfo(" - 1.8 : fixed 4 mobs per pack for all mobs, 'subchunk' rule",
@@ -236,8 +242,9 @@ public class CarpetSettings
   rule("fillUpdates",           "creative", "fill/clone/setblock and structure blocks cause block updates").defaultTrue(),
   rule("pushLimit",             "creative","Customizable piston push limit")
                                 .choices("12","10 12 14 100").setNotStrict().numAccelerate(),
-  //!rule("railPowerLimit",        "creative", "Customizable powered rail power range")
-  //                              .choices("9","9 15 30").setNotStrict(),
+  rule("railPowerLimit",        "creative", "Customizable powered rail power range")
+                                .choices("9","9 15 30").setNotStrict().validate( (s) ->
+                                    railPowerLimitAdjusted = CarpetSettings.getInt("railPowerLimit") - 1),
   rule("fillLimit",             "creative","Customizable fill/clone volume limit")
                                 .choices("32768","32768 250000 1000000").setNotStrict(),
   //!rule("maxEntityCollisions",   "optimizations", "Customizable maximal entity collision limits, 0 for no limits")
@@ -256,9 +263,9 @@ public class CarpetSettings
   //                              .extraInfo("Set to -1 for default behaviour")
   //                              .choices("-1","-1")
   //                              .setFloat(),
-  //!rule("sleepingThreshold",     "experimental", "The percentage of required sleeping players to skip the night")
-  //                              .extraInfo("Use values from 0 to 100, 100 for default (all players needed)")
-  //                              .choices("100","0 10 50 100").setNotStrict(),
+  rule("sleepingThreshold",     "experimental", "The percentage of required sleeping players to skip the night")
+                                .extraInfo("Use values from 0 to 100, 100 for default (all players needed)")
+                                .choices("100","0 10 50 100").setNotStrict(),
   //???rule("spongeRandom",          "experimental feature", "sponge responds to random ticks"),
   //!rule("customMOTD",            "creative","Sets a different motd message on client trying to connect to the server")
   //                              .extraInfo("use '_' to use the startup setting from server.properties")
@@ -272,9 +279,37 @@ public class CarpetSettings
   //                              .extraInfo("Turning nether RNG manipulation on or off."),
   /////rule("endRNG",                "creative", "Turning end RNG manipulation on or off.")
   //                              .extraInfo("Turning end RNG manipulation on or off."),
-  //!rule("viewDistance",          "creative", "Changes the view distance of the server.")
-  //                              .extraInfo("Set to 0 to not override the value in server settings.")
-  //                              .choices("0", "0 12 16 32 64").setNotStrict(),
+  rule("viewDistance",          "creative", "Changes the view distance of the server.")
+                                .extraInfo("Set to 0 to not override the value in server settings.")
+                                .choices("0", "0 12 16 32 64").setNotStrict()
+                                .validate( (s) -> {
+                                    int viewDistance = getInt("viewDistance");
+                                    if (CarpetServer.minecraft_server.isDedicatedServer())
+                                    {
+                                        if (viewDistance < 2)
+                                        {
+                                            viewDistance = ((DedicatedServer) CarpetServer.minecraft_server).getIntProperty("view-distance", 10);
+                                        }
+                                        if (viewDistance > 64)
+                                        {
+                                            viewDistance = 64;
+                                        }
+                                        if (viewDistance != CarpetServer.minecraft_server.getPlayerList().getViewDistance())
+                                            CarpetServer.minecraft_server.getPlayerList().setViewDistance(viewDistance);
+                                    }
+                                    else
+                                    {
+                                        if (viewDistance < 2)
+                                        {
+                                            viewDistance = 0;
+                                        }
+                                        if (viewDistance > 64)
+                                        {
+                                            viewDistance = 64;
+                                        }
+                                        n_viewDistance = viewDistance;
+                                    }
+                                }),
   /////rule("tickingAreas",          "creative", "Enable use of ticking areas.")
   //                              .extraInfo("As set by the /tickingarea comamnd.",
   //                              "Ticking areas work as if they are the spawn chunks."),

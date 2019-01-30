@@ -1,6 +1,14 @@
 --- a/net/minecraft/block/BlockRedstoneWire.java
 +++ b/net/minecraft/block/BlockRedstoneWire.java
-@@ -44,6 +44,8 @@
+@@ -1,5 +1,7 @@
+ package net.minecraft.block;
+ 
++import carpet.CarpetSettings;
++import carpet.helpers.RedstoneWireTurbo;
+ import com.google.common.collect.ImmutableMap;
+ import com.google.common.collect.Lists;
+ import com.google.common.collect.Maps;
+@@ -44,8 +46,13 @@
      public static final Map<EnumFacing, EnumProperty<RedstoneSide>> FACING_PROPERTY_MAP = Maps.newEnumMap(ImmutableMap.of(EnumFacing.NORTH, NORTH, EnumFacing.EAST, EAST, EnumFacing.SOUTH, SOUTH, EnumFacing.WEST, WEST));
      protected static final VoxelShape[] SHAPES = new VoxelShape[] {Block.makeCuboidShape(3.0D, 0.0D, 3.0D, 13.0D, 1.0D, 13.0D), Block.makeCuboidShape(3.0D, 0.0D, 3.0D, 13.0D, 1.0D, 16.0D), Block.makeCuboidShape(0.0D, 0.0D, 3.0D, 13.0D, 1.0D, 13.0D), Block.makeCuboidShape(0.0D, 0.0D, 3.0D, 13.0D, 1.0D, 16.0D), Block.makeCuboidShape(3.0D, 0.0D, 0.0D, 13.0D, 1.0D, 13.0D), Block.makeCuboidShape(3.0D, 0.0D, 0.0D, 13.0D, 1.0D, 16.0D), Block.makeCuboidShape(0.0D, 0.0D, 0.0D, 13.0D, 1.0D, 13.0D), Block.makeCuboidShape(0.0D, 0.0D, 0.0D, 13.0D, 1.0D, 16.0D), Block.makeCuboidShape(3.0D, 0.0D, 3.0D, 16.0D, 1.0D, 13.0D), Block.makeCuboidShape(3.0D, 0.0D, 3.0D, 16.0D, 1.0D, 16.0D), Block.makeCuboidShape(0.0D, 0.0D, 3.0D, 16.0D, 1.0D, 13.0D), Block.makeCuboidShape(0.0D, 0.0D, 3.0D, 16.0D, 1.0D, 16.0D), Block.makeCuboidShape(3.0D, 0.0D, 0.0D, 16.0D, 1.0D, 13.0D), Block.makeCuboidShape(3.0D, 0.0D, 0.0D, 16.0D, 1.0D, 16.0D), Block.makeCuboidShape(0.0D, 0.0D, 0.0D, 16.0D, 1.0D, 13.0D), Block.makeCuboidShape(0.0D, 0.0D, 0.0D, 16.0D, 1.0D, 16.0D)};
      private boolean canProvidePower = true;
@@ -8,8 +16,28 @@
 +    public void setCanProvidePower(boolean v) { canProvidePower = v; }
      private final Set<BlockPos> blocksNeedingUpdate = Sets.<BlockPos>newHashSet();
  
++    // [CM] FastRedstoneDust
++    RedstoneWireTurbo wireTurbo = new RedstoneWireTurbo(this);
++
      public BlockRedstoneWire(Block.Properties builder)
-@@ -190,7 +192,8 @@
+     {
+         super(builder);
+@@ -176,8 +183,13 @@
+         return iblockstate.isTopSolid() || iblockstate.getBlock() == Blocks.GLOWSTONE;
+     }
+ 
+-    private IBlockState updateSurroundingRedstone(World worldIn, BlockPos pos, IBlockState state)
++    // [CM] FastRedstoneDust -- Added 'BlockPos source' to method parameters.
++    private IBlockState updateSurroundingRedstone(World worldIn, BlockPos pos, IBlockState state, BlockPos source)
+     {
++        // [CM] FastRedstoneDust -- UpdateSurroundingRedstone based on carpet rule.
++        if (CarpetSettings.b_fastRedstoneDust)
++            this.wireTurbo.updateSurroundingRedstone(worldIn, pos, state, source);
++
+         state = this.func_212568_b(worldIn, pos, state);
+         List<BlockPos> list = Lists.newArrayList(this.blocksNeedingUpdate);
+         this.blocksNeedingUpdate.clear();
+@@ -190,7 +202,8 @@
          return state;
      }
  
@@ -19,3 +47,143 @@
      {
          IBlockState iblockstate = p_212568_3_;
          int i = p_212568_3_.get(POWER);
+@@ -200,55 +213,59 @@
+         int k = p_212568_1_.getRedstonePowerFromNeighbors(p_212568_2_);
+         this.canProvidePower = true;
+ 
+-        if (k > 0 && k > j - 1)
++        // [CM] FastRedstoneDust -- if statement around unnecessary check
++        if (!CarpetSettings.b_fastRedstoneDust)
+         {
+-            j = k;
++            if (k > 0 && k > j - 1) {
++                j = k;
++            }
+         }
+ 
+         int l = 0;
+ 
+-        for (EnumFacing enumfacing : EnumFacing.Plane.HORIZONTAL)
++        // [CM] FastRedstoneDust -- if statement around
++        if (!CarpetSettings.b_fastRedstoneDust || k < 15)
+         {
+-            BlockPos blockpos = p_212568_2_.offset(enumfacing);
+-            boolean flag = blockpos.getX() != p_212568_2_.getX() || blockpos.getZ() != p_212568_2_.getZ();
+-            IBlockState iblockstate1 = p_212568_1_.getBlockState(blockpos);
++            for (EnumFacing enumfacing : EnumFacing.Plane.HORIZONTAL) {
++                BlockPos blockpos = p_212568_2_.offset(enumfacing);
++                boolean flag = blockpos.getX() != p_212568_2_.getX() || blockpos.getZ() != p_212568_2_.getZ();
++                IBlockState iblockstate1 = p_212568_1_.getBlockState(blockpos);
+ 
+-            if (flag)
+-            {
+-                l = this.func_212567_a(l, iblockstate1);
+-            }
++                if (flag) {
++                    l = this.func_212567_a(l, iblockstate1);
++                }
+ 
+-            if (iblockstate1.isNormalCube() && !p_212568_1_.getBlockState(p_212568_2_.up()).isNormalCube())
+-            {
+-                if (flag && p_212568_2_.getY() >= p_212568_2_.getY())
+-                {
+-                    l = this.func_212567_a(l, p_212568_1_.getBlockState(blockpos.up()));
++                if (iblockstate1.isNormalCube() && !p_212568_1_.getBlockState(p_212568_2_.up()).isNormalCube()) {
++                    if (flag && p_212568_2_.getY() >= p_212568_2_.getY()) {
++                        l = this.func_212567_a(l, p_212568_1_.getBlockState(blockpos.up()));
++                    }
++                } else if (!iblockstate1.isNormalCube() && flag && p_212568_2_.getY() <= p_212568_2_.getY()) {
++                    l = this.func_212567_a(l, p_212568_1_.getBlockState(blockpos.down()));
+                 }
+             }
+-            else if (!iblockstate1.isNormalCube() && flag && p_212568_2_.getY() <= p_212568_2_.getY())
+-            {
+-                l = this.func_212567_a(l, p_212568_1_.getBlockState(blockpos.down()));
+-            }
+         }
+ 
+-        if (l > j)
++        // [CM] FastRedstoneDust -- if statement around with an else statement
++        if (!CarpetSettings.b_fastRedstoneDust)
+         {
+-            j = l - 1;
++            if (l > j) {
++                j = l - 1;
++            } else if (j > 0) {
++                --j;
++            } else {
++                j = 0;
++            }
++
++            if (k > j - 1) {
++                j = k;
++            }
+         }
+-        else if (j > 0)
+-        {
+-            --j;
+-        }
+         else
+         {
+-            j = 0;
++            j = l - 1;
++            if (k > j) j = k;
+         }
+ 
+-        if (k > j - 1)
+-        {
+-            j = k;
+-        }
+-
+         if (i != j)
+         {
+             p_212568_3_ = (IBlockState)p_212568_3_.with(POWER, Integer.valueOf(j));
+@@ -258,11 +275,14 @@
+                 p_212568_1_.setBlockState(p_212568_2_, p_212568_3_, 2);
+             }
+ 
+-            this.blocksNeedingUpdate.add(p_212568_2_);
+-
+-            for (EnumFacing enumfacing1 : EnumFacing.values())
++            // [CM] FastRedstoneDust -- if statement around unnecessary check
++            if (!CarpetSettings.b_fastRedstoneDust)
+             {
+-                this.blocksNeedingUpdate.add(p_212568_2_.offset(enumfacing1));
++                this.blocksNeedingUpdate.add(p_212568_2_);
++
++                for (EnumFacing enumfacing1 : EnumFacing.values()) {
++                    this.blocksNeedingUpdate.add(p_212568_2_.offset(enumfacing1));
++                }
+             }
+         }
+ 
+@@ -286,7 +306,8 @@
+     {
+         if (oldState.getBlock() != state.getBlock() && !worldIn.isRemote)
+         {
+-            this.updateSurroundingRedstone(worldIn, pos, state);
++            // [CM] Added 'null' to fix the error caused due to changing method parameters for updateSurroundingRedstone
++            this.updateSurroundingRedstone(worldIn, pos, state, null);
+ 
+             for (EnumFacing enumfacing : EnumFacing.Plane.VERTICAL)
+             {
+@@ -327,7 +348,8 @@
+                     worldIn.notifyNeighborsOfStateChange(pos.offset(enumfacing), this);
+                 }
+ 
+-                this.updateSurroundingRedstone(worldIn, pos, state);
++                // [CM] Added 'null' to fix the error caused due to changing method parameters for updateSurroundingRedstone
++                this.updateSurroundingRedstone(worldIn, pos, state, null);
+ 
+                 for (EnumFacing enumfacing1 : EnumFacing.Plane.HORIZONTAL)
+                 {
+@@ -370,7 +392,8 @@
+         {
+             if (state.isValidPosition(worldIn, pos))
+             {
+-                this.updateSurroundingRedstone(worldIn, pos, state);
++                // [CM] Added 'fromPos' to fix the error caused due to changing method parameters for updateSurroundingRedstone
++                this.updateSurroundingRedstone(worldIn, pos, state, fromPos);
+             }
+             else
+             {
