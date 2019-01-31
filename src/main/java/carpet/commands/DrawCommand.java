@@ -114,8 +114,7 @@ public class DrawCommand
                                                                         BlockStateArgument.getBlockStateInput(c,"block"),
                                                                         BlockPredicateArgument.getBlockPredicate(c,
                                                                                 "filter")
-                                                                        )
-                                                                )))))));
+                                                                        ))))))));
         dispatcher.register(command);
     }
 

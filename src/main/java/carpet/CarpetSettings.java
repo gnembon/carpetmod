@@ -203,7 +203,8 @@ public class CarpetSettings
   rule("commandPerimeterInfo",  "commands", "Enables /perimeterinfo command").isACommand()
                                 .extraInfo("... that scans the area around the block for potential spawnable spots"),
   rule("commandDraw",  "commands", "Enables /draw command").isACommand()
-                        .extraInfo("... allows to paste simple shapes"),
+                                .extraInfo("... allows to paste simple shapes"),
+  rule("commandEval",  "commands", "Enables /eval command").isACommand(),
   rule("commandPlayer",         "commands", "Enables /player command to control/spawn players").isACommand(),
   ////rule("commandRNG",            "commands", "Enables /rng command to manipulate and query rng").defaultTrue(),
   ////rule("newLight",              "optimizations", "Uses alternative lighting engine by PhiPros. AKA NewLight mod"),
