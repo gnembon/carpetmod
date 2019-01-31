@@ -441,12 +441,13 @@ public class Expression {
 				token.type = isHex ? TokenType.HEX_LITERAL : TokenType.LITERAL;
 			} else if (ch == '\'') {
 				pos++;
-				if (previousToken.type != TokenType.STRINGPARAM) {
+				if (previousToken == null || previousToken.type != TokenType.STRINGPARAM) {
 					ch = input.charAt(pos);
 					while (ch != '\'') {
 						token.append(input.charAt(pos++));
 						ch = pos == input.length() ? 0 : input.charAt(pos);
 					}
+					pos++;
 					token.type = TokenType.STRINGPARAM;
 				} else {
 					return next();
@@ -541,6 +542,11 @@ public class Expression {
 		this.mc = defaultMathContext;
 		this.expression = expression;
 		this.originalExpression = expression;
+		variables.put("e", CreateLazyNumber(e));
+		variables.put("PI", CreateLazyNumber(PI));
+		variables.put("NULL", null);
+		variables.put("TRUE", CreateLazyNumber(BigDecimal.ONE));
+		variables.put("FALSE", CreateLazyNumber(BigDecimal.ZERO));
 		addOperator(new Operator("+", OPERATOR_PRECEDENCE_ADDITIVE, true) {
 			@Override
 			public BigDecimal eval(BigDecimal v1, BigDecimal v2) {
@@ -675,10 +681,16 @@ public class Expression {
 				return v1.compareTo(v2) == 0 ? BigDecimal.ONE : BigDecimal.ZERO;
 			}
 		});
-		addOperator(new Operator("==", OPERATOR_PRECEDENCE_EQUALITY, false, true) {
+
+		addOperator(new AbstractLazyOperator("==", OPERATOR_PRECEDENCE_EQUALITY, false, true) {
 			@Override
-			public BigDecimal eval(BigDecimal v1, BigDecimal v2) {
-				return ((Operator)operators.get("=")).eval(v1, v2);
+			public LazyNumber eval(LazyNumber v1, LazyNumber v2) {
+				if (isNumber(v1.getString()) && isNumber(v2.getString()))
+				{
+					return operators.get("=").eval(v1, v2);
+				}
+				return v1.getString().equalsIgnoreCase(v2.getString()) ? variables.get("TRUE") :
+						variables.get("FALSE");
 			}
 		});
 
@@ -694,19 +706,26 @@ public class Expression {
 				return v1.compareTo(v2) != 0 ? BigDecimal.ONE : BigDecimal.ZERO;
 			}
 		});
-		addOperator(new Operator("<>", OPERATOR_PRECEDENCE_EQUALITY, false, true) {
+
+		addOperator(new AbstractLazyOperator("<>", OPERATOR_PRECEDENCE_EQUALITY, false, true) {
 			@Override
-			public BigDecimal eval(BigDecimal v1, BigDecimal v2) {
-				assertNotNull(v1, v2);
-				return ((Operator)operators.get("!=")).eval(v1, v2);
+			public LazyNumber eval(LazyNumber v1, LazyNumber v2) {
+				if (isNumber(v1.getString()) && isNumber(v2.getString()))
+				{
+					return operators.get("!=").eval(v1, v2);
+				}
+				return v1.getString().equalsIgnoreCase(v2.getString()) ? variables.get("FALSE") :
+						variables.get("TRUE");
 			}
 		});
+
 		addOperator(new UnaryOperator("-", OPERATOR_PRECEDENCE_UNARY, false) {
 			@Override
 			public BigDecimal evalUnary(BigDecimal v1) {
 				return v1.multiply(new BigDecimal(-1));
 			}
 		});
+
 		addOperator(new UnaryOperator("+", OPERATOR_PRECEDENCE_UNARY, false) {
 			@Override
 			public BigDecimal evalUnary(BigDecimal v1) {
@@ -1071,11 +1090,7 @@ public class Expression {
 			}
 		});
 
-		variables.put("e", CreateLazyNumber(e));
-		variables.put("PI", CreateLazyNumber(PI));
-		variables.put("NULL", null);
-		variables.put("TRUE", CreateLazyNumber(BigDecimal.ONE));
-		variables.put("FALSE", CreateLazyNumber(BigDecimal.ZERO));
+
 
 	}
 
@@ -1139,11 +1154,14 @@ public class Expression {
 			Token token = tokenizer.next();
 			switch (token.type) {
 			case STRINGPARAM:
-				stack.push(token);
-				break;
+				//stack.push(token);
+				//break;
 			case LITERAL:
 			case HEX_LITERAL:
-				if (previousToken != null && (previousToken.type == TokenType.LITERAL || previousToken.type == TokenType.HEX_LITERAL)) {
+				if (previousToken != null && (
+						previousToken.type == TokenType.LITERAL ||
+						previousToken.type == TokenType.HEX_LITERAL ||
+						previousToken.type == TokenType.STRINGPARAM)) {
 					throw new ExpressionException("Missing operator at character position " + token.pos);
 				}
 				outputQueue.add(token);

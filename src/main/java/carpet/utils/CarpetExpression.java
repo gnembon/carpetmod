@@ -5,9 +5,12 @@ import com.udojava.evalex.AbstractLazyFunction;
 import com.udojava.evalex.Expression;
 import com.udojava.evalex.Expression.ExpressionException;
 import com.udojava.evalex.Expression.LazyNumber;
+import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.command.CommandSource;
 import net.minecraft.init.Blocks;
+import net.minecraft.state.IProperty;
+import net.minecraft.state.StateContainer;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.registry.IRegistry;
@@ -22,7 +25,6 @@ public class CarpetExpression
     private Expression expr;
     private static final LazyNumber TRUE = Expression.CreateLazyNumber(BigDecimal.ONE);
     private static final LazyNumber FALSE = Expression.CreateLazyNumber(BigDecimal.ZERO);
-
 
     public static class BlockValue implements LazyNumber
     {
@@ -42,9 +44,29 @@ public class CarpetExpression
 
         @Override
         public String getString() {
-            return blockState.getBlock().getTranslationKey();
+            return IRegistry.field_212618_g.getKey(blockState.getBlock()).getPath();
         }
     }
+    public static class StringValue implements LazyNumber
+    {
+        public static final StringValue EMPTY = new StringValue("");
+        public String str;
+        public StringValue(String arg)
+        {
+            str = arg;
+        }
+
+        @Override
+        public BigDecimal eval() {
+            return BigDecimal.valueOf(str.hashCode());
+        }
+
+        @Override
+        public String getString() {
+            return str;
+        }
+    }
+
 
     private BlockPos locateBlockPos(List<LazyNumber> params)
     {
@@ -64,6 +86,7 @@ public class CarpetExpression
         */
         return new BlockPos(origin.getX()+xpos, origin.getY()+ypos, origin.getZ()+zpos );
     }
+
     private BlockPos locateBlockPosNum(List<BigDecimal> params)
     {
         if (params.size() != 3)
@@ -82,7 +105,6 @@ public class CarpetExpression
         */
         return new BlockPos(origin.getX()+xpos, origin.getY()+ypos, origin.getZ()+zpos );
     }
-
 
     public CarpetExpression(String expression, CommandSource source, BlockPos origin)
     {
@@ -150,6 +172,40 @@ public class CarpetExpression
                 return new BigDecimal(source.getWorld().getLightSubtracted(pos, 0));
             }
         });
+        this.expr.addFunction(new AbstractFunction("power", 3, false) {
+            @Override
+            public BigDecimal eval(List<BigDecimal> params)
+            {
+                BlockPos pos = locateBlockPosNum(params);
+                return new BigDecimal(source.getWorld().getRedstonePowerFromNeighbors(pos));
+            }
+        });
+
+        /*
+        this.expr.addLazyFunction(new AbstractLazyFunction("s", 1, false) {  // why not
+            @Override
+            public LazyNumber lazyEval(List<LazyNumber> params)
+            {
+                return new StringValue(params.get(0).getString());
+            }
+        });
+        */
+        this.expr.addLazyFunction(new AbstractLazyFunction("property", 2, false) {  // why not
+            @Override
+            public LazyNumber lazyEval(List<LazyNumber> params)
+            {
+                if (!(params.get(0) instanceof BlockValue))
+                    throw new ExpressionException("First Argument of tag should be a block");
+                IBlockState state = ((BlockValue) params.get(0)).blockState;
+                String tag = params.get(1).getString();
+                StateContainer<Block, IBlockState> states = state.getBlock().getStateContainer();
+                IProperty<?> property = states.getProperty(tag);
+                if (property == null)
+                    return new StringValue("");
+                return new StringValue(state.get(property).toString());
+            }
+        });
+
         this.expr.addFunction(new AbstractFunction("relu", 1, false) {  // why not
             @Override
             public BigDecimal eval(List<BigDecimal> params)
@@ -161,6 +217,7 @@ public class CarpetExpression
         });
 
     }
+
     public long eval(BlockPos at)
     {
         return this.expr.
@@ -169,6 +226,7 @@ public class CarpetExpression
                 with("z",new BigDecimal(at.getZ()-origin.getZ())).
                 eval().longValue();
     }
+
     public long eval(int x, int y, int z)
     {
         return this.expr.
