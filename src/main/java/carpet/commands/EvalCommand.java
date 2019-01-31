@@ -32,13 +32,4 @@ public class EvalCommand
         Messenger.m(source, "wi "+expr,"wi  = ", "wb "+ex.eval(pos.getX(), pos.getY(), pos.getZ()));
         return 1;
     }
-
-
-
-
-
-
-
-
-
 }
