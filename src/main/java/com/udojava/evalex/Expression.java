@@ -26,6 +26,9 @@
  */
 package com.udojava.evalex;
 
+import carpet.CarpetSettings;
+import org.apache.commons.lang3.StringUtils;
+
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
@@ -213,6 +216,22 @@ public class Expression {
 		String getString();
 	}
 
+	/**
+	 * Construct a LazyNumber from a String
+	 */
+	public static LazyNumber CreateLazyString(final String arg) {
+		return new LazyNumber() {
+			@Override
+			public String getString() {
+				return arg;
+			}
+
+			@Override
+			public BigDecimal eval() {
+				return null;
+			}
+		};
+	}
 	/**
 	 * Construct a LazyNumber from a BigDecimal
 	 */
@@ -547,34 +566,72 @@ public class Expression {
 		variables.put("NULL", null);
 		variables.put("TRUE", CreateLazyNumber(BigDecimal.ONE));
 		variables.put("FALSE", CreateLazyNumber(BigDecimal.ZERO));
-		addOperator(new Operator("+", OPERATOR_PRECEDENCE_ADDITIVE, true) {
+
+		addOperator(new AbstractLazyOperator("+", OPERATOR_PRECEDENCE_ADDITIVE, true) {
 			@Override
-			public BigDecimal eval(BigDecimal v1, BigDecimal v2) {
+			public LazyNumber eval(LazyNumber v1, LazyNumber v2) {
 				assertNotNull(v1, v2);
-				return v1.add(v2, mc);
+				BigDecimal ev1 = v1.eval();
+				BigDecimal ev2 = v2.eval();
+				if (ev1 != null && ev2 != null)
+				{
+					return CreateLazyNumber(ev1.add(ev2, mc));
+				}
+				return CreateLazyString(v1.getString()+v2.getString());
 			}
 		});
-		addOperator(new Operator("-", OPERATOR_PRECEDENCE_ADDITIVE, true) {
+
+		addOperator(new AbstractLazyOperator("-", OPERATOR_PRECEDENCE_ADDITIVE, true) {
 			@Override
-			public BigDecimal eval(BigDecimal v1, BigDecimal v2) {
+			public LazyNumber eval(LazyNumber v1, LazyNumber v2) {
 				assertNotNull(v1, v2);
-				return v1.subtract(v2, mc);
+				BigDecimal ev1 = v1.eval();
+				BigDecimal ev2 = v2.eval();
+				if (ev1 != null && ev2 != null)
+				{
+					return CreateLazyNumber(ev1.subtract(ev2, mc));
+				}
+				return CreateLazyString(v1.getString().replace(v2.getString(),""));
 			}
 		});
-		addOperator(new Operator("*", OPERATOR_PRECEDENCE_MULTIPLICATIVE, true) {
+
+
+		addOperator(new AbstractLazyOperator("*", OPERATOR_PRECEDENCE_ADDITIVE, true) {
 			@Override
-			public BigDecimal eval(BigDecimal v1, BigDecimal v2) {
+			public LazyNumber eval(LazyNumber v1, LazyNumber v2) {
 				assertNotNull(v1, v2);
-				return v1.multiply(v2, mc);
+				BigDecimal ev1 = v1.eval();
+				BigDecimal ev2 = v2.eval();
+				if (ev1 != null && ev2 != null)
+				{
+					return CreateLazyNumber(ev1.subtract(ev2, mc));
+				}
+				if (ev2 != null)
+				{
+					return CreateLazyString(StringUtils.repeat(v1.getString(), ev2.intValue()));
+				}
+				return CreateLazyString(v1.getString()+'.'+v2.getString());
 			}
 		});
-		addOperator(new Operator("/", OPERATOR_PRECEDENCE_MULTIPLICATIVE, true) {
+
+		addOperator(new AbstractLazyOperator("/", OPERATOR_PRECEDENCE_ADDITIVE, true) {
 			@Override
-			public BigDecimal eval(BigDecimal v1, BigDecimal v2) {
+			public LazyNumber eval(LazyNumber v1, LazyNumber v2) {
 				assertNotNull(v1, v2);
-				return v1.divide(v2, mc);
+				BigDecimal ev1 = v1.eval();
+				BigDecimal ev2 = v2.eval();
+				if (ev1 != null && ev2 != null)
+				{
+					return CreateLazyNumber(ev1.divide(ev2, mc));
+				}
+				if (ev2 != null)
+				{
+					return CreateLazyString(v1.getString().substring(0,(int)(v1.getString().length()/ev2.floatValue())));
+				}
+				return CreateLazyString(v1.getString()+'.'+v2.getString());
 			}
 		});
+
 		addOperator(new Operator("%", OPERATOR_PRECEDENCE_MULTIPLICATIVE, true) {
 			@Override
 			public BigDecimal eval(BigDecimal v1, BigDecimal v2) {
@@ -669,20 +726,7 @@ public class Expression {
 			}
 		});
 
-		addOperator(new Operator("=", OPERATOR_PRECEDENCE_EQUALITY, false, true) {
-			@Override
-			public BigDecimal eval(BigDecimal v1, BigDecimal v2) {
-				if (v1 == v2) {
-					return BigDecimal.ONE;
-				}
-				if (v1 == null || v2 == null) {
-					return BigDecimal.ZERO;
-				}
-				return v1.compareTo(v2) == 0 ? BigDecimal.ONE : BigDecimal.ZERO;
-			}
-		});
-
-		addOperator(new AbstractLazyOperator("==", OPERATOR_PRECEDENCE_EQUALITY, false, true) {
+		addOperator(new AbstractLazyOperator("=", OPERATOR_PRECEDENCE_EQUALITY, false, true) {
 			@Override
 			public LazyNumber eval(LazyNumber v1, LazyNumber v2) {
 				if (isNumber(v1.getString()) && isNumber(v2.getString()))
@@ -694,20 +738,14 @@ public class Expression {
 			}
 		});
 
-		addOperator(new Operator("!=", OPERATOR_PRECEDENCE_EQUALITY, false, true) {
+		addOperator(new AbstractLazyOperator("==", OPERATOR_PRECEDENCE_EQUALITY, false, true) {
 			@Override
-			public BigDecimal eval(BigDecimal v1, BigDecimal v2) {
-				if (v1 == v2) {
-					return BigDecimal.ZERO;
-				}
-				if (v1 == null || v2 == null) {
-					return BigDecimal.ONE;
-				}
-				return v1.compareTo(v2) != 0 ? BigDecimal.ONE : BigDecimal.ZERO;
+			public LazyNumber eval(LazyNumber v1, LazyNumber v2) {
+				return operators.get("=").eval(v1, v2);
 			}
 		});
 
-		addOperator(new AbstractLazyOperator("<>", OPERATOR_PRECEDENCE_EQUALITY, false, true) {
+		addOperator(new AbstractLazyOperator("!=", OPERATOR_PRECEDENCE_EQUALITY, false, true) {
 			@Override
 			public LazyNumber eval(LazyNumber v1, LazyNumber v2) {
 				if (isNumber(v1.getString()) && isNumber(v2.getString()))
@@ -716,6 +754,13 @@ public class Expression {
 				}
 				return v1.getString().equalsIgnoreCase(v2.getString()) ? variables.get("FALSE") :
 						variables.get("TRUE");
+			}
+		});
+
+		addOperator(new AbstractLazyOperator("<>", OPERATOR_PRECEDENCE_EQUALITY, false, true) {
+			@Override
+			public LazyNumber eval(LazyNumber v1, LazyNumber v2) {
+				return operators.get("!=").eval(v1, v2);
 			}
 		});
 
@@ -1109,6 +1154,15 @@ public class Expression {
 		}
 	}
 
+	private void assertNotNull(LazyNumber v1, LazyNumber v2) {
+		if (v1 == null) {
+			throw new ArithmeticException("First operand may not be null");
+		}
+		if (v2 == null) {
+			throw new ArithmeticException("Second operand may not be null");
+		}
+	}
+
 	/**
 	 * Is the string a number?
 	 * 
@@ -1433,7 +1487,7 @@ public class Expression {
 				case OPERATOR:
 					final LazyNumber v1 = stack.pop();
 					final LazyNumber v2 = stack.pop();
-					LazyNumber result = operators.get(token.surface).eval(v1, v2);
+					LazyNumber result = operators.get(token.surface).eval(v2, v1);
 					stack.push(result);
 					break;
 				case VARIABLE:
