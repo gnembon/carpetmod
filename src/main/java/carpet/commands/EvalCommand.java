@@ -29,7 +29,7 @@ public class EvalCommand
     {
         CarpetExpression ex = new CarpetExpression(expr, source, new BlockPos(0, 0, 0));
         BlockPos pos = new BlockPos(source.getPos());
-        Messenger.m(source, "wi "+expr,"wi  = ", "wb "+ex.eval(pos.getX(), pos.getY(), pos.getZ()));
+        Messenger.m(source, "wi "+expr,"wi  = ", "wb "+ex.evalString(pos.getX(), pos.getY(), pos.getZ()));
         return 1;
     }
 }

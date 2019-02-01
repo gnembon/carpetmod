@@ -1417,6 +1417,108 @@ public class Expression {
 		return result == null ? null : stripTrailingZeros ? result.stripTrailingZeros() : result;
 	}
 
+
+	public LazyNumber evalLazy() {
+
+		Stack<LazyNumber> stack = new Stack<LazyNumber>();
+
+		for (final Token token : getRPN()) {
+			switch (token.type) {
+				case UNARY_OPERATOR: {
+					final LazyNumber value = stack.pop();
+					LazyNumber result = operators.get(token.surface).eval(value, null);
+					stack.push(result);
+					break;
+				}
+				case OPERATOR:
+					final LazyNumber v1 = stack.pop();
+					final LazyNumber v2 = stack.pop();
+					LazyNumber result = operators.get(token.surface).eval(v1, v2);
+					stack.push(result);
+					break;
+				case VARIABLE:
+					if (!variables.containsKey(token.surface)) {
+						throw new ExpressionException("Unknown operator or function: " + token);
+					}
+
+					stack.push(new LazyNumber() {
+						public BigDecimal eval() {
+							LazyNumber lazyVariable = variables.get(token.surface);
+							BigDecimal value = lazyVariable == null ? null : lazyVariable.eval();
+							return value == null ? null : value.round(mc);
+						}
+
+						public String getString() {
+							return token.surface;
+						}
+					});
+					break;
+				case FUNCTION:
+					com.udojava.evalex.LazyFunction f = functions.get(token.surface.toUpperCase(Locale.ROOT));
+					ArrayList<LazyNumber> p = new ArrayList<LazyNumber>(!f.numParamsVaries() ? f.getNumParams() : 0);
+					// pop parameters off the stack until we hit the start of
+					// this function's parameter list
+					while (!stack.isEmpty() && stack.peek() != PARAMS_START) {
+						p.add(0, stack.pop());
+					}
+
+					if (stack.peek() == PARAMS_START) {
+						stack.pop();
+					}
+
+					LazyNumber fResult = f.lazyEval(p);
+					stack.push(fResult);
+					break;
+				case OPEN_PAREN:
+					stack.push(PARAMS_START);
+					break;
+				case LITERAL:
+					stack.push(new LazyNumber() {
+						public BigDecimal eval() {
+							if (token.surface.equalsIgnoreCase("NULL")) {
+								return null;
+							}
+
+							return new BigDecimal(token.surface, mc);
+						}
+
+						public String getString() {
+							return String.valueOf(new BigDecimal(token.surface, mc));
+						}
+					});
+					break;
+				case STRINGPARAM:
+					stack.push(new LazyNumber() {
+						public BigDecimal eval() {
+							return null;
+						}
+
+						public String getString() {
+							return token.surface;
+						}
+					});
+					break;
+				case HEX_LITERAL:
+					stack.push(new LazyNumber() {
+						public BigDecimal eval() {
+							return new BigDecimal(new BigInteger(token.surface.substring(2), 16), mc);
+						}
+
+						public String getString() {
+							return new BigInteger(token.surface.substring(2), 16).toString();
+						}
+					});
+					break;
+				default:
+					throw new ExpressionException(
+							"Unexpected token '" + token.surface + "' at character position " + token.pos);
+			}
+		}
+		LazyNumber result = stack.pop();
+		return result;
+	}
+
+
 	/**
 	 * Sets the precision for expression evaluation.
 	 * 

@@ -343,4 +343,13 @@ public class CarpetExpression
                 with("z",new BigDecimal(z-origin.getZ())).
                 eval().longValue();
     }
+
+    public String evalString(int x, int y, int z)
+    {
+        return this.expr.
+                with("x",new BigDecimal(x-origin.getX())).
+                with("y",new BigDecimal(y-origin.getY())).
+                with("z",new BigDecimal(z-origin.getZ())).
+                evalLazy().getString();
+    }
 }
