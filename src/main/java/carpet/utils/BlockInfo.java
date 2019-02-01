@@ -17,108 +17,125 @@ import net.minecraft.util.text.ITextComponent;
 import net.minecraft.world.World;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class BlockInfo
 {
-    public static String getSoundName(SoundType stype)
-    {
-        if (stype == SoundType.WOOD   ) { return "WOOD"  ;   }
-        if (stype == SoundType.GROUND ) { return "GRAVEL";   }
-        if (stype == SoundType.PLANT  ) { return "GRASS" ;   }
-        if (stype == SoundType.STONE  ) { return "STONE" ;   }
-        if (stype == SoundType.METAL  ) { return "METAL" ;   }
-        if (stype == SoundType.GLASS  ) { return "GLASS" ;   }
-        if (stype == SoundType.CLOTH  ) { return "WOOL"  ;   }
-        if (stype == SoundType.SAND   ) { return "SAND"  ;   }
-        if (stype == SoundType.SNOW   ) { return "SNOW"  ;   }
-        if (stype == SoundType.LADDER ) { return "LADDER";   }
-        if (stype == SoundType.ANVIL  ) { return "ANVIL" ;   }
-        if (stype == SoundType.SLIME  ) { return "SLIME" ;   }
-        return "Something new";
-    }
+    public static Map<SoundType, String> soundName = new HashMap<SoundType, String>() {{
+        put(SoundType.WOOD,   "wood"  );
+        put(SoundType.GROUND, "gravel");
+        put(SoundType.PLANT,  "grass" );
+        put(SoundType.STONE,  "stone" );
+        put(SoundType.METAL,  "metal" );
+        put(SoundType.GLASS , "glass" );
+        put(SoundType.CLOTH , "wool"  );
+        put(SoundType.SAND  , "sand"  );
+        put(SoundType.SNOW  , "snow"  );
+        put(SoundType.LADDER, "ladder");
+        put(SoundType.ANVIL , "anvil" );
+        put(SoundType.SLIME , "slime" );
+        put(SoundType.WET_GRASS , "sea_grass" );
+        put(SoundType.CORAL , "coral" );
+    }};
 
-    private static String getMapColourName(MaterialColor colour)
-    {
-        if (colour == MaterialColor.AIR        ) { return "AIR"        ; }
-        if (colour == MaterialColor.GRASS      ) { return "GRASS"      ; }
-        if (colour == MaterialColor.SAND       ) { return "SAND"       ; }
-        if (colour == MaterialColor.WOOL       ) { return "WOOL"       ; }
-        if (colour == MaterialColor.TNT        ) { return "TNT"        ; }
-        if (colour == MaterialColor.ICE        ) { return "ICE"        ; }
-        if (colour == MaterialColor.IRON       ) { return "IRON"       ; }
-        if (colour == MaterialColor.FOLIAGE    ) { return "FOLIAGE"    ; }
-        if (colour == MaterialColor.SNOW       ) { return "SNOW"       ; }
-        if (colour == MaterialColor.CLAY       ) { return "CLAY"       ; }
-        if (colour == MaterialColor.DIRT       ) { return "DIRT"       ; }
-        if (colour == MaterialColor.STONE      ) { return "STONE"      ; }
-        if (colour == MaterialColor.WATER      ) { return "WATER"      ; }
-        if (colour == MaterialColor.WOOD       ) { return "WOOD"       ; }
-        if (colour == MaterialColor.QUARTZ     ) { return "QUARTZ"     ; }
-        if (colour == MaterialColor.ADOBE      ) { return "ADOBE"      ; }
-        if (colour == MaterialColor.MAGENTA    ) { return "MAGENTA"    ; }
-        if (colour == MaterialColor.LIGHT_BLUE ) { return "LIGHT_BLUE" ; }
-        if (colour == MaterialColor.YELLOW     ) { return "YELLOW"     ; }
-        if (colour == MaterialColor.LIME       ) { return "LIME"       ; }
-        if (colour == MaterialColor.PINK       ) { return "PINK"       ; }
-        if (colour == MaterialColor.GRAY       ) { return "GRAY"       ; }
-        if (colour == MaterialColor.LIGHT_GRAY ) { return "LIGHT_GRAY" ; }
-        if (colour == MaterialColor.CYAN       ) { return "CYAN"       ; }
-        if (colour == MaterialColor.PURPLE     ) { return "PURPLE"     ; }
-        if (colour == MaterialColor.BLUE       ) { return "BLUE"       ; }
-        if (colour == MaterialColor.BROWN      ) { return "BROWN"      ; }
-        if (colour == MaterialColor.GREEN      ) { return "GREEN"      ; }
-        if (colour == MaterialColor.RED        ) { return "RED"        ; }
-        if (colour == MaterialColor.BLACK      ) { return "BLACK"      ; }
-        if (colour == MaterialColor.GOLD       ) { return "GOLD"       ; }
-        if (colour == MaterialColor.DIAMOND    ) { return "DIAMOND"    ; }
-        if (colour == MaterialColor.LAPIS      ) { return "LAPIS"      ; }
-        if (colour == MaterialColor.EMERALD    ) { return "EMERALD"    ; }
-        if (colour == MaterialColor.OBSIDIAN   ) { return "OBSIDIAN"   ; }
-        if (colour == MaterialColor.NETHERRACK ) { return "NETHERRACK" ; }
-        return "Something new";
-    }
+    public static Map<MaterialColor, String> mapColourName = new HashMap<MaterialColor, String>() {{
+        put(MaterialColor.AIR       , "air"       );
+        put(MaterialColor.GRASS     , "grass"     );
+        put(MaterialColor.SAND      , "sand"      );
+        put(MaterialColor.WOOL      , "wool"      );
+        put(MaterialColor.TNT       , "tnt"       );
+        put(MaterialColor.ICE       , "ice"       );
+        put(MaterialColor.IRON      , "iron"      );
+        put(MaterialColor.FOLIAGE   , "foliage"   );
+        put(MaterialColor.SNOW      , "snow"      );
+        put(MaterialColor.CLAY      , "clay"      );
+        put(MaterialColor.DIRT      , "dirt"      );
+        put(MaterialColor.STONE     , "stone"     );
+        put(MaterialColor.WATER     , "water"     );
+        put(MaterialColor.WOOD      , "wood"      );
+        put(MaterialColor.QUARTZ    , "quartz"    );
+        put(MaterialColor.ADOBE     , "adobe"     );
+        put(MaterialColor.MAGENTA   , "magenta"   );
+        put(MaterialColor.LIGHT_BLUE, "light_blue");
+        put(MaterialColor.YELLOW    , "yellow"    );
+        put(MaterialColor.LIME      , "lime"      );
+        put(MaterialColor.PINK      , "pink"      );
+        put(MaterialColor.GRAY      , "gray"      );
+        put(MaterialColor.LIGHT_GRAY, "light_gray");
+        put(MaterialColor.CYAN      , "cyan"      );
+        put(MaterialColor.PURPLE    , "purple"    );
+        put(MaterialColor.BLUE      , "blue"      );
+        put(MaterialColor.BROWN     , "brown"     );
+        put(MaterialColor.GREEN     , "green"     );
+        put(MaterialColor.RED       , "red"       );
+        put(MaterialColor.BLACK     , "black"     );
+        put(MaterialColor.GOLD      , "gold"      );
+        put(MaterialColor.DIAMOND   , "diamond"   );
+        put(MaterialColor.LAPIS     , "lapis"     );
+        put(MaterialColor.EMERALD   , "emerald"   );
+        put(MaterialColor.OBSIDIAN  , "obsidian"  );
+        put(MaterialColor.NETHERRACK, "netherrack");
+        put(MaterialColor.WHITE_TERRACOTTA     , "white_terracotta"      );
+        put(MaterialColor.ORANGE_TERRACOTTA    , "orange_terracotta"     );
+        put(MaterialColor.MAGENTA_TERRACOTTA   , "magenta_terracotta"    );
+        put(MaterialColor.LIGHT_BLUE_TERRACOTTA, "light_blue_terracotta" );
+        put(MaterialColor.YELLOW_TERRACOTTA    , "yellow_terracotta"     );
+        put(MaterialColor.LIME_TERRACOTTA      , "lime_terracotta"       );
+        put(MaterialColor.PINK_TERRACOTTA      , "pink_terracotta"       );
+        put(MaterialColor.GRAY_TERRACOTTA      , "gray_terracotta"       );
+        put(MaterialColor.LIGHT_GRAY_TERRACOTTA, "light_gray_terracotta" );
+        put(MaterialColor.CYAN_TERRACOTTA      , "cyan_terracotta"       );
+        put(MaterialColor.PURPLE_TERRACOTTA    , "purple_terracotta"     );
+        put(MaterialColor.BLUE_TERRACOTTA      , "blue_terracotta"       );
+        put(MaterialColor.BROWN_TERRACOTTA     , "brown_terracotta"      );
+        put(MaterialColor.GREEN_TERRACOTTA     , "green_terracotta"      );
+        put(MaterialColor.RED_TERRACOTTA       , "red_terracotta"        );
+        put(MaterialColor.BLACK_TERRACOTTA     , "black_terracotta"      );
+    }};
 
-    private static String getMaterialName(Material material)
-    {
-        if (material == Material.AIR             ) { return "AIR"            ; }
-        if (material == Material.GRASS           ) { return "GRASS"          ; }
-        if (material == Material.GROUND          ) { return "DIRT"           ; }
-        if (material == Material.WOOD            ) { return "WOOD"           ; }
-        if (material == Material.ROCK            ) { return "STONE"          ; }
-        if (material == Material.IRON            ) { return "IRON"           ; }
-        if (material == Material.ANVIL           ) { return "ANVIL"          ; }
-        if (material == Material.WATER           ) { return "WATER"          ; }
-        if (material == Material.LAVA            ) { return "LAVA"           ; }
-        if (material == Material.LEAVES          ) { return "LEAVES"         ; }
-        if (material == Material.PLANTS          ) { return "PLANTS"         ; }
-        if (material == Material.VINE            ) { return "VINE"           ; }
-        if (material == Material.SPONGE          ) { return "SPONGE"         ; }
-        if (material == Material.CLOTH           ) { return "WOOL"           ; }
-        if (material == Material.FIRE            ) { return "FIRE"           ; }
-        if (material == Material.SAND            ) { return "SAND"           ; }
-        if (material == Material.CIRCUITS        ) { return "REDSTONE_COMPONENT"; }
-        if (material == Material.CARPET          ) { return "CARPET"         ; }
-        if (material == Material.GLASS           ) { return "GLASS"          ; }
-        if (material == Material.REDSTONE_LIGHT  ) { return "REDSTONE_LAMP"  ; }
-        if (material == Material.TNT             ) { return "TNT"            ; }
-        if (material == Material.CORAL           ) { return "CORAL"          ; }
-        if (material == Material.ICE             ) { return "ICE"            ; }
-        if (material == Material.PACKED_ICE      ) { return "PACKED_ICE"     ; }
-        if (material == Material.SNOW            ) { return "SNOW_LAYER"     ; }
-        if (material == Material.CRAFTED_SNOW    ) { return "SNOW"           ; }
-        if (material == Material.CACTUS          ) { return "CACTUS"         ; }
-        if (material == Material.CLAY            ) { return "CLAY"           ; }
-        if (material == Material.GOURD           ) { return "GOURD"          ; }
-        if (material == Material.DRAGON_EGG      ) { return "DRAGON_EGG"     ; }
-        if (material == Material.PORTAL          ) { return "PORTAL"         ; }
-        if (material == Material.CAKE            ) { return "CAKE"           ; }
-        if (material == Material.WEB             ) { return "COBWEB"         ; }
-        if (material == Material.PISTON          ) { return "PISTON"         ; }
-        if (material == Material.BARRIER         ) { return "BARRIER"        ; }
-        if (material == Material.STRUCTURE_VOID  ) { return "STRUCTURE"      ; }
-        return "Something new";
-    }
+    public static Map<Material, String> materialName = new HashMap<Material, String>() {{
+        put(Material.AIR            , "air"          );
+        put(Material.STRUCTURE_VOID , "void"         );
+        put(Material.PORTAL         , "portal"       );
+        put(Material.CARPET         , "carpet"       );
+        put(Material.PLANTS         , "plant"        );
+        put(Material.OCEAN_PLANT    , "water_plant"  );
+        put(Material.VINE           , "vine"         );
+        put(Material.SEA_GRASS      , "sea_grass"    );
+        put(Material.WATER          , "water"        );
+        put(Material.BUBBLE_COLUMN  , "bubble_column");
+        put(Material.LAVA           , "lava"         );
+        put(Material.SNOW           , "snow_layer"   );
+        put(Material.FIRE           , "fire"         );
+        put(Material.CIRCUITS       , "redstone_bits");
+        put(Material.WEB            , "cobweb"       );
+        put(Material.REDSTONE_LIGHT , "redstone_lamp");
+        put(Material.CLAY           , "clay"         );
+        put(Material.GROUND         , "dirt"         );
+        put(Material.GRASS          , "grass"        );
+        put(Material.PACKED_ICE     , "packed_ice"   );
+        put(Material.SAND           , "sand"         );
+        put(Material.SPONGE         , "sponge"       );
+        put(Material.WOOD           , "wood"         );
+        put(Material.CLOTH          , "wool"         );
+        put(Material.TNT            , "tnt"          );
+        put(Material.LEAVES         , "leaves"       );
+        put(Material.GLASS          , "glass"        );
+        put(Material.ICE            , "ice"          );
+        put(Material.CACTUS         , "cactus"       );
+        put(Material.ROCK           , "stone"        );
+        put(Material.IRON           , "iron"         );
+        put(Material.CRAFTED_SNOW   , "snow"         );
+        put(Material.ANVIL          , "anvil"        );
+        put(Material.BARRIER        , "barrier"      );
+        put(Material.PISTON         , "piston"       );
+        put(Material.CORAL          , "coral"        );
+        put(Material.GOURD          , "gourd"        );
+        put(Material.DRAGON_EGG     , "gragon_egg"   );
+        put(Material.CAKE           , "cake"         );
+    }};
 
     public static List<ITextComponent> blockInfo(BlockPos pos, World world)
     {
@@ -134,9 +151,9 @@ public class BlockInfo
         lst.add(Messenger.s(""));
         lst.add(Messenger.s("====================================="));
         lst.add(Messenger.s(String.format("Block info for %s%s (id %d%s):",IRegistry.field_212618_g.getKey(block),metastring, IRegistry.field_212618_g.getId(block), metastring )));
-        lst.add(Messenger.s(String.format(" - Material: %s", getMaterialName(material))));
-        lst.add(Messenger.s(String.format(" - Map colour: %s", getMapColourName(state.getMapColor(world, pos)))));
-        lst.add(Messenger.s(String.format(" - Sound type: %s", getSoundName(block.getSoundType()))));
+        lst.add(Messenger.s(String.format(" - Material: %s", materialName.get(material))));
+        lst.add(Messenger.s(String.format(" - Map colour: %s", mapColourName.get(state.getMapColor(world, pos)))));
+        lst.add(Messenger.s(String.format(" - Sound type: %s", soundName.get(block.getSoundType()))));
         lst.add(Messenger.s(""));
         lst.add(Messenger.s(String.format(" - Full block: %s", state.isFullCube() )));
         lst.add(Messenger.s(String.format(" - Normal cube: %s", state.isNormalCube())));
