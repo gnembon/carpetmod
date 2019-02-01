@@ -122,7 +122,6 @@ public class DrawCommand
                                 BlockStateInput block, Predicate<BlockWorldState> replacement, String mode)
     {
         MutableBoundingBox area = new MutableBoundingBox(a, b);
-        CarpetSettings.LOG.error("expr is ="+expr);
         CarpetExpression cexpr = new CarpetExpression(expr, source, origin);
         if (area.getXSize() * area.getYSize() * area.getZSize() > CarpetSettings.getInt("fillLimit"))
         {

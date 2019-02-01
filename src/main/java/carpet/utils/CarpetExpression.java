@@ -14,6 +14,7 @@ import net.minecraft.state.StateContainer;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.registry.IRegistry;
+import net.minecraft.world.EnumLightType;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -156,7 +157,7 @@ public class CarpetExpression
                 return source.getWorld().getBlockState(pos).getFluidState().isEmpty()?FALSE:TRUE;
             }
         });
-        this.expr.addFunction(new AbstractFunction("blockLight", 3, false) {
+        this.expr.addFunction(new AbstractFunction("light", 3, false) {
             @Override
             public BigDecimal eval(List<BigDecimal> params)
             {
@@ -164,12 +165,38 @@ public class CarpetExpression
                 return new BigDecimal(source.getWorld().getLight(pos));
             }
         });
+        this.expr.addFunction(new AbstractFunction("blockLight", 3, false) {
+            @Override
+            public BigDecimal eval(List<BigDecimal> params)
+            {
+                BlockPos pos = locateBlockPosNum(params);
+                return new BigDecimal(source.getWorld().getLightFor(EnumLightType.BLOCK, pos));
+            }
+        });
         this.expr.addFunction(new AbstractFunction("skyLight", 3, false) {
             @Override
             public BigDecimal eval(List<BigDecimal> params)
             {
                 BlockPos pos = locateBlockPosNum(params);
-                return new BigDecimal(source.getWorld().getLightSubtracted(pos, 0));
+                return new BigDecimal(source.getWorld().getLightFor(EnumLightType.SKY, pos));
+            }
+        });
+        this.expr.addLazyFunction(new AbstractLazyFunction("loaded", 3, true) {
+            @Override
+            public LazyNumber lazyEval(List<LazyNumber> lazyParams)
+            {
+                BlockPos pos = locateBlockPos(lazyParams);
+                return source.getWorld().isBlockLoaded(pos)?TRUE:FALSE;
+            }
+        });
+        this.expr.addLazyFunction(new AbstractLazyFunction("loadedEP", 3, true) {
+            @Override
+            public LazyNumber lazyEval(List<LazyNumber> lazyParams)
+            {
+                BlockPos pos = locateBlockPos(lazyParams);
+                return source.getWorld().isAreaLoaded(
+                        pos.getX() - 32, 0, pos.getZ() - 32,
+                        pos.getX() + 32, 0, pos.getZ() + 32, true)? TRUE: FALSE;
             }
         });
         this.expr.addFunction(new AbstractFunction("power", 3, false) {
