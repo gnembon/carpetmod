@@ -258,6 +258,55 @@ public class CarpetExpression
             }
         });
 
+        this.expr.addLazyFunction(new AbstractLazyFunction("update", -1, true)
+        {
+            @Override
+            public LazyNumber lazyEval(List<LazyNumber> lazyParams)
+            {
+                return booleanStateTest("update", lazyParams, (s, p) -> {
+                    source.getWorld().neighborChanged(p, s.getBlock(), p);
+                    return false;
+                });
+            }
+        });
+
+        this.expr.addLazyFunction(new AbstractLazyFunction("forcetick", -1, true)
+        {
+            @Override
+            public LazyNumber lazyEval(List<LazyNumber> lazyParams)
+            {
+                return booleanStateTest("forcetick", lazyParams, (s, p) -> {
+
+                    s.randomTick(source.getWorld(), p, source.getWorld().rand);
+                    return false;
+                });
+            }
+        });
+
+        this.expr.addLazyFunction(new AbstractLazyFunction("tick", -1, true)
+        {
+            @Override
+            public LazyNumber lazyEval(List<LazyNumber> lazyParams)
+            {
+                return booleanStateTest("tick", lazyParams, (s, p) -> {
+                    if (s.needsRandomTick() || s.getFluidState().getTickRandomly())
+                    {
+                        s.randomTick(source.getWorld(), p, source.getWorld().rand);
+                    }
+                    return false;
+                });
+            }
+        });
+
+        this.expr.addLazyFunction(new AbstractLazyFunction("set", -1, true)
+        {
+            @Override
+            public LazyNumber lazyEval(List<LazyNumber> lazyParams)
+            {
+                return booleanStateTest("set", lazyParams, (s, p) -> s.needsRandomTick());
+            }
+        });
+
         this.expr.addLazyFunction(new AbstractLazyFunction("blocksMovement", -1, true)
         {
             @Override
