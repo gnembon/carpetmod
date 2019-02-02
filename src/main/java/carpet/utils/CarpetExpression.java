@@ -42,9 +42,7 @@ public class CarpetExpression
 
         @Override
         public BigDecimal eval() {
-            if(blockState.getBlock() == Blocks.AIR)
-                return BigDecimal.ZERO;
-            return BigDecimal.valueOf(blockState.getBlock().hashCode());
+            return null;
         }
 
         @Override
@@ -63,7 +61,7 @@ public class CarpetExpression
 
         @Override
         public BigDecimal eval() {
-            return BigDecimal.valueOf(str.hashCode());
+            return null;
         }
 
         @Override
