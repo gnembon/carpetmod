@@ -33,7 +33,7 @@ public class CarpetExpression
     private BlockPos origin;
     private Expression expr;
 
-    public static class BlockValue extends Value
+    public static class BlockValue extends StringValue
     {
         public static final BlockValue AIR = new BlockValue(Blocks.AIR.getDefaultState(), BlockPos.ORIGIN);
         public IBlockState blockState;
@@ -54,6 +54,11 @@ public class CarpetExpression
         public String getString() {
             return IRegistry.field_212618_g.getKey(blockState.getBlock()).getPath();
         }
+        public Value copy()
+        {
+            return new BlockValue(blockState, pos);
+        }
+
     }
 
     private BlockPos locateBlockPos(List<Value> params)
@@ -62,9 +67,10 @@ public class CarpetExpression
         {
             throw new ExpressionException("Need three integers for params");
         }
-        int xpos = params.get(0).getNumber().intValue();
-        int ypos = params.get(1).getNumber().intValue();
-        int zpos = params.get(2).getNumber().intValue();
+
+        int xpos = ((NumericValue)params.get(0)).getNumber().intValue();
+        int ypos = ((NumericValue)params.get(1)).getNumber().intValue();
+        int zpos = ((NumericValue)params.get(2)).getNumber().intValue();
         /*
         Try without it first
         if (ypos < -1000255 || ypos > 1000255 || xpos > 10000 || xpos < -10000 || zpos > 10000 || zpos< -10000)
@@ -103,9 +109,9 @@ public class CarpetExpression
             throw new ExpressionException(name+" requires at least one parameter");
         }
         if (params.get(0) instanceof BlockValue)
-            return new Value(test.apply(((BlockValue)params.get(0)).blockState, ((BlockValue)params.get(0)).pos));
+            return new StringValue(test.apply(((BlockValue)params.get(0)).blockState, ((BlockValue)params.get(0)).pos));
         BlockPos pos = locateBlockPos(params);
-        return new Value(test.apply(source.getWorld().getBlockState(pos), pos));
+        return new StringValue(test.apply(source.getWorld().getBlockState(pos), pos));
     }
 
 
@@ -181,7 +187,7 @@ public class CarpetExpression
             @Override
             public Value eval(List<Value> params)
             {
-                return new Value(new BigDecimal(source.getWorld().getLight(locateBlockPos(params))));
+                return new NumericValue(source.getWorld().getLight(locateBlockPos(params)));
             }
         });
 
@@ -190,8 +196,7 @@ public class CarpetExpression
             @Override
             public Value eval(List<Value> params)
             {
-                return new Value(new BigDecimal(source.getWorld().getLightFor(EnumLightType.BLOCK,
-                    locateBlockPos(params))));
+                return new NumericValue(source.getWorld().getLightFor(EnumLightType.BLOCK, locateBlockPos(params)));
             }
         });
 
@@ -200,8 +205,7 @@ public class CarpetExpression
             @Override
             public Value eval(List<Value> params)
             {
-                return new Value(new BigDecimal(source.getWorld().getLightFor(EnumLightType.SKY,
-                    locateBlockPos(params))));
+                return new NumericValue(source.getWorld().getLightFor(EnumLightType.SKY, locateBlockPos(params)));
             }
         });
 
@@ -238,7 +242,7 @@ public class CarpetExpression
             @Override
             public Value eval(List<Value> params)
             {
-                return new Value(new BigDecimal(source.getWorld().getRedstonePowerFromNeighbors(locateBlockPos(params))));
+                return new NumericValue(source.getWorld().getRedstonePowerFromNeighbors(locateBlockPos(params)));
             }
         });
 
@@ -382,17 +386,7 @@ public class CarpetExpression
                 IProperty<?> property = states.getProperty(tag);
                 if (property == null)
                     return Value.EMPTY;
-                return new Value(state.get(property).toString());
-            }
-        });
-
-        this.expr.addFunction(new AbstractFunction("relu", 1, false) {  // why not
-            @Override
-            public Value eval(List<Value> params)
-            {
-                if (params.get(0).getNumber().compareTo(BigDecimal.ZERO) < 0)
-                    return Value.ZERO;
-                return new Value(params.get(0).getNumber());
+                return new StringValue(state.get(property).toString());
             }
         });
 
