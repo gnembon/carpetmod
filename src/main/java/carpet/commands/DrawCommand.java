@@ -133,15 +133,23 @@ public class DrawCommand
         BlockPos.MutableBlockPos mbpos = new BlockPos.MutableBlockPos(origin);
         WorldServer world = source.getWorld();
 
+
         for (int x = area.minX; x <= area.maxX; x++)
         {
             for (int y = area.minY; y <= area.maxY; y++)
             {
                 for (int z = area.minZ; z <= area.maxZ; z++)
                 {
-                    if (cexpr.eval(x, y, z) != 0L)
+                    try
                     {
-                        volume[x-area.minX][y-area.minY][z-area.minZ]=true;
+                        if (cexpr.test(x, y, z))
+                        {
+                            volume[x-area.minX][y-area.minY][z-area.minZ]=true;
+                        }
+                    }
+                    catch (CarpetExpression.CarpetExpressionException ignored)
+                    {
+                        CarpetSettings.LOG.error("Exception: "+ignored);
                     }
                 }
             }

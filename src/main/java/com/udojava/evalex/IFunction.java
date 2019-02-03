@@ -26,20 +26,21 @@
  */
 package com.udojava.evalex;
 
-import java.math.BigDecimal;
+import java.util.List;
 
 /**
- * Base interface which is required for all operators.
+ * Base interface which is required for all directly evaluated functions.
  */
-public interface Operator extends LazyOperator {
+public interface IFunction extends ILazyFunction {
+
 	/**
-	 * Implementation for this operator.
-	 * 
-	 * @param v1
-	 *            Operand 1.
-	 * @param v2
-	 *            Operand 2.
-	 * @return The result of the operation.
+	 * Implementation for this function.
+	 *
+	 * @param parameters
+	 *            Parameters will be passed by the expression evaluator as a
+	 *            {@link List} of {@link Value} values.
+	 * @return The function must return a new {@link Value} value as a
+	 *         computing result.
 	 */
-	public abstract BigDecimal eval(BigDecimal v1, BigDecimal v2);
+	public abstract Value eval(List<Value> parameters);
 }

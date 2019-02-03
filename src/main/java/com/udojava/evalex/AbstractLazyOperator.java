@@ -29,7 +29,7 @@ package com.udojava.evalex;
 /**
  * Abstract implementation of an operator.
  */
-public abstract class AbstractLazyOperator implements LazyOperator {
+public abstract class AbstractLazyOperator implements ILazyOperator {
 	/**
 	 * This operators name (pattern).
 	 */
@@ -39,7 +39,7 @@ public abstract class AbstractLazyOperator implements LazyOperator {
 	 */
 	protected int precedence;
 	/**
-	 * Operator is left associative.
+	 * IOperator is left associative.
 	 */
 	protected boolean leftAssoc;
 	/**

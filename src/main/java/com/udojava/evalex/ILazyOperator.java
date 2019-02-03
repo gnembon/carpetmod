@@ -26,22 +26,50 @@
  */
 package com.udojava.evalex;
 
-import java.math.BigDecimal;
-import java.util.List;
+import com.udojava.evalex.Expression.LazyValue;
 
 /**
- * Base interface which is required for all directly evaluated functions.
+ * Base interface which is required for all operators.
  */
-public interface Function extends LazyFunction {
+public interface ILazyOperator {
 
 	/**
-	 * Implementation for this function.
-	 *
-	 * @param parameters
-	 *            Parameters will be passed by the expression evaluator as a
-	 *            {@link List} of {@link BigDecimal} values.
-	 * @return The function must return a new {@link BigDecimal} value as a
-	 *         computing result.
+	 * Gets the String that is used to denote the operator in the expression.
+	 * 
+	 * @return The String that is used to denote the operator in the expression.
 	 */
-	public abstract BigDecimal eval(List<BigDecimal> parameters);
+	public abstract String getOper();
+
+	/**
+	 * Gets the precedence value of this operator.
+	 * 
+	 * @return the precedence value of this operator.
+	 */
+	public abstract int getPrecedence();
+
+	/**
+	 * Gets whether this operator is left associative (<code>true</code>) or if
+	 * this operator is right associative (<code>false</code>).
+	 * 
+	 * @return <code>true</code> if this operator is left associative.
+	 */
+	public abstract boolean isLeftAssoc();
+	
+	/**
+	 * Gets whether this operator evaluates to a boolean expression.
+	 * @return <code>true</code> if this operator evaluates to a boolean
+	 *         expression.
+	 */
+	public abstract boolean isBooleanOperator();
+
+	/**
+	 * Implementation for this operator.
+	 * 
+	 * @param v1
+	 *            Operand 1.
+	 * @param v2
+	 *            Operand 2.
+	 * @return The result of the operation.
+	 */
+	public abstract LazyValue eval(LazyValue v1, LazyValue v2);
 }

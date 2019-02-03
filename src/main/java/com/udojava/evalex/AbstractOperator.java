@@ -26,14 +26,12 @@
  */
 package com.udojava.evalex;
 
-import java.math.BigDecimal;
-
-import com.udojava.evalex.Expression.LazyNumber;
+import com.udojava.evalex.Expression.LazyValue;
 
 /**
  * Abstract implementation of an operator.
  */
-public abstract class AbstractOperator extends AbstractLazyOperator implements Operator {
+public abstract class AbstractOperator extends AbstractLazyOperator implements IOperator {
 	/**
 	 * Creates a new operator.
 	 * 
@@ -66,9 +64,9 @@ public abstract class AbstractOperator extends AbstractLazyOperator implements O
 		super(oper, precedence, leftAssoc);
 	}
 
-	public LazyNumber eval(final LazyNumber v1, final LazyNumber v2) {
-		return new LazyNumber() {
-			public BigDecimal eval() {
+	public LazyValue eval(final LazyValue v1, final LazyValue v2) {
+		return new LazyValue() {
+			public Value eval() {
 				return AbstractOperator.this.eval(v1.eval(), v2.eval());
 			}
 

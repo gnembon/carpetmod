@@ -1,10 +1,8 @@
 package carpet.utils;
 
-import com.udojava.evalex.AbstractFunction;
-import com.udojava.evalex.AbstractLazyFunction;
-import com.udojava.evalex.Expression;
+import carpet.CarpetSettings;
+import com.udojava.evalex.*;
 import com.udojava.evalex.Expression.ExpressionException;
-import com.udojava.evalex.Expression.LazyNumber;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.command.CommandSource;
@@ -19,30 +17,37 @@ import net.minecraft.world.EnumLightType;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.BiFunction;
 
 public class CarpetExpression
 {
+    public static class CarpetExpressionException extends ExpressionException
+    {
+        public CarpetExpressionException(String message) {
+            super(message);
+        }
+    }
+
     private CommandSource source;
     private BlockPos origin;
     private Expression expr;
-    private static final LazyNumber TRUE = Expression.CreateLazyNumber(BigDecimal.ONE);
-    private static final LazyNumber FALSE = Expression.CreateLazyNumber(BigDecimal.ZERO);
 
-    public static class BlockValue implements LazyNumber
+    public static class BlockValue extends Value
     {
         public static final BlockValue AIR = new BlockValue(Blocks.AIR.getDefaultState(), BlockPos.ORIGIN);
         public IBlockState blockState;
         public BlockPos pos;
+
         public BlockValue(IBlockState arg, BlockPos position)
         {
+            super(IRegistry.field_212618_g.getKey(arg.getBlock()).getPath());
             blockState = arg;
             pos = position;
         }
-
         @Override
-        public BigDecimal eval() {
-            return null;
+        public boolean getBoolean() {
+            return !blockState.isAir();
         }
 
         @Override
@@ -50,36 +55,16 @@ public class CarpetExpression
             return IRegistry.field_212618_g.getKey(blockState.getBlock()).getPath();
         }
     }
-    public static class StringValue implements LazyNumber
+
+    private BlockPos locateBlockPos(List<Value> params)
     {
-        public static final StringValue EMPTY = new StringValue("");
-        public String str;
-        public StringValue(String arg)
-        {
-            str = arg;
-        }
-
-        @Override
-        public BigDecimal eval() {
-            return null;
-        }
-
-        @Override
-        public String getString() {
-            return str;
-        }
-    }
-
-
-    private BlockPos locateBlockPos(List<LazyNumber> params)
-    {
-        if (params.size() != 3)
+        if (params.size() < 3)
         {
             throw new ExpressionException("Need three integers for params");
         }
-        int xpos = params.get(0).eval().intValue();
-        int ypos = params.get(1).eval().intValue();
-        int zpos = params.get(2).eval().intValue();
+        int xpos = params.get(0).getNumber().intValue();
+        int ypos = params.get(1).getNumber().intValue();
+        int zpos = params.get(2).getNumber().intValue();
         /*
         Try without it first
         if (ypos < -1000255 || ypos > 1000255 || xpos > 10000 || xpos < -10000 || zpos > 10000 || zpos< -10000)
@@ -90,28 +75,9 @@ public class CarpetExpression
         return new BlockPos(origin.getX()+xpos, origin.getY()+ypos, origin.getZ()+zpos );
     }
 
-    private BlockPos locateBlockPosNum(List<BigDecimal> params)
-    {
-        if (params.size() != 3)
-        {
-            throw new ExpressionException("Need three integers for params");
-        }
-        int xpos = params.get(0).intValue();
-        int ypos = params.get(1).intValue();
-        int zpos = params.get(2).intValue();
-        /*
-        Try without it first
-        if (ypos < -1000255 || ypos > 1000255 || xpos > 10000 || xpos < -10000 || zpos > 10000 || zpos< -10000)
-        {
-            throw new ExpressionException("Attempting to locate block outside of 10k blocks range");
-        }
-        */
-        return new BlockPos(origin.getX()+xpos, origin.getY()+ypos, origin.getZ()+zpos );
-    }
-
-    private LazyNumber booleanStateTest(
+    private Value booleanStateTest(
             String name,
-            List<LazyNumber> params,
+            List<Value> params,
             BiFunction<IBlockState,BlockPos,Boolean> test
     )
     {
@@ -120,14 +86,15 @@ public class CarpetExpression
             throw new ExpressionException(name+" requires at least one parameter");
         }
         if (params.get(0) instanceof BlockValue)
-            return test.apply(((BlockValue)params.get(0)).blockState, ((BlockValue)params.get(0)).pos)?TRUE:FALSE;
+            return test.apply(((BlockValue)params.get(0)).blockState, ((BlockValue)params.get(0)).pos)?Value.TRUE:
+                    Value.FALSE;
         BlockPos pos = locateBlockPos(params);
-        return test.apply(source.getWorld().getBlockState(pos), pos)?TRUE:FALSE;
+        return test.apply(source.getWorld().getBlockState(pos), pos)?Value.TRUE:Value.FALSE;
     }
 
-    private LazyNumber stateStringQuery(
+    private Value stateStringQuery(
             String name,
-            List<LazyNumber> params,
+            List<Value> params,
             BiFunction<IBlockState, BlockPos, String> test
     )
     {
@@ -136,9 +103,26 @@ public class CarpetExpression
             throw new ExpressionException(name+" requires at least one parameter");
         }
         if (params.get(0) instanceof BlockValue)
-            return new StringValue(test.apply(((BlockValue)params.get(0)).blockState, ((BlockValue)params.get(0)).pos));
+            return new Value(test.apply(((BlockValue)params.get(0)).blockState, ((BlockValue)params.get(0)).pos));
         BlockPos pos = locateBlockPos(params);
-        return new StringValue(test.apply(source.getWorld().getBlockState(pos), pos));
+        return new Value(test.apply(source.getWorld().getBlockState(pos), pos));
+    }
+
+
+    private <T extends Comparable<T>> IBlockState setProperty(IProperty<T> property, String name, String value,
+                                                             IBlockState bs)
+    {
+        Optional<T> optional = property.parseValue(value);
+
+        if (optional.isPresent())
+        {
+            bs = bs.with(property, optional.get());
+        }
+        else
+        {
+            throw new CarpetExpressionException(value+" is not a valid value for property "+name);
+        }
+        return bs;
     }
 
     public CarpetExpression(String expression, CommandSource source, BlockPos origin)
@@ -147,207 +131,248 @@ public class CarpetExpression
         this.source = source;
         this.expr = new Expression(expression);
 
-        this.expr.addLazyFunction(new AbstractLazyFunction("block", -1)
+        this.expr.addFunction(new AbstractFunction("block", -1)
         {
             @Override
-            public LazyNumber lazyEval(List<LazyNumber> lazyParams)
+            public Value eval(List<Value> params)
             {
-                if (lazyParams.size() == 0)
+                if (params.size() == 0)
                 {
                     throw new ExpressionException("block requires at least one parameter");
                 }
-                if (lazyParams.size() == 1)
+                if (params.size() == 1)
                 {
-                    return new BlockValue(IRegistry.field_212618_g.get(new ResourceLocation(lazyParams.get(0).getString())).getDefaultState(), origin);
+                    return new BlockValue(IRegistry.field_212618_g.get(new ResourceLocation(params.get(0).getString())).getDefaultState(), origin);
                 }
-                BlockPos pos = locateBlockPos(lazyParams);
+                BlockPos pos = locateBlockPos(params);
                 return new BlockValue(source.getWorld().getBlockState(pos), pos);
             }
         });
 
-        this.expr.addLazyFunction(new AbstractLazyFunction("isSolid", -1, true)
+        this.expr.addFunction(new AbstractFunction("solid", -1, true)
         {
             @Override
-            public LazyNumber lazyEval(List<LazyNumber> lazyParams)
+            public Value eval(List<Value> lazyParams)
             {
-                return booleanStateTest("isSolid", lazyParams, (s, p) -> s.isSolid());
+                return booleanStateTest("solid", lazyParams, (s, p) -> s.isSolid());
             }
         });
 
-        this.expr.addLazyFunction(new AbstractLazyFunction("isLiquid", -1, true)
+        this.expr.addFunction(new AbstractFunction("air", -1, true)
         {
             @Override
-            public LazyNumber lazyEval(List<LazyNumber> lazyParams)
+            public Value eval(List<Value> lazyParams)
             {
-                return booleanStateTest("isLiquid", lazyParams, (s, p) -> !s.getFluidState().isEmpty());
+                return booleanStateTest("air", lazyParams, (s, p) -> s.isAir());
+            }
+        });
+
+        this.expr.addFunction(new AbstractFunction("liquid", -1, true)
+        {
+            @Override
+            public Value eval(List<Value> lazyParams)
+            {
+                return booleanStateTest("liquid", lazyParams, (s, p) -> !s.getFluidState().isEmpty());
             }
         });
 
         this.expr.addFunction(new AbstractFunction("light", 3, false)
         {
             @Override
-            public BigDecimal eval(List<BigDecimal> params)
+            public Value eval(List<Value> params)
             {
-                return new BigDecimal(source.getWorld().getLight(locateBlockPosNum(params)));
+                return new Value(new BigDecimal(source.getWorld().getLight(locateBlockPos(params))));
             }
         });
 
         this.expr.addFunction(new AbstractFunction("blockLight", 3, false)
         {
             @Override
-            public BigDecimal eval(List<BigDecimal> params)
+            public Value eval(List<Value> params)
             {
-                return new BigDecimal(source.getWorld().getLightFor(EnumLightType.BLOCK, locateBlockPosNum(params)));
+                return new Value(new BigDecimal(source.getWorld().getLightFor(EnumLightType.BLOCK,
+                    locateBlockPos(params))));
             }
         });
 
         this.expr.addFunction(new AbstractFunction("skyLight", 3, false)
         {
             @Override
-            public BigDecimal eval(List<BigDecimal> params)
+            public Value eval(List<Value> params)
             {
-                return new BigDecimal(source.getWorld().getLightFor(EnumLightType.SKY, locateBlockPosNum(params)));
+                return new Value(new BigDecimal(source.getWorld().getLightFor(EnumLightType.SKY,
+                    locateBlockPos(params))));
             }
         });
 
-        this.expr.addLazyFunction(new AbstractLazyFunction("loaded", 3, true)
+        this.expr.addFunction(new AbstractFunction("loaded", 3, true)
         {
             @Override
-            public LazyNumber lazyEval(List<LazyNumber> lazyParams)
+            public Value eval(List<Value> params)
             {
-                return source.getWorld().isBlockLoaded(locateBlockPos(lazyParams))?TRUE:FALSE;
+                return source.getWorld().isBlockLoaded(locateBlockPos(params))?Value.TRUE:Value.FALSE;
             }
         });
 
-        this.expr.addLazyFunction(new AbstractLazyFunction("loadedEP", 3, true)
+        this.expr.addFunction(new AbstractFunction("loadedEP", 3, true)
         {
             @Override
-            public LazyNumber lazyEval(List<LazyNumber> lazyParams)
+            public Value eval(List<Value> params)
             {
-                BlockPos pos = locateBlockPos(lazyParams);
+                BlockPos pos = locateBlockPos(params);
                 return source.getWorld().isAreaLoaded(
                         pos.getX() - 32, 0, pos.getZ() - 32,
-                        pos.getX() + 32, 0, pos.getZ() + 32, true)? TRUE: FALSE;
+                        pos.getX() + 32, 0, pos.getZ() + 32, true)? Value.TRUE: Value.FALSE;
             }
         });
 
-        this.expr.addLazyFunction(new AbstractLazyFunction("suffocates", -1, true) {
+        this.expr.addFunction(new AbstractFunction("suffocates", -1, true) {
             @Override
-            public LazyNumber lazyEval(List<LazyNumber> lazyParams)
+            public Value eval(List<Value> params)
             {
-                return booleanStateTest("suffocates", lazyParams, (s, p) -> s.causesSuffocation());
+                return booleanStateTest("suffocates", params, (s, p) -> s.causesSuffocation());
             }
         });
 
         this.expr.addFunction(new AbstractFunction("power", 3, false) {
             @Override
-            public BigDecimal eval(List<BigDecimal> params)
+            public Value eval(List<Value> params)
             {
-                return new BigDecimal(source.getWorld().getRedstonePowerFromNeighbors(locateBlockPosNum(params)));
+                return new Value(new BigDecimal(source.getWorld().getRedstonePowerFromNeighbors(locateBlockPos(params))));
             }
         });
 
-        this.expr.addLazyFunction(new AbstractLazyFunction("ticksRandomly", -1, true)
+        this.expr.addLazyFunction(new AbstractFunction("ticksRandomly", -1, true)
         {
             @Override
-            public LazyNumber lazyEval(List<LazyNumber> lazyParams)
+            public Value eval(List<Value> params)
             {
-                return booleanStateTest("ticksRandomly", lazyParams, (s, p) -> s.needsRandomTick());
+                return booleanStateTest("ticksRandomly", params, (s, p) -> s.needsRandomTick());
             }
         });
 
-        this.expr.addLazyFunction(new AbstractLazyFunction("update", -1, true)
+        this.expr.addLazyFunction(new AbstractFunction("update", -1, true)
         {
             @Override
-            public LazyNumber lazyEval(List<LazyNumber> lazyParams)
+            public Value eval(List<Value> params)
             {
-                return booleanStateTest("update", lazyParams, (s, p) -> {
+                return booleanStateTest("update", params, (s, p) -> {
                     source.getWorld().neighborChanged(p, s.getBlock(), p);
-                    return false;
+                    return true;
                 });
             }
         });
 
-        this.expr.addLazyFunction(new AbstractLazyFunction("forcetick", -1, true)
+        this.expr.addLazyFunction(new AbstractFunction("forcetick", -1, true)
         {
             @Override
-            public LazyNumber lazyEval(List<LazyNumber> lazyParams)
+            public Value eval(List<Value> params)
             {
-                return booleanStateTest("forcetick", lazyParams, (s, p) -> {
+                return booleanStateTest("forcetick", params, (s, p) -> {
 
                     s.randomTick(source.getWorld(), p, source.getWorld().rand);
-                    return false;
+                    return true;
                 });
             }
         });
 
-        this.expr.addLazyFunction(new AbstractLazyFunction("tick", -1, true)
+        this.expr.addLazyFunction(new AbstractFunction("tick", -1, true)
         {
             @Override
-            public LazyNumber lazyEval(List<LazyNumber> lazyParams)
+            public Value eval(List<Value> params)
             {
-                return booleanStateTest("tick", lazyParams, (s, p) -> {
+                return booleanStateTest("tick", params, (s, p) -> {
                     if (s.needsRandomTick() || s.getFluidState().getTickRandomly())
                     {
                         s.randomTick(source.getWorld(), p, source.getWorld().rand);
                     }
-                    return false;
+                    return true;
                 });
             }
         });
 
-        this.expr.addLazyFunction(new AbstractLazyFunction("set", -1, true)
+        this.expr.addLazyFunction(new AbstractFunction("set", -1, true)
         {
             @Override
-            public LazyNumber lazyEval(List<LazyNumber> lazyParams)
+            public Value eval(List<Value> params)
             {
-                return booleanStateTest("set", lazyParams, (s, p) -> s.needsRandomTick());
+
+                if (params.size() < 4 || params.size() % 2 == 1)
+                {
+                    throw new CarpetExpressionException("set block should have at least 4 params and odd attributes");
+                }
+                BlockPos pos = locateBlockPos(params);
+                if (!(params.get(3) instanceof BlockValue))
+                {
+                    throw new CarpetExpressionException("fourth parameter of set should be a block");
+                }
+                IBlockState bs = ((BlockValue)params.get(3)).blockState;
+
+    CarpetSettings.LOG.error("Setting block: "+params.get(3).getString());
+
+                StateContainer<Block, IBlockState> states = bs.getBlock().getStateContainer();
+
+                for (int i = 4; i < params.size(); i+= 2)
+                {
+                    String paramString = params.get(i).getString();
+                    IProperty<?> property = states.getProperty(paramString);
+                    if (property == null)
+                    {
+                        throw new CarpetExpressionException("property "+paramString+" doesn't apply to "+params.get(3).getString());
+                    }
+
+                    String paramValue = params.get(i+1).getString();
+
+                    bs = setProperty(property, paramString, paramValue, bs);
+                }
+                source.getWorld().setBlockState(pos, bs, 2 | (CarpetSettings.getBool("fillUpdates")?0:1024));
+                return new BlockValue(bs, pos);
             }
         });
 
-        this.expr.addLazyFunction(new AbstractLazyFunction("blocksMovement", -1, true)
+        this.expr.addLazyFunction(new AbstractFunction("blocksMovement", -1, true)
         {
             @Override
-            public LazyNumber lazyEval(List<LazyNumber> lazyParams)
+            public Value eval(List<Value> params)
             {
-                return booleanStateTest("blocksMovement", lazyParams, (s, p)
+                return booleanStateTest("blocksMovement", params, (s, p)
                         -> !s.allowsMovement(source.getWorld(), p, PathType.LAND));
             }
         });
 
-        this.expr.addLazyFunction(new AbstractLazyFunction("sound", -1, true)
+        this.expr.addLazyFunction(new AbstractFunction("sound", -1, true)
         {
             @Override
-            public LazyNumber lazyEval(List<LazyNumber> lazyParams)
+            public Value eval(List<Value> params)
             {
-                return stateStringQuery("sound", lazyParams, (s, p)
+                return stateStringQuery("sound", params, (s, p)
                         -> BlockInfo.soundName.get(s.getBlock().getSoundType()));
             }
         });
 
-        this.expr.addLazyFunction(new AbstractLazyFunction("material", -1, true)
+        this.expr.addLazyFunction(new AbstractFunction("material", -1, true)
         {
             @Override
-            public LazyNumber lazyEval(List<LazyNumber> lazyParams)
+            public Value eval(List<Value> params)
             {
-                return stateStringQuery("material", lazyParams, (s, p)
+                return stateStringQuery("material", params, (s, p)
                         -> BlockInfo.materialName.get(s.getMaterial()));
             }
         });
 
-        this.expr.addLazyFunction(new AbstractLazyFunction("mapColour", -1, true)
+        this.expr.addLazyFunction(new AbstractFunction("mapColour", -1, true)
         {
             @Override
-            public LazyNumber lazyEval(List<LazyNumber> lazyParams)
+            public Value eval(List<Value> params)
             {
-                return stateStringQuery("mapColour", lazyParams, (s, p)
+                return stateStringQuery("mapColour", params, (s, p)
                         -> BlockInfo.mapColourName.get(s.getMapColor(source.getWorld(), p)));
             }
         });
 
-        this.expr.addLazyFunction(new AbstractLazyFunction("property", 2, false) {  // why not
+        this.expr.addLazyFunction(new AbstractFunction("property", 2, false) {  // why not
             @Override
-            public LazyNumber lazyEval(List<LazyNumber> params)
+            public Value eval(List<Value> params)
             {
                 if (!(params.get(0) instanceof BlockValue))
                     throw new ExpressionException("First Argument of tag should be a block");
@@ -356,47 +381,70 @@ public class CarpetExpression
                 StateContainer<Block, IBlockState> states = state.getBlock().getStateContainer();
                 IProperty<?> property = states.getProperty(tag);
                 if (property == null)
-                    return new StringValue("");
-                return new StringValue(state.get(property).toString());
+                    return Value.EMPTY;
+                return new Value(state.get(property).toString());
             }
         });
 
         this.expr.addFunction(new AbstractFunction("relu", 1, false) {  // why not
             @Override
-            public BigDecimal eval(List<BigDecimal> params)
+            public Value eval(List<Value> params)
             {
-                if (params.get(0).compareTo(BigDecimal.ZERO) < 0)
-                    return BigDecimal.ZERO;
-                return params.get(0);
+                if (params.get(0).getNumber().compareTo(BigDecimal.ZERO) < 0)
+                    return Value.ZERO;
+                return new Value(params.get(0).getNumber());
             }
         });
 
+        this.expr.addLazyFunction(new AbstractFunction("print", 1) {
+            @Override
+            public Value eval(List<Value> params)
+            {
+                Value arg = params.get(0);
+                Messenger.m(source, "gi "+arg.getString());
+                return arg; // pass through for variables
+            }
+        });
     }
 
-    public long eval(BlockPos at)
+    public boolean test(BlockPos pos)
     {
-        return this.expr.
-                with("x",new BigDecimal(at.getX()-origin.getX())).
-                with("y",new BigDecimal(at.getY()-origin.getY())).
-                with("z",new BigDecimal(at.getZ()-origin.getZ())).
-                eval().longValue();
+        return test(pos.getX(), pos.getY(), pos.getZ());
     }
 
-    public long eval(int x, int y, int z)
+    public boolean test(int x, int y, int z)
     {
-        return this.expr.
+        try
+        {
+            return this.expr.
                 with("x",new BigDecimal(x-origin.getX())).
                 with("y",new BigDecimal(y-origin.getY())).
                 with("z",new BigDecimal(z-origin.getZ())).
-                eval().longValue();
+                eval().getBoolean();
+        }
+        catch (ExpressionException e)
+        {
+            throw new CarpetExpressionException(e.getMessage());
+        }
+    }
+    public String eval(BlockPos pos)
+    {
+        return eval(pos.getX(), pos.getY(), pos.getZ());
     }
 
-    public String evalString(int x, int y, int z)
+    public String eval(int x, int y, int z)
     {
-        return this.expr.
+        try
+        {
+            return this.expr.
                 with("x",new BigDecimal(x-origin.getX())).
                 with("y",new BigDecimal(y-origin.getY())).
                 with("z",new BigDecimal(z-origin.getZ())).
-                evalLazy().getString();
+                eval().getString();
+        }
+        catch (ExpressionException e)
+        {
+            throw new CarpetExpressionException(e.getMessage());
+        }
     }
 }

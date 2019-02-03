@@ -26,7 +26,6 @@
  */
 package com.udojava.evalex;
 
-import carpet.CarpetSettings;
 import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;
@@ -88,7 +87,7 @@ public class Expression {
 	/**
 	 * Or operator precedence: ||
 	 */
-	public static final int OPERATOR_PRECEDENCE_OR = 2;
+	public static final int OPERATOR_PRECEDENCE_OR = 3;
 
 	/**
 	 * And operator precedence: &&
@@ -111,17 +110,27 @@ public class Expression {
 	public static final int OPERATOR_PRECEDENCE_ADDITIVE = 20;
 
 	/**
+	 * next command operator: ;
+	 */
+	public static final int OPERATOR_PRECEDENCE_NEXTOP = 1;
+
+	/**
+	 * Assignment operator precedence: =
+	 */
+	public static final int OPERATOR_PRECEDENCE_ASSIGN = 2;
+
+	/**
 	 * Definition of PI as a constant, can be used in expressions as variable.
 	 */
-	public static final BigDecimal PI = new BigDecimal(
-			"3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679");
+	public static final Value PI = new Value(new BigDecimal(
+			"3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679"));
 
 	/**
 	 * Definition of e: "Euler's number" as a constant, can be used in
 	 * expressions as variable.
 	 */
-	public static final BigDecimal e = new BigDecimal(
-			"2.71828182845904523536028747135266249775724709369995957496696762772407663");
+	public static final Value e = new Value(new BigDecimal(
+			"2.71828182845904523536028747135266249775724709369995957496696762772407663"));
 
 	/**
 	 * The {@link MathContext} to use for calculations.
@@ -158,19 +167,19 @@ public class Expression {
 	/**
 	 * All defined operators with name and implementation.
 	 */
-	private Map<String, LazyOperator> operators = new TreeMap<String, LazyOperator>(
+	private Map<String, ILazyOperator> operators = new TreeMap<String, ILazyOperator>(
 			String.CASE_INSENSITIVE_ORDER);
 
 	/**
 	 * All defined functions with name and implementation.
 	 */
-	private Map<String, com.udojava.evalex.LazyFunction> functions = new TreeMap<String, com.udojava.evalex.LazyFunction>(
+	private Map<String, ILazyFunction> functions = new TreeMap<String, ILazyFunction>(
 			String.CASE_INSENSITIVE_ORDER);
 
 	/**
 	 * All defined variables with name and value.
 	 */
-	private Map<String, LazyNumber> variables = new TreeMap<String, LazyNumber>(String.CASE_INSENSITIVE_ORDER);
+	private Map<String, LazyValue> variables = new TreeMap<String, LazyValue>(String.CASE_INSENSITIVE_ORDER);
 
 	/**
 	 * What character to use for decimal separators.
@@ -183,11 +192,11 @@ public class Expression {
 	private static final char minusSign = '-';
 
 	/**
-	 * The BigDecimal representation of the left parenthesis, used for parsing
+	 * The Value representation of the left parenthesis, used for parsing
 	 * varying numbers of function parameters.
 	 */
-	private static final LazyNumber PARAMS_START = new LazyNumber() {
-		public BigDecimal eval() {
+	private static final LazyValue PARAMS_START = new LazyValue() {
+		public Value eval() {
 			return null;
 		}
 
@@ -200,7 +209,7 @@ public class Expression {
 	 * The expression evaluators exception class.
 	 */
 	public static class ExpressionException extends RuntimeException {
-		private static final long serialVersionUID = 1118142866870779047L;
+		//private static final long serialVersionUID = 1118142866870779047L;
 
 		public ExpressionException(String message) {
 			super(message);
@@ -210,8 +219,8 @@ public class Expression {
 	/**
 	 * LazyNumber interface created for lazily evaluated functions
 	 */
-	public interface LazyNumber {
-		BigDecimal eval();
+	public interface LazyValue {
+		Value eval();
 
 		String getString();
 	}
@@ -219,35 +228,62 @@ public class Expression {
 	/**
 	 * Construct a LazyNumber from a String
 	 */
-	public static LazyNumber CreateLazyString(final String arg) {
-		return new LazyNumber() {
+	/*
+	public static LazyValue CreateLazyString(final String arg) {
+		return new LazyValue() {
 			@Override
 			public String getString() {
 				return arg;
 			}
 
 			@Override
-			public BigDecimal eval() {
+			public Value eval() {
 				return null;
 			}
 		};
 	}
+
+	gnembon: should not be needed as Value can encompass both BigDecimal and String
+
+
+	*/
 	/**
-	 * Construct a LazyNumber from a BigDecimal
+	 * Construct a LazyNumber from a Value
 	 */
-	public static LazyNumber CreateLazyNumber(final BigDecimal bigDecimal) {
-		return new LazyNumber() {
+	public static LazyValue CreateLazyValue(final Value value) {
+		return new LazyValue() {
 			@Override
 			public String getString() {
-				return bigDecimal.toPlainString();
+				return value.getString(true);
 			}
 
 			@Override
-			public BigDecimal eval() {
-				return bigDecimal;
+			public Value eval() {
+				return value;
 			}
 		};
 	}
+
+	public Value evaluateUnaryMathFunction(List<Value> arguments,
+												  java.util.function.Function<Double, Double> fun)
+	{
+		assertNumbersNotNull(arguments.get(0));
+		double res = fun.apply(arguments.get(0).getNumber().doubleValue());
+		return new Value(new BigDecimal(res, mc));
+	}
+	public Value evaluateBinaryMathFunction(List<Value> arguments,
+										   java.util.function.BiFunction<Double, Double, Double> fun)
+	{
+		assertNumbersNotNull(arguments.get(0), arguments.get(1));
+		double res = fun.apply(arguments.get(0).getNumber().doubleValue(), arguments.get(1).getNumber().doubleValue());
+		return new Value(new BigDecimal(res, mc));
+	}
+
+
+	public static LazyValue FALSE = CreateLazyValue(Value.FALSE);
+	public static LazyValue TRUE = CreateLazyValue(Value.TRUE);
+	public static LazyValue EMPTY = CreateLazyValue(Value.EMPTY);
+	public static LazyValue ZERO = CreateLazyValue(Value.ZERO);
 
 	public abstract class LazyFunction extends AbstractLazyFunction {
 		/**
@@ -561,478 +597,446 @@ public class Expression {
 		this.mc = defaultMathContext;
 		this.expression = expression;
 		this.originalExpression = expression;
-		variables.put("e", CreateLazyNumber(e));
-		variables.put("PI", CreateLazyNumber(PI));
+		variables.put("e", CreateLazyValue(e));
+		variables.put("PI", CreateLazyValue(PI));
 		variables.put("NULL", null);
-		variables.put("TRUE", CreateLazyNumber(BigDecimal.ONE));
-		variables.put("FALSE", CreateLazyNumber(BigDecimal.ZERO));
+		variables.put("TRUE", CreateLazyValue(new Value(BigDecimal.ONE)));
+		variables.put("FALSE", CreateLazyValue(new Value(BigDecimal.ZERO)));
 
-		addOperator(new AbstractLazyOperator("+", OPERATOR_PRECEDENCE_ADDITIVE, true) {
+		addOperator(new Operator(";", OPERATOR_PRECEDENCE_NEXTOP, true) {
 			@Override
-			public LazyNumber eval(LazyNumber v1, LazyNumber v2) {
-				assertNotNull(v1, v2);
-				BigDecimal ev1 = v1.eval();
-				BigDecimal ev2 = v2.eval();
-				if (ev1 != null && ev2 != null)
-				{
-					return CreateLazyNumber(ev1.add(ev2, mc));
-				}
-				return CreateLazyString(v1.getString()+v2.getString());
+			public Value eval(Value v1, Value v2) {
+				return v2;
 			}
 		});
 
-		addOperator(new AbstractLazyOperator("-", OPERATOR_PRECEDENCE_ADDITIVE, true) {
+		addOperator(new Operator("+", OPERATOR_PRECEDENCE_ADDITIVE, true) {
 			@Override
-			public LazyNumber eval(LazyNumber v1, LazyNumber v2) {
+			public Value eval(Value v1, Value v2) {
 				assertNotNull(v1, v2);
-				BigDecimal ev1 = v1.eval();
-				BigDecimal ev2 = v2.eval();
-				if (ev1 != null && ev2 != null)
+				if (v1.type == BigDecimal.class && v2.type == BigDecimal.class)
 				{
-					return CreateLazyNumber(ev1.subtract(ev2, mc));
+					return new Value(v1.getNumber().add(v2.getNumber(), mc));
 				}
-				return CreateLazyString(v1.getString().replace(v2.getString(),""));
+				return new Value(v1.getString()+v2.getString());
+			}
+		});
+
+		addOperator(new Operator("-", OPERATOR_PRECEDENCE_ADDITIVE, true) {
+			@Override
+			public Value eval(Value v1, Value v2) {
+				assertNotNull(v1, v2);
+				if (v1.type == BigDecimal.class && v2.type == BigDecimal.class)
+				{
+					return new Value(v1.getNumber().subtract(v2.getNumber(), mc));
+				}
+				return new Value(v1.getString().replace(v2.getString(),""));
 			}
 		});
 
 
-		addOperator(new AbstractLazyOperator("*", OPERATOR_PRECEDENCE_ADDITIVE, true) {
+		addOperator(new Operator("*", OPERATOR_PRECEDENCE_MULTIPLICATIVE, true) {
 			@Override
-			public LazyNumber eval(LazyNumber v1, LazyNumber v2) {
+			public Value eval(Value v1, Value v2) {
 				assertNotNull(v1, v2);
-				BigDecimal ev1 = v1.eval();
-				BigDecimal ev2 = v2.eval();
-				if (ev1 != null && ev2 != null)
+				if (v1.type == BigDecimal.class && v2.type == BigDecimal.class)
 				{
-					return CreateLazyNumber(ev1.subtract(ev2, mc));
+					return new Value(v1.getNumber().multiply(v2.getNumber(), mc));
 				}
-				if (ev2 != null)
+				if (v2.type == BigDecimal.class)
 				{
-					return CreateLazyString(StringUtils.repeat(v1.getString(), ev2.intValue()));
+					return new Value(StringUtils.repeat(v1.getString(), v2.getNumber().intValue()));
 				}
-				return CreateLazyString(v1.getString()+'.'+v2.getString());
+				return new Value((v1.getString()+'.'+v2.getString()));
 			}
 		});
 
-		addOperator(new AbstractLazyOperator("/", OPERATOR_PRECEDENCE_ADDITIVE, true) {
+		addOperator(new Operator("/", OPERATOR_PRECEDENCE_MULTIPLICATIVE, true) {
 			@Override
-			public LazyNumber eval(LazyNumber v1, LazyNumber v2) {
+			public Value eval(Value v1, Value v2) {
 				assertNotNull(v1, v2);
-				BigDecimal ev1 = v1.eval();
-				BigDecimal ev2 = v2.eval();
-				if (ev1 != null && ev2 != null)
+				if (v1.type == BigDecimal.class && v2.type == BigDecimal.class)
 				{
-					return CreateLazyNumber(ev1.divide(ev2, mc));
+					return new Value(v1.getNumber().divide(v2.getNumber(), mc));
 				}
-				if (ev2 != null)
+				if (v2.type == BigDecimal.class)
 				{
-					return CreateLazyString(v1.getString().substring(0,(int)(v1.getString().length()/ev2.floatValue())));
+
+					return new Value(v1.getString().substring(0,(int)(v1.getString().length()/v2.getNumber().floatValue())));
 				}
-				return CreateLazyString(v1.getString()+'.'+v2.getString());
+				return new Value(v1.getString()+'.'+v2.getString());
 			}
 		});
 
 		addOperator(new Operator("%", OPERATOR_PRECEDENCE_MULTIPLICATIVE, true) {
 			@Override
-			public BigDecimal eval(BigDecimal v1, BigDecimal v2) {
-				assertNotNull(v1, v2);
-				return v1.remainder(v2, mc);
+			public Value eval(Value v1, Value v2) {
+				assertNumbersNotNull(v1, v2);
+				return new Value(v1.getNumber().remainder(v2.getNumber(), mc));
 			}
 		});
 		addOperator(new Operator("^", OPERATOR_PRECEDENCE_POWER, false) {
 			@Override
-			public BigDecimal eval(BigDecimal v1, BigDecimal v2) {
-				assertNotNull(v1, v2);
+			public Value eval(Value v1, Value v2) {
+				assertNumbersNotNull(v1, v2);
 				/*- 
 				 * Thanks to Gene Marin:
 				 * http://stackoverflow.com/questions/3579779/how-to-do-a-fractional-power-on-bigdecimal-in-java
 				 */
-				int signOf2 = v2.signum();
-				double dn1 = v1.doubleValue();
-				v2 = v2.multiply(new BigDecimal(signOf2)); // n2 is now positive
-				BigDecimal remainderOf2 = v2.remainder(BigDecimal.ONE);
-				BigDecimal n2IntPart = v2.subtract(remainderOf2);
-				BigDecimal intPow = v1.pow(n2IntPart.intValueExact(), mc);
+				BigDecimal d1 = v1.getNumber();
+				BigDecimal d2 = v2.getNumber();
+				int signOf2 = d2.signum();
+				double dn1 = d1.doubleValue();
+				d2 = d2.multiply(new BigDecimal(signOf2)); // n2 is now positive
+				BigDecimal remainderOf2 = d2.remainder(BigDecimal.ONE);
+				BigDecimal n2IntPart = d2.subtract(remainderOf2);
+				BigDecimal intPow = d1.pow(n2IntPart.intValueExact(), mc);
 				BigDecimal doublePow = new BigDecimal(Math.pow(dn1, remainderOf2.doubleValue()));
 
 				BigDecimal result = intPow.multiply(doublePow, mc);
 				if (signOf2 == -1) {
 					result = BigDecimal.ONE.divide(result, mc.getPrecision(), RoundingMode.HALF_UP);
 				}
-				return result;
+				return new Value(result);
 			}
 		});
-		addOperator(new Operator("&&", OPERATOR_PRECEDENCE_AND, false, true) {
+		addOperator(new AbstractLazyOperator("&&", OPERATOR_PRECEDENCE_AND, false, true) {
 			@Override
-			public BigDecimal eval(BigDecimal v1, BigDecimal v2) {
-				assertNotNull(v1, v2);
-				
-				boolean b1 = v1.compareTo(BigDecimal.ZERO) != 0;
-				
-				if (!b1) {
-					return BigDecimal.ZERO;
-				}
-				
-				boolean b2 = v2.compareTo(BigDecimal.ZERO) != 0;
-				return b2 ? BigDecimal.ONE : BigDecimal.ZERO;
+			public LazyValue eval(LazyValue v1, LazyValue v2) {
+				assertNotNull(v1);
+				boolean b1 = v1.eval().getBoolean();
+				if (!b1) return FALSE;
+				assertNotNull(v2);
+				boolean b2 = v2.eval().getBoolean();
+				return b2 ? TRUE : FALSE;
 			}
 		});
 
-		addOperator(new Operator("||", OPERATOR_PRECEDENCE_OR, false, true) {
+		addOperator(new AbstractLazyOperator("||", OPERATOR_PRECEDENCE_OR, false, true) {
 			@Override
-			public BigDecimal eval(BigDecimal v1, BigDecimal v2) {
-				assertNotNull(v1, v2);
-				
-				boolean b1 = v1.compareTo(BigDecimal.ZERO) != 0;
-				
-				if (b1) {
-					return BigDecimal.ONE;
-				}
-				
-				boolean b2 = v2.compareTo(BigDecimal.ZERO) != 0;
-				return b2 ? BigDecimal.ONE : BigDecimal.ZERO;
+			public LazyValue eval(LazyValue v1, LazyValue v2) {
+				assertNotNull(v1);
+				boolean b1 = v1.eval().getBoolean();
+				if (b1) return TRUE;
+				assertNotNull(v2);
+				boolean b2 = v2.eval().getBoolean();
+				return b2 ? TRUE : FALSE;
 			}
 		});
 
-		addOperator(new Operator(">", OPERATOR_PRECEDENCE_COMPARISON, false, true) {
+		addOperator(new Operator(">", OPERATOR_PRECEDENCE_COMPARISON, false, true)
+		{
 			@Override
-			public BigDecimal eval(BigDecimal v1, BigDecimal v2) {
+			public Value eval(Value v1, Value v2) {
 				assertNotNull(v1, v2);
-				return v1.compareTo(v2) == 1 ? BigDecimal.ONE : BigDecimal.ZERO;
+				if (v1.type == BigDecimal.class && v2.type == BigDecimal.class)
+				{
+					return v1.getNumber().compareTo(v2.getNumber()) > 0 ? Value.TRUE : Value.FALSE;
+				}
+				return v1.getString().compareTo(v2.getString()) > 0 ? Value.TRUE : Value.FALSE;
 			}
 		});
 
 		addOperator(new Operator(">=", OPERATOR_PRECEDENCE_COMPARISON, false, true) {
 			@Override
-			public BigDecimal eval(BigDecimal v1, BigDecimal v2) {
+			public Value eval(Value v1, Value v2) {
 				assertNotNull(v1, v2);
-				return v1.compareTo(v2) >= 0 ? BigDecimal.ONE : BigDecimal.ZERO;
+				if (v1.type == BigDecimal.class && v2.type == BigDecimal.class)
+				{
+					return v1.getNumber().compareTo(v2.getNumber()) >= 0 ? Value.TRUE : Value.FALSE;
+				}
+				return v1.getString().compareTo(v2.getString()) >= 0 ? Value.TRUE : Value.FALSE;
 			}
 		});
 
 		addOperator(new Operator("<", OPERATOR_PRECEDENCE_COMPARISON, false, true) {
 			@Override
-			public BigDecimal eval(BigDecimal v1, BigDecimal v2) {
+			public Value eval(Value v1, Value v2) {
 				assertNotNull(v1, v2);
-				return v1.compareTo(v2) == -1 ? BigDecimal.ONE : BigDecimal.ZERO;
+				if (v1.type == BigDecimal.class && v2.type == BigDecimal.class)
+				{
+					return v1.getNumber().compareTo(v2.getNumber()) < 0 ? Value.TRUE : Value.FALSE;
+				}
+				return v1.getString().compareTo(v2.getString()) < 0 ? Value.TRUE : Value.FALSE;
 			}
 		});
 
 		addOperator(new Operator("<=", OPERATOR_PRECEDENCE_COMPARISON, false, true) {
 			@Override
-			public BigDecimal eval(BigDecimal v1, BigDecimal v2) {
+			public Value eval(Value v1, Value v2) {
 				assertNotNull(v1, v2);
-				return v1.compareTo(v2) <= 0 ? BigDecimal.ONE : BigDecimal.ZERO;
-			}
-		});
-
-		addOperator(new AbstractLazyOperator("=", OPERATOR_PRECEDENCE_EQUALITY, false, true) {
-			@Override
-			public LazyNumber eval(LazyNumber v1, LazyNumber v2) {
-				if (isNumber(v1.getString()) && isNumber(v2.getString()))
+				if (v1.type == BigDecimal.class && v2.type == BigDecimal.class)
 				{
-					return operators.get("=").eval(v1, v2);
+					return v1.getNumber().compareTo(v2.getNumber()) <= 0 ? Value.TRUE : Value.FALSE;
 				}
-				return v1.getString().equalsIgnoreCase(v2.getString()) ? variables.get("TRUE") :
-						variables.get("FALSE");
+				return v1.getString().compareTo(v2.getString()) <= 0 ? Value.TRUE : Value.FALSE;
 			}
 		});
 
-		addOperator(new AbstractLazyOperator("==", OPERATOR_PRECEDENCE_EQUALITY, false, true) {
+		// consider replacement with AbstractLazyOperator
+		addOperator(new Operator("=", OPERATOR_PRECEDENCE_ASSIGN, false, true) {
 			@Override
-			public LazyNumber eval(LazyNumber v1, LazyNumber v2) {
-				return operators.get("=").eval(v1, v2);
-			}
-		});
-
-		addOperator(new AbstractLazyOperator("!=", OPERATOR_PRECEDENCE_EQUALITY, false, true) {
-			@Override
-			public LazyNumber eval(LazyNumber v1, LazyNumber v2) {
-				if (isNumber(v1.getString()) && isNumber(v2.getString()))
+			public Value eval(Value v1, Value v2) {
+				assertNotNull(v1, v2);
+				if (!v1.isBound())
 				{
-					return operators.get("!=").eval(v1, v2);
+					throw new ExpressionException("LHS of assignment needs to be a variable");
 				}
-				return v1.getString().equalsIgnoreCase(v2.getString()) ? variables.get("FALSE") :
-						variables.get("TRUE");
+				String varname = v1.getVariable();
+				Value boundedLHS = v2.boundedTo(varname);
+				LazyValue lazyLHS = CreateLazyValue(boundedLHS);
+				variables.put(varname, lazyLHS);
+				return boundedLHS;
 			}
 		});
 
-		addOperator(new AbstractLazyOperator("<>", OPERATOR_PRECEDENCE_EQUALITY, false, true) {
+		addOperator(new Operator("==", OPERATOR_PRECEDENCE_EQUALITY, false, true) {
 			@Override
-			public LazyNumber eval(LazyNumber v1, LazyNumber v2) {
-				return operators.get("!=").eval(v1, v2);
+			public Value eval(Value v1, Value v2) {
+				assertNotNull(v1, v2);
+				if (v1.type == BigDecimal.class && v2.type == BigDecimal.class)
+				{
+					return v1.getNumber().equals(v2.getNumber()) ? Value.TRUE : Value.FALSE;
+				}
+				return v1.getString().equalsIgnoreCase(v2.getString()) ? Value.TRUE : Value.FALSE;
+			}
+		});
+
+		addOperator(new Operator("!=", OPERATOR_PRECEDENCE_EQUALITY, false, true) {
+			@Override
+			public Value eval(Value v1, Value v2) {
+				Value equals = ((Operator)operators.get("==")).eval(v1,v2);
+				return (equals == Value.TRUE) ? Value.FALSE : Value.TRUE;
+			}
+		});
+
+		addOperator(new Operator("<>", OPERATOR_PRECEDENCE_EQUALITY, false, true) {
+			@Override
+			public Value eval(Value v1, Value v2) {
+				assertNotNull(v1, v2);
+				if (!v1.isBound() || !v2.isBound())
+				{
+					throw new ExpressionException("Both sides of swapping assignment need to be variables");
+				}
+				String lvalvar = v1.getVariable();
+				String rvalvar = v2.getVariable();
+				Value lval = v2.boundedTo(lvalvar);
+				Value rval = v1.boundedTo(rvalvar);
+				LazyValue lazyLHS = CreateLazyValue(lval);
+				LazyValue lazyRHS = CreateLazyValue(rval);
+				variables.put(lvalvar, lazyLHS);
+				variables.put(rvalvar, lazyRHS);
+				return lval;
 			}
 		});
 
 		addOperator(new UnaryOperator("-", OPERATOR_PRECEDENCE_UNARY, false) {
 			@Override
-			public BigDecimal evalUnary(BigDecimal v1) {
-				return v1.multiply(new BigDecimal(-1));
+			public Value evalUnary(Value v1) {
+				assertNumbersNotNull(v1);
+				return new Value(v1.getNumber().multiply(new BigDecimal(-1)));
 			}
 		});
 
 		addOperator(new UnaryOperator("+", OPERATOR_PRECEDENCE_UNARY, false) {
 			@Override
-			public BigDecimal evalUnary(BigDecimal v1) {
-				return v1.multiply(BigDecimal.ONE);
+			public Value evalUnary(Value v1) {
+				assertNumbersNotNull(v1);
+				return v1;
 			}
 		});
 
 		addFunction(new Function("FACT", 1, false) {
 			@Override
-			public BigDecimal eval(List<BigDecimal> parameters) {
-				assertNotNull(parameters.get(0));
+			public Value eval(List<Value> parameters) {
+				assertNumbersNotNull(parameters.get(0));
 
-				int number = parameters.get(0).intValue();
+				int number = parameters.get(0).getNumber().intValue();
 				BigDecimal factorial = BigDecimal.ONE;
 				for (int i = 1; i <= number; i++) {
 					factorial = factorial.multiply(new BigDecimal(i));
 				}
-				return factorial;
+				return new Value(factorial);
 			}
 		});
 
 		addFunction(new Function("NOT", 1, true) {
 			@Override
-			public BigDecimal eval(List<BigDecimal> parameters) {
+			public Value eval(List<Value> parameters) {
 				assertNotNull(parameters.get(0));
-				boolean zero = parameters.get(0).compareTo(BigDecimal.ZERO) == 0;
-				return zero ? BigDecimal.ONE : BigDecimal.ZERO;
+				boolean b = parameters.get(0).getBoolean();
+				return b ? Value.FALSE : Value.TRUE;
 			}
 		});
 
 		addLazyFunction(new LazyFunction("IF", 3) {
 			@Override
-			public LazyNumber lazyEval(List<LazyNumber> lazyParams) {
-				BigDecimal result = lazyParams.get(0).eval();
+			public LazyValue lazyEval(List<LazyValue> lazyParams) {
+				Value result = lazyParams.get(0).eval();
 				assertNotNull(result);
-				boolean isTrue = result.compareTo(BigDecimal.ZERO) != 0;
+				boolean isTrue = result.getBoolean();
 				return isTrue ? lazyParams.get(1) : lazyParams.get(2);
 			}
 		});
 
 		addFunction(new Function("RANDOM", 0) {
 			@Override
-			public BigDecimal eval(List<BigDecimal> parameters) {
-				double d = Math.random();
-				return new BigDecimal(d, mc);
+			public Value eval(List<Value> parameters) {
+				return evaluateUnaryMathFunction(parameters, (d) -> Math.random());
 			}
 		});
+
 		addFunction(new Function("SIN", 1) {
 			@Override
-			public BigDecimal eval(List<BigDecimal> parameters) {
-				assertNotNull(parameters.get(0));
-				double d = Math.sin(Math.toRadians(parameters.get(0).doubleValue()));
-				return new BigDecimal(d, mc);
+			public Value eval(List<Value> parameters) {
+				return evaluateUnaryMathFunction(parameters, (d) -> Math.sin(Math.toRadians(d)));
 			}
 		});
+
 		addFunction(new Function("COS", 1) {
 			@Override
-			public BigDecimal eval(List<BigDecimal> parameters) {
-				assertNotNull(parameters.get(0));
-				double d = Math.cos(Math.toRadians(parameters.get(0).doubleValue()));
-				return new BigDecimal(d, mc);
+			public Value eval(List<Value> parameters) {
+				return evaluateUnaryMathFunction(parameters, (d) -> Math.cos(Math.toRadians(d)));
 			}
 		});
 		addFunction(new Function("TAN", 1) {
 			@Override
-			public BigDecimal eval(List<BigDecimal> parameters) {
-				assertNotNull(parameters.get(0));
-				double d = Math.tan(Math.toRadians(parameters.get(0).doubleValue()));
-				return new BigDecimal(d, mc);
+			public Value eval(List<Value> parameters) {
+				return evaluateUnaryMathFunction(parameters, (d) -> Math.tan(Math.toRadians(d)));
 			}
 		});
 		addFunction(new Function("ASIN", 1) {
 			@Override
-			public BigDecimal eval(List<BigDecimal> parameters) {
-				assertNotNull(parameters.get(0));
-				double d = Math.toDegrees(Math.asin(parameters.get(0).doubleValue()));
-				return new BigDecimal(d, mc);
+			public Value eval(List<Value> parameters) {
+				return evaluateUnaryMathFunction(parameters, (d) -> Math.toDegrees(Math.asin(d)));
 			}
 		});
 		addFunction(new Function("ACOS", 1) {
 			@Override
-			public BigDecimal eval(List<BigDecimal> parameters) {
-				assertNotNull(parameters.get(0));
-				double d = Math.toDegrees(Math.acos(parameters.get(0).doubleValue()));
-				return new BigDecimal(d, mc);
+			public Value eval(List<Value> parameters) {
+				return evaluateUnaryMathFunction(parameters, (d) -> Math.toDegrees(Math.acos(d)));
 			}
 		});
 		addFunction(new Function("ATAN", 1) {
 			@Override
-			public BigDecimal eval(List<BigDecimal> parameters) {
-				assertNotNull(parameters.get(0));
-				double d = Math.toDegrees(Math.atan(parameters.get(0).doubleValue()));
-				return new BigDecimal(d, mc);
+			public Value eval(List<Value> parameters) {
+				return evaluateUnaryMathFunction(parameters, (d) -> Math.toDegrees(Math.atan(d)));
 			}
 		});
 		addFunction(new Function("ATAN2", 2) {
 			@Override
-			public BigDecimal eval(List<BigDecimal> parameters) {
-				assertNotNull(parameters.get(0), parameters.get(1));
-				double d = Math.toDegrees(Math.atan2(parameters.get(0).doubleValue(), parameters.get(1).doubleValue()));
-				return new BigDecimal(d, mc);
+			public Value eval(List<Value> parameters) {
+				return evaluateBinaryMathFunction(parameters, (d,d2) -> Math.toDegrees(Math.atan2(d,d2)));
 			}
 		});
 		addFunction(new Function("SINH", 1) {
 			@Override
-			public BigDecimal eval(List<BigDecimal> parameters) {
-				assertNotNull(parameters.get(0));
-				double d = Math.sinh(parameters.get(0).doubleValue());
-				return new BigDecimal(d, mc);
+			public Value eval(List<Value> parameters) {
+				return evaluateUnaryMathFunction(parameters, Math::sinh);
 			}
 		});
 		addFunction(new Function("COSH", 1) {
 			@Override
-			public BigDecimal eval(List<BigDecimal> parameters) {
-				assertNotNull(parameters.get(0));
-				double d = Math.cosh(parameters.get(0).doubleValue());
-				return new BigDecimal(d, mc);
+			public Value eval(List<Value> parameters) {
+				return evaluateUnaryMathFunction(parameters, Math::cosh);
 			}
 		});
 		addFunction(new Function("TANH", 1) {
 			@Override
-			public BigDecimal eval(List<BigDecimal> parameters) {
-				assertNotNull(parameters.get(0));
-				double d = Math.tanh(parameters.get(0).doubleValue());
-				return new BigDecimal(d, mc);
+			public Value eval(List<Value> parameters) {
+				return evaluateUnaryMathFunction(parameters, Math::tanh);
 			}
 		});
 		addFunction(new Function("SEC", 1) {
 			@Override
-			public BigDecimal eval(List<BigDecimal> parameters) {
-				assertNotNull(parameters.get(0));
-				/** Formula: sec(x) = 1 / cos(x) */
-				double one = 1;
-				double d = Math.cos(Math.toRadians(parameters.get(0).doubleValue()));
-				return new BigDecimal((one / d), mc);
+			public Value eval(List<Value> parameters) { /* Formula: sec(x) = 1 / cos(x) */
+				return evaluateUnaryMathFunction(parameters, (d) -> 1.0/Math.cos(Math.toRadians(d)));
 			}
 		});
 		addFunction(new Function("CSC", 1) {
 			@Override
-			public BigDecimal eval(List<BigDecimal> parameters) {
-				assertNotNull(parameters.get(0));
-				/** Formula: csc(x) = 1 / sin(x) */
-				double one = 1;
-				double d = Math.sin(Math.toRadians(parameters.get(0).doubleValue()));
-				return new BigDecimal((one / d), mc);
+			public Value eval(List<Value> parameters) { /* Formula: csc(x) = 1 / sin(x) */
+				return evaluateUnaryMathFunction(parameters, (d) -> 1.0/Math.sin(Math.toRadians(d)));
 			}
 		});
 		addFunction(new Function("SECH", 1) {
 			@Override
-			public BigDecimal eval(List<BigDecimal> parameters) {
-				assertNotNull(parameters.get(0));
-				/** Formula: sech(x) = 1 / cosh(x) */
-				double one = 1;
-				double d = Math.cosh(parameters.get(0).doubleValue());
-				return new BigDecimal((one / d), mc);
+			public Value eval(List<Value> parameters) { /* Formula: sech(x) = 1 / cosh(x) */
+				return evaluateUnaryMathFunction(parameters, (d) -> 1.0/Math.cosh(d));
 			}
 		});
 		addFunction(new Function("CSCH", 1) {
 			@Override
-			public BigDecimal eval(List<BigDecimal> parameters) {
-				assertNotNull(parameters.get(0));
-				/** Formula: csch(x) = 1 / sinh(x) */
-				double one = 1;
-				double d = Math.sinh(parameters.get(0).doubleValue());
-				return new BigDecimal((one / d), mc);
+			public Value eval(List<Value> parameters) { /* Formula: csch(x) = 1 / sinh(x) */
+				return evaluateUnaryMathFunction(parameters, (d) -> 1.0/Math.sinh(d));
 			}
 		});
 		addFunction(new Function("COT", 1) {
 			@Override
-			public BigDecimal eval(List<BigDecimal> parameters) {
-				assertNotNull(parameters.get(0));
-				/** Formula: cot(x) = cos(x) / sin(x) = 1 / tan(x) */
-				double one = 1;
-				double d = Math.tan(Math.toRadians(parameters.get(0).doubleValue()));
-				return new BigDecimal((one / d), mc);
+			public Value eval(List<Value> parameters) { /* Formula: cot(x) = cos(x) / sin(x) = 1 / tan(x) */
+				return evaluateUnaryMathFunction(parameters, (d) -> 1.0/Math.tan(Math.toRadians(d)));
 			}
 		});
 		addFunction(new Function("ACOT", 1) {
 			@Override
-			public BigDecimal eval(List<BigDecimal> parameters) {
-				assertNotNull(parameters.get(0));
-				/** Formula: acot(x) = atan(1/x) */
-				if (parameters.get(0).doubleValue() == 0) {
-					throw new ExpressionException("Number must not be 0");
-				}
-				double d = Math.toDegrees(Math.atan(1 / parameters.get(0).doubleValue()));
-				return new BigDecimal(d, mc);
+			public Value eval(List<Value> parameters) { /* Formula: acot(x) = atan(1/x) */
+				return evaluateUnaryMathFunction(parameters, (d) -> Math.toDegrees(Math.atan(1.0 / d)));
 			}
 		});
 		addFunction(new Function("COTH", 1) {
 			@Override
-			public BigDecimal eval(List<BigDecimal> parameters) {
-				assertNotNull(parameters.get(0));
-				/** Formula: coth(x) = 1 / tanh(x) */
-				double one = 1;
-				double d = Math.tanh(parameters.get(0).doubleValue());
-				return new BigDecimal((one / d), mc);
+			public Value eval(List<Value> parameters) { /* Formula: coth(x) = 1 / tanh(x) */
+				return evaluateUnaryMathFunction(parameters, (d) -> 1.0/Math.tanh(d));
 			}
 		});
 		addFunction(new Function("ASINH", 1) {
 			@Override
-			public BigDecimal eval(List<BigDecimal> parameters) {
-				assertNotNull(parameters.get(0));
-				/** Formula: asinh(x) = ln(x + sqrt(x^2 + 1)) */
-				double d = Math.log(parameters.get(0).doubleValue()
-						+ (Math.sqrt(Math.pow(parameters.get(0).doubleValue(), 2) + 1)));
-				return new BigDecimal(d, mc);
+			public Value eval(List<Value> parameters) { /* Formula: asinh(x) = ln(x + sqrt(x^2 + 1)) */
+				return evaluateUnaryMathFunction(parameters, (d) -> Math.log(d + (Math.sqrt(Math.pow(d, 2) + 1))));
 			}
 		});
 		addFunction(new Function("ACOSH", 1) {
 			@Override
-			public BigDecimal eval(List<BigDecimal> parameters) {
-				assertNotNull(parameters.get(0));
-				/** Formula: acosh(x) = ln(x + sqrt(x^2 - 1)) */
-				if (Double.compare(parameters.get(0).doubleValue(), 1) < 0) {
-					throw new ExpressionException("Number must be x >= 1");
-				}
-				double d = Math.log(parameters.get(0).doubleValue()
-						+ (Math.sqrt(Math.pow(parameters.get(0).doubleValue(), 2) - 1)));
-				return new BigDecimal(d, mc);
+			public Value eval(List<Value> parameters) { /* Formula: acosh(x) = ln(x + sqrt(x^2 - 1)) */
+				return evaluateUnaryMathFunction(parameters, (d) -> Math.log(d + (Math.sqrt(Math.pow(d, 2) - 1))));
 			}
 		});
 		addFunction(new Function("ATANH", 1) {
 			@Override
-			public BigDecimal eval(List<BigDecimal> parameters) {
-				assertNotNull(parameters.get(0));
-				/** Formula: atanh(x) = 0.5*ln((1 + x)/(1 - x)) */
-				if (Math.abs(parameters.get(0).doubleValue()) > 1 || Math.abs(parameters.get(0).doubleValue()) == 1) {
-					throw new ExpressionException("Number must be |x| < 1");
-				}
-				double d = 0.5
-						* Math.log((1 + parameters.get(0).doubleValue()) / (1 - parameters.get(0).doubleValue()));
-				return new BigDecimal(d, mc);
+			public Value eval(List<Value> parameters) { /* Formula: atanh(x) = 0.5*ln((1 + x)/(1 - x)) */
+				return evaluateUnaryMathFunction(parameters, (d) ->
+				{
+					if (Math.abs(d) > 1 || Math.abs(d) == 1)
+					{
+						throw new ExpressionException("Number must be |x| < 1");
+					}
+					return 0.5 * Math.log((1 + d) / (1 - d));
+				});
 			}
 		});
 		addFunction(new Function("RAD", 1) {
 			@Override
-			public BigDecimal eval(List<BigDecimal> parameters) {
-				assertNotNull(parameters.get(0));
-				double d = Math.toRadians(parameters.get(0).doubleValue());
-				return new BigDecimal(d, mc);
+			public Value eval(List<Value> parameters) {
+				return evaluateUnaryMathFunction(parameters, Math::toRadians);
 			}
 		});
 		addFunction(new Function("DEG", 1) {
 			@Override
-			public BigDecimal eval(List<BigDecimal> parameters) {
-				assertNotNull(parameters.get(0));
-				double d = Math.toDegrees(parameters.get(0).doubleValue());
-				return new BigDecimal(d, mc);
+			public Value eval(List<Value> parameters) {
+				return evaluateUnaryMathFunction(parameters, Math::toDegrees);
 			}
 		});
 		addFunction(new Function("MAX", -1) {
 			@Override
-			public BigDecimal eval(List<BigDecimal> parameters) {
+			public Value eval(List<Value> parameters) {
 				if (parameters.size() == 0) {
 					throw new ExpressionException("MAX requires at least one parameter");
 				}
-				BigDecimal max = null;
-				for (BigDecimal parameter : parameters) {
-					assertNotNull(parameter);
-					if (max == null || parameter.compareTo(max) > 0) {
-						max = parameter;
+				Value max = null;
+				for (Value parameter : parameters) {
+					assertNumbersNotNull(parameter);
+					if (max == null || parameter.getNumber().compareTo(max.getNumber()) > 0) {
+						max = parameter; // by ref, TODO check if variable assignments hold, that would be splendid
 					}
 				}
 				return max;
@@ -1040,15 +1044,15 @@ public class Expression {
 		});
 		addFunction(new Function("MIN", -1) {
 			@Override
-			public BigDecimal eval(List<BigDecimal> parameters) {
+			public Value eval(List<Value> parameters) {
 				if (parameters.size() == 0) {
 					throw new ExpressionException("MIN requires at least one parameter");
 				}
-				BigDecimal min = null;
-				for (BigDecimal parameter : parameters) {
-					assertNotNull(parameter);
-					if (min == null || parameter.compareTo(min) < 0) {
-						min = parameter;
+				Value min = null;
+				for (Value parameter : parameters) {
+					assertNumbersNotNull(parameter);
+					if (min == null || parameter.getNumber().compareTo(min.getNumber()) < 0) {
+						min = parameter; // ditto TODO check variable assigment preservaion
 					}
 				}
 				return min;
@@ -1056,63 +1060,59 @@ public class Expression {
 		});
 		addFunction(new Function("ABS", 1) {
 			@Override
-			public BigDecimal eval(List<BigDecimal> parameters) {
-				assertNotNull(parameters.get(0));
-				return parameters.get(0).abs(mc);
+			public Value eval(List<Value> parameters) {
+				assertNumbersNotNull(parameters.get(0));
+				return new Value(parameters.get(0).getNumber().abs(mc));
 			}
 		});
 		addFunction(new Function("LOG", 1) {
 			@Override
-			public BigDecimal eval(List<BigDecimal> parameters) {
-				assertNotNull(parameters.get(0));
-				double d = Math.log(parameters.get(0).doubleValue());
-				return new BigDecimal(d, mc);
+			public Value eval(List<Value> parameters) {
+				return evaluateUnaryMathFunction(parameters, Math::log);
 			}
 		});
 		addFunction(new Function("LOG10", 1) {
 			@Override
-			public BigDecimal eval(List<BigDecimal> parameters) {
-				assertNotNull(parameters.get(0));
-				double d = Math.log10(parameters.get(0).doubleValue());
-				return new BigDecimal(d, mc);
+			public Value eval(List<Value> parameters) {
+				return evaluateUnaryMathFunction(parameters, Math::log10);
 			}
 		});
 		addFunction(new Function("ROUND", 2) {
 			@Override
-			public BigDecimal eval(List<BigDecimal> parameters) {
-				assertNotNull(parameters.get(0), parameters.get(1));
-				BigDecimal toRound = parameters.get(0);
-				int precision = parameters.get(1).intValue();
-				return toRound.setScale(precision, mc.getRoundingMode());
+			public Value eval(List<Value> parameters) {
+				assertNumbersNotNull(parameters.get(0), parameters.get(1));
+				BigDecimal toRound = parameters.get(0).getNumber();
+				int precision = parameters.get(1).getNumber().intValue();
+				return new Value(toRound.setScale(precision, mc.getRoundingMode()));
 			}
 		});
 		addFunction(new Function("FLOOR", 1) {
 			@Override
-			public BigDecimal eval(List<BigDecimal> parameters) {
+			public Value eval(List<Value> parameters) {
 				assertNotNull(parameters.get(0));
-				BigDecimal toRound = parameters.get(0);
-				return toRound.setScale(0, RoundingMode.FLOOR);
+				BigDecimal toRound = parameters.get(0).getNumber();
+				return new Value(toRound.setScale(0, RoundingMode.FLOOR));
 			}
 		});
 		addFunction(new Function("CEILING", 1) {
 			@Override
-			public BigDecimal eval(List<BigDecimal> parameters) {
+			public Value eval(List<Value> parameters) {
 				assertNotNull(parameters.get(0));
-				BigDecimal toRound = parameters.get(0);
-				return toRound.setScale(0, RoundingMode.CEILING);
+				BigDecimal toRound = parameters.get(0).getNumber();
+				return new Value(toRound.setScale(0, RoundingMode.CEILING));
 			}
 		});
 		addFunction(new Function("SQRT", 1) {
 			@Override
-			public BigDecimal eval(List<BigDecimal> parameters) {
+			public Value eval(List<Value> parameters) {
 				assertNotNull(parameters.get(0));
 				/*
 				 * From The Java Programmers Guide To numerical Computing
 				 * (Ronald Mak, 2003)
 				 */
-				BigDecimal x = parameters.get(0);
+				BigDecimal x = parameters.get(0).getNumber();
 				if (x.compareTo(BigDecimal.ZERO) == 0) {
-					return new BigDecimal(0);
+					return Value.ZERO;
 				}
 				if (x.signum() < 0) {
 					throw new ExpressionException("Argument to SQRT() function must not be negative");
@@ -1127,11 +1127,11 @@ public class Expression {
 					ixPrev = ix;
 					ix = ix.add(n.divide(ix)).shiftRight(1);
 					// Give other threads a chance to work;
-					Thread.yield();
+					//Thread.yield();
 					test = ix.subtract(ixPrev).abs();
 				} while (test.compareTo(BigInteger.ZERO) != 0 && test.compareTo(BigInteger.ONE) != 0 );
 
-				return new BigDecimal(ix, mc.getPrecision());
+				return new Value(new BigDecimal(ix, mc.getPrecision()));
 			}
 		});
 
@@ -1139,27 +1139,47 @@ public class Expression {
 
 	}
 
-	private void assertNotNull(BigDecimal v1) {
+	private void assertNotNull(Value v1) {
 		if (v1 == null) {
-			throw new ArithmeticException("Operand may not be null");
+			throw new ExpressionException("Operand may not be null");
+		}
+	}
+	private void assertNumbersNotNull(Value v1) {
+		if (v1 == null) {
+			throw new ExpressionException("Operand may not be null");
+		}
+		if (v1.type != BigDecimal.class)
+		{
+			throw new ExpressionException("Operand has to be of a numeric type");
 		}
 	}
 
-	private void assertNotNull(BigDecimal v1, BigDecimal v2) {
+	private void assertNotNull(Value v1, Value v2) {
 		if (v1 == null) {
-			throw new ArithmeticException("First operand may not be null");
+			throw new ExpressionException("First operand may not be null");
 		}
 		if (v2 == null) {
-			throw new ArithmeticException("Second operand may not be null");
+			throw new ExpressionException("Second operand may not be null");
 		}
 	}
 
-	private void assertNotNull(LazyNumber v1, LazyNumber v2) {
+	private void assertNumbersNotNull(Value v1, Value v2) {
 		if (v1 == null) {
-			throw new ArithmeticException("First operand may not be null");
+			throw new ExpressionException("First operand may not be null");
 		}
 		if (v2 == null) {
-			throw new ArithmeticException("Second operand may not be null");
+			throw new ExpressionException("Second operand may not be null");
+		}
+		if (v1.type != BigDecimal.class || v2.type != BigDecimal.class)
+		{
+			throw new ExpressionException("Both Operands have to be of a numeric type");
+		}
+	}
+
+
+	private void assertNotNull(LazyValue v1) {
+		if (v1 == null) {
+			throw new ExpressionException("Operand may not be null");
 		}
 	}
 
@@ -1197,8 +1217,8 @@ public class Expression {
 	 *         member.
 	 */
 	private List<Token> shuntingYard(String expression) {
-		List<Token> outputQueue = new ArrayList<Token>();
-		Stack<Token> stack = new Stack<Token>();
+		List<Token> outputQueue = new ArrayList<>();
+		Stack<Token> stack = new Stack<>();
 
 		Tokenizer tokenizer = new Tokenizer(expression);
 
@@ -1250,7 +1270,7 @@ public class Expression {
 					throw new ExpressionException(
 							"Missing parameter(s) for operator " + token + " at character position " + token.pos);
 				}
-				LazyOperator o1 = operators.get(token.surface);
+				ILazyOperator o1 = operators.get(token.surface);
 				if (o1 == null) {
 					throw new ExpressionException("Unknown operator '" + token + "' at position " + (token.pos + 1));
 				}
@@ -1265,7 +1285,7 @@ public class Expression {
 					throw new ExpressionException(
 							"Invalid position for unary operator " + token + " at character position " + token.pos);
 				}
-				LazyOperator o1 = operators.get(token.surface);
+				ILazyOperator o1 = operators.get(token.surface);
 				if (o1 == null) {
 					throw new ExpressionException(
 							"Unknown unary operator '" + token.surface.substring(0, token.surface.length() - 1)
@@ -1324,7 +1344,7 @@ public class Expression {
 		return outputQueue;
 	}
 
-	private void shuntOperators(List<Token> outputQueue, Stack<Token> stack, LazyOperator o1) {
+	private void shuntOperators(List<Token> outputQueue, Stack<Token> stack, ILazyOperator o1) {
 		Expression.Token nextToken = stack.isEmpty() ? null : stack.peek();
 		while (nextToken != null
 				&& (nextToken.type == Expression.TokenType.OPERATOR
@@ -1338,32 +1358,34 @@ public class Expression {
 
 	/**
 	 * Evaluates the expression.
-	 * 
+	 *
+	 * @param stripTrailingZeros
+	 * 	            If set to <code>true</code> trailing zeros in the result are
+	 * 	            stripped.
+	 *
 	 * @return The result of the expression. Trailing zeros are stripped.
 	 */
-	public BigDecimal eval() {
-		return eval(true);
+	public Value eval(boolean stripTrailingZeros) {
+		Value result = eval(true);
+		return result == null ? null : (stripTrailingZeros && result.type == BigDecimal.class) ?
+				new Value(result.getNumber().stripTrailingZeros()) : result;
 	}
 
 	/**
 	 * Evaluates the expression.
-	 * 
-	 * @param stripTrailingZeros
-	 *            If set to <code>true</code> trailing zeros in the result are
-	 *            stripped.
-	 * 
+	 *
 	 * @return The result of the expression.
 	 */
-	public BigDecimal eval(boolean stripTrailingZeros) {
+	public Value eval() {
 
-		Stack<LazyNumber> stack = new Stack<LazyNumber>();
+		Stack<LazyValue> stack = new Stack<>();
 
 		for (final Token token : getRPN()) {
 			switch (token.type) {
 			case UNARY_OPERATOR: {
-				final LazyNumber value = stack.pop();
-				LazyNumber result = new LazyNumber() {
-					public BigDecimal eval() {
+				final LazyValue value = stack.pop();
+				LazyValue result = new LazyValue() {
+					public Value eval() {
 						return operators.get(token.surface).eval(value, null).eval();
 					}
 
@@ -1376,10 +1398,10 @@ public class Expression {
 				break;
 			}
 			case OPERATOR:
-				final LazyNumber v1 = stack.pop();
-				final LazyNumber v2 = stack.pop();
-				LazyNumber result = new LazyNumber() {
-					public BigDecimal eval() {
+				final LazyValue v1 = stack.pop();
+				final LazyValue v2 = stack.pop();
+				LazyValue result = new LazyValue() {
+					public Value eval() {
 						return operators.get(token.surface).eval(v2, v1).eval();
 					}
 
@@ -1390,15 +1412,19 @@ public class Expression {
 				stack.push(result);
 				break;
 			case VARIABLE:
-				if (!variables.containsKey(token.surface)) {
-					throw new ExpressionException("Unknown operator or function: " + token);
+				if (functions.containsKey(token.surface.toUpperCase(Locale.ROOT))) {
+					throw new ExpressionException("Variable would mask function: " + token);
 				}
 
-				stack.push(new LazyNumber() {
-					public BigDecimal eval() {
-						LazyNumber lazyVariable = variables.get(token.surface);
-						BigDecimal value = lazyVariable == null ? null : lazyVariable.eval();
-						return value == null ? null : value.round(mc);
+				stack.push(new LazyValue() {
+					public Value eval() {
+						if (!variables.containsKey(token.surface)) // new variable
+						{
+							variables.put(token.surface, CreateLazyValue(Value.ZERO.boundedTo(token.surface)));
+						}
+						LazyValue lazyVariable = variables.get(token.surface);
+						Value value = lazyVariable.eval();
+						return value;
 					}
 
 					public String getString() {
@@ -1407,8 +1433,8 @@ public class Expression {
 				});
 				break;
 			case FUNCTION:
-				com.udojava.evalex.LazyFunction f = functions.get(token.surface.toUpperCase(Locale.ROOT));
-				ArrayList<LazyNumber> p = new ArrayList<LazyNumber>(!f.numParamsVaries() ? f.getNumParams() : 0);
+				ILazyFunction f = functions.get(token.surface.toUpperCase(Locale.ROOT));
+				ArrayList<LazyValue> p = new ArrayList<>(!f.numParamsVaries() ? f.getNumParams() : 0);
 				// pop parameters off the stack until we hit the start of
 				// this function's parameter list
 				while (!stack.isEmpty() && stack.peek() != PARAMS_START) {
@@ -1419,20 +1445,19 @@ public class Expression {
 					stack.pop();
 				}
 
-				LazyNumber fResult = f.lazyEval(p);
+				LazyValue fResult = f.lazyEval(p);
 				stack.push(fResult);
 				break;
 			case OPEN_PAREN:
 				stack.push(PARAMS_START);
 				break;
 			case LITERAL:
-				stack.push(new LazyNumber() {
-					public BigDecimal eval() {
+				stack.push(new LazyValue() {
+					public Value eval() {
 						if (token.surface.equalsIgnoreCase("NULL")) {
 							return null;
 						}
-
-						return new BigDecimal(token.surface, mc);
+						return new Value(new BigDecimal(token.surface, mc));
 					}
 
 					public String getString() {
@@ -1441,9 +1466,9 @@ public class Expression {
 				});
 				break;
 			case STRINGPARAM:
-				stack.push(new LazyNumber() {
-					public BigDecimal eval() {
-						return null;
+				stack.push(new LazyValue() {
+					public Value eval() {
+						return new Value(token.surface); // was null
 					}
 
 					public String getString() {
@@ -1452,9 +1477,9 @@ public class Expression {
 				});
 				break;
 			case HEX_LITERAL:
-				stack.push(new LazyNumber() {
-					public BigDecimal eval() {
-						return new BigDecimal(new BigInteger(token.surface.substring(2), 16), mc);
+				stack.push(new LazyValue() {
+					public Value eval() {
+						return new Value(new BigDecimal(new BigInteger(token.surface.substring(2), 16), mc));
 					}
 
 					public String getString() {
@@ -1467,109 +1492,7 @@ public class Expression {
 						"Unexpected token '" + token.surface + "' at character position " + token.pos);
 			}
 		}
-		BigDecimal result = stack.pop().eval();
-		return result == null ? null : stripTrailingZeros ? result.stripTrailingZeros() : result;
-	}
-
-
-	public LazyNumber evalLazy() {
-
-		Stack<LazyNumber> stack = new Stack<LazyNumber>();
-
-		for (final Token token : getRPN()) {
-			switch (token.type) {
-				case UNARY_OPERATOR: {
-					final LazyNumber value = stack.pop();
-					LazyNumber result = operators.get(token.surface).eval(value, null);
-					stack.push(result);
-					break;
-				}
-				case OPERATOR:
-					final LazyNumber v1 = stack.pop();
-					final LazyNumber v2 = stack.pop();
-					LazyNumber result = operators.get(token.surface).eval(v2, v1);
-					stack.push(result);
-					break;
-				case VARIABLE:
-					if (!variables.containsKey(token.surface)) {
-						throw new ExpressionException("Unknown operator or function: " + token);
-					}
-
-					stack.push(new LazyNumber() {
-						public BigDecimal eval() {
-							LazyNumber lazyVariable = variables.get(token.surface);
-							BigDecimal value = lazyVariable == null ? null : lazyVariable.eval();
-							return value == null ? null : value.round(mc);
-						}
-
-						public String getString() {
-							return token.surface;
-						}
-					});
-					break;
-				case FUNCTION:
-					com.udojava.evalex.LazyFunction f = functions.get(token.surface.toUpperCase(Locale.ROOT));
-					ArrayList<LazyNumber> p = new ArrayList<LazyNumber>(!f.numParamsVaries() ? f.getNumParams() : 0);
-					// pop parameters off the stack until we hit the start of
-					// this function's parameter list
-					while (!stack.isEmpty() && stack.peek() != PARAMS_START) {
-						p.add(0, stack.pop());
-					}
-
-					if (stack.peek() == PARAMS_START) {
-						stack.pop();
-					}
-
-					LazyNumber fResult = f.lazyEval(p);
-					stack.push(fResult);
-					break;
-				case OPEN_PAREN:
-					stack.push(PARAMS_START);
-					break;
-				case LITERAL:
-					stack.push(new LazyNumber() {
-						public BigDecimal eval() {
-							if (token.surface.equalsIgnoreCase("NULL")) {
-								return null;
-							}
-
-							return new BigDecimal(token.surface, mc);
-						}
-
-						public String getString() {
-							return String.valueOf(new BigDecimal(token.surface, mc));
-						}
-					});
-					break;
-				case STRINGPARAM:
-					stack.push(new LazyNumber() {
-						public BigDecimal eval() {
-							return null;
-						}
-
-						public String getString() {
-							return token.surface;
-						}
-					});
-					break;
-				case HEX_LITERAL:
-					stack.push(new LazyNumber() {
-						public BigDecimal eval() {
-							return new BigDecimal(new BigInteger(token.surface.substring(2), 16), mc);
-						}
-
-						public String getString() {
-							return new BigInteger(token.surface.substring(2), 16).toString();
-						}
-					});
-					break;
-				default:
-					throw new ExpressionException(
-							"Unexpected token '" + token.surface + "' at character position " + token.pos);
-			}
-		}
-		LazyNumber result = stack.pop();
-		return result;
+		return stack.pop().eval();
 	}
 
 
@@ -1632,7 +1555,7 @@ public class Expression {
 	 * @return The previous operator with that name, or <code>null</code> if
 	 *         there was none.
 	 */
-	public <OPERATOR extends LazyOperator> OPERATOR addOperator(OPERATOR operator) {
+	public <OPERATOR extends ILazyOperator> OPERATOR addOperator(OPERATOR operator) {
 		String key = operator.getOper();
 		if (operator instanceof AbstractUnaryOperator) {
 			key += "u";
@@ -1648,8 +1571,8 @@ public class Expression {
 	 * @return The previous operator with that name, or <code>null</code> if
 	 *         there was none.
 	 */
-	public com.udojava.evalex.Function addFunction(com.udojava.evalex.Function function) {
-		return (com.udojava.evalex.Function) functions.put(function.getName(), function);
+	public IFunction addFunction(IFunction function) {
+		return (IFunction) functions.put(function.getName(), function);
 	}
 
 	/**
@@ -1660,7 +1583,7 @@ public class Expression {
 	 * @return The previous operator with that name, or <code>null</code> if
 	 *         there was none.
 	 */
-	public com.udojava.evalex.LazyFunction addLazyFunction(com.udojava.evalex.LazyFunction function) {
+	public ILazyFunction addLazyFunction(ILazyFunction function) {
 		return functions.put(function.getName(), function);
 	}
 
@@ -1673,8 +1596,8 @@ public class Expression {
 	 *            The variable value.
 	 * @return The expression, allows to chain methods.
 	 */
-	public Expression setVariable(String variable, BigDecimal value) {
-		return setVariable(variable, CreateLazyNumber(value));
+	public Expression setVariable(String variable, Value value) {
+		return setVariable(variable, CreateLazyValue(value.boundedTo(variable)));
 	}
 
 	/**
@@ -1686,7 +1609,7 @@ public class Expression {
 	 *            The variable value.
 	 * @return The expression, allows to chain methods.
 	 */
-	public Expression setVariable(String variable, LazyNumber value) {
+	public Expression setVariable(String variable, LazyValue value) {
 		variables.put(variable, value);
 		return this;
 	}
@@ -1702,15 +1625,17 @@ public class Expression {
 	 */
 	public Expression setVariable(String variable, String value) {
 		if (isNumber(value))
-			variables.put(variable, CreateLazyNumber(new BigDecimal(value, mc)));
+			variables.put(variable, CreateLazyValue(new Value(new BigDecimal(value, mc)).boundedTo(variable)));
 		else if (value.equalsIgnoreCase("null")) {
 			variables.put(variable, null);
 		} else {
+			variables.put(variable, CreateLazyValue(new Value(value).boundedTo(variable)));
+			/*
 			final String expStr = value;
 			variables.put(variable, new LazyNumber() {
 				private final Map<String, LazyNumber> outerVariables = variables;
-				private final Map<String, com.udojava.evalex.LazyFunction> outerFunctions = functions;
-				private final Map<String, LazyOperator> outerOperators = operators;
+				private final Map<String, ILazyFunction> outerFunctions = functions;
+				private final Map<String, ILazyOperator> outerOperators = operators;
 				private final String innerExpressionString = expStr;
 				private final MathContext inneMc = mc;
 
@@ -1720,7 +1645,7 @@ public class Expression {
 				}
 
 				@Override
-				public BigDecimal eval() {
+				public Value eval() {
 					Expression innerE = new Expression(innerExpressionString, inneMc);
 					innerE.variables = outerVariables;
 					innerE.functions = outerFunctions;
@@ -1729,7 +1654,7 @@ public class Expression {
 					return val;
 				}
 			});
-			rpn = null;
+			rpn = null;*/
 		}
 		return this;
 	}
@@ -1742,9 +1667,9 @@ public class Expression {
 	 * @return The inner Expression instance.
 	 */
 	private Expression createEmbeddedExpression(final String expression) {
-		final Map<String, LazyNumber> outerVariables = variables;
-		final Map<String, com.udojava.evalex.LazyFunction> outerFunctions = functions;
-		final Map<String, LazyOperator> outerOperators = operators;
+		final Map<String, LazyValue> outerVariables = variables;
+		final Map<String, ILazyFunction> outerFunctions = functions;
+		final Map<String, ILazyOperator> outerOperators = operators;
 		final MathContext inneMc = mc;
 		Expression exp = new Expression(expression, inneMc);
 		exp.variables = outerVariables;
@@ -1763,7 +1688,7 @@ public class Expression {
 	 * @return The expression, allows to chain methods.
 	 */
 	public Expression with(String variable, BigDecimal value) {
-		return setVariable(variable, value);
+		return setVariable(variable, new Value(value)); // variable will be set by setVariable
 	}
 
 	/**
@@ -1775,10 +1700,11 @@ public class Expression {
 	 *            The variable value.
 	 * @return The expression, allows to chain methods.
 	 */
-	public Expression with(String variable, LazyNumber value) {
+	/*
+	public Expression with(String variable, LazyValue value) {
 		return setVariable(variable, value);
 	}
-
+	*/
 	/**
 	 * Sets a variable value.
 	 * 
@@ -1802,7 +1728,7 @@ public class Expression {
 	 * @return The expression, allows to chain methods.
 	 */
 	public Expression and(String variable, BigDecimal value) {
-		return setVariable(variable, value);
+		return setVariable(variable, new Value(value));
 	}
 
 	/**
@@ -1814,10 +1740,10 @@ public class Expression {
 	 *            The variable value.
 	 * @return The expression, allows to chain methods.
 	 */
-	public Expression and(String variable, LazyNumber value) {
+	/*public Expression and(String variable, LazyNumber value) {
 		return setVariable(variable, value);
 	}
-
+	*/
 	/**
 	 * Sets a variable value.
 	 * 
@@ -1886,13 +1812,17 @@ public class Expression {
 				break;
 			case OPERATOR:
 				if (stack.peek() < 2) {
+					if (token.surface.equalsIgnoreCase(";"))
+					{
+						throw new ExpressionException("Unnecessary semicolon at position "+(token.pos+1));
+					}
 					throw new ExpressionException("Missing parameter(s) for operator " + token);
 				}
 				// pop the operator's 2 parameters and add the result
 				stack.set(stack.size() - 1, stack.peek() - 2 + 1);
 				break;
 			case FUNCTION:
-				com.udojava.evalex.LazyFunction f = functions.get(token.surface.toUpperCase(Locale.ROOT));
+				ILazyFunction f = functions.get(token.surface.toUpperCase(Locale.ROOT));
 				if (f == null) {
 					throw new ExpressionException("Unknown function '" + token + "' at position " + (token.pos + 1));
 				}
@@ -1900,7 +1830,7 @@ public class Expression {
 				int numParams = stack.pop();
 				if (!f.numParamsVaries() && numParams != f.getNumParams()) {
 					throw new ExpressionException(
-							"Function " + token + " expected " + f.getNumParams() + " parameters, got " + numParams);
+							"IFunction " + token + " expected " + f.getNumParams() + " parameters, got " + numParams);
 				}
 				if (stack.size() <= 0) {
 					throw new ExpressionException("Too many function calls, maximum scope exceeded");
@@ -1937,7 +1867,7 @@ public class Expression {
 			if (result.length() != 0)
 				result.append(" ");
 			if (t.type == TokenType.VARIABLE && variables.containsKey(t.surface)) {
-				LazyNumber innerVariable = variables.get(t.surface);
+				LazyValue innerVariable = variables.get(t.surface);
 				String innerExp = innerVariable.getString();
 				if (isNumber(innerExp)) { // if it is a number, then we don't
 											// expan in the RPN

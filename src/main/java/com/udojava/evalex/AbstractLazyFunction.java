@@ -32,7 +32,7 @@ import java.util.Locale;
  * Abstract implementation of a lazy function which implements all necessary
  * methods with the exception of the main logic.
  */
-public abstract class AbstractLazyFunction implements LazyFunction {
+public abstract class AbstractLazyFunction implements ILazyFunction {
 	/**
 	 * Name of this function.
 	 */
