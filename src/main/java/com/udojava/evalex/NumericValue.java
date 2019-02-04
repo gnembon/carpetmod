@@ -36,7 +36,7 @@ public class NumericValue extends Value{
     {
         if (v instanceof NumericValue)
         {
-            new NumericValue(value.multiply(((NumericValue) v).getNumber()));
+            return new NumericValue(value.multiply(((NumericValue) v).getNumber()));
         }
         return new StringValue(StringUtils.repeat(v.getString(), value.intValue()));
     }
