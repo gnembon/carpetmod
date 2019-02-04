@@ -1,4 +1,4 @@
-package com.udojava.evalex;
+package carpetscript;
 
 public abstract class Value implements Comparable<Value>
 {

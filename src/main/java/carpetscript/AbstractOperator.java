@@ -24,9 +24,9 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * 
  */
-package com.udojava.evalex;
+package carpetscript;
 
-import com.udojava.evalex.Expression.LazyValue;
+import carpetscript.Expression.LazyValue;
 
 /**
  * Abstract implementation of an operator.

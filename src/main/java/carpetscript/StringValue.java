@@ -1,4 +1,4 @@
-package com.udojava.evalex;
+package carpetscript;
 
 public class StringValue extends Value
 {

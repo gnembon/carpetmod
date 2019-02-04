@@ -24,29 +24,33 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * 
  */
-package com.udojava.evalex;
+package carpetscript;
 
-import java.util.Locale;
+import java.util.ArrayList;
+import java.util.List;
+
+import carpetscript.Expression.LazyValue;
 
 /**
- * Abstract implementation of a lazy function which implements all necessary
- * methods with the exception of the main logic.
+ * Abstract implementation of a direct function.<br>
+ * <br>
+ * This abstract implementation does implement lazyEval so that it returns
+ * the result of eval.
  */
-public abstract class AbstractLazyFunction implements ILazyFunction {
-	/**
-	 * Name of this function.
-	 */
-	protected String name;
-	/**
-	 * Number of parameters expected for this function. <code>-1</code>
-	 * denotes a variable number of parameters.
-	 */
-	protected int numParams;
+public abstract class AbstractFunction extends AbstractLazyFunction implements IFunction {
 
 	/**
-	 * Whether this function is a boolean function.
+	 * Creates a new function with given name and parameter count.
+	 *
+	 * @param name
+	 *            The name of the function.
+	 * @param numParams
+	 *            The number of parameters for this function.
+	 *            <code>-1</code> denotes a variable number of parameters.
 	 */
-	protected boolean booleanFunction;
+	protected AbstractFunction(String name, int numParams) {
+		super(name, numParams);
+	}
 
 	/**
 	 * Creates a new function with given name and parameter count.
@@ -59,38 +63,32 @@ public abstract class AbstractLazyFunction implements ILazyFunction {
 	 * @param booleanFunction
 	 *            Whether this function is a boolean function.
 	 */
-	protected AbstractLazyFunction(String name, int numParams, boolean booleanFunction) {
-		this.name = name.toUpperCase(Locale.ROOT);
-		this.numParams = numParams;
-		this.booleanFunction = booleanFunction;
+	protected AbstractFunction(String name, int numParams, boolean booleanFunction) {
+		super(name, numParams, booleanFunction);
 	}
 
-	/**
-	 * Creates a new function with given name and parameter count.
-	 *
-	 * @param name
-	 *            The name of the function.
-	 * @param numParams
-	 *            The number of parameters for this function.
-	 *            <code>-1</code> denotes a variable number of parameters.
-	 */
-	protected AbstractLazyFunction(String name, int numParams) {
-		this(name, numParams, false);
-	}
+	public LazyValue lazyEval(final List<LazyValue> lazyParams) {
+		return new LazyValue() {
 
-	public String getName() {
-		return name;
-	}
+			private List<Value> params;
 
-	public int getNumParams() {
-		return numParams;
-	}
+			public Value eval() {
+				return AbstractFunction.this.eval(getParams());
+			}
 
-	public boolean numParamsVaries() {
-		return numParams < 0;
-	}
+			public String getString() {
+				return String.valueOf(AbstractFunction.this.eval(getParams()));
+			}
 
-	public boolean isBooleanFunction() {
-		return booleanFunction;
+			private List<Value> getParams() {
+				if (params == null) {
+					params = new ArrayList<Value>();
+					for (LazyValue lazyParam : lazyParams) {
+						params.add(lazyParam.eval());
+					}
+				}
+				return params;
+			}
+		};
 	}
 }

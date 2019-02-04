@@ -31,6 +31,7 @@ public class EvalCommand
         try
         {
             CarpetExpression ex = new CarpetExpression(expr, source, new BlockPos(0, 0, 0));
+            ex.setLogOutput(true);
             Messenger.m(source, "wi "+expr,"wi  = ", "wb "+ex.eval(pos));
         }
         catch (CarpetExpression.CarpetExpressionException e)

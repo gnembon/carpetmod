@@ -24,48 +24,18 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * 
  */
-package com.udojava.evalex;
+package carpetscript;
+
+import carpetscript.Expression.ExpressionException;
+import carpetscript.Expression.LazyValue;
 
 /**
- * Abstract implementation of an operator.
+ * Abstract implementation of an unary operator.<br>
+ * <br>
+ * This abstract implementation implements eval so that it forwards its first
+ * parameter to evalUnary.
  */
-public abstract class AbstractLazyOperator implements ILazyOperator {
-	/**
-	 * This operators name (pattern).
-	 */
-	protected String oper;
-	/**
-	 * Operators precedence.
-	 */
-	protected int precedence;
-	/**
-	 * IOperator is left associative.
-	 */
-	protected boolean leftAssoc;
-	/**
-	 * Whether this operator is boolean or not.
-	 */
-	protected boolean booleanOperator = false;
-
-	/**
-	 * Creates a new operator.
-	 * 
-	 * @param oper
-	 *            The operator name (pattern).
-	 * @param precedence
-	 *            The operators precedence.
-	 * @param leftAssoc
-	 *            <code>true</code> if the operator is left associative,
-	 *            else <code>false</code>.
-	 * @param booleanOperator
-	 *            Whether this operator is boolean.
-	 */
-	protected AbstractLazyOperator(String oper, int precedence, boolean leftAssoc, boolean booleanOperator) {
-		this.oper = oper;
-		this.precedence = precedence;
-		this.leftAssoc = leftAssoc;
-		this.booleanOperator = booleanOperator;
-	}
+public abstract class AbstractUnaryOperator extends AbstractOperator {
 
 	/**
 	 * Creates a new operator.
@@ -78,25 +48,40 @@ public abstract class AbstractLazyOperator implements ILazyOperator {
 	 *            <code>true</code> if the operator is left associative,
 	 *            else <code>false</code>.
 	 */
-	protected AbstractLazyOperator(String oper, int precedence, boolean leftAssoc) {
-		this.oper = oper;
-		this.precedence = precedence;
-		this.leftAssoc = leftAssoc;
+	protected AbstractUnaryOperator(String oper, int precedence, boolean leftAssoc) {
+		super(oper, precedence, leftAssoc);
 	}
 
-	public String getOper() {
-		return oper;
+	public LazyValue eval(final LazyValue v1, final LazyValue v2) {
+		if (v2 != null) {
+			throw new ExpressionException("Did not expect a second parameter for unary operator");
+		}
+		return new LazyValue() {
+			@Override
+			public String getString() {
+				return String.valueOf(AbstractUnaryOperator.this.evalUnary(v1.eval()));
+			}
+			
+			@Override
+			public Value eval() {
+				return AbstractUnaryOperator.this.evalUnary(v1.eval());
+			}
+		};
 	}
 
-	public int getPrecedence() {
-		return precedence;
+	public Value eval(Value v1, Value v2) {
+		if (v2 != null) {
+			throw new ExpressionException("Did not expect a second parameter for unary operator");
+		}
+		return evalUnary(v1);
 	}
 
-	public boolean isLeftAssoc() {
-		return leftAssoc;
-	}
-
-	public boolean isBooleanOperator() {
-		return booleanOperator;
-	}
+	/**
+	 * Implementation of this unary operator.
+	 * 
+	 * @param v1
+	 *            The parameter.
+	 * @return The result of the operation.
+	 */
+	public abstract Value evalUnary(Value v1);
 }

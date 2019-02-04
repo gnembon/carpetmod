@@ -24,11 +24,11 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * 
  */
-package com.udojava.evalex;
+package carpetscript;
 
 import java.util.List;
 
-import com.udojava.evalex.Expression.LazyValue;
+import carpetscript.Expression.LazyValue;
 
 /**
  * Base interface which is required for lazily evaluated functions. A function
