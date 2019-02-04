@@ -31,14 +31,12 @@ import java.math.BigInteger;
 import java.math.MathContext;
 import java.math.RoundingMode;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import java.util.Stack;
-import java.util.TreeMap;
 
 
 /**
@@ -134,29 +132,13 @@ public class Expression {
 	/**
 	 * The {@link MathContext} to use for calculations.
 	 */
-	private MathContext mc = null;
+	private MathContext mc;
 
-	/**
-	 * The characters (other than letters and digits) allowed as the first
-	 * character in a variable.
-	 */
-	private String firstVarChars = "_";
-
-	/**
-	 * The characters (other than letters and digits) allowed as the second or
-	 * subsequent characters in a variable.
-	 */
-	private String varChars = "_";
-
-	/**
-	 * The original infix expression.
-	 */
-	private final String originalExpression;
 
 	/**
 	 * The current infix expression, with optional variable substitutions.
 	 */
-	private String expression = null;
+	private String expression;
 
 	/**
 	 * The cached RPN (Reverse Polish Notation) of the expression.
@@ -166,19 +148,17 @@ public class Expression {
 	/**
 	 * All defined operators with name and implementation.
 	 */
-	private Map<String, ILazyOperator> operators = new TreeMap<String, ILazyOperator>(
-			String.CASE_INSENSITIVE_ORDER);
+	private Map<String, ILazyOperator> operators = new HashMap<>();
 
 	/**
 	 * All defined functions with name and implementation.
 	 */
-	private Map<String, ILazyFunction> functions = new TreeMap<String, ILazyFunction>(
-			String.CASE_INSENSITIVE_ORDER);
+	private Map<String, ILazyFunction> functions = new HashMap<>();
 
 	/**
 	 * All defined variables with name and value.
 	 */
-	private Map<String, LazyValue> variables = new TreeMap<String, LazyValue>(String.CASE_INSENSITIVE_ORDER);
+	private Map<String, LazyValue> variables = new HashMap<>();
 
 	/**
 	 * What character to use for decimal separators.
@@ -224,28 +204,7 @@ public class Expression {
 		String getString();
 	}
 
-	/**
-	 * Construct a LazyNumber from a String
-	 */
-	/*
-	public static LazyValue CreateLazyString(final String arg) {
-		return new LazyValue() {
-			@Override
-			public String getString() {
-				return arg;
-			}
 
-			@Override
-			public Value eval() {
-				return null;
-			}
-		};
-	}
-
-	gnembon: should not be needed as Value can encompass both BigDecimal and String
-
-
-	*/
 	/**
 	 * Construct a LazyNumber from a Value
 	 */
@@ -507,9 +466,9 @@ public class Expression {
 				} else {
 					return next();
 				}
-			} else if (Character.isLetter(ch) || firstVarChars.indexOf(ch) >= 0) {
-				while ((Character.isLetter(ch) || Character.isDigit(ch) || varChars.indexOf(ch) >= 0
-						|| token.length() == 0 && firstVarChars.indexOf(ch) >= 0) && (pos < input.length())) {
+			} else if (Character.isLetter(ch) || "_".indexOf(ch) >= 0) {
+				while ((Character.isLetter(ch) || Character.isDigit(ch) || "_".indexOf(ch) >= 0
+						|| token.length() == 0 && "_".indexOf(ch) >= 0) && (pos < input.length())) {
 					token.append(input.charAt(pos++));
 					ch = pos == input.length() ? 0 : input.charAt(pos);
 				}
@@ -536,7 +495,7 @@ public class Expression {
 				int initialPos = pos;
 				ch = input.charAt(pos);
 				int validOperatorSeenUntil = -1;
-				while (!Character.isLetter(ch) && !Character.isDigit(ch) && firstVarChars.indexOf(ch) < 0
+				while (!Character.isLetter(ch) && !Character.isDigit(ch) && "_".indexOf(ch) < 0
 						&& !Character.isWhitespace(ch) && ch != '(' && ch != ')' && ch != ','
 						&& (pos < input.length())) {
 					greedyMatch += ch;
@@ -596,7 +555,6 @@ public class Expression {
 	public Expression(String expression, MathContext defaultMathContext) {
 		this.mc = defaultMathContext;
 		this.expression = expression;
-		this.originalExpression = expression;
 		variables.put("e", CrazyLazyValue(e));
 		variables.put("PI", CrazyLazyValue(PI));
 		variables.put("NULL", null);
@@ -1049,34 +1007,8 @@ public class Expression {
 		});
 		addFunction(new Function("SQRT", 1) {
 			@Override
-			public Value eval(List<Value> parameters) { // gnembon: expensive
-				/*
-				 * From The Java Programmers Guide To numerical Computing
-				 * (Ronald Mak, 2003)
-				 */
-				BigDecimal x = assertNumberNotNull(parameters.get(0));
-				if (x.compareTo(BigDecimal.ZERO) == 0) {
-					return Value.ZERO;
-				}
-				if (x.signum() < 0) {
-					throw new ExpressionException("Argument to SQRT() function must not be negative");
-				}
-				BigInteger n = x.movePointRight(mc.getPrecision() << 1).toBigInteger();
-
-				int bits = (n.bitLength() + 1) >> 1;
-				BigInteger ix = n.shiftRight(bits);
-				BigInteger ixPrev;
-				BigInteger test;
-				do {
-					ixPrev = ix;
-					ix = ix.add(n.divide(ix)).shiftRight(1);
-					// Give other threads a chance to work;
-					// gnembon: not sure about it
-					//Thread.yield();
-					test = ix.subtract(ixPrev).abs();
-				} while (test.compareTo(BigInteger.ZERO) != 0 && test.compareTo(BigInteger.ONE) != 0 );
-
-				return new NumericValue(new BigDecimal(ix, mc.getPrecision()));
+			public Value eval(List<Value> parameters) {
+                return evaluateUnaryMathFunction(parameters, Math::sqrt);
 			}
 		});
 
@@ -1426,58 +1358,6 @@ public class Expression {
 		return stack.pop().eval();
 	}
 
-
-	/**
-	 * Sets the precision for expression evaluation.
-	 * 
-	 * @param precision
-	 *            The new precision.
-	 * 
-	 * @return The expression, allows to chain methods.
-	 */
-	public Expression setPrecision(int precision) {
-		this.mc = new MathContext(precision);
-		return this;
-	}
-
-	/**
-	 * Sets the rounding mode for expression evaluation.
-	 * 
-	 * @param roundingMode
-	 *            The new rounding mode.
-	 * @return The expression, allows to chain methods.
-	 */
-	public Expression setRoundingMode(RoundingMode roundingMode) {
-		this.mc = new MathContext(mc.getPrecision(), roundingMode);
-		return this;
-	}
-
-	/**
-	 * Sets the characters other than letters and digits that are valid as the
-	 * first character of a variable.
-	 *
-	 * @param chars
-	 *            The new set of variable characters.
-	 * @return The expression, allows to chain methods.
-	 */
-	public Expression setFirstVariableCharacters(String chars) {
-		this.firstVarChars = chars;
-		return this;
-	}
-
-	/**
-	 * Sets the characters other than letters and digits that are valid as the
-	 * second and subsequent characters of a variable.
-	 *
-	 * @param chars
-	 *            The new set of variable characters.
-	 * @return The expression, allows to chain methods.
-	 */
-	public Expression setVariableCharacters(String chars) {
-		this.varChars = chars;
-		return this;
-	}
-
 	/**
 	 * Adds an operator to the list of supported operators.
 	 * 
@@ -1561,52 +1441,8 @@ public class Expression {
 			variables.put(variable, null);
 		} else {
 			variables.put(variable, CrazyLazyValue(new StringValue(value).boundTo(variable)));
-			/*
-			final String expStr = value;
-			variables.put(variable, new LazyNumber() {
-				private final Map<String, LazyNumber> outerVariables = variables;
-				private final Map<String, ILazyFunction> outerFunctions = functions;
-				private final Map<String, ILazyOperator> outerOperators = operators;
-				private final String innerExpressionString = expStr;
-				private final MathContext inneMc = mc;
-
-				@Override
-				public String getString() {
-					return innerExpressionString;
-				}
-
-				@Override
-				public Value eval() {
-					Expression innerE = new Expression(innerExpressionString, inneMc);
-					innerE.variables = outerVariables;
-					innerE.functions = outerFunctions;
-					innerE.operators = outerOperators;
-					BigDecimal val = innerE.eval();
-					return val;
-				}
-			});
-			rpn = null;*/
 		}
 		return this;
-	}
-
-	/**
-	 * Creates a new inner expression for nested expression.
-	 * 
-	 * @param expression
-	 *            The string expression.
-	 * @return The inner Expression instance.
-	 */
-	private Expression createEmbeddedExpression(final String expression) {
-		final Map<String, LazyValue> outerVariables = variables;
-		final Map<String, ILazyFunction> outerFunctions = functions;
-		final Map<String, ILazyOperator> outerOperators = operators;
-		final MathContext inneMc = mc;
-		Expression exp = new Expression(expression, inneMc);
-		exp.variables = outerVariables;
-		exp.functions = outerFunctions;
-		exp.operators = outerOperators;
-		return exp;
 	}
 
 	/**
@@ -1631,73 +1467,8 @@ public class Expression {
 	 *            The variable value.
 	 * @return The expression, allows to chain methods.
 	 */
-	/*
-	public Expression with(String variable, LazyValue value) {
-		return setVariable(variable, value);
-	}
-	*/
-	/**
-	 * Sets a variable value.
-	 * 
-	 * @param variable
-	 *            The variable to set.
-	 * @param value
-	 *            The variable value.
-	 * @return The expression, allows to chain methods.
-	 */
-	public Expression and(String variable, String value) {
-		return setVariable(variable, value);
-	}
-
-	/**
-	 * Sets a variable value.
-	 * 
-	 * @param variable
-	 *            The variable to set.
-	 * @param value
-	 *            The variable value.
-	 * @return The expression, allows to chain methods.
-	 */
-	public Expression and(String variable, BigDecimal value) {
-		return setVariable(variable, new NumericValue(value));
-	}
-
-	/**
-	 * Sets a variable value.
-	 * 
-	 * @param variable
-	 *            The variable to set.
-	 * @param value
-	 *            The variable value.
-	 * @return The expression, allows to chain methods.
-	 */
-	/*public Expression and(String variable, LazyNumber value) {
-		return setVariable(variable, value);
-	}
-	*/
-	/**
-	 * Sets a variable value.
-	 * 
-	 * @param variable
-	 *            The variable to set.
-	 * @param value
-	 *            The variable value.
-	 * @return The expression, allows to chain methods.
-	 */
 	public Expression with(String variable, String value) {
 		return setVariable(variable, value);
-	}
-
-	/**
-	 * Get an iterator for this expression, allows iterating over an expression
-	 * token by token.
-	 * 
-	 * @return A new iterator instance for this expression.
-	 */
-	public Iterator<Token> getExpressionTokenizer() {
-		final String expression = this.expression;
-
-		return new Tokenizer(expression);
 	}
 
 	/**
@@ -1785,153 +1556,4 @@ public class Expression {
 			throw new ExpressionException("Empty expression");
 		}
 	}
-
-	/**
-	 * Get a string representation of the RPN (Reverse Polish Notation) for this
-	 * expression.
-	 * 
-	 * @return A string with the RPN representation for this expression.
-	 */
-	public String toRPN() {
-		StringBuilder result = new StringBuilder();
-		for (Token t : getRPN()) {
-			if (result.length() != 0)
-				result.append(" ");
-			if (t.type == TokenType.VARIABLE && variables.containsKey(t.surface)) {
-				LazyValue innerVariable = variables.get(t.surface);
-				String innerExp = innerVariable.getString();
-				if (isNumber(innerExp)) { // if it is a number, then we don't
-											// expan in the RPN
-					result.append(t.toString());
-				} else { // expand the nested variable to its RPN representation
-					Expression exp = createEmbeddedExpression(innerExp);
-					String nestedExpRpn = exp.toRPN();
-					result.append(nestedExpRpn);
-				}
-			} else {
-				result.append(t.toString());
-			}
-		}
-		return result.toString();
-	}
-
-	/**
-	 * Exposing declared variables in the expression.
-	 * 
-	 * @return All declared variables.
-	 */
-	public Set<String> getDeclaredVariables() {
-		return Collections.unmodifiableSet(variables.keySet());
-	}
-
-	/**
-	 * Exposing declared operators in the expression.
-	 * 
-	 * @return All declared operators.
-	 */
-	public Set<String> getDeclaredOperators() {
-		return Collections.unmodifiableSet(operators.keySet());
-	}
-
-	/**
-	 * Exposing declared functions.
-	 * 
-	 * @return All declared functions.
-	 */
-	public Set<String> getDeclaredFunctions() {
-		return Collections.unmodifiableSet(functions.keySet());
-	}
-
-	/**
-	 * @return The original expression string
-	 */
-	public String getExpression() {
-		return expression;
-	}
-
-	/**
-	 * Returns a list of the variables in the expression.
-	 * 
-	 * @return A list of the variable names in this expression.
-	 */
-	public List<String> getUsedVariables() {
-		List<String> result = new ArrayList<String>();
-		Tokenizer tokenizer = new Tokenizer(expression);
-		while (tokenizer.hasNext()) {
-			Token nextToken = tokenizer.next();
-			String token = nextToken.toString();
-			if (nextToken.type != TokenType.VARIABLE || token.equals("PI") || token.equals("e") || token.equals("TRUE")
-					|| token.equals("FALSE")) {
-				continue;
-			}
-			result.add(token);
-		}
-		return result;
-	}
-
-	/**
-	 * The original expression used to construct this expression, without
-	 * variables substituted.
-	 */
-	public String getOriginalExpression() {
-		return this.originalExpression;
-	}
-
-	/** {@inheritDoc} */
-	@Override
-	public boolean equals(Object o) {
-		if (this == o)
-			return true;
-		if (o == null || getClass() != o.getClass())
-			return false;
-		Expression that = (Expression) o;
-		if (this.expression == null) {
-			return that.expression == null;
-		} else {
-			return this.expression.equals(that.expression);
-		}
-	}
-
-	/** {@inheritDoc} */
-	@Override
-	public int hashCode() {
-		return this.expression == null ? 0 : this.expression.hashCode();
-	}
-
-	/** {@inheritDoc} */
-	@Override
-	public String toString() {
-		return this.expression;
-	}
-
-	/**
-	 * Checks whether the expression is a boolean expression. An expression is
-	 * considered a boolean expression, if the last operator or function is
-	 * boolean. The IF function is handled special. If the third parameter is
-	 * boolean, then the IF is also considered boolean, else non-boolean.
-	 * 
-	 * @return <code>true</code> if the last operator/function was a boolean.
-	 */
-	public boolean isBoolean() {
-		List<Token> rpn = getRPN();
-		if (rpn.size() > 0) {
-			for (int i = rpn.size() - 1; i >= 0; i--) {
-				Token t = rpn.get(i);
-				/*
-				 * The IF function is handled special. If the third parameter is
-				 * boolean, then the IF is also considered a boolean. Just skip
-				 * the IF function to check the second parameter.
-				 */
-				if (t.surface.equals("IF"))
-					continue;
-				if (t.type == TokenType.FUNCTION) {
-					return functions.get(t.surface).isBooleanFunction();
-				} else if (t.type == TokenType.OPERATOR) {
-					return operators.get(t.surface).isBooleanOperator();
-				}
-			}
-		}
-		return false;
-	}
-
 }

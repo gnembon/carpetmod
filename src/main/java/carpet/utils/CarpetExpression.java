@@ -246,7 +246,7 @@ public class CarpetExpression
             }
         });
 
-        this.expr.addLazyFunction(new AbstractFunction("ticksRandomly", -1, true)
+        this.expr.addFunction(new AbstractFunction("ticksRandomly", -1, true)
         {
             @Override
             public Value eval(List<Value> params)
@@ -255,7 +255,7 @@ public class CarpetExpression
             }
         });
 
-        this.expr.addLazyFunction(new AbstractFunction("update", -1, true)
+        this.expr.addFunction(new AbstractFunction("update", -1, true)
         {
             @Override
             public Value eval(List<Value> params)
@@ -267,7 +267,7 @@ public class CarpetExpression
             }
         });
 
-        this.expr.addLazyFunction(new AbstractFunction("forcetick", -1, true)
+        this.expr.addFunction(new AbstractFunction("forcetick", -1, true)
         {
             @Override
             public Value eval(List<Value> params)
@@ -280,7 +280,7 @@ public class CarpetExpression
             }
         });
 
-        this.expr.addLazyFunction(new AbstractFunction("tick", -1, true)
+        this.expr.addFunction(new AbstractFunction("tick", -1, true)
         {
             @Override
             public Value eval(List<Value> params)
@@ -295,7 +295,7 @@ public class CarpetExpression
             }
         });
 
-        this.expr.addLazyFunction(new AbstractFunction("set", -1, true)
+        this.expr.addFunction(new AbstractFunction("set", -1, true)
         {
             @Override
             public Value eval(List<Value> params)
@@ -311,8 +311,6 @@ public class CarpetExpression
                     throw new CarpetExpressionException("fourth parameter of set should be a block");
                 }
                 IBlockState bs = ((BlockValue)params.get(3)).blockState;
-
-    CarpetSettings.LOG.error("Setting block: "+params.get(3).getString());
 
                 StateContainer<Block, IBlockState> states = bs.getBlock().getStateContainer();
 
@@ -334,7 +332,7 @@ public class CarpetExpression
             }
         });
 
-        this.expr.addLazyFunction(new AbstractFunction("blocksMovement", -1, true)
+        this.expr.addFunction(new AbstractFunction("blocksMovement", -1, true)
         {
             @Override
             public Value eval(List<Value> params)
@@ -344,7 +342,7 @@ public class CarpetExpression
             }
         });
 
-        this.expr.addLazyFunction(new AbstractFunction("sound", -1, true)
+        this.expr.addFunction(new AbstractFunction("sound", -1, true)
         {
             @Override
             public Value eval(List<Value> params)
@@ -354,7 +352,7 @@ public class CarpetExpression
             }
         });
 
-        this.expr.addLazyFunction(new AbstractFunction("material", -1, true)
+        this.expr.addFunction(new AbstractFunction("material", -1, true)
         {
             @Override
             public Value eval(List<Value> params)
@@ -364,7 +362,7 @@ public class CarpetExpression
             }
         });
 
-        this.expr.addLazyFunction(new AbstractFunction("mapColour", -1, true)
+        this.expr.addFunction(new AbstractFunction("mapColour", -1, true)
         {
             @Override
             public Value eval(List<Value> params)
@@ -374,7 +372,7 @@ public class CarpetExpression
             }
         });
 
-        this.expr.addLazyFunction(new AbstractFunction("property", 2, false) {  // why not
+        this.expr.addFunction(new AbstractFunction("property", 2, false) {  // why not
             @Override
             public Value eval(List<Value> params)
             {
@@ -390,7 +388,7 @@ public class CarpetExpression
             }
         });
 
-        this.expr.addLazyFunction(new AbstractFunction("print", 1) {
+        this.expr.addFunction(new AbstractFunction("print", 1) {
             @Override
             public Value eval(List<Value> params)
             {
