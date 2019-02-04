@@ -249,7 +249,7 @@ public class Expression {
 	/**
 	 * Construct a LazyNumber from a Value
 	 */
-	public static LazyValue CreateLazyValue(final Value value) {
+	public static LazyValue CrazyLazyValue(final Value value) {
 		return new LazyValue() {
 			@Override
 			public String getString() {
@@ -280,10 +280,10 @@ public class Expression {
 	}
 
 
-	public static LazyValue FALSE = CreateLazyValue(Value.FALSE);
-	public static LazyValue TRUE = CreateLazyValue(Value.TRUE);
-	public static LazyValue EMPTY = CreateLazyValue(Value.EMPTY);
-	public static LazyValue ZERO = CreateLazyValue(Value.ZERO);
+	public static LazyValue FALSE = CrazyLazyValue(Value.FALSE);
+	public static LazyValue TRUE = CrazyLazyValue(Value.TRUE);
+	public static LazyValue EMPTY = CrazyLazyValue(Value.EMPTY);
+	public static LazyValue ZERO = CrazyLazyValue(Value.ZERO);
 
 	public abstract class LazyFunction extends AbstractLazyFunction {
 		/**
@@ -597,11 +597,11 @@ public class Expression {
 		this.mc = defaultMathContext;
 		this.expression = expression;
 		this.originalExpression = expression;
-		variables.put("e", CreateLazyValue(e));
-		variables.put("PI", CreateLazyValue(PI));
+		variables.put("e", CrazyLazyValue(e));
+		variables.put("PI", CrazyLazyValue(PI));
 		variables.put("NULL", null);
-		variables.put("TRUE", CreateLazyValue(Value.TRUE));
-		variables.put("FALSE", CreateLazyValue(Value.FALSE));
+		variables.put("TRUE", CrazyLazyValue(Value.TRUE));
+		variables.put("FALSE", CrazyLazyValue(Value.FALSE));
 
 		addOperator(new Operator(";", OPERATOR_PRECEDENCE_NEXTOP, true) {
 			@Override
@@ -743,7 +743,7 @@ public class Expression {
 				}
 				String varname = v1.getVariable();
 				Value boundedLHS = v2.boundTo(varname);
-				LazyValue lazyLHS = CreateLazyValue(boundedLHS);
+				LazyValue lazyLHS = CrazyLazyValue(boundedLHS);
 				variables.put(varname, lazyLHS);
 				return boundedLHS;
 			}
@@ -777,8 +777,8 @@ public class Expression {
 				String rvalvar = v2.getVariable();
 				Value lval = v2.boundTo(lvalvar);
 				Value rval = v1.boundTo(rvalvar);
-				LazyValue lazyLHS = CreateLazyValue(lval);
-				LazyValue lazyRHS = CreateLazyValue(rval);
+				LazyValue lazyLHS = CrazyLazyValue(lval);
+				LazyValue lazyRHS = CrazyLazyValue(rval);
 				variables.put(lvalvar, lazyLHS);
 				variables.put(rvalvar, lazyRHS);
 				return lval;
@@ -1344,7 +1344,7 @@ public class Expression {
 					public Value eval() {
 						if (!variables.containsKey(token.surface)) // new variable
 						{
-							variables.put(token.surface, CreateLazyValue(Value.ZERO.boundTo(token.surface)));
+							variables.put(token.surface, CrazyLazyValue(Value.ZERO.boundTo(token.surface)));
 						}
 						LazyValue lazyVariable = variables.get(token.surface);
 						Value value = lazyVariable.eval();
@@ -1369,8 +1369,15 @@ public class Expression {
 					stack.pop();
 				}
 
-				LazyValue fResult = f.lazyEval(p);
-				stack.push(fResult);
+				stack.push( new LazyValue() {
+					public Value eval() {
+						return f.lazyEval(p).eval();
+					}
+
+					public String getString() {
+						return String.valueOf(f.lazyEval(p).eval());
+					}
+				});
 				break;
 			case OPEN_PAREN:
 				stack.push(PARAMS_START);
@@ -1521,7 +1528,7 @@ public class Expression {
 	 * @return The expression, allows to chain methods.
 	 */
 	public Expression setVariable(String variable, Value value) {
-		return setVariable(variable, CreateLazyValue(value.boundTo(variable)));
+		return setVariable(variable, CrazyLazyValue(value.boundTo(variable)));
 	}
 
 	/**
@@ -1549,11 +1556,11 @@ public class Expression {
 	 */
 	public Expression setVariable(String variable, String value) {
 		if (isNumber(value))
-			variables.put(variable, CreateLazyValue(new NumericValue(new BigDecimal(value, mc)).boundTo(variable)));
+			variables.put(variable, CrazyLazyValue(new NumericValue(new BigDecimal(value, mc)).boundTo(variable)));
 		else if (value.equalsIgnoreCase("null")) {
 			variables.put(variable, null);
 		} else {
-			variables.put(variable, CreateLazyValue(new StringValue(value).boundTo(variable)));
+			variables.put(variable, CrazyLazyValue(new StringValue(value).boundTo(variable)));
 			/*
 			final String expStr = value;
 			variables.put(variable, new LazyNumber() {
