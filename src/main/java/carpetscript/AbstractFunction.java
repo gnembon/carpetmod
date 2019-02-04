@@ -52,20 +52,6 @@ public abstract class AbstractFunction extends AbstractLazyFunction implements I
 		super(name, numParams);
 	}
 
-	/**
-	 * Creates a new function with given name and parameter count.
-	 *
-	 * @param name
-	 *            The name of the function.
-	 * @param numParams
-	 *            The number of parameters for this function.
-	 *            <code>-1</code> denotes a variable number of parameters.
-	 * @param booleanFunction
-	 *            Whether this function is a boolean function.
-	 */
-	protected AbstractFunction(String name, int numParams, boolean booleanFunction) {
-		super(name, numParams, booleanFunction);
-	}
 
 	public LazyValue lazyEval(final List<LazyValue> lazyParams) {
 		return new LazyValue() {

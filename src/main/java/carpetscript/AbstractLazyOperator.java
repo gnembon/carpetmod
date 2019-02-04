@@ -42,30 +42,7 @@ public abstract class AbstractLazyOperator implements ILazyOperator {
 	 * IOperator is left associative.
 	 */
 	protected boolean leftAssoc;
-	/**
-	 * Whether this operator is boolean or not.
-	 */
-	protected boolean booleanOperator = false;
 
-	/**
-	 * Creates a new operator.
-	 * 
-	 * @param oper
-	 *            The operator name (pattern).
-	 * @param precedence
-	 *            The operators precedence.
-	 * @param leftAssoc
-	 *            <code>true</code> if the operator is left associative,
-	 *            else <code>false</code>.
-	 * @param booleanOperator
-	 *            Whether this operator is boolean.
-	 */
-	protected AbstractLazyOperator(String oper, int precedence, boolean leftAssoc, boolean booleanOperator) {
-		this.oper = oper;
-		this.precedence = precedence;
-		this.leftAssoc = leftAssoc;
-		this.booleanOperator = booleanOperator;
-	}
 
 	/**
 	 * Creates a new operator.
@@ -96,7 +73,4 @@ public abstract class AbstractLazyOperator implements ILazyOperator {
 		return leftAssoc;
 	}
 
-	public boolean isBooleanOperator() {
-		return booleanOperator;
-	}
 }

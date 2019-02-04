@@ -54,13 +54,7 @@ public interface ILazyOperator {
 	 * @return <code>true</code> if this operator is left associative.
 	 */
 	public abstract boolean isLeftAssoc();
-	
-	/**
-	 * Gets whether this operator evaluates to a boolean expression.
-	 * @return <code>true</code> if this operator evaluates to a boolean
-	 *         expression.
-	 */
-	public abstract boolean isBooleanOperator();
+
 
 	/**
 	 * Implementation for this operator.

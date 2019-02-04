@@ -67,14 +67,6 @@ public interface ILazyFunction {
 	public abstract boolean numParamsVaries();
 
 	/**
-	 * Gets whether this function evaluates to a boolean expression.
-	 * 
-	 * @return <code>true</code> if this function evaluates to a boolean
-	 *         expression.
-	 */
-	public abstract boolean isBooleanFunction();
-
-	/**
 	 * Lazily evaluate this function.
 	 * 
 	 * @param lazyParams
