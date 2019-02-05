@@ -226,7 +226,6 @@ public class CarpetExpression
                 if (targetBlockState.getBlock() == bs.getBlock())
                     return Value.FALSE;
 
-            // TODO back off if block is the same and
             StateContainer<Block, IBlockState> states = bs.getBlock().getStateContainer();
 
             for (int i = 4; i < lv.size(); i += 2)
@@ -238,14 +237,7 @@ public class CarpetExpression
 
                 String paramValue = lv.get(i + 1).getString();
 
-                // TODO make sure properties set result in different from the location it sets too
-
                 bs = setProperty(property, paramString, paramValue, bs);
-            }
-            if (targetBlockState.equals(bs))
-            {
-                CarpetSettings.LOG.error("skipping, same blockstate");
-                return Value.FALSE;
             }
             source.getWorld().setBlockState(pos, bs, 2 | (CarpetSettings.getBool("fillUpdates") ? 0 : 1024));
             return new BlockValue(bs, pos);
@@ -285,6 +277,11 @@ public class CarpetExpression
         {
             Messenger.m(source, "gi " + v.getString());
             return v; // pass through for variables
+        });
+
+        this.expr.addUnaryFunction("neighbours", (v)->
+        {
+            throw new UnsupportedOperationException(); // TODO
         });
 
         this.expr.addUnaryFunction("conv", (v)->
