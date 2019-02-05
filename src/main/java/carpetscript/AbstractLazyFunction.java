@@ -53,7 +53,7 @@ public abstract class AbstractLazyFunction implements ILazyFunction {
 	 *            <code>-1</code> denotes a variable number of parameters.
 	 */
 	protected AbstractLazyFunction(String name, int numParams) {
-		this.name = name.toUpperCase(Locale.ROOT);
+		this.name = name;
 		this.numParams = numParams;
 	}
 

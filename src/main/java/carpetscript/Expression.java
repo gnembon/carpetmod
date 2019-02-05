@@ -38,7 +38,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Stack;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 
 /**
@@ -237,51 +236,7 @@ public class Expression
         };
     }
 
-    public Value evaluateUnaryMathFunction(List<Value> arguments,
-                                           java.util.function.Function<Double, Double> fun)
-    {
-        BigDecimal v = assertNumberNotNull(arguments.get(0));
-        double res = fun.apply(v.doubleValue());
-        return new NumericValue(new BigDecimal(res, mc));
-    }
 
-    public void addMathematicalUnaryFunction(String name, java.util.function.Function<Double, Double> fun)
-    {
-        functions.put(name, new Function(name, 1)
-        {
-            @Override
-            public Value eval(List<Value> arguments)
-            {
-                BigDecimal v = assertNumberNotNull(arguments.get(0));
-                double res = fun.apply(v.doubleValue());
-                return new NumericValue(new BigDecimal(res, mc));
-            }
-        });
-    }
-
-    public void addMathematicalBinaryFunction(String name, java.util.function.BiFunction<Double, Double, Double> fun)
-    {
-        functions.put(name, new Function(name, 2)
-        {
-            @Override
-            public Value eval(List<Value> arguments)
-            {
-                BigDecimal v1 = assertNumberNotNull(arguments.get(0));
-                BigDecimal v2 = assertNumberNotNull(arguments.get(1));
-                double res = fun.apply(v1.doubleValue(), v2.doubleValue());
-                return new NumericValue(new BigDecimal(res, mc));
-            }
-        });
-    }
-
-    public Value evaluateBinaryMathFunction(List<Value> arguments,
-                                            java.util.function.BiFunction<Double, Double, Double> fun)
-    {
-        BigDecimal v1 = assertNumberNotNull(arguments.get(0));
-        BigDecimal v2 = assertNumberNotNull(arguments.get(1));
-        double res = fun.apply(v1.doubleValue(), v2.doubleValue());
-        return new NumericValue(new BigDecimal(res, mc));
-    }
 
 
     public static LazyValue FALSE = CrazyLazyValue(Value.FALSE);
@@ -563,6 +518,118 @@ public class Expression
     }
 
     /**
+     * Adds an operator to the list of supported operators.
+     *
+     * @param operator The operator to add.
+     * @return The previous operator with that name, or <code>null</code> if
+     * there was none.
+     */
+    //left only for lazy operators
+    public <OPERATOR extends ILazyOperator> OPERATOR addOperator(OPERATOR operator)
+    {
+        String key = operator.getOper();
+        if (operator instanceof AbstractUnaryOperator)
+        {
+            key += "u";
+        }
+        return (OPERATOR) operators.put(key, operator);
+    }
+
+    public void addUnaryOperator(String surface, boolean leftAssoc, java.util.function.Function<Value, Value> fun)
+    {
+        operators.put(surface+"u", new AbstractUnaryOperator(surface, OPERATOR_PRECEDENCE_UNARY, leftAssoc)
+        {
+            @Override
+            public Value evalUnary(Value v1)
+            {
+                return fun.apply(v1);
+            }
+        });
+    }
+
+    public void addBinaryOperator(String surface, int precedence, boolean leftAssoc, java.util.function.BiFunction<Value, Value, Value> fun)
+    {
+        operators.put(surface, new AbstractOperator(surface, precedence, leftAssoc)
+        {
+            @Override
+            public Value eval(Value v1, Value v2) //TODO add nonnull check here, and strip null checks from number checks
+            {
+                return fun.apply(v1, v2);
+            }
+        });
+    }
+
+
+    public void addUnaryFunction(String name, java.util.function.Function<Value, Value> fun)
+    {
+        name = name.toLowerCase(Locale.ROOT);
+        functions.put(name,  new AbstractFunction(name, 1)
+        {
+            @Override
+            public Value eval(List<Value> parameters)
+            {
+                return fun.apply(parameters.get(0));
+            }
+        });
+    }
+
+    public void addBinaryFunction(String name, java.util.function.BiFunction<Value, Value, Value> fun)
+    {
+        name = name.toLowerCase(Locale.ROOT);
+        functions.put(name, new AbstractFunction(name, 2)
+        {
+            @Override
+            public Value eval(List<Value> parameters)
+            {
+                return fun.apply(parameters.get(0), parameters.get(1));
+            }
+        });
+    }
+
+    public void addNAryFunction(String name, int numArgs, java.util.function.Function<List<Value>, Value> fun)
+    {
+        name = name.toLowerCase(Locale.ROOT);
+        functions.put(name, new AbstractFunction(name, numArgs)
+        {
+            @Override
+            public Value eval(List<Value> parameters)
+            {
+                return fun.apply(parameters);
+            }
+        });
+    }
+
+    public void addFunction(String name, java.util.function.Function<List<Value>, Value> fun)
+    {
+        addNAryFunction(name, -1, fun);
+    }
+
+    public void addMathematicalUnaryFunction(String name, java.util.function.Function<Double, Double> fun)
+    {
+        addUnaryFunction(name, (v) -> new NumericValue(new BigDecimal(fun.apply(assertNumberNotNull(v).doubleValue()),mc)));
+    }
+
+    public void addMathematicalBinaryFunction(String name, java.util.function.BiFunction<Double, Double, Double> fun)
+    {
+        addBinaryFunction(name, (w,v) ->
+                new NumericValue(new BigDecimal(fun.apply(assertNumberNotNull(w).doubleValue(), assertNumberNotNull(v).doubleValue()), mc)));
+    }
+
+
+    public void addLazyFunction(String name, int num_params, java.util.function.Function<List<LazyValue>, LazyValue> fun)//ILazyFunction function)
+    {
+        name = name.toLowerCase(Locale.ROOT);
+        functions.put(name, new LazyFunction(name, num_params)
+        {
+            @Override
+            public LazyValue lazyEval(List<LazyValue> lazyParams)
+            {
+                return fun.apply(lazyParams);
+            }
+        });
+    }
+
+    /**
      * Creates a new expression instance from an expression string with a given
      * default match context of {@link MathContext#DECIMAL32}.
      *
@@ -816,7 +883,7 @@ public class Expression
         addMathematicalUnaryFunction("SQRT", Math::sqrt);
 
 
-        addFunction("max", (lv) ->
+        addFunction("MAX", (lv) ->
         {
             if (lv.size() == 0)
                 throw new ExpressionException("MAX requires at least one parameter");
@@ -871,7 +938,12 @@ public class Expression
 
         addFunction("list", ListValue::new);
 
-        addFunction("range", (lv) ->
+
+        addFunction("loop", (lv) ->
+        {
+            throw new UnsupportedOperationException(); // TODO
+        });
+        addFunction("map", (lv) ->
         {
             throw new UnsupportedOperationException(); // TODO
         });
@@ -879,7 +951,7 @@ public class Expression
         {
             throw new UnsupportedOperationException(); // TODO
         });
-        addFunction("map", (lv) ->
+        addFunction("while", (lv) ->
         {
             throw new UnsupportedOperationException(); // TODO
         });
@@ -1136,6 +1208,9 @@ public class Expression
         }
     }
 
+
+    private LazyValue ast = null;
+
     /**
      * Evaluates the expression.
      *
@@ -1143,6 +1218,8 @@ public class Expression
      */
     public Value eval()
     {
+        if (ast != null) return ast.eval();
+
         Stack<LazyValue> stack = new Stack<>();
         for (final Token token : getRPN())
         {
@@ -1210,7 +1287,7 @@ public class Expression
                     });
                     break;
                 case FUNCTION:
-                    ILazyFunction f = functions.get(token.surface.toUpperCase(Locale.ROOT));
+                    ILazyFunction f = functions.get(token.surface.toLowerCase(Locale.ROOT));
                     ArrayList<LazyValue> p = new ArrayList<>(!f.numParamsVaries() ? f.getNumParams() : 0);
                     // pop parameters off the stack until we hit the start of
                     // this function's parameter list
@@ -1291,100 +1368,12 @@ public class Expression
                             "Unexpected token '" + token.surface + "' at character position " + token.pos);
             }
         }
-        return stack.pop().eval();
-    }
-
-    /**
-     * Adds an operator to the list of supported operators.
-     *
-     * @param operator The operator to add.
-     * @return The previous operator with that name, or <code>null</code> if
-     * there was none.
-     */
-    //left only for lazy operators
-    public <OPERATOR extends ILazyOperator> OPERATOR addOperator(OPERATOR operator)
-    {
-        String key = operator.getOper();
-        if (operator instanceof AbstractUnaryOperator)
-        {
-            key += "u";
-        }
-        return (OPERATOR) operators.put(key, operator);
-    }
-
-    public void addUnaryOperator(String surface, boolean leftAssoc, java.util.function.Function<Value, Value> fun)
-    {
-        operators.put(surface+"u", new AbstractUnaryOperator(surface, OPERATOR_PRECEDENCE_UNARY, leftAssoc)
-        {
-            @Override
-            public Value evalUnary(Value v1)
-            {
-                return fun.apply(v1);
-            }
-        });
-    }
-
-    public void addBinaryOperator(String surface, int precedence, boolean leftAssoc, java.util.function.BiFunction<Value, Value, Value> fun)
-    {
-        operators.put(surface, new AbstractOperator(surface, precedence, leftAssoc)
-        {
-            @Override
-            public Value eval(Value v1, Value v2) //TODO add nonnull check here, and strip null checks from number checks
-            {
-                return fun.apply(v1, v2);
-            }
-        });
+        ast = stack.pop();
+        return ast.eval();
+        //return stack.pop().eval();
     }
 
 
-    public void addUnaryFunction(String name, java.util.function.Function<Value, Value> fun)
-    {
-        functions.put(name,  new AbstractFunction(name, 1)
-        {
-            @Override
-            public Value eval(List<Value> parameters)
-            {
-                return fun.apply(parameters.get(0));
-            }
-        });
-    }
-
-    public void addBinaryFunction(String name, java.util.function.BiFunction<Value, Value, Value> fun)
-    {
-        functions.put(name, new AbstractFunction(name, 1)
-        {
-            @Override
-            public Value eval(List<Value> parameters)
-            {
-                return fun.apply(parameters.get(0), parameters.get(1));
-            }
-        });
-    }
-
-    public void addFunction(String name, java.util.function.Function<List<Value>, Value> fun)
-    {
-        functions.put(name, new AbstractFunction(name, 1)
-        {
-            @Override
-            public Value eval(List<Value> parameters)
-            {
-                return fun.apply(parameters);
-            }
-        });
-    }
-
-
-    public void addLazyFunction(String name, int num_params, java.util.function.Function<List<LazyValue>, LazyValue> fun)//ILazyFunction function)
-    {
-        functions.put(name, new LazyFunction(name, num_params)
-        {
-            @Override
-            public LazyValue lazyEval(List<LazyValue> lazyParams)
-            {
-                return fun.apply(lazyParams);
-            }
-        });
-    }
 
     /**
      * Sets a variable value.
@@ -1517,7 +1506,7 @@ public class Expression
                     stack.set(stack.size() - 1, stack.peek() - 2 + 1);
                     break;
                 case FUNCTION:
-                    ILazyFunction f = functions.get(token.surface.toUpperCase(Locale.ROOT));
+                    ILazyFunction f = functions.get(token.surface.toLowerCase(Locale.ROOT));
                     if (f == null)
                     {
                         throw new ExpressionException("Unknown function '" + token + "' at position " + (token.pos + 1));

@@ -32,22 +32,6 @@ import carpetscript.Expression.LazyValue;
  * Abstract implementation of an operator.
  */
 public abstract class AbstractOperator extends AbstractLazyOperator implements IOperator {
-	/**
-	 * Creates a new operator.
-	 * 
-	 * @param oper
-	 *            The operator name (pattern).
-	 * @param precedence
-	 *            The operators precedence.
-	 * @param leftAssoc
-	 *            <code>true</code> if the operator is left associative,
-	 *            else <code>false</code>.
-	 * @param booleanOperator
-	 *            Whether this operator is boolean.
-	 */
-	protected AbstractOperator(String oper, int precedence, boolean leftAssoc, boolean booleanOperator) {
-		super(oper, precedence, leftAssoc, booleanOperator);
-	}
 
 	/**
 	 * Creates a new operator.
