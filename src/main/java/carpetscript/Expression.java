@@ -920,7 +920,8 @@ public class Expression
         });
 
         // similar to map, but returns total number of successes
-        addLazyFunction("for", 2, (lv) -> // for(expr, list) => success_count
+        // for(expr, list) => success_count
+        addLazyFunction("for", 2, (lv) ->
         {
             LazyValue expr = lv.get(0);
             Value rval= lv.get(1).eval();
@@ -948,7 +949,8 @@ public class Expression
 
         //condition and expression will get a bound 'i'
         //returns last successful expression or false
-        addLazyFunction("while", 3, (lv) -> // while(cond, limit, expr) => ??
+        // while(cond, limit, expr) => ??
+        addLazyFunction("while", 3, (lv) ->
         {
             long limit = getNumericalValue(lv.get(1).eval()).longValue();
             LazyValue condition = lv.get(0);
@@ -972,7 +974,7 @@ public class Expression
             return () -> lastValueNoKidding;
         });
 
-        // reduce(expr, list, acc) => value
+        // reduce(expr, list, ?acc) => value
         // reduces values in the list with expression that gets accumulator
         // each iteration expr receives acc - accumulator, and '_' - current list value
         // returned value is substituted to the accumulator
@@ -1011,10 +1013,10 @@ public class Expression
             return () -> hopeItsEnoughPromise;
         });
 
-        // case(cond1, expr1, cond2, expr2, ...) => value
+        // case(cond1, expr1, cond2, expr2, ..., ?default) => value
         addLazyFunction("case", -1, (lv) ->
         {
-            if ((lv.size() % 2 == 0) || lv.size() < 3 )
+            if ( lv.size() < 3 )
                 throw new ExpressionException("case statement needs to have at least one condition and case, and a default value");
             for (int i=0; i<lv.size()-1; i+=2)
             {
@@ -1024,7 +1026,9 @@ public class Expression
                     return () -> ret;
                 }
             }
-            return () -> lv.get(lv.size() - 1).eval();
+            if (lv.size()%2 == 1)
+                return () -> lv.get(lv.size() - 1).eval();
+            return () -> new NumericValue(0);
         });
 
     }
