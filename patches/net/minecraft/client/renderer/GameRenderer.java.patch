@@ -7,7 +7,7 @@
  import com.google.gson.JsonSyntaxException;
  import java.io.IOException;
  import java.util.List;
-@@ -610,7 +611,15 @@
+@@ -609,7 +610,15 @@
  
      private void setupCameraTransform(float partialTicks)
      {
@@ -24,7 +24,7 @@
          GlStateManager.matrixMode(5889);
          GlStateManager.loadIdentity();
  
-@@ -938,7 +947,15 @@
+@@ -937,7 +946,15 @@
          double d2 = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * (double)partialTicks;
          icamera.setPosition(d0, d1, d2);
  

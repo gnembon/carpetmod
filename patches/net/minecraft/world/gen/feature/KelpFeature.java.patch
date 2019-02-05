@@ -23,8 +23,8 @@
                  {
                      if (l == k)
                      {
--                        p_212245_1_.setBlockState(blockpos, (IBlockState)iblockstate.with(BlockKelpTop.AGE, Integer.valueOf(p_212245_3_.nextInt(23))), 2);
-+                        p_212245_1_.setBlockState(blockpos, (IBlockState)iblockstate.with(BlockKelpTop.AGE, height.get()), 2);
+-                        p_212245_1_.setBlockState(blockpos, iblockstate.with(BlockKelpTop.AGE, Integer.valueOf(p_212245_3_.nextInt(23))), 2);
++                        p_212245_1_.setBlockState(blockpos, iblockstate.with(BlockKelpTop.AGE, height.get()), 2);
                          ++i;
                      }
                      else
@@ -32,8 +32,8 @@
  
                      if (iblockstate.isValidPosition(p_212245_1_, blockpos1) && p_212245_1_.getBlockState(blockpos1.down()).getBlock() != Blocks.KELP)
                      {
--                        p_212245_1_.setBlockState(blockpos1, (IBlockState)iblockstate.with(BlockKelpTop.AGE, Integer.valueOf(p_212245_3_.nextInt(23))), 2);
-+                        p_212245_1_.setBlockState(blockpos1, (IBlockState)iblockstate.with(BlockKelpTop.AGE, height.get()), 2);
+-                        p_212245_1_.setBlockState(blockpos1, iblockstate.with(BlockKelpTop.AGE, Integer.valueOf(p_212245_3_.nextInt(23))), 2);
++                        p_212245_1_.setBlockState(blockpos1, iblockstate.with(BlockKelpTop.AGE, height.get()), 2);
                          ++i;
                      }
  

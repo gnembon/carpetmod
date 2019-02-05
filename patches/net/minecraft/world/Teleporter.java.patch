@@ -18,7 +18,7 @@
 @@ -22,6 +24,8 @@
      private final WorldServer world;
      private final Random random;
-     private final Long2ObjectMap<Teleporter.PortalPosition> destinationCoordinateCache = new Long2ObjectOpenHashMap<Teleporter.PortalPosition>(4096);
+     private final Long2ObjectMap<Teleporter.PortalPosition> destinationCoordinateCache = new Long2ObjectOpenHashMap<>(4096);
 +    //CM var portalCaching
 +    private final Long2ObjectMap<Teleporter.PortalPosition> destinationHistoryCache = new Long2ObjectOpenHashMap<>(4096); //carpet mod
  

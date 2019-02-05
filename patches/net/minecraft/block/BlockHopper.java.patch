@@ -20,6 +20,6 @@
 +            enumfacing = EnumFacing.DOWN;
 +        }
 +        //[CM]
-         return (IBlockState)((IBlockState)this.getDefaultState().with(FACING, enumfacing.getAxis() == EnumFacing.Axis.Y ? EnumFacing.DOWN : enumfacing)).with(ENABLED, Boolean.valueOf(true));
+         return this.getDefaultState().with(FACING, enumfacing.getAxis() == EnumFacing.Axis.Y ? EnumFacing.DOWN : enumfacing).with(ENABLED, Boolean.valueOf(true));
      }
  

@@ -26,5 +26,5 @@
 +                    exception.printStackTrace();
 +                }
  
-                 p_197059_1_.sendErrorMessage((new TextComponentTranslation("command.failed", new Object[0])).applyTextStyle((p_211704_1_) ->
+                 p_197059_1_.sendErrorMessage((new TextComponentTranslation("command.failed")).applyTextStyle((p_211704_1_) ->
                  {

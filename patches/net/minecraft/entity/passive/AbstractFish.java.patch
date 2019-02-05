@@ -1,8 +1,8 @@
 --- a/net/minecraft/entity/passive/AbstractFish.java
 +++ b/net/minecraft/entity/passive/AbstractFish.java
-@@ -37,6 +37,11 @@
-     public int groupSize;
-     private boolean following;
+@@ -33,6 +33,11 @@
+ {
+     private static final DataParameter<Boolean> FROM_BUCKET = EntityDataManager.createKey(AbstractFish.class, DataSerializers.BOOLEAN);
  
 +    //CM
 +    @Override

@@ -2,7 +2,7 @@
 +++ b/net/minecraft/entity/item/EntityItem.java
 @@ -37,6 +37,11 @@
      private UUID owner;
-     public float hoverStart;
+     public float hoverStart = (float)(Math.random() * Math.PI * 2.0D);
  
 +    //CM
 +    @Override
@@ -12,7 +12,7 @@
      public EntityItem(World worldIn)
      {
          super(EntityType.ITEM, worldIn);
-@@ -229,8 +234,22 @@
+@@ -227,8 +232,22 @@
                      }
                      else if (itemstack1.getCount() + itemstack.getCount() > itemstack1.getMaxStackSize())
                      {
