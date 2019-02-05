@@ -24,32 +24,18 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * 
  */
-package com.udojava.evalex;
+package carpetscript;
 
-import java.math.BigDecimal;
-
-import com.udojava.evalex.Expression.LazyNumber;
+import carpetscript.Expression.ExpressionException;
+import carpetscript.Expression.LazyValue;
 
 /**
- * Abstract implementation of an operator.
+ * Abstract implementation of an unary operator.<br>
+ * <br>
+ * This abstract implementation implements eval so that it forwards its first
+ * parameter to evalUnary.
  */
-public abstract class AbstractOperator extends AbstractLazyOperator implements Operator {
-	/**
-	 * Creates a new operator.
-	 * 
-	 * @param oper
-	 *            The operator name (pattern).
-	 * @param precedence
-	 *            The operators precedence.
-	 * @param leftAssoc
-	 *            <code>true</code> if the operator is left associative,
-	 *            else <code>false</code>.
-	 * @param booleanOperator
-	 *            Whether this operator is boolean.
-	 */
-	protected AbstractOperator(String oper, int precedence, boolean leftAssoc, boolean booleanOperator) {
-		super(oper, precedence, leftAssoc, booleanOperator);
-	}
+public abstract class AbstractUnaryOperator extends AbstractOperator {
 
 	/**
 	 * Creates a new operator.
@@ -62,19 +48,36 @@ public abstract class AbstractOperator extends AbstractLazyOperator implements O
 	 *            <code>true</code> if the operator is left associative,
 	 *            else <code>false</code>.
 	 */
-	protected AbstractOperator(String oper, int precedence, boolean leftAssoc) {
+	protected AbstractUnaryOperator(String oper, int precedence, boolean leftAssoc) {
 		super(oper, precedence, leftAssoc);
 	}
 
-	public LazyNumber eval(final LazyNumber v1, final LazyNumber v2) {
-		return new LazyNumber() {
-			public BigDecimal eval() {
-				return AbstractOperator.this.eval(v1.eval(), v2.eval());
-			}
+	public LazyValue eval(final LazyValue v1, final LazyValue v2) {
+		if (v2 != null) {
+			throw new ExpressionException("Did not expect a second parameter for unary operator");
+		}
+		return new LazyValue() {
 
-			public String getString() {
-				return String.valueOf(AbstractOperator.this.eval(v1.eval(), v2.eval()));
+			@Override
+			public Value eval() {
+				return AbstractUnaryOperator.this.evalUnary(v1.eval());
 			}
 		};
 	}
+
+	public Value eval(Value v1, Value v2) {
+		if (v2 != null) {
+			throw new ExpressionException("Did not expect a second parameter for unary operator");
+		}
+		return evalUnary(v1);
+	}
+
+	/**
+	 * Implementation of this unary operator.
+	 * 
+	 * @param v1
+	 *            The parameter.
+	 * @return The result of the operation.
+	 */
+	public abstract Value evalUnary(Value v1);
 }

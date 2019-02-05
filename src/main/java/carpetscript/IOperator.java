@@ -24,14 +24,13 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * 
  */
-package com.udojava.evalex;
+package carpetscript;
 
-import java.math.BigDecimal;
 
 /**
  * Base interface which is required for all operators.
  */
-public interface Operator extends LazyOperator {
+public interface IOperator extends ILazyOperator {
 	/**
 	 * Implementation for this operator.
 	 * 
@@ -41,5 +40,5 @@ public interface Operator extends LazyOperator {
 	 *            Operand 2.
 	 * @return The result of the operation.
 	 */
-	public abstract BigDecimal eval(BigDecimal v1, BigDecimal v2);
+	public abstract Value eval(Value v1, Value v2);
 }

@@ -24,13 +24,12 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * 
  */
-package com.udojava.evalex;
+package carpetscript;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.udojava.evalex.Expression.LazyNumber;
+import carpetscript.Expression.LazyValue;
 
 /**
  * Abstract implementation of a direct function.<br>
@@ -38,7 +37,7 @@ import com.udojava.evalex.Expression.LazyNumber;
  * This abstract implementation does implement lazyEval so that it returns
  * the result of eval.
  */
-public abstract class AbstractFunction extends AbstractLazyFunction implements Function {
+public abstract class AbstractFunction extends AbstractLazyFunction implements IFunction {
 
 	/**
 	 * Creates a new function with given name and parameter count.
@@ -53,38 +52,20 @@ public abstract class AbstractFunction extends AbstractLazyFunction implements F
 		super(name, numParams);
 	}
 
-	/**
-	 * Creates a new function with given name and parameter count.
-	 *
-	 * @param name
-	 *            The name of the function.
-	 * @param numParams
-	 *            The number of parameters for this function.
-	 *            <code>-1</code> denotes a variable number of parameters.
-	 * @param booleanFunction
-	 *            Whether this function is a boolean function.
-	 */
-	protected AbstractFunction(String name, int numParams, boolean booleanFunction) {
-		super(name, numParams, booleanFunction);
-	}
 
-	public LazyNumber lazyEval(final List<LazyNumber> lazyParams) {
-		return new LazyNumber() {
+	public LazyValue lazyEval(final List<LazyValue> lazyParams) {
+		return new LazyValue() {
 
-			private List<BigDecimal> params;
+			private List<Value> params;
 
-			public BigDecimal eval() {
+			public Value eval() {
 				return AbstractFunction.this.eval(getParams());
 			}
 
-			public String getString() {
-				return String.valueOf(AbstractFunction.this.eval(getParams()));
-			}
-
-			private List<BigDecimal> getParams() {
+			private List<Value> getParams() {
 				if (params == null) {
-					params = new ArrayList<BigDecimal>();
-					for (LazyNumber lazyParam : lazyParams) {
+					params = new ArrayList<Value>();
+					for (LazyValue lazyParam : lazyParams) {
 						params.add(lazyParam.eval());
 					}
 				}

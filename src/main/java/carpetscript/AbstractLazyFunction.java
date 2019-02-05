@@ -24,7 +24,7 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * 
  */
-package com.udojava.evalex;
+package carpetscript;
 
 import java.util.Locale;
 
@@ -32,7 +32,7 @@ import java.util.Locale;
  * Abstract implementation of a lazy function which implements all necessary
  * methods with the exception of the main logic.
  */
-public abstract class AbstractLazyFunction implements LazyFunction {
+public abstract class AbstractLazyFunction implements ILazyFunction {
 	/**
 	 * Name of this function.
 	 */
@@ -44,28 +44,6 @@ public abstract class AbstractLazyFunction implements LazyFunction {
 	protected int numParams;
 
 	/**
-	 * Whether this function is a boolean function.
-	 */
-	protected boolean booleanFunction;
-
-	/**
-	 * Creates a new function with given name and parameter count.
-	 *
-	 * @param name
-	 *            The name of the function.
-	 * @param numParams
-	 *            The number of parameters for this function.
-	 *            <code>-1</code> denotes a variable number of parameters.
-	 * @param booleanFunction
-	 *            Whether this function is a boolean function.
-	 */
-	protected AbstractLazyFunction(String name, int numParams, boolean booleanFunction) {
-		this.name = name.toUpperCase(Locale.ROOT);
-		this.numParams = numParams;
-		this.booleanFunction = booleanFunction;
-	}
-
-	/**
 	 * Creates a new function with given name and parameter count.
 	 *
 	 * @param name
@@ -75,8 +53,10 @@ public abstract class AbstractLazyFunction implements LazyFunction {
 	 *            <code>-1</code> denotes a variable number of parameters.
 	 */
 	protected AbstractLazyFunction(String name, int numParams) {
-		this(name, numParams, false);
+		this.name = name;
+		this.numParams = numParams;
 	}
+
 
 	public String getName() {
 		return name;
@@ -88,9 +68,5 @@ public abstract class AbstractLazyFunction implements LazyFunction {
 
 	public boolean numParamsVaries() {
 		return numParams < 0;
-	}
-
-	public boolean isBooleanFunction() {
-		return booleanFunction;
 	}
 }

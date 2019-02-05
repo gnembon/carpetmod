@@ -24,14 +24,14 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * 
  */
-package com.udojava.evalex;
+package carpetscript;
 
-import com.udojava.evalex.Expression.LazyNumber;
+import carpetscript.Expression.LazyValue;
 
 /**
  * Base interface which is required for all operators.
  */
-public interface LazyOperator {
+public interface ILazyOperator {
 
 	/**
 	 * Gets the String that is used to denote the operator in the expression.
@@ -54,13 +54,7 @@ public interface LazyOperator {
 	 * @return <code>true</code> if this operator is left associative.
 	 */
 	public abstract boolean isLeftAssoc();
-	
-	/**
-	 * Gets whether this operator evaluates to a boolean expression.
-	 * @return <code>true</code> if this operator evaluates to a boolean
-	 *         expression.
-	 */
-	public abstract boolean isBooleanOperator();
+
 
 	/**
 	 * Implementation for this operator.
@@ -71,5 +65,5 @@ public interface LazyOperator {
 	 *            Operand 2.
 	 * @return The result of the operation.
 	 */
-	public abstract LazyNumber eval(LazyNumber v1, LazyNumber v2);
+	public abstract LazyValue eval(LazyValue v1, LazyValue v2);
 }

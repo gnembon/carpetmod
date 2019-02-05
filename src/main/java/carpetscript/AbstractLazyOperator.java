@@ -24,24 +24,53 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * 
  */
-package com.udojava.evalex;
-
-import java.math.BigDecimal;
-import java.util.List;
+package carpetscript;
 
 /**
- * Base interface which is required for all directly evaluated functions.
+ * Abstract implementation of an operator.
  */
-public interface Function extends LazyFunction {
+public abstract class AbstractLazyOperator implements ILazyOperator {
+	/**
+	 * This operators name (pattern).
+	 */
+	protected String oper;
+	/**
+	 * Operators precedence.
+	 */
+	protected int precedence;
+	/**
+	 * IOperator is left associative.
+	 */
+	protected boolean leftAssoc;
+
 
 	/**
-	 * Implementation for this function.
-	 *
-	 * @param parameters
-	 *            Parameters will be passed by the expression evaluator as a
-	 *            {@link List} of {@link BigDecimal} values.
-	 * @return The function must return a new {@link BigDecimal} value as a
-	 *         computing result.
+	 * Creates a new operator.
+	 * 
+	 * @param oper
+	 *            The operator name (pattern).
+	 * @param precedence
+	 *            The operators precedence.
+	 * @param leftAssoc
+	 *            <code>true</code> if the operator is left associative,
+	 *            else <code>false</code>.
 	 */
-	public abstract BigDecimal eval(List<BigDecimal> parameters);
+	protected AbstractLazyOperator(String oper, int precedence, boolean leftAssoc) {
+		this.oper = oper;
+		this.precedence = precedence;
+		this.leftAssoc = leftAssoc;
+	}
+
+	public String getOper() {
+		return oper;
+	}
+
+	public int getPrecedence() {
+		return precedence;
+	}
+
+	public boolean isLeftAssoc() {
+		return leftAssoc;
+	}
+
 }

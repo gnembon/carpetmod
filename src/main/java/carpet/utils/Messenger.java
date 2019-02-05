@@ -218,7 +218,7 @@ public class Messenger
     //message source
     public static void m(CommandSource source, Object ... fields)
     {
-        source.sendFeedback(Messenger.c(fields),false);
+        source.sendFeedback(Messenger.c(fields),true);
     }
     public static void m(EntityPlayer player, Object ... fields)
     {

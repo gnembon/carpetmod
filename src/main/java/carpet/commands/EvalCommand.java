@@ -27,9 +27,18 @@ public class EvalCommand
     }
     private static int compute(CommandSource source, String expr)
     {
-        CarpetExpression ex = new CarpetExpression(expr, source, new BlockPos(0, 0, 0));
         BlockPos pos = new BlockPos(source.getPos());
-        Messenger.m(source, "wi "+expr,"wi  = ", "wb "+ex.eval(pos.getX(), pos.getY(), pos.getZ()));
+        try
+        {
+            CarpetExpression ex = new CarpetExpression(expr, source, new BlockPos(0, 0, 0));
+            ex.setLogOutput(true);
+            Messenger.m(source, "wi "+expr,"wi  = ", "wb "+ex.eval(pos));
+        }
+        catch (CarpetExpression.CarpetExpressionException e)
+        {
+            Messenger.m(source, "r Exception white evaluating expression at "+pos+": "+e.getMessage());
+        }
         return 1;
     }
 }
+

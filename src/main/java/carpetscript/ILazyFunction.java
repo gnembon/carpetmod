@@ -24,18 +24,18 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * 
  */
-package com.udojava.evalex;
+package carpetscript;
 
 import java.util.List;
 
-import com.udojava.evalex.Expression.LazyNumber;
+import carpetscript.Expression.LazyValue;
 
 /**
  * Base interface which is required for lazily evaluated functions. A function
  * is defined by a name, a number of parameters it accepts and of course
  * the logic for evaluating the result.
  */
-public interface LazyFunction {
+public interface ILazyFunction {
 
 	/**
 	 * Gets the name of this function.<br>
@@ -67,19 +67,11 @@ public interface LazyFunction {
 	public abstract boolean numParamsVaries();
 
 	/**
-	 * Gets whether this function evaluates to a boolean expression.
-	 * 
-	 * @return <code>true</code> if this function evaluates to a boolean
-	 *         expression.
-	 */
-	public abstract boolean isBooleanFunction();
-
-	/**
 	 * Lazily evaluate this function.
 	 * 
 	 * @param lazyParams
 	 *            The accepted parameters.
 	 * @return The lazy result of this function.
 	 */
-	public abstract LazyNumber lazyEval(List<LazyNumber> lazyParams);
+	public abstract LazyValue lazyEval(List<LazyValue> lazyParams);
 }

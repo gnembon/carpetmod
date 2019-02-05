@@ -24,48 +24,14 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * 
  */
-package com.udojava.evalex;
+package carpetscript;
+
+import carpetscript.Expression.LazyValue;
 
 /**
  * Abstract implementation of an operator.
  */
-public abstract class AbstractLazyOperator implements LazyOperator {
-	/**
-	 * This operators name (pattern).
-	 */
-	protected String oper;
-	/**
-	 * Operators precedence.
-	 */
-	protected int precedence;
-	/**
-	 * Operator is left associative.
-	 */
-	protected boolean leftAssoc;
-	/**
-	 * Whether this operator is boolean or not.
-	 */
-	protected boolean booleanOperator = false;
-
-	/**
-	 * Creates a new operator.
-	 * 
-	 * @param oper
-	 *            The operator name (pattern).
-	 * @param precedence
-	 *            The operators precedence.
-	 * @param leftAssoc
-	 *            <code>true</code> if the operator is left associative,
-	 *            else <code>false</code>.
-	 * @param booleanOperator
-	 *            Whether this operator is boolean.
-	 */
-	protected AbstractLazyOperator(String oper, int precedence, boolean leftAssoc, boolean booleanOperator) {
-		this.oper = oper;
-		this.precedence = precedence;
-		this.leftAssoc = leftAssoc;
-		this.booleanOperator = booleanOperator;
-	}
+public abstract class AbstractOperator extends AbstractLazyOperator implements IOperator {
 
 	/**
 	 * Creates a new operator.
@@ -78,25 +44,16 @@ public abstract class AbstractLazyOperator implements LazyOperator {
 	 *            <code>true</code> if the operator is left associative,
 	 *            else <code>false</code>.
 	 */
-	protected AbstractLazyOperator(String oper, int precedence, boolean leftAssoc) {
-		this.oper = oper;
-		this.precedence = precedence;
-		this.leftAssoc = leftAssoc;
+	protected AbstractOperator(String oper, int precedence, boolean leftAssoc) {
+		super(oper, precedence, leftAssoc);
 	}
 
-	public String getOper() {
-		return oper;
-	}
+	public LazyValue eval(final LazyValue v1, final LazyValue v2) {
+		return new LazyValue() {
+			public Value eval() {
+				return AbstractOperator.this.eval(v1.eval(), v2.eval());
+			}
 
-	public int getPrecedence() {
-		return precedence;
-	}
-
-	public boolean isLeftAssoc() {
-		return leftAssoc;
-	}
-
-	public boolean isBooleanOperator() {
-		return booleanOperator;
+		};
 	}
 }
