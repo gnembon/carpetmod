@@ -622,6 +622,11 @@ public class Expression
         variables.put("TRUE", () -> Value.TRUE);
         variables.put("FALSE", () -> Value.FALSE);
 
+        //special variables for second order functions
+        variables.put("_", () -> new NumericValue(0).boundTo("_"));
+        variables.put("_i", () -> new NumericValue(0).boundTo("_i"));
+        variables.put("_a", () -> new NumericValue(0).boundTo("_a"));
+
         addBinaryOperator(";",OPERATOR_PRECEDENCE_NEXTOP, true, (v1, v2) ->
         {
             if (logOutput != null)
@@ -844,6 +849,8 @@ public class Expression
             long limit = getNumericalValue(lv.get(1).eval()).longValue();
             Value lastOne = Value.ZERO;
             LazyValue expr = lv.get(0);
+            //scoping
+            Value _val = variables.get("_").eval();
             for (long i=0; i < limit; i++)
             {
                 long dummy = i;
@@ -851,7 +858,8 @@ public class Expression
                 lastOne = expr.eval();
             }
             Value trulyLastOne = lastOne;
-            variables.put("_", () -> Value.ZERO.boundTo("_"));
+            //revering scope
+            variables.put("_", () -> _val.boundTo("_"));
             return () -> trulyLastOne;
         });
 
@@ -863,12 +871,51 @@ public class Expression
             Value rval= lv.get(1).eval();
             if (!(rval instanceof ListValue))
                 throw new ExpressionException("Second argument of map function should be a list");
-            ListValue list = (ListValue) rval;
-            LazyValue ret = () -> new ListValue(list.getItems().stream().map((v)->{
-                variables.put("_", () -> v.boundTo("_"));
-                return expr.eval();
-            }).collect(Collectors.toList()));
-            variables.put("_", () -> Value.ZERO.boundTo("_"));
+            List<Value> list = ((ListValue) rval).getItems();
+            //scoping
+            Value _val = variables.get("_").eval();
+            Value _iter = variables.get("_i").eval();
+            List<Value> result = new ArrayList<>();
+            for (int i=0; i< list.size(); i++)
+            {
+                int promiseWontChangeMe = i;
+                variables.put("_", () -> list.get(promiseWontChangeMe).boundTo("_"));
+                variables.put("_i", () -> new NumericValue(promiseWontChangeMe).boundTo("_i") );
+                result.add(expr.eval());
+            }
+            LazyValue ret = () -> new ListValue(result);
+            //revering scope
+            variables.put("_", () -> _val.boundTo("_"));
+            variables.put("_i", () -> _iter.boundTo("_i"));
+            return ret;
+        });
+
+        // grep(expr, list) => list
+        // receives bounded variable '_' with the expression, and "_i" with index
+        // produces list of values for which the expression is true
+        addLazyFunction("grep", 2, (lv) ->
+        {
+            LazyValue expr = lv.get(0);
+            Value rval= lv.get(1).eval();
+            if (!(rval instanceof ListValue))
+                throw new ExpressionException("Second argument of grep function should be a list");
+            List<Value> list = ((ListValue) rval).getItems();
+            //scoping
+            Value _val = variables.get("_").eval();
+            Value _iter = variables.get("_i").eval();
+            List<Value> result = new ArrayList<>();
+            for (int i=0; i< list.size(); i++)
+            {
+                int promiseWontChangeMe = i;
+                variables.put("_", () -> list.get(promiseWontChangeMe).boundTo("_"));
+                variables.put("_i", () -> new NumericValue(promiseWontChangeMe).boundTo("_i") );
+                if(expr.eval().getBoolean())
+                    result.add(list.get(i));
+            }
+            LazyValue ret = () -> new ListValue(result);
+            //revering scope
+            variables.put("_", () -> _val.boundTo("_"));
+            variables.put("_i", () -> _iter.boundTo("_i"));
             return ret;
         });
 
@@ -879,17 +926,23 @@ public class Expression
             Value rval= lv.get(1).eval();
             if (!(rval instanceof ListValue))
                 throw new ExpressionException("Second argument of for function should be a list");
-            ListValue list = (ListValue) rval;
-            long successCount = 0;
-            for (Value v : list.getItems())
+            List<Value> list = ((ListValue) rval).getItems();
+            //scoping
+            Value _val = variables.get("_").eval();
+            Value _iter = variables.get("_i").eval();
+            int successCount = 0;
+            for (int i=0; i< list.size(); i++)
             {
-                variables.put("_", () -> v.boundTo("_"));
-                Value res = expr.eval();
-                if (res.getBoolean())
+                int promiseWontChangeMe = i;
+                variables.put("_", () -> list.get(promiseWontChangeMe).boundTo("_"));
+                variables.put("_i", () -> new NumericValue(promiseWontChangeMe).boundTo("_i") );
+                if(expr.eval().getBoolean())
                     successCount++;
             }
+            //revering scope
+            variables.put("_", () -> _val.boundTo("_"));
+            variables.put("_i", () -> _iter.boundTo("_i"));
             long promiseWontChange = successCount;
-            variables.put("_", () -> Value.ZERO.boundTo("_"));
             return () -> new NumericValue(promiseWontChange);
         });
 
@@ -902,6 +955,9 @@ public class Expression
             LazyValue expr = lv.get(2);
             long i = 0;
             Value lastOne = Value.ZERO;
+            //scoping
+            Value _val = variables.get("_").eval();
+
             variables.put("_",() -> new NumericValue(0).boundTo("_"));
             while (i<limit && condition.eval().getBoolean() )
             {
@@ -910,6 +966,8 @@ public class Expression
                 long notGonnaChangeIPromize = i;
                 variables.put("_",() -> new NumericValue(notGonnaChangeIPromize).boundTo("_"));
             }
+            //revering scope
+            variables.put("_", () -> _val.boundTo("_"));
             Value lastValueNoKidding = lastOne;
             return () -> lastValueNoKidding;
         });
@@ -921,27 +979,35 @@ public class Expression
         addLazyFunction("reduce", 3, (lv) ->
         {
             LazyValue expr = lv.get(0);
+
             Value acc = lv.get(2).eval();
             Value rval= lv.get(1).eval();
             if (!(rval instanceof ListValue))
                 throw new ExpressionException("Second argument of for function should be a list");
             List<Value> elements= ((ListValue) rval).getItems();
+
             if (elements.isEmpty())
             {
                 Value seriouslyWontChange = acc;
                 return () -> seriouslyWontChange;
             }
+
+            //scoping
+            Value _val = variables.get("_").eval();
+            Value _acc = variables.get("_a").eval();
+
             for (Value v: elements)
             {
                 Value kidYouNotWontChange = acc;
-                variables.put("acc", () -> kidYouNotWontChange.boundTo("acc"));
+                variables.put("_a", () -> kidYouNotWontChange.boundTo("_a"));
                 variables.put("_", () -> v.boundTo("_"));
                 acc = expr.eval();
 
             }
+            //reverting scope
+            variables.put("_a", () -> _acc);
+            variables.put("_", () -> _val);
             Value hopeItsEnoughPromise = acc;
-            variables.put("acc", () -> Value.ZERO.boundTo("acc"));
-            variables.put("_", () -> Value.ZERO.boundTo("_"));
             return () -> hopeItsEnoughPromise;
         });
 
@@ -950,7 +1016,6 @@ public class Expression
         {
             if ((lv.size() % 2 == 0) || lv.size() < 3 )
                 throw new ExpressionException("case statement needs to have at least one condition and case, and a default value");
-            Value returnValue = Value.ZERO;
             for (int i=0; i<lv.size()-1; i+=2)
             {
                 if (lv.get(i).eval().getBoolean())
@@ -1186,28 +1251,14 @@ public class Expression
                 case UNARY_OPERATOR:
                 {
                     final LazyValue value = stack.pop();
-                    LazyValue result = new LazyValue()
-                    {
-                        public Value eval()
-                        {
-                            return operators.get(token.surface).eval(value, null).eval();
-                        }
-
-                    };
+                    LazyValue result = () -> operators.get(token.surface).eval(value, null).eval();
                     stack.push(result);
                     break;
                 }
                 case OPERATOR:
                     final LazyValue v1 = stack.pop();
                     final LazyValue v2 = stack.pop();
-                    LazyValue result = new LazyValue()
-                    {
-                        public Value eval()
-                        {
-                            return operators.get(token.surface).eval(v2, v1).eval();
-                        }
-
-                    };
+                    LazyValue result = () -> operators.get(token.surface).eval(v2, v1).eval();
                     stack.push(result);
                     break;
                 case VARIABLE:
@@ -1216,19 +1267,15 @@ public class Expression
                         throw new ExpressionException("Variable would mask function: " + token);
                     }
 
-                    stack.push(new LazyValue()
+                    stack.push(() ->
                     {
-                        public Value eval()
+                        if (!variables.containsKey(token.surface)) // new variable
                         {
-                            if (!variables.containsKey(token.surface)) // new variable
-                            {
-                                variables.put(token.surface, () -> Value.ZERO.boundTo(token.surface));
-                            }
-                            LazyValue lazyVariable = variables.get(token.surface);
-                            Value value = lazyVariable.eval();
-                            return value;
+                            variables.put(token.surface, () -> Value.ZERO.boundTo(token.surface));
                         }
-
+                        LazyValue lazyVariable = variables.get(token.surface);
+                        Value value = lazyVariable.eval();
+                        return value;
                     });
                     break;
                 case FUNCTION:

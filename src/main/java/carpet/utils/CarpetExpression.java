@@ -14,8 +14,10 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.registry.IRegistry;
 import net.minecraft.world.EnumLightType;
+import net.minecraft.world.WorldServer;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
@@ -279,9 +281,19 @@ public class CarpetExpression
             return v; // pass through for variables
         });
 
-        this.expr.addUnaryFunction("neighbours", (v)->
+        this.expr.addNAryFunction("neighbours", 3, (lv)->
         {
-            throw new UnsupportedOperationException(); // TODO
+            BlockPos center = locateBlockPos(lv);
+            WorldServer world = source.getWorld();
+
+            List<Value> neighbours = new ArrayList<>();
+            neighbours.add(new BlockValue(world.getBlockState(center.up()), center.up()));
+            neighbours.add(new BlockValue(world.getBlockState(center.down()), center.down()));
+            neighbours.add(new BlockValue(world.getBlockState(center.north()), center.north()));
+            neighbours.add(new BlockValue(world.getBlockState(center.south()), center.south()));
+            neighbours.add(new BlockValue(world.getBlockState(center.east()), center.east()));
+            neighbours.add(new BlockValue(world.getBlockState(center.west()), center.west()));
+            return new ListValue(neighbours);
         });
 
         this.expr.addUnaryFunction("conv", (v)->
