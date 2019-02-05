@@ -57,11 +57,7 @@ public abstract class AbstractUnaryOperator extends AbstractOperator {
 			throw new ExpressionException("Did not expect a second parameter for unary operator");
 		}
 		return new LazyValue() {
-			@Override
-			public String getString() {
-				return String.valueOf(AbstractUnaryOperator.this.evalUnary(v1.eval()));
-			}
-			
+
 			@Override
 			public Value eval() {
 				return AbstractUnaryOperator.this.evalUnary(v1.eval());

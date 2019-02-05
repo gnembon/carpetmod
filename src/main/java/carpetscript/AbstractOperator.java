@@ -54,9 +54,6 @@ public abstract class AbstractOperator extends AbstractLazyOperator implements I
 				return AbstractOperator.this.eval(v1.eval(), v2.eval());
 			}
 
-			public String getString() {
-				return String.valueOf(AbstractOperator.this.eval(v1.eval(), v2.eval()));
-			}
 		};
 	}
 }

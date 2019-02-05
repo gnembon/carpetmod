@@ -91,6 +91,12 @@ public class ListValue extends Value
         throw new UnsupportedOperationException(); // TODO
     }
 
+    public List<Value> getItems()
+    {
+        return items;
+    }
+
+
 
 
 

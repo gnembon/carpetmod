@@ -62,10 +62,6 @@ public abstract class AbstractFunction extends AbstractLazyFunction implements I
 				return AbstractFunction.this.eval(getParams());
 			}
 
-			public String getString() {
-				return String.valueOf(AbstractFunction.this.eval(getParams()));
-			}
-
 			private List<Value> getParams() {
 				if (params == null) {
 					params = new ArrayList<Value>();

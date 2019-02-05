@@ -221,6 +221,11 @@ public class CarpetExpression
                 throw new CarpetExpressionException("fourth parameter of set should be a block");
             IBlockState bs = ((BlockValue) lv.get(3)).blockState;
 
+            IBlockState targetBlockState = source.getWorld().getBlockState(pos);
+            if (lv.size()==4) // no reqs for properties
+                if (targetBlockState.getBlock() == bs.getBlock())
+                    return Value.FALSE;
+
             // TODO back off if block is the same and
             StateContainer<Block, IBlockState> states = bs.getBlock().getStateContainer();
 
@@ -236,6 +241,11 @@ public class CarpetExpression
                 // TODO make sure properties set result in different from the location it sets too
 
                 bs = setProperty(property, paramString, paramValue, bs);
+            }
+            if (targetBlockState.equals(bs))
+            {
+                CarpetSettings.LOG.error("skipping, same blockstate");
+                return Value.FALSE;
             }
             source.getWorld().setBlockState(pos, bs, 2 | (CarpetSettings.getBool("fillUpdates") ? 0 : 1024));
             return new BlockValue(bs, pos);

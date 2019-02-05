@@ -38,6 +38,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Stack;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 
 /**
@@ -175,105 +176,35 @@ public class Expression
     private Consumer<String> logOutput = null;
 
     /**
+     * LazyNumber interface created for lazily evaluated functions
+     */
+    @FunctionalInterface
+    public interface LazyValue
+    {
+        Value eval();
+    }
+
+    /**
      * The Value representation of the left parenthesis, used for parsing
      * varying numbers of function parameters.
      */
-    private static final LazyValue PARAMS_START = new LazyValue()
-    {
-        public Value eval()
-        {
-            return null;
-        }
-
-        public String getString()
-        {
-            return null;
-        }
-    };
+    private static final LazyValue PARAMS_START = () -> null;
 
     /**
      * The expression evaluators exception class.
      */
     public static class ExpressionException extends RuntimeException
     {
-        //private static final long serialVersionUID = 1118142866870779047L;
-
         public ExpressionException(String message)
         {
             super(message);
         }
     }
 
-    /**
-     * LazyNumber interface created for lazily evaluated functions
-     */
-    public interface LazyValue
-    {
-        Value eval();
-
-        String getString();
-    }
-
-
-    /**
-     * Construct a LazyNumber from a Value
-     */
-    public static LazyValue CrazyLazyValue(final Value value)
-    {
-        return new LazyValue()
-        {
-            @Override
-            public String getString()
-            {
-                return value.getString();
-            }
-
-            @Override
-            public Value eval()
-            {
-                return value;
-            }
-        };
-    }
-
-
-
-
-    public static LazyValue FALSE = CrazyLazyValue(Value.FALSE);
-    public static LazyValue TRUE = CrazyLazyValue(Value.TRUE);
-    public static LazyValue EMPTY = CrazyLazyValue(Value.EMPTY);
-    public static LazyValue ZERO = CrazyLazyValue(Value.ZERO);
-
-    public abstract class LazyFunction extends AbstractLazyFunction
-    {
-        /**
-         * Creates a new function with given name and parameter count.
-         *
-         * @param name      The name of the function.
-         * @param numParams The number of parameters for this function.
-         *                  <code>-1</code> denotes a variable number of parameters.
-         */
-        public LazyFunction(String name, int numParams)
-        {
-            super(name, numParams);
-        }
-    }
-
-    /**
-     * Abstract definition of a supported expression function. A function is
-     * defined by a name, the number of parameters and the actual processing
-     * implementation.
-     */
-    public abstract class Function extends AbstractFunction
-    {
-
-        public Function(String name, int numParams)
-        {
-            super(name, numParams);
-        }
-
-    }
-
+    public static LazyValue FALSE = () -> Value.FALSE;
+    public static LazyValue TRUE = () -> Value.TRUE;
+    public static LazyValue EMPTY = () -> Value.EMPTY;
+    public static LazyValue ZERO = () -> Value.ZERO;
 
     enum TokenType
     {
@@ -517,23 +448,49 @@ public class Expression
 
     }
 
-    /**
-     * Adds an operator to the list of supported operators.
-     *
-     * @param operator The operator to add.
-     * @return The previous operator with that name, or <code>null</code> if
-     * there was none.
-     */
-    //left only for lazy operators
-    public <OPERATOR extends ILazyOperator> OPERATOR addOperator(OPERATOR operator)
+    public Value assertNotNull(Value v1)
     {
-        String key = operator.getOper();
-        if (operator instanceof AbstractUnaryOperator)
-        {
-            key += "u";
-        }
-        return (OPERATOR) operators.put(key, operator);
+        if (v1 == null)
+            throw new ExpressionException("Operand may not be null");
+        return v1;
     }
+
+    public BigDecimal getNumericalValue(Value v1)
+    {
+        if (!(v1 instanceof NumericValue))
+            throw new ExpressionException("Operand has to be of a numeric type");
+        return ((NumericValue) v1).getNumber();
+    }
+
+    public void assertNotNull(Value v1, Value v2)
+    {
+        if (v1 == null)
+            throw new ExpressionException("First operand may not be null");
+        if (v2 == null)
+            throw new ExpressionException("Second operand may not be null");
+    }
+
+
+    public LazyValue assertNotNull(LazyValue lv)
+    {
+        if (lv == null)
+            throw new ExpressionException("Operand may not be null");
+        return lv;
+    }
+
+    public void addLazyBinaryOperator(String surface, int precedence, boolean leftAssoc,
+                            java.util.function.BiFunction<LazyValue, LazyValue, LazyValue> lazyfun)
+    {
+        operators.put(surface, new AbstractLazyOperator(surface, precedence, leftAssoc)
+        {
+            @Override
+            public LazyValue eval(LazyValue v1, LazyValue v2) //TODO add nonnull check here, and strip null checks from
+            {
+                return lazyfun.apply(v1, v2);
+            }
+        });
+    }
+
 
     public void addUnaryOperator(String surface, boolean leftAssoc, java.util.function.Function<Value, Value> fun)
     {
@@ -542,7 +499,7 @@ public class Expression
             @Override
             public Value evalUnary(Value v1)
             {
-                return fun.apply(v1);
+                return fun.apply(assertNotNull(v1));
             }
         });
     }
@@ -554,6 +511,7 @@ public class Expression
             @Override
             public Value eval(Value v1, Value v2) //TODO add nonnull check here, and strip null checks from number checks
             {
+                assertNotNull(v1, v2);
                 return fun.apply(v1, v2);
             }
         });
@@ -568,7 +526,7 @@ public class Expression
             @Override
             public Value eval(List<Value> parameters)
             {
-                return fun.apply(parameters.get(0));
+                return fun.apply(assertNotNull(parameters.get(0)));
             }
         });
     }
@@ -581,7 +539,10 @@ public class Expression
             @Override
             public Value eval(List<Value> parameters)
             {
-                return fun.apply(parameters.get(0), parameters.get(1));
+                Value v1 = parameters.get(0);
+                Value v2 = parameters.get(1);
+                assertNotNull(v1, v2);
+                return fun.apply(v1, v2);
             }
         });
     }
@@ -594,6 +555,8 @@ public class Expression
             @Override
             public Value eval(List<Value> parameters)
             {
+                for (Value v: parameters)
+                    assertNotNull(v);
                 return fun.apply(parameters);
             }
         });
@@ -606,20 +569,20 @@ public class Expression
 
     public void addMathematicalUnaryFunction(String name, java.util.function.Function<Double, Double> fun)
     {
-        addUnaryFunction(name, (v) -> new NumericValue(new BigDecimal(fun.apply(assertNumberNotNull(v).doubleValue()),mc)));
+        addUnaryFunction(name, (v) -> new NumericValue(new BigDecimal(fun.apply(getNumericalValue(v).doubleValue()),mc)));
     }
 
     public void addMathematicalBinaryFunction(String name, java.util.function.BiFunction<Double, Double, Double> fun)
     {
         addBinaryFunction(name, (w,v) ->
-                new NumericValue(new BigDecimal(fun.apply(assertNumberNotNull(w).doubleValue(), assertNumberNotNull(v).doubleValue()), mc)));
+                new NumericValue(new BigDecimal(fun.apply(getNumericalValue(w).doubleValue(), getNumericalValue(v).doubleValue()), mc)));
     }
 
 
     public void addLazyFunction(String name, int num_params, java.util.function.Function<List<LazyValue>, LazyValue> fun)//ILazyFunction function)
     {
         name = name.toLowerCase(Locale.ROOT);
-        functions.put(name, new LazyFunction(name, num_params)
+        functions.put(name, new AbstractLazyFunction(name, num_params)
         {
             @Override
             public LazyValue lazyEval(List<LazyValue> lazyParams)
@@ -653,11 +616,11 @@ public class Expression
     {
         this.mc = defaultMathContext;
         this.expression = expression;
-        variables.put("e", CrazyLazyValue(e));
-        variables.put("PI", CrazyLazyValue(PI));
+        variables.put("e", () -> e);
+        variables.put("PI", () -> PI);
         variables.put("NULL", null);
-        variables.put("TRUE", CrazyLazyValue(Value.TRUE));
-        variables.put("FALSE", CrazyLazyValue(Value.FALSE));
+        variables.put("TRUE", () -> Value.TRUE);
+        variables.put("FALSE", () -> Value.FALSE);
 
         addBinaryOperator(";",OPERATOR_PRECEDENCE_NEXTOP, true, (v1, v2) ->
         {
@@ -666,37 +629,21 @@ public class Expression
             return v2;
         });
 
-        addBinaryOperator("+", OPERATOR_PRECEDENCE_ADDITIVE, true, (v1, v2) ->
-        {
-            assertNotNull(v1, v2);
-            return v1.add(v2);
-        });
+        addBinaryOperator("+", OPERATOR_PRECEDENCE_ADDITIVE, true, Value::add);
 
-        addBinaryOperator("-", OPERATOR_PRECEDENCE_ADDITIVE, true, (v1, v2) ->
-        {
-            assertNotNull(v1, v2);
-            return v1.subtract(v2);
-        });
+        addBinaryOperator("-", OPERATOR_PRECEDENCE_ADDITIVE, true, Value::subtract);
 
-        addBinaryOperator("*", OPERATOR_PRECEDENCE_MULTIPLICATIVE, true, (v1, v2) ->
-        {
-            assertNotNull(v1, v2);
-            return v1.multiply(v2);
-        });
+        addBinaryOperator("*", OPERATOR_PRECEDENCE_MULTIPLICATIVE, true, Value::multiply);
 
-        addBinaryOperator("/", OPERATOR_PRECEDENCE_MULTIPLICATIVE, true, (v1, v2) ->
-        {
-            assertNotNull(v1, v2);
-            return v1.divide(v2);
-        });
+        addBinaryOperator("/", OPERATOR_PRECEDENCE_MULTIPLICATIVE, true, Value::divide);
 
         addBinaryOperator("%", OPERATOR_PRECEDENCE_MULTIPLICATIVE, true, (v1, v2) ->
-                new NumericValue(assertNumberNotNull(v1).remainder(assertNumberNotNull(v2), mc)));
+                new NumericValue(getNumericalValue(v1).remainder(getNumericalValue(v2), mc)));
 
         addBinaryOperator("^", OPERATOR_PRECEDENCE_POWER, false, (v1, v2) ->
         {
-            BigDecimal d1 = assertNumberNotNull(v1);
-            BigDecimal d2 = assertNumberNotNull(v2);
+            BigDecimal d1 = getNumericalValue(v1);
+            BigDecimal d2 = getNumericalValue(v2);
             /*-
              * Thanks to Gene Marin:
              * http://stackoverflow.com/questions/3579779/how-to-do-a-fractional-power-on-bigdecimal-in-java
@@ -717,113 +664,75 @@ public class Expression
         });
 
 
-        addOperator(new AbstractLazyOperator("&&", OPERATOR_PRECEDENCE_AND, false)
+        addLazyBinaryOperator("&&", OPERATOR_PRECEDENCE_AND, false, (lv1, lv2) ->
         {
-            @Override
-            public LazyValue eval(LazyValue v1, LazyValue v2)
-            {
-                assertNotNull(v1);
-                boolean b1 = v1.eval().getBoolean();
-                if (!b1) return FALSE;
-                assertNotNull(v2);
-                boolean b2 = v2.eval().getBoolean();
-                return b2 ? TRUE : FALSE;
-            }
+            boolean b1 = assertNotNull(lv1).eval().getBoolean();
+            if (!b1) return FALSE;
+            boolean b2 = assertNotNull(lv2).eval().getBoolean();
+            return b2 ? TRUE : FALSE;
         });
 
-        addOperator(new AbstractLazyOperator("||", OPERATOR_PRECEDENCE_OR, false)
+        addLazyBinaryOperator("||", OPERATOR_PRECEDENCE_OR, false, (lv1, lv2) ->
         {
-            @Override
-            public LazyValue eval(LazyValue v1, LazyValue v2)
-            {
-                assertNotNull(v1);
-                boolean b1 = v1.eval().getBoolean();
-                if (b1) return TRUE;
-                assertNotNull(v2);
-                boolean b2 = v2.eval().getBoolean();
-                return b2 ? TRUE : FALSE;
-            }
+            boolean b1 = assertNotNull(lv1).eval().getBoolean();
+            if (b1) return TRUE;
+            boolean b2 = assertNotNull(lv2).eval().getBoolean();
+            return b2 ? TRUE : FALSE;
         });
 
         addBinaryOperator(">", OPERATOR_PRECEDENCE_COMPARISON, false, (v1, v2) ->
-        {
-            assertNotNull(v1, v2);
-            return v1.compareTo(v2) > 0 ? Value.TRUE : Value.FALSE;
-        });
+                v1.compareTo(v2) > 0 ? Value.TRUE : Value.FALSE);
 
         addBinaryOperator(">=", OPERATOR_PRECEDENCE_COMPARISON, false, (v1, v2) ->
-        {
-            assertNotNull(v1, v2);
-            return v1.compareTo(v2) >= 0 ? Value.TRUE : Value.FALSE;
-        });
+                v1.compareTo(v2) >= 0 ? Value.TRUE : Value.FALSE);
 
         addBinaryOperator("<", OPERATOR_PRECEDENCE_COMPARISON, false, (v1, v2) ->
-        {
-            assertNotNull(v1, v2);
-            return v1.compareTo(v2) < 0 ? Value.TRUE : Value.FALSE;
-        });
+                v1.compareTo(v2) < 0 ? Value.TRUE : Value.FALSE);
 
         addBinaryOperator("<=", OPERATOR_PRECEDENCE_COMPARISON, false, (v1, v2) ->
-        {
-            assertNotNull(v1, v2);
-            return v1.compareTo(v2) <= 0 ? Value.TRUE : Value.FALSE;
-        });
+                v1.compareTo(v2) <= 0 ? Value.TRUE : Value.FALSE);
+
+        addBinaryOperator("==", OPERATOR_PRECEDENCE_EQUALITY, false, (v1, v2) ->
+                v1.compareTo(v2) == 0 ? Value.TRUE : Value.FALSE);
+
+        addBinaryOperator("!=", OPERATOR_PRECEDENCE_EQUALITY, false, (v1, v2) ->
+                v1.compareTo(v2) == 0 ? Value.TRUE : Value.FALSE);
 
         addBinaryOperator("=", OPERATOR_PRECEDENCE_ASSIGN, false, (v1, v2) ->
         {
-            assertNotNull(v1, v2);
             if (!v1.isBound())
-            {
                 throw new ExpressionException("LHS of assignment needs to be a variable");
-            }
             String varname = v1.getVariable();
             Value boundedLHS = v2.boundTo(varname);
-            LazyValue lazyLHS = CrazyLazyValue(boundedLHS);
+            LazyValue lazyLHS = () -> boundedLHS;
             variables.put(varname, lazyLHS);
             return boundedLHS;
         });
 
-        addBinaryOperator("==", OPERATOR_PRECEDENCE_EQUALITY, false, (v1, v2) ->
-        {
-            assertNotNull(v1, v2);
-            return v1.compareTo(v2) == 0 ? Value.TRUE : Value.FALSE;
-        });
-
-        addBinaryOperator("!=", OPERATOR_PRECEDENCE_EQUALITY, false, (v1, v2) ->
-        {
-            assertNotNull(v1, v2);
-            return v1.compareTo(v2) == 0 ? Value.TRUE : Value.FALSE;
-        });
-
         addBinaryOperator("<>", OPERATOR_PRECEDENCE_EQUALITY, false, (v1, v2) ->
         {
-            assertNotNull(v1, v2);
             if (!v1.isBound() || !v2.isBound())
-            {
                 throw new ExpressionException("Both sides of swapping assignment need to be variables");
-            }
             String lvalvar = v1.getVariable();
             String rvalvar = v2.getVariable();
             Value lval = v2.boundTo(lvalvar);
             Value rval = v1.boundTo(rvalvar);
-            LazyValue lazyLHS = CrazyLazyValue(lval);
-            LazyValue lazyRHS = CrazyLazyValue(rval);
-            variables.put(lvalvar, lazyLHS);
-            variables.put(rvalvar, lazyRHS);
+            variables.put(lvalvar, () -> lval);
+            variables.put(rvalvar, () -> rval);
             return lval;
         });
 
-        addUnaryOperator("-",  false, (v) -> new NumericValue(assertNumberNotNull(v).multiply(new BigDecimal(-1))));
+        addUnaryOperator("-",  false, (v) -> new NumericValue(getNumericalValue(v).multiply(new BigDecimal(-1))));
 
         addUnaryOperator("+", false, (v) ->
         {
-                assertNumberNotNull(v);
-                return v;
+            getNumericalValue(v);
+            return v;
         });
 
         addUnaryFunction("fact", (v) ->
         {
-            BigDecimal d1 = assertNumberNotNull(v);
+            BigDecimal d1 = getNumericalValue(v);
             int number = d1.intValue();
             BigDecimal factorial = BigDecimal.ONE;
             for (int i = 1; i <= number; i++)
@@ -835,7 +744,6 @@ public class Expression
 
         addUnaryFunction("not", (v) ->
         {
-            assertNotNull(v);
             boolean b = v.getBoolean();
             return b ? Value.FALSE : Value.TRUE;
         });
@@ -847,43 +755,41 @@ public class Expression
             return result.getBoolean() ? lv.get(1) : lv.get(2);
         });
 
-        addMathematicalUnaryFunction("RANDOM", (d) -> d*Math.random());
-        addMathematicalUnaryFunction("SIN",    (d) -> Math.sin(Math.toRadians(d)));
-        addMathematicalUnaryFunction("COS",    (d) -> Math.cos(Math.toRadians(d)));
-        addMathematicalUnaryFunction("TAN",    (d) -> Math.tan(Math.toRadians(d)));
-        addMathematicalUnaryFunction("ASIN",   (d) -> Math.toDegrees(Math.asin(d)));
-        addMathematicalUnaryFunction("ACOS",   (d) -> Math.toDegrees(Math.acos(d)));
-        addMathematicalUnaryFunction("ATAN",   (d) -> Math.toDegrees(Math.atan(d)));
-        addMathematicalBinaryFunction("ATAN2", (d, d2) -> Math.toDegrees(Math.atan2(d, d2)) );
-        addMathematicalUnaryFunction("SINH",   Math::sinh );
-        addMathematicalUnaryFunction("COSH",   Math::cosh  );
-        addMathematicalUnaryFunction("TANH",   Math::tanh );
-        addMathematicalUnaryFunction("SEC",    (d) ->  1.0 / Math.cos(Math.toRadians(d)) ); // Formula: sec(x) = 1 / cos(x)
-        addMathematicalUnaryFunction("CSC",    (d) ->  1.0 / Math.sin(Math.toRadians(d)) ); // Formula: csc(x) = 1 / sin(x)
-        addMathematicalUnaryFunction("SECH",   (d) ->  1.0 / Math.cosh(d) );                // Formula: sech(x) = 1 / cosh(x)
-        addMathematicalUnaryFunction("CSCH",   (d) -> 1.0 / Math.sinh(d)  );                // Formula: csch(x) = 1 / sinh(x)
-        addMathematicalUnaryFunction("COT",    (d) -> 1.0 / Math.tan(Math.toRadians(d))  ); // Formula: cot(x) = cos(x) / sin(x) = 1 / tan(x)
-        addMathematicalUnaryFunction("ACOT",   (d) ->  Math.toDegrees(Math.atan(1.0 / d)) );// Formula: acot(x) = atan(1/x)
-        addMathematicalUnaryFunction("COTH",   (d) ->  1.0 / Math.tanh(d) );                // Formula: coth(x) = 1 / tanh(x)
-        addMathematicalUnaryFunction("ASINH",  (d) ->  Math.log(d + (Math.sqrt(Math.pow(d, 2) + 1))));  // Formula: asinh(x) = ln(x + sqrt(x^2 + 1))
-        addMathematicalUnaryFunction("ACOSH",  (d) ->  Math.log(d + (Math.sqrt(Math.pow(d, 2) - 1))));  // Formula: acosh(x) = ln(x + sqrt(x^2 - 1))
-        addMathematicalUnaryFunction("ATANH",  (d) ->                                       // Formula: atanh(x) = 0.5*ln((1 + x)/(1 - x))
+        addMathematicalUnaryFunction("rand", (d) -> d*Math.random());
+        addMathematicalUnaryFunction("sin",    (d) -> Math.sin(Math.toRadians(d)));
+        addMathematicalUnaryFunction("cos",    (d) -> Math.cos(Math.toRadians(d)));
+        addMathematicalUnaryFunction("tan",    (d) -> Math.tan(Math.toRadians(d)));
+        addMathematicalUnaryFunction("asin",   (d) -> Math.toDegrees(Math.asin(d)));
+        addMathematicalUnaryFunction("acos",   (d) -> Math.toDegrees(Math.acos(d)));
+        addMathematicalUnaryFunction("atan",   (d) -> Math.toDegrees(Math.atan(d)));
+        addMathematicalBinaryFunction("atan2", (d, d2) -> Math.toDegrees(Math.atan2(d, d2)) );
+        addMathematicalUnaryFunction("sinh",   Math::sinh );
+        addMathematicalUnaryFunction("cosh",   Math::cosh  );
+        addMathematicalUnaryFunction("tanh",   Math::tanh );
+        addMathematicalUnaryFunction("sec",    (d) ->  1.0 / Math.cos(Math.toRadians(d)) ); // Formula: sec(x) = 1 / cos(x)
+        addMathematicalUnaryFunction("csc",    (d) ->  1.0 / Math.sin(Math.toRadians(d)) ); // Formula: csc(x) = 1 / sin(x)
+        addMathematicalUnaryFunction("sech",   (d) ->  1.0 / Math.cosh(d) );                // Formula: sech(x) = 1 / cosh(x)
+        addMathematicalUnaryFunction("csch",   (d) -> 1.0 / Math.sinh(d)  );                // Formula: csch(x) = 1 / sinh(x)
+        addMathematicalUnaryFunction("cot",    (d) -> 1.0 / Math.tan(Math.toRadians(d))  ); // Formula: cot(x) = cos(x) / sin(x) = 1 / tan(x)
+        addMathematicalUnaryFunction("acot",   (d) ->  Math.toDegrees(Math.atan(1.0 / d)) );// Formula: acot(x) = atan(1/x)
+        addMathematicalUnaryFunction("coth",   (d) ->  1.0 / Math.tanh(d) );                // Formula: coth(x) = 1 / tanh(x)
+        addMathematicalUnaryFunction("asinh",  (d) ->  Math.log(d + (Math.sqrt(Math.pow(d, 2) + 1))));  // Formula: asinh(x) = ln(x + sqrt(x^2 + 1))
+        addMathematicalUnaryFunction("acosh",  (d) ->  Math.log(d + (Math.sqrt(Math.pow(d, 2) - 1))));  // Formula: acosh(x) = ln(x + sqrt(x^2 - 1))
+        addMathematicalUnaryFunction("atanh",  (d) ->                                       // Formula: atanh(x) = 0.5*ln((1 + x)/(1 - x))
         {
             if (Math.abs(d) > 1 || Math.abs(d) == 1)
-            {
                 throw new ExpressionException("Number must be |x| < 1");
-            }
             return 0.5 * Math.log((1 + d) / (1 - d));
         });
-        addMathematicalUnaryFunction("RAD",  Math::toRadians);
-        addMathematicalUnaryFunction("DEG", Math::toDegrees);
-        addMathematicalUnaryFunction("LOG", Math::log);
-        addMathematicalUnaryFunction("LOG10", Math::log10);
-        addMathematicalUnaryFunction("LOG1P", Math::log1p);
-        addMathematicalUnaryFunction("SQRT", Math::sqrt);
+        addMathematicalUnaryFunction("rad",  Math::toRadians);
+        addMathematicalUnaryFunction("deg", Math::toDegrees);
+        addMathematicalUnaryFunction("log", Math::log);
+        addMathematicalUnaryFunction("log10", Math::log10);
+        addMathematicalUnaryFunction("log1p", Math::log1p);
+        addMathematicalUnaryFunction("sqrt", Math::sqrt);
 
 
-        addFunction("MAX", (lv) ->
+        addFunction("min", (lv) ->
         {
             if (lv.size() == 0)
                 throw new ExpressionException("MAX requires at least one parameter");
@@ -898,9 +804,7 @@ public class Expression
         addFunction("min", (lv) ->
         {
             if (lv.size() == 0)
-            {
                 throw new ExpressionException("MIN requires at least one parameter");
-            }
             Value min = null;
             for (Value parameter : lv)
             {
@@ -909,24 +813,18 @@ public class Expression
             return min;
         });
 
-        addUnaryFunction("abs", (v) -> new NumericValue(assertNumberNotNull(v).abs(mc)));
-
+        addUnaryFunction("abs", (v) -> new NumericValue(getNumericalValue(v).abs(mc)));
 
         addBinaryFunction("round", (v1, v2) ->
         {
-            BigDecimal toRound = assertNumberNotNull(v1);
-            int precision = assertNumberNotNull(v2).intValue();
+            BigDecimal toRound = getNumericalValue(v1);
+            int precision = getNumericalValue(v2).intValue();
             return new NumericValue(toRound.setScale(precision, mc.getRoundingMode()));
         });
 
-        addUnaryFunction("floor", (v) ->
-        {
-            BigDecimal toRound = assertNumberNotNull(v);
-            return new NumericValue(toRound.setScale(0, RoundingMode.FLOOR));
+        addUnaryFunction("floor", (v) -> new NumericValue(getNumericalValue(v).setScale(0, RoundingMode.FLOOR)));
 
-        });
-
-        addUnaryFunction("ceil", (v) -> new NumericValue(assertNumberNotNull(v).setScale(0, RoundingMode.CEILING)));
+        addUnaryFunction("ceil", (v) -> new NumericValue(getNumericalValue(v).setScale(0, RoundingMode.CEILING)));
 
         addUnaryFunction("relu", (v) -> v.compareTo(Value.ZERO) < 0 ? Value.ZERO : v);
 
@@ -938,75 +836,135 @@ public class Expression
 
         addFunction("list", ListValue::new);
 
+        // loop(expr, limit) => last_value
+        // expr receives bounded variable '_' indicating iteration
 
-        addFunction("loop", (lv) ->
+        addLazyFunction("loop", 2, (lv) ->
         {
-            throw new UnsupportedOperationException(); // TODO
+            long limit = getNumericalValue(lv.get(1).eval()).longValue();
+            Value lastOne = Value.ZERO;
+            LazyValue expr = lv.get(0);
+            for (long i=0; i < limit; i++)
+            {
+                long dummy = i;
+                variables.put("_", () -> (new NumericValue(dummy)).boundTo("_"));
+                lastOne = expr.eval();
+            }
+            Value trulyLastOne = lastOne;
+            variables.put("_", () -> Value.ZERO.boundTo("_"));
+            return () -> trulyLastOne;
         });
-        addFunction("map", (lv) ->
+
+        // map(expr, list) => list
+        // receives bounded variable '_' with the expression
+        addLazyFunction("map", 2, (lv) ->
         {
-            throw new UnsupportedOperationException(); // TODO
+            LazyValue expr = lv.get(0);
+            Value rval= lv.get(1).eval();
+            if (!(rval instanceof ListValue))
+                throw new ExpressionException("Second argument of map function should be a list");
+            ListValue list = (ListValue) rval;
+            LazyValue ret = () -> new ListValue(list.getItems().stream().map((v)->{
+                variables.put("_", () -> v.boundTo("_"));
+                return expr.eval();
+            }).collect(Collectors.toList()));
+            variables.put("_", () -> Value.ZERO.boundTo("_"));
+            return ret;
         });
-        addFunction("for", (lv) ->
+
+        // similar to map, but returns total number of successes
+        addLazyFunction("for", 2, (lv) -> // for(expr, list) => success_count
         {
-            throw new UnsupportedOperationException(); // TODO
+            LazyValue expr = lv.get(0);
+            Value rval= lv.get(1).eval();
+            if (!(rval instanceof ListValue))
+                throw new ExpressionException("Second argument of for function should be a list");
+            ListValue list = (ListValue) rval;
+            long successCount = 0;
+            for (Value v : list.getItems())
+            {
+                variables.put("_", () -> v.boundTo("_"));
+                Value res = expr.eval();
+                if (res.getBoolean())
+                    successCount++;
+            }
+            long promiseWontChange = successCount;
+            variables.put("_", () -> Value.ZERO.boundTo("_"));
+            return () -> new NumericValue(promiseWontChange);
         });
-        addFunction("while", (lv) ->
+
+        //condition and expression will get a bound 'i'
+        //returns last successful expression or false
+        addLazyFunction("while", 3, (lv) -> // while(cond, limit, expr) => ??
         {
-            throw new UnsupportedOperationException(); // TODO
+            long limit = getNumericalValue(lv.get(1).eval()).longValue();
+            LazyValue condition = lv.get(0);
+            LazyValue expr = lv.get(2);
+            long i = 0;
+            Value lastOne = Value.ZERO;
+            variables.put("_",() -> new NumericValue(0).boundTo("_"));
+            while (i<limit && condition.eval().getBoolean() )
+            {
+                lastOne = expr.eval();
+                i++;
+                long notGonnaChangeIPromize = i;
+                variables.put("_",() -> new NumericValue(notGonnaChangeIPromize).boundTo("_"));
+            }
+            Value lastValueNoKidding = lastOne;
+            return () -> lastValueNoKidding;
         });
-        addFunction("reduce", (lv) ->
+
+        // reduce(expr, list, acc) => value
+        // reduces values in the list with expression that gets accumulator
+        // each iteration expr receives acc - accumulator, and '_' - current list value
+        // returned value is substituted to the accumulator
+        addLazyFunction("reduce", 3, (lv) ->
         {
-            throw new UnsupportedOperationException(); // TODO
+            LazyValue expr = lv.get(0);
+            Value acc = lv.get(2).eval();
+            Value rval= lv.get(1).eval();
+            if (!(rval instanceof ListValue))
+                throw new ExpressionException("Second argument of for function should be a list");
+            List<Value> elements= ((ListValue) rval).getItems();
+            if (elements.isEmpty())
+            {
+                Value seriouslyWontChange = acc;
+                return () -> seriouslyWontChange;
+            }
+            for (Value v: elements)
+            {
+                Value kidYouNotWontChange = acc;
+                variables.put("acc", () -> kidYouNotWontChange.boundTo("acc"));
+                variables.put("_", () -> v.boundTo("_"));
+                acc = expr.eval();
+
+            }
+            Value hopeItsEnoughPromise = acc;
+            variables.put("acc", () -> Value.ZERO.boundTo("acc"));
+            variables.put("_", () -> Value.ZERO.boundTo("_"));
+            return () -> hopeItsEnoughPromise;
         });
-        addFunction("case", (lv) ->
+
+        // case(cond1, expr1, cond2, expr2, ...) => value
+        addLazyFunction("case", -1, (lv) ->
         {
-            throw new UnsupportedOperationException(); // TODO
+            if ((lv.size() % 2 == 0) || lv.size() < 3 )
+                throw new ExpressionException("case statement needs to have at least one condition and case, and a default value");
+            Value returnValue = Value.ZERO;
+            for (int i=0; i<lv.size()-1; i+=2)
+            {
+                if (lv.get(i).eval().getBoolean())
+                {
+                    Value ret = lv.get(i+1).eval();
+                    return () -> ret;
+                }
+            }
+            return () -> lv.get(lv.size() - 1).eval();
         });
 
     }
 
-    private void assertNotNull(Value v1)
-    {
-        if (v1 == null)
-        {
-            throw new ExpressionException("Operand may not be null");
-        }
-    }
 
-    private BigDecimal assertNumberNotNull(Value v1)
-    {
-        if (v1 == null)
-        {
-            throw new ExpressionException("Operand may not be null");
-        }
-        if (!(v1 instanceof NumericValue))
-        {
-            throw new ExpressionException("Operand has to be of a numeric type");
-        }
-        return ((NumericValue) v1).getNumber();
-    }
-
-    private void assertNotNull(Value v1, Value v2)
-    {
-        if (v1 == null)
-        {
-            throw new ExpressionException("First operand may not be null");
-        }
-        if (v2 == null)
-        {
-            throw new ExpressionException("Second operand may not be null");
-        }
-    }
-
-
-    private void assertNotNull(LazyValue v1)
-    {
-        if (v1 == null)
-        {
-            throw new ExpressionException("Operand may not be null");
-        }
-    }
 
     /**
      * Is the string a number?
@@ -1235,11 +1193,6 @@ public class Expression
                             return operators.get(token.surface).eval(value, null).eval();
                         }
 
-                        @Override
-                        public String getString()
-                        {
-                            return String.valueOf(operators.get(token.surface).eval(value, null).eval());
-                        }
                     };
                     stack.push(result);
                     break;
@@ -1254,10 +1207,6 @@ public class Expression
                             return operators.get(token.surface).eval(v2, v1).eval();
                         }
 
-                        public String getString()
-                        {
-                            return String.valueOf(operators.get(token.surface).eval(v2, v1).eval());
-                        }
                     };
                     stack.push(result);
                     break;
@@ -1273,17 +1222,13 @@ public class Expression
                         {
                             if (!variables.containsKey(token.surface)) // new variable
                             {
-                                variables.put(token.surface, CrazyLazyValue(Value.ZERO.boundTo(token.surface)));
+                                variables.put(token.surface, () -> Value.ZERO.boundTo(token.surface));
                             }
                             LazyValue lazyVariable = variables.get(token.surface);
                             Value value = lazyVariable.eval();
                             return value;
                         }
 
-                        public String getString()
-                        {
-                            return token.surface;
-                        }
                     });
                     break;
                 case FUNCTION:
@@ -1308,10 +1253,6 @@ public class Expression
                             return f.lazyEval(p).eval();
                         }
 
-                        public String getString()
-                        {
-                            return String.valueOf(f.lazyEval(p).eval());
-                        }
                     });
                     break;
                 case OPEN_PAREN:
@@ -1329,10 +1270,6 @@ public class Expression
                             return new NumericValue(new BigDecimal(token.surface, mc));
                         }
 
-                        public String getString()
-                        {
-                            return String.valueOf(new BigDecimal(token.surface, mc));
-                        }
                     });
                     break;
                 case STRINGPARAM:
@@ -1343,10 +1280,6 @@ public class Expression
                             return new StringValue(token.surface); // was null
                         }
 
-                        public String getString()
-                        {
-                            return token.surface;
-                        }
                     });
                     break;
                 case HEX_LITERAL:
@@ -1357,10 +1290,6 @@ public class Expression
                             return new NumericValue(new BigDecimal(new BigInteger(token.surface.substring(2), 16), mc));
                         }
 
-                        public String getString()
-                        {
-                            return new BigInteger(token.surface.substring(2), 16).toString();
-                        }
                     });
                     break;
                 default:
@@ -1384,7 +1313,7 @@ public class Expression
      */
     public Expression setVariable(String variable, Value value)
     {
-        return setVariable(variable, CrazyLazyValue(value.boundTo(variable)));
+        return setVariable(variable, () -> value.boundTo(variable));
     }
 
     /**
@@ -1410,14 +1339,14 @@ public class Expression
     public Expression setVariable(String variable, String value)
     {
         if (isNumber(value))
-            variables.put(variable, CrazyLazyValue(new NumericValue(new BigDecimal(value, mc)).boundTo(variable)));
+            variables.put(variable, () -> new NumericValue(new BigDecimal(value, mc)).boundTo(variable));
         else if (value.equalsIgnoreCase("null"))
         {
             variables.put(variable, null);
         }
         else
         {
-            variables.put(variable, CrazyLazyValue(new StringValue(value).boundTo(variable)));
+            variables.put(variable, () -> new StringValue(value).boundTo(variable));
         }
         return this;
     }
