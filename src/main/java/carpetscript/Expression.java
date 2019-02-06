@@ -67,7 +67,11 @@ import java.util.stream.Collectors;
  */
 public class Expression
 {
-
+    private Map<String, Integer> precedence = new HashMap<String,Integer>() {{
+        put("unary+-", 60);
+        put("equal==!=", 7);
+        put("compare>=><=<", 10);
+    }};
     /**
      * Unary operators precedence: + and - as prefix
      */
