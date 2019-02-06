@@ -205,6 +205,14 @@ public class Expression
             super(message);
         }
     }
+    private static class ExitStatement extends RuntimeException
+    {
+        public Value retval;
+        public ExitStatement(Value value)
+        {
+            retval = value;
+        }
+    }
 
     public static LazyValue FALSE = () -> Value.FALSE;
     public static LazyValue TRUE = () -> Value.TRUE;
@@ -620,7 +628,7 @@ public class Expression
     public Expression(String expression, MathContext defaultMathContext)
     {
         this.mc = defaultMathContext;
-        this.expression = expression;
+        this.expression = expression.trim().replaceAll(";+$", "");
         variables.put("e", () -> e);
         variables.put("PI", () -> PI);
         variables.put("NULL", null);
@@ -840,8 +848,11 @@ public class Expression
 
         addUnaryFunction("print", (v) ->
         {
-                System.out.println(v.getString());
-                return v; // pass through for variables
+            System.out.println(v.getString());
+            return v; // pass through for variables
+        });
+        addUnaryFunction("return", (v) -> {
+            throw new ExitStatement(v);
         });
 
         addFunction("list", ListValue::new);
@@ -1249,8 +1260,22 @@ public class Expression
      */
     public Value eval()
     {
-        if (ast != null) return ast.eval();
+        if (ast == null)
+        {
+            ast = getAST();
+        }
+        try
+        {
+            return ast.eval();
+        }
+        catch (ExitStatement exit)
+        {
+            return exit.retval;
+        }
+    }
 
+    private LazyValue getAST()
+    {
         Stack<LazyValue> stack = new Stack<>();
         for (final Token token : getRPN())
         {
@@ -1352,9 +1377,7 @@ public class Expression
                             "Unexpected token '" + token.surface + "' at character position " + token.pos);
             }
         }
-        ast = stack.pop();
-        return ast.eval();
-        //return stack.pop().eval();
+        return stack.pop();
     }
 
 
