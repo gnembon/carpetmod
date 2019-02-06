@@ -161,7 +161,12 @@ public class Expression
     /**
      * All defined variables with name and value.
      */
-    private Map<String, LazyValue> variables = new HashMap<>();
+    protected Map<String, LazyValue> variables = new HashMap<>();
+    public LazyValue getVariable(String name)
+    {
+        return variables.get(name);
+    }
+
 
     /**
      * What character to use for decimal separators.
@@ -850,7 +855,7 @@ public class Expression
             Value lastOne = Value.ZERO;
             LazyValue expr = lv.get(0);
             //scoping
-            Value _val = variables.get("_").eval();
+            LazyValue _val = variables.get("_");
             for (long i=0; i < limit; i++)
             {
                 long dummy = i;
@@ -859,7 +864,7 @@ public class Expression
             }
             Value trulyLastOne = lastOne;
             //revering scope
-            variables.put("_", () -> _val.boundTo("_"));
+            variables.put("_", _val);
             return () -> trulyLastOne;
         });
 
@@ -873,8 +878,8 @@ public class Expression
                 throw new ExpressionException("Second argument of map function should be a list");
             List<Value> list = ((ListValue) rval).getItems();
             //scoping
-            Value _val = variables.get("_").eval();
-            Value _iter = variables.get("_i").eval();
+            LazyValue _val = variables.get("_");
+            LazyValue _iter = variables.get("_i");
             List<Value> result = new ArrayList<>();
             for (int i=0; i< list.size(); i++)
             {
@@ -885,8 +890,8 @@ public class Expression
             }
             LazyValue ret = () -> new ListValue(result);
             //revering scope
-            variables.put("_", () -> _val.boundTo("_"));
-            variables.put("_i", () -> _iter.boundTo("_i"));
+            variables.put("_", _val);
+            variables.put("_i", _iter);
             return ret;
         });
 
@@ -901,8 +906,8 @@ public class Expression
                 throw new ExpressionException("Second argument of grep function should be a list");
             List<Value> list = ((ListValue) rval).getItems();
             //scoping
-            Value _val = variables.get("_").eval();
-            Value _iter = variables.get("_i").eval();
+            LazyValue _val = variables.get("_");
+            LazyValue _iter = variables.get("_i");
             List<Value> result = new ArrayList<>();
             for (int i=0; i< list.size(); i++)
             {
@@ -914,8 +919,8 @@ public class Expression
             }
             LazyValue ret = () -> new ListValue(result);
             //revering scope
-            variables.put("_", () -> _val.boundTo("_"));
-            variables.put("_i", () -> _iter.boundTo("_i"));
+            variables.put("_", _val);
+            variables.put("_i", _iter);
             return ret;
         });
 
@@ -929,8 +934,8 @@ public class Expression
                 throw new ExpressionException("Second argument of for function should be a list");
             List<Value> list = ((ListValue) rval).getItems();
             //scoping
-            Value _val = variables.get("_").eval();
-            Value _iter = variables.get("_i").eval();
+            LazyValue _val = variables.get("_");
+            LazyValue _iter = variables.get("_i");
             int successCount = 0;
             for (int i=0; i< list.size(); i++)
             {
@@ -941,8 +946,8 @@ public class Expression
                     successCount++;
             }
             //revering scope
-            variables.put("_", () -> _val.boundTo("_"));
-            variables.put("_i", () -> _iter.boundTo("_i"));
+            variables.put("_", _val);
+            variables.put("_i", _iter);
             long promiseWontChange = successCount;
             return () -> new NumericValue(promiseWontChange);
         });
@@ -958,8 +963,7 @@ public class Expression
             long i = 0;
             Value lastOne = Value.ZERO;
             //scoping
-            Value _val = variables.get("_").eval();
-
+            LazyValue _val = variables.get("_");
             variables.put("_",() -> new NumericValue(0).boundTo("_"));
             while (i<limit && condition.eval().getBoolean() )
             {
@@ -969,7 +973,7 @@ public class Expression
                 variables.put("_",() -> new NumericValue(notGonnaChangeIPromize).boundTo("_"));
             }
             //revering scope
-            variables.put("_", () -> _val.boundTo("_"));
+            variables.put("_", _val);
             Value lastValueNoKidding = lastOne;
             return () -> lastValueNoKidding;
         });
@@ -995,8 +999,8 @@ public class Expression
             }
 
             //scoping
-            Value _val = variables.get("_").eval();
-            Value _acc = variables.get("_a").eval();
+            LazyValue _val = variables.get("_");
+            LazyValue _acc = variables.get("_a");
 
             for (Value v: elements)
             {
@@ -1007,8 +1011,8 @@ public class Expression
 
             }
             //reverting scope
-            variables.put("_a", () -> _acc);
-            variables.put("_", () -> _val);
+            variables.put("_a", _acc);
+            variables.put("_", _val);
             Value hopeItsEnoughPromise = acc;
             return () -> hopeItsEnoughPromise;
         });
