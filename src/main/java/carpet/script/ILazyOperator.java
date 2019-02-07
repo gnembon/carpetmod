@@ -24,53 +24,46 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * 
  */
-package carpetscript;
+package carpet.script;
+
+import carpet.script.Expression.LazyValue;
 
 /**
- * Abstract implementation of an operator.
+ * Base interface which is required for all operators.
  */
-public abstract class AbstractLazyOperator implements ILazyOperator {
-	/**
-	 * This operators name (pattern).
-	 */
-	protected String oper;
-	/**
-	 * Operators precedence.
-	 */
-	protected int precedence;
-	/**
-	 * IOperator is left associative.
-	 */
-	protected boolean leftAssoc;
-
+public interface ILazyOperator {
 
 	/**
-	 * Creates a new operator.
+	 * Gets the String that is used to denote the operator in the expression.
 	 * 
-	 * @param oper
-	 *            The operator name (pattern).
-	 * @param precedence
-	 *            The operators precedence.
-	 * @param leftAssoc
-	 *            <code>true</code> if the operator is left associative,
-	 *            else <code>false</code>.
+	 * @return The String that is used to denote the operator in the expression.
 	 */
-	protected AbstractLazyOperator(String oper, int precedence, boolean leftAssoc) {
-		this.oper = oper;
-		this.precedence = precedence;
-		this.leftAssoc = leftAssoc;
-	}
+	public abstract String getOper();
 
-	public String getOper() {
-		return oper;
-	}
+	/**
+	 * Gets the precedence value of this operator.
+	 * 
+	 * @return the precedence value of this operator.
+	 */
+	public abstract int getPrecedence();
 
-	public int getPrecedence() {
-		return precedence;
-	}
+	/**
+	 * Gets whether this operator is left associative (<code>true</code>) or if
+	 * this operator is right associative (<code>false</code>).
+	 * 
+	 * @return <code>true</code> if this operator is left associative.
+	 */
+	public abstract boolean isLeftAssoc();
 
-	public boolean isLeftAssoc() {
-		return leftAssoc;
-	}
 
+	/**
+	 * Implementation for this operator.
+	 * 
+	 * @param v1
+	 *            Operand 1.
+	 * @param v2
+	 *            Operand 2.
+	 * @return The result of the operation.
+	 */
+	public abstract LazyValue eval(LazyValue v1, LazyValue v2);
 }

@@ -24,46 +24,54 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * 
  */
-package carpetscript;
+package carpet.script;
 
-import carpetscript.Expression.LazyValue;
+import java.util.List;
+
+import carpet.script.Expression.LazyValue;
 
 /**
- * Base interface which is required for all operators.
+ * Base interface which is required for lazily evaluated functions. A function
+ * is defined by a name, a number of parameters it accepts and of course
+ * the logic for evaluating the result.
  */
-public interface ILazyOperator {
+public interface ILazyFunction {
 
 	/**
-	 * Gets the String that is used to denote the operator in the expression.
+	 * Gets the name of this function.<br>
+	 * <br>
+	 * The name is use to invoke this function in the expression.
 	 * 
-	 * @return The String that is used to denote the operator in the expression.
+	 * @return The name of this function.
 	 */
-	public abstract String getOper();
+	public abstract String getName();
 
 	/**
-	 * Gets the precedence value of this operator.
+	 * Gets the number of parameters this function accepts.<br>
+	 * <br>
+	 * A value of <code>-1</code> denotes that this function accepts a variable
+	 * number of parameters.
 	 * 
-	 * @return the precedence value of this operator.
+	 * @return The number of parameters this function accepts.
 	 */
-	public abstract int getPrecedence();
+	public abstract int getNumParams();
 
 	/**
-	 * Gets whether this operator is left associative (<code>true</code>) or if
-	 * this operator is right associative (<code>false</code>).
+	 * Gets whether the number of accepted parameters varies.<br>
+	 * <br>
+	 * That means that the function does accept an undefined amount of
+	 * parameters.
 	 * 
-	 * @return <code>true</code> if this operator is left associative.
+	 * @return <code>true</code> if the number of accepted parameters varies.
 	 */
-	public abstract boolean isLeftAssoc();
-
+	public abstract boolean numParamsVaries();
 
 	/**
-	 * Implementation for this operator.
+	 * Lazily evaluate this function.
 	 * 
-	 * @param v1
-	 *            Operand 1.
-	 * @param v2
-	 *            Operand 2.
-	 * @return The result of the operation.
+	 * @param lazyParams
+	 *            The accepted parameters.
+	 * @return The lazy result of this function.
 	 */
-	public abstract LazyValue eval(LazyValue v1, LazyValue v2);
+	public abstract LazyValue lazyEval(List<LazyValue> lazyParams);
 }

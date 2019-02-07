@@ -24,36 +24,21 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * 
  */
-package carpetscript;
+package carpet.script;
 
-import carpetscript.Expression.LazyValue;
 
 /**
- * Abstract implementation of an operator.
+ * Base interface which is required for all operators.
  */
-public abstract class AbstractOperator extends AbstractLazyOperator implements IOperator {
-
+public interface IOperator extends ILazyOperator {
 	/**
-	 * Creates a new operator.
+	 * Implementation for this operator.
 	 * 
-	 * @param oper
-	 *            The operator name (pattern).
-	 * @param precedence
-	 *            The operators precedence.
-	 * @param leftAssoc
-	 *            <code>true</code> if the operator is left associative,
-	 *            else <code>false</code>.
+	 * @param v1
+	 *            Operand 1.
+	 * @param v2
+	 *            Operand 2.
+	 * @return The result of the operation.
 	 */
-	protected AbstractOperator(String oper, int precedence, boolean leftAssoc) {
-		super(oper, precedence, leftAssoc);
-	}
-
-	public LazyValue eval(final LazyValue v1, final LazyValue v2) {
-		return new LazyValue() {
-			public Value eval() {
-				return AbstractOperator.this.eval(v1.eval(), v2.eval());
-			}
-
-		};
-	}
+	public abstract Value eval(Value v1, Value v2);
 }

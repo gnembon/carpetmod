@@ -1,24 +1,28 @@
-package carpetscript;
+package carpet.script;
 
 import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;
 
-public class NumericValue extends Value{
+public class NumericValue extends Value
+{
     private BigDecimal value;
 
     @Override
-    public String getString() {
-        return value.stripTrailingZeros().toString();
+    public String getString()
+    {
+        return value.stripTrailingZeros().toPlainString();
     }
 
     @Override
-    public boolean getBoolean() {
+    public boolean getBoolean()
+    {
         return value != null && value.compareTo(BigDecimal.ZERO) != 0;
     }
 
     @Override
-    public Value add(Value v) {  // TODO test if definintn add(NumericVlaue) woud solve the casting
+    public Value add(Value v)
+    {  // TODO test if definintn add(NumericVlaue) woud solve the casting
         if (v instanceof NumericValue)
         {
             return new NumericValue(value.add(((NumericValue) v).getNumber()));

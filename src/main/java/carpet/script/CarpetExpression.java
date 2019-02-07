@@ -1,9 +1,11 @@
-package carpet.utils;
+package carpet.script;
 
 import carpet.CarpetSettings;
-import carpetscript.*;
-import carpetscript.Expression.ExpressionException;
-import carpetscript.Expression.LazyValue;
+import carpet.script.*;
+import carpet.script.Expression.ExpressionException;
+import carpet.script.Expression.LazyValue;
+import carpet.utils.BlockInfo;
+import carpet.utils.Messenger;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.command.CommandSource;

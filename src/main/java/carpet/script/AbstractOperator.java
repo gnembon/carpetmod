@@ -24,18 +24,14 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * 
  */
-package carpetscript;
+package carpet.script;
 
-import carpetscript.Expression.ExpressionException;
-import carpetscript.Expression.LazyValue;
+import carpet.script.Expression.LazyValue;
 
 /**
- * Abstract implementation of an unary operator.<br>
- * <br>
- * This abstract implementation implements eval so that it forwards its first
- * parameter to evalUnary.
+ * Abstract implementation of an operator.
  */
-public abstract class AbstractUnaryOperator extends AbstractOperator {
+public abstract class AbstractOperator extends AbstractLazyOperator implements IOperator {
 
 	/**
 	 * Creates a new operator.
@@ -48,36 +44,16 @@ public abstract class AbstractUnaryOperator extends AbstractOperator {
 	 *            <code>true</code> if the operator is left associative,
 	 *            else <code>false</code>.
 	 */
-	protected AbstractUnaryOperator(String oper, int precedence, boolean leftAssoc) {
+	protected AbstractOperator(String oper, int precedence, boolean leftAssoc) {
 		super(oper, precedence, leftAssoc);
 	}
 
 	public LazyValue eval(final LazyValue v1, final LazyValue v2) {
-		if (v2 != null) {
-			throw new ExpressionException("Did not expect a second parameter for unary operator");
-		}
 		return new LazyValue() {
-
-			@Override
 			public Value eval() {
-				return AbstractUnaryOperator.this.evalUnary(v1.eval());
+				return AbstractOperator.this.eval(v1.eval(), v2.eval());
 			}
+
 		};
 	}
-
-	public Value eval(Value v1, Value v2) {
-		if (v2 != null) {
-			throw new ExpressionException("Did not expect a second parameter for unary operator");
-		}
-		return evalUnary(v1);
-	}
-
-	/**
-	 * Implementation of this unary operator.
-	 * 
-	 * @param v1
-	 *            The parameter.
-	 * @return The result of the operation.
-	 */
-	public abstract Value evalUnary(Value v1);
 }

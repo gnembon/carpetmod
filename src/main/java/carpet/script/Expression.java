@@ -24,7 +24,7 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  */
-package carpetscript;
+package carpet.script;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -38,7 +38,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Stack;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 
 /**
@@ -68,125 +67,56 @@ import java.util.stream.Collectors;
 public class Expression
 {
     private Map<String, Integer> precedence = new HashMap<String,Integer>() {{
-        put("unary+-", 60);
-        put("equal==!=", 7);
+        put("unary+-!", 60);
+        put("exponent^", 40);
+        put("multiplication*/%", 30);
+        put("addition+-", 20);
         put("compare>=><=<", 10);
+        put("equal==!=", 7);
+        put("and&&", 4);
+        put("or||", 3);
+        put("assign=<>", 2);
+        put("nextop;", 1);
     }};
-    /**
-     * Unary operators precedence: + and - as prefix
-     */
-    public static final int OPERATOR_PRECEDENCE_UNARY = 60;
-
-    /**
-     * Equality operators precedence: =, ==, !=. <>
-     */
-    public static final int OPERATOR_PRECEDENCE_EQUALITY = 7;
-
-    /**
-     * Comparative operators precedence: <,>,<=,>=
-     */
-    public static final int OPERATOR_PRECEDENCE_COMPARISON = 10;
-
-    /**
-     * Or operator precedence: ||
-     */
-    public static final int OPERATOR_PRECEDENCE_OR = 3;
-
-    /**
-     * And operator precedence: &&
-     */
-    public static final int OPERATOR_PRECEDENCE_AND = 4;
-
-    /**
-     * Power operator precedence: ^
-     */
-    public static final int OPERATOR_PRECEDENCE_POWER = 40;
-
-    /**
-     * Multiplicative operators precedence: *,/,%
-     */
-    public static final int OPERATOR_PRECEDENCE_MULTIPLICATIVE = 30;
-
-    /**
-     * Additive operators precedence: + and -
-     */
-    public static final int OPERATOR_PRECEDENCE_ADDITIVE = 20;
-
-    /**
-     * next command operator: ;
-     */
-    public static final int OPERATOR_PRECEDENCE_NEXTOP = 1;
-
-    /**
-     * Assignment operator precedence: =
-     */
-    public static final int OPERATOR_PRECEDENCE_ASSIGN = 2;
-
-    /**
-     * Definition of PI as a constant, can be used in expressions as variable.
-     */
     public static final Value PI = new NumericValue(
             "3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679");
 
-
-    /**
-     * Definition of e: "Euler's number" as a constant, can be used in
-     * expressions as variable.
-     */
     public static final Value e = new NumericValue(
             "2.71828182845904523536028747135266249775724709369995957496696762772407663");
 
-    /**
-     * The {@link MathContext} to use for calculations.
-     */
+    /** The {@link MathContext} to use for calculations. */
     private MathContext mc;
 
-
-    /**
-     * The current infix expression, with optional variable substitutions.
-     */
+    /** The current infix expression, with optional variable substitutions. */
     private String expression;
 
-    /**
-     * The cached RPN (Reverse Polish Notation) of the expression.
-     */
+    /** The cached RPN (Reverse Polish Notation) of the expression. */
     private List<Token> rpn = null;
 
-    /**
-     * All defined operators with name and implementation.
-     */
+    /** All defined operators with name and implementation. */
     private Map<String, ILazyOperator> operators = new HashMap<>();
 
-    /**
-     * All defined functions with name and implementation.
-     */
+    /** All defined functions with name and implementation. */
     private Map<String, ILazyFunction> functions = new HashMap<>();
 
-    /**
-     * All defined variables with name and value.
-     */
+    /** All defined variables with name and value. */
     protected Map<String, LazyValue> variables = new HashMap<>();
+
     public LazyValue getVariable(String name)
     {
         return variables.get(name);
     }
 
 
-    /**
-     * What character to use for decimal separators.
-     */
+    /** What character to use for decimal separators. */
     private static final char decimalSeparator = '.';
 
-    /**
-     * What character to use for minus sign (negative values).
-     */
+    /** What character to use for minus sign (negative values). */
     private static final char minusSign = '-';
 
     private Consumer<String> logOutput = null;
 
-    /**
-     * LazyNumber interface created for lazily evaluated functions
-     */
+    /** LazyNumber interface created for lazily evaluated functions */
     @FunctionalInterface
     public interface LazyValue
     {
@@ -199,9 +129,7 @@ public class Expression
      */
     private static final LazyValue PARAMS_START = () -> null;
 
-    /**
-     * The expression evaluators exception class.
-     */
+    /** The expression evaluators exception class. */
     public static class ExpressionException extends RuntimeException
     {
         public ExpressionException(String message)
@@ -268,18 +196,12 @@ public class Expression
     private class Tokenizer implements Iterator<Token>
     {
 
-        /**
-         * Actual position in expression string.
-         */
+        /** Actual position in expression string. */
         private int pos = 0;
 
-        /**
-         * The original input expression.
-         */
+        /** The original input expression. */
         private String input;
-        /**
-         * The previous token or <code>null</code> if none.
-         */
+        /** The previous token or <code>null</code> if none. */
         private Token previousToken;
 
         /**
@@ -511,7 +433,7 @@ public class Expression
 
     public void addUnaryOperator(String surface, boolean leftAssoc, java.util.function.Function<Value, Value> fun)
     {
-        operators.put(surface+"u", new AbstractUnaryOperator(surface, OPERATOR_PRECEDENCE_UNARY, leftAssoc)
+        operators.put(surface+"u", new AbstractUnaryOperator(surface, precedence.get("unary+-!"), leftAssoc)
         {
             @Override
             public Value evalUnary(Value v1)
@@ -611,14 +533,14 @@ public class Expression
 
     /**
      * Creates a new expression instance from an expression string with a given
-     * default match context of {@link MathContext#DECIMAL32}.
+     * default match context of {@link MathContext#DECIMAL64}.
      *
      * @param expression The expression. E.g. <code>"2.4*sin(3)/(2-4)"</code> or
      *                   <code>"sin(y)>0 & max(z, 3)>3"</code>
      */
     public Expression(String expression)
     {
-        this(expression, MathContext.DECIMAL32);
+        this(expression, MathContext.DECIMAL64);
     }
 
     /**
@@ -639,30 +561,25 @@ public class Expression
         variables.put("TRUE", () -> Value.TRUE);
         variables.put("FALSE", () -> Value.FALSE);
 
-        //special variables for second order functions
+        //special variables for second order functions so we don't need to check them all the time
         variables.put("_", () -> new NumericValue(0).boundTo("_"));
         variables.put("_i", () -> new NumericValue(0).boundTo("_i"));
         variables.put("_a", () -> new NumericValue(0).boundTo("_a"));
 
-        addBinaryOperator(";",OPERATOR_PRECEDENCE_NEXTOP, true, (v1, v2) ->
+        addBinaryOperator(";",precedence.get("nextop;"), true, (v1, v2) ->
         {
             if (logOutput != null)
                 logOutput.accept(v1.getString());
             return v2;
         });
 
-        addBinaryOperator("+", OPERATOR_PRECEDENCE_ADDITIVE, true, Value::add);
-
-        addBinaryOperator("-", OPERATOR_PRECEDENCE_ADDITIVE, true, Value::subtract);
-
-        addBinaryOperator("*", OPERATOR_PRECEDENCE_MULTIPLICATIVE, true, Value::multiply);
-
-        addBinaryOperator("/", OPERATOR_PRECEDENCE_MULTIPLICATIVE, true, Value::divide);
-
-        addBinaryOperator("%", OPERATOR_PRECEDENCE_MULTIPLICATIVE, true, (v1, v2) ->
+        addBinaryOperator("+", precedence.get("addition+-"), true, Value::add);
+        addBinaryOperator("-", precedence.get("addition+-"), true, Value::subtract);
+        addBinaryOperator("*", precedence.get("multiplication*/%"), true, Value::multiply);
+        addBinaryOperator("/", precedence.get("multiplication*/%"), true, Value::divide);
+        addBinaryOperator("%", precedence.get("multiplication*/%"), true, (v1, v2) ->
                 new NumericValue(getNumericalValue(v1).remainder(getNumericalValue(v2), mc)));
-
-        addBinaryOperator("^", OPERATOR_PRECEDENCE_POWER, false, (v1, v2) ->
+        addBinaryOperator("^", precedence.get("exponent^"), false, (v1, v2) ->
         {
             BigDecimal d1 = getNumericalValue(v1);
             BigDecimal d2 = getNumericalValue(v2);
@@ -679,14 +596,11 @@ public class Expression
             BigDecimal doublePow = new BigDecimal(Math.pow(dn1, remainderOf2.doubleValue()));
             BigDecimal result = intPow.multiply(doublePow, mc);
             if (signOf2 == -1)
-            {
                 result = BigDecimal.ONE.divide(result, mc.getPrecision(), RoundingMode.HALF_UP);
-            }
             return new NumericValue(result);
         });
 
-
-        addLazyBinaryOperator("&&", OPERATOR_PRECEDENCE_AND, false, (lv1, lv2) ->
+        addLazyBinaryOperator("&&", precedence.get("and&&"), false, (lv1, lv2) ->
         {
             boolean b1 = assertNotNull(lv1).eval().getBoolean();
             if (!b1) return FALSE;
@@ -694,7 +608,7 @@ public class Expression
             return b2 ? TRUE : FALSE;
         });
 
-        addLazyBinaryOperator("||", OPERATOR_PRECEDENCE_OR, false, (lv1, lv2) ->
+        addLazyBinaryOperator("||", precedence.get("or||"), false, (lv1, lv2) ->
         {
             boolean b1 = assertNotNull(lv1).eval().getBoolean();
             if (b1) return TRUE;
@@ -702,25 +616,20 @@ public class Expression
             return b2 ? TRUE : FALSE;
         });
 
-        addBinaryOperator(">", OPERATOR_PRECEDENCE_COMPARISON, false, (v1, v2) ->
+        addBinaryOperator(">", precedence.get("compare>=><=<"), false, (v1, v2) ->
                 v1.compareTo(v2) > 0 ? Value.TRUE : Value.FALSE);
-
-        addBinaryOperator(">=", OPERATOR_PRECEDENCE_COMPARISON, false, (v1, v2) ->
+        addBinaryOperator(">=", precedence.get("compare>=><=<"), false, (v1, v2) ->
                 v1.compareTo(v2) >= 0 ? Value.TRUE : Value.FALSE);
-
-        addBinaryOperator("<", OPERATOR_PRECEDENCE_COMPARISON, false, (v1, v2) ->
+        addBinaryOperator("<", precedence.get("compare>=><=<"), false, (v1, v2) ->
                 v1.compareTo(v2) < 0 ? Value.TRUE : Value.FALSE);
-
-        addBinaryOperator("<=", OPERATOR_PRECEDENCE_COMPARISON, false, (v1, v2) ->
+        addBinaryOperator("<=", precedence.get("compare>=><=<"), false, (v1, v2) ->
                 v1.compareTo(v2) <= 0 ? Value.TRUE : Value.FALSE);
-
-        addBinaryOperator("==", OPERATOR_PRECEDENCE_EQUALITY, false, (v1, v2) ->
+        addBinaryOperator("==", precedence.get("equal==!="), false, (v1, v2) ->
+                v1.compareTo(v2) == 0 ? Value.TRUE : Value.FALSE);
+        addBinaryOperator("!=", precedence.get("equal==!="), false, (v1, v2) ->
                 v1.compareTo(v2) == 0 ? Value.TRUE : Value.FALSE);
 
-        addBinaryOperator("!=", OPERATOR_PRECEDENCE_EQUALITY, false, (v1, v2) ->
-                v1.compareTo(v2) == 0 ? Value.TRUE : Value.FALSE);
-
-        addBinaryOperator("=", OPERATOR_PRECEDENCE_ASSIGN, false, (v1, v2) ->
+        addBinaryOperator("=", precedence.get("assign=<>"), false, (v1, v2) ->
         {
             if (!v1.isBound())
                 throw new ExpressionException("LHS of assignment needs to be a variable");
@@ -731,7 +640,7 @@ public class Expression
             return boundedLHS;
         });
 
-        addBinaryOperator("<>", OPERATOR_PRECEDENCE_EQUALITY, false, (v1, v2) ->
+        addBinaryOperator("<>", precedence.get("assign=<>"), false, (v1, v2) ->
         {
             if (!v1.isBound() || !v2.isBound())
                 throw new ExpressionException("Both sides of swapping assignment need to be variables");
@@ -751,6 +660,15 @@ public class Expression
             getNumericalValue(v);
             return v;
         });
+        addUnaryOperator("!", false, (v)-> v.getBoolean() ? Value.FALSE : Value.TRUE);
+        addUnaryFunction("not", (v) -> v.getBoolean() ? Value.FALSE : Value.TRUE);
+
+        addLazyFunction("if", 3, (lv) ->
+        {
+            Value result = lv.get(0).eval();
+            assertNotNull(result);
+            return result.getBoolean() ? lv.get(1) : lv.get(2);
+        });
 
         addUnaryFunction("fact", (v) ->
         {
@@ -762,19 +680,6 @@ public class Expression
                 factorial = factorial.multiply(new BigDecimal(i));
             }
             return new NumericValue(factorial);
-        });
-
-        addUnaryFunction("not", (v) ->
-        {
-            boolean b = v.getBoolean();
-            return b ? Value.FALSE : Value.TRUE;
-        });
-
-        addLazyFunction("if", 3, (lv) ->
-        {
-            Value result = lv.get(0).eval();
-            assertNotNull(result);
-            return result.getBoolean() ? lv.get(1) : lv.get(2);
         });
 
         addMathematicalUnaryFunction("rand", (d) -> d*Math.random());
@@ -810,7 +715,6 @@ public class Expression
         addMathematicalUnaryFunction("log1p", Math::log1p);
         addMathematicalUnaryFunction("sqrt", Math::sqrt);
 
-
         addFunction("min", (lv) ->
         {
             if (lv.size() == 0)
@@ -836,34 +740,26 @@ public class Expression
         });
 
         addUnaryFunction("abs", (v) -> new NumericValue(getNumericalValue(v).abs(mc)));
-
         addBinaryFunction("round", (v1, v2) ->
         {
             BigDecimal toRound = getNumericalValue(v1);
             int precision = getNumericalValue(v2).intValue();
             return new NumericValue(toRound.setScale(precision, mc.getRoundingMode()));
         });
-
         addUnaryFunction("floor", (v) -> new NumericValue(getNumericalValue(v).setScale(0, RoundingMode.FLOOR)));
-
         addUnaryFunction("ceil", (v) -> new NumericValue(getNumericalValue(v).setScale(0, RoundingMode.CEILING)));
-
         addUnaryFunction("relu", (v) -> v.compareTo(Value.ZERO) < 0 ? Value.ZERO : v);
-
         addUnaryFunction("print", (v) ->
         {
             System.out.println(v.getString());
             return v; // pass through for variables
         });
-        addUnaryFunction("return", (v) -> {
-            throw new ExitStatement(v);
-        });
+        addUnaryFunction("return", (v) -> { throw new ExitStatement(v); });
 
         addFunction("list", ListValue::new);
 
-        // loop(expr, limit) => last_value
+        // loop(expr, 1000) => last_value
         // expr receives bounded variable '_' indicating iteration
-
         addLazyFunction("loop", 2, (lv) ->
         {
             long limit = getNumericalValue(lv.get(1).eval()).longValue();

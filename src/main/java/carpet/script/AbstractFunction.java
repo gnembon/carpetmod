@@ -24,24 +24,20 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * 
  */
-package carpetscript;
+package carpet.script;
 
-import java.util.Locale;
+import java.util.ArrayList;
+import java.util.List;
+
+import carpet.script.Expression.LazyValue;
 
 /**
- * Abstract implementation of a lazy function which implements all necessary
- * methods with the exception of the main logic.
+ * Abstract implementation of a direct function.<br>
+ * <br>
+ * This abstract implementation does implement lazyEval so that it returns
+ * the result of eval.
  */
-public abstract class AbstractLazyFunction implements ILazyFunction {
-	/**
-	 * Name of this function.
-	 */
-	protected String name;
-	/**
-	 * Number of parameters expected for this function. <code>-1</code>
-	 * denotes a variable number of parameters.
-	 */
-	protected int numParams;
+public abstract class AbstractFunction extends AbstractLazyFunction implements IFunction {
 
 	/**
 	 * Creates a new function with given name and parameter count.
@@ -52,21 +48,29 @@ public abstract class AbstractLazyFunction implements ILazyFunction {
 	 *            The number of parameters for this function.
 	 *            <code>-1</code> denotes a variable number of parameters.
 	 */
-	protected AbstractLazyFunction(String name, int numParams) {
-		this.name = name;
-		this.numParams = numParams;
+	protected AbstractFunction(String name, int numParams) {
+		super(name, numParams);
 	}
 
 
-	public String getName() {
-		return name;
-	}
+	public LazyValue lazyEval(final List<LazyValue> lazyParams) {
+		return new LazyValue() {
 
-	public int getNumParams() {
-		return numParams;
-	}
+			private List<Value> params;
 
-	public boolean numParamsVaries() {
-		return numParams < 0;
+			public Value eval() {
+				return AbstractFunction.this.eval(getParams());
+			}
+
+			private List<Value> getParams() {
+				if (params == null) {
+					params = new ArrayList<Value>();
+					for (LazyValue lazyParam : lazyParams) {
+						params.add(lazyParam.eval());
+					}
+				}
+				return params;
+			}
+		};
 	}
 }

@@ -24,21 +24,23 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * 
  */
-package carpetscript;
+package carpet.script;
 
+import java.util.List;
 
 /**
- * Base interface which is required for all operators.
+ * Base interface which is required for all directly evaluated functions.
  */
-public interface IOperator extends ILazyOperator {
+public interface IFunction extends ILazyFunction {
+
 	/**
-	 * Implementation for this operator.
-	 * 
-	 * @param v1
-	 *            Operand 1.
-	 * @param v2
-	 *            Operand 2.
-	 * @return The result of the operation.
+	 * Implementation for this function.
+	 *
+	 * @param parameters
+	 *            Parameters will be passed by the expression evaluator as a
+	 *            {@link List} of {@link Value} values.
+	 * @return The function must return a new {@link Value} value as a
+	 *         computing result.
 	 */
-	public abstract Value eval(Value v1, Value v2);
+	public abstract Value eval(List<Value> parameters);
 }

@@ -1,7 +1,7 @@
 package carpet.commands;
 
 import carpet.CarpetSettings;
-import carpet.utils.CarpetExpression;
+import carpet.script.CarpetExpression;
 import carpet.utils.Messenger;
 import com.google.common.collect.Lists;
 import com.mojang.brigadier.CommandDispatcher;
