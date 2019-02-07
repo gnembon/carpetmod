@@ -1,6 +1,7 @@
 package carpet.script;
 
 import carpet.CarpetSettings;
+import carpet.helpers.FeatureGenerator;
 import carpet.script.Expression.ExpressionException;
 import carpet.script.Expression.LazyValue;
 import carpet.utils.BlockInfo;
@@ -17,7 +18,11 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.registry.IRegistry;
 import net.minecraft.world.EnumLightType;
 import net.minecraft.world.WorldServer;
+import net.minecraft.world.biome.Biome;
 import net.minecraft.world.gen.Heightmap;
+import net.minecraft.world.gen.feature.ChorusPlantFeature;
+import net.minecraft.world.gen.feature.Feature;
+import net.minecraft.world.gen.feature.IFeatureConfig;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -411,8 +416,9 @@ public class CarpetExpression
             return () -> honestWontChange;
         });
 
-        this.expr.addFunction("plop", (lv) ->{
-            throw new CarpetExpressionException("unimplemented");
+        this.expr.addNAryFunction("plop", 3, (lv) ->{
+            BlockPos pos = locateBlockPos(lv);
+            return new NumericValue(FeatureGenerator.spawn(lv.get(3).getString(), source.getWorld(), pos));
         });
 
 
