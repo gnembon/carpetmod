@@ -411,6 +411,10 @@ public class CarpetExpression
             return () -> honestWontChange;
         });
 
+        this.expr.addFunction("plop", (lv) ->{
+            throw new CarpetExpressionException("unimplemented");
+        });
+
 
     }
 
