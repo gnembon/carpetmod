@@ -387,21 +387,21 @@ public class Expression
 
     }
 
-    public Value assertNotNull(Value v1)
+    public static Value assertNotNull(Value v1)
     {
         if (v1 == null)
             throw new ExpressionException("Operand may not be null");
         return v1;
     }
 
-    public BigDecimal getNumericalValue(Value v1)
+    public static BigDecimal getNumericalValue(Value v1)
     {
         if (!(v1 instanceof NumericValue))
             throw new ExpressionException("Operand has to be of a numeric type");
         return ((NumericValue) v1).getNumber();
     }
 
-    public void assertNotNull(Value v1, Value v2)
+    public static void assertNotNull(Value v1, Value v2)
     {
         if (v1 == null)
             throw new ExpressionException("First operand may not be null");
@@ -410,7 +410,7 @@ public class Expression
     }
 
 
-    public LazyValue assertNotNull(LazyValue lv)
+    public static LazyValue assertNotNull(LazyValue lv)
     {
         if (lv == null)
             throw new ExpressionException("Operand may not be null");
@@ -1457,5 +1457,158 @@ public class Expression
     public void setLogOutput(Consumer<String> to)
     {
         logOutput = to;
+    }
+
+
+
+
+    /** Fluff section below */
+    public interface ILazyFunction
+    {
+        String getName();
+
+        int getNumParams();
+
+        boolean numParamsVaries();
+
+        LazyValue lazyEval(List<LazyValue> lazyParams);
+    }
+
+    public interface IFunction extends ILazyFunction
+    {
+        Value eval(List<Value> parameters);
+    }
+
+    public interface ILazyOperator
+    {
+        String getOper();
+
+        int getPrecedence();
+
+        boolean isLeftAssoc();
+
+        LazyValue eval(LazyValue v1, LazyValue v2);
+    }
+
+    public interface IOperator extends ILazyOperator
+    {
+        Value eval(Value v1, Value v2);
+    }
+
+    public abstract static class AbstractLazyFunction implements ILazyFunction
+    {
+        protected String name;
+        protected int numParams;
+
+        protected AbstractLazyFunction(String name, int numParams)
+        {
+            this.name = name;
+            this.numParams = numParams;
+        }
+
+
+        public String getName() {
+            return name;
+        }
+
+        public int getNumParams() {
+            return numParams;
+        }
+
+        public boolean numParamsVaries() {
+            return numParams < 0;
+        }
+    }
+
+    public abstract static class AbstractFunction extends AbstractLazyFunction implements IFunction
+    {
+        protected AbstractFunction(String name, int numParams) {
+            super(name, numParams);
+        }
+
+        public LazyValue lazyEval(final List<LazyValue> lazyParams) {
+            return new LazyValue() {
+
+                private List<Value> params;
+
+                public Value eval() {
+                    return AbstractFunction.this.eval(getParams());
+                }
+
+                private List<Value> getParams() {
+                    if (params == null) {
+                        params = new ArrayList<Value>();
+                        for (LazyValue lazyParam : lazyParams) {
+                            params.add(lazyParam.eval());
+                        }
+                    }
+                    return params;
+                }
+            };
+        }
+    }
+
+    public abstract static class AbstractLazyOperator implements ILazyOperator
+    {
+        protected String oper;
+
+        protected int precedence;
+
+        protected boolean leftAssoc;
+
+
+        protected AbstractLazyOperator(String oper, int precedence, boolean leftAssoc) {
+            this.oper = oper;
+            this.precedence = precedence;
+            this.leftAssoc = leftAssoc;
+        }
+
+        public String getOper() {
+            return oper;
+        }
+
+        public int getPrecedence() {
+            return precedence;
+        }
+
+        public boolean isLeftAssoc() {
+            return leftAssoc;
+        }
+
+    }
+
+    public abstract static class AbstractOperator extends AbstractLazyOperator implements IOperator
+    {
+
+        protected AbstractOperator(String oper, int precedence, boolean leftAssoc) {
+            super(oper, precedence, leftAssoc);
+        }
+
+        public LazyValue eval(final LazyValue v1, final LazyValue v2) {
+            return () -> AbstractOperator.this.eval(v1.eval(), v2.eval());
+        }
+    }
+
+    public abstract static class AbstractUnaryOperator extends AbstractOperator
+    {
+        protected AbstractUnaryOperator(String oper, int precedence, boolean leftAssoc) {
+            super(oper, precedence, leftAssoc);
+        }
+
+        public LazyValue eval(final LazyValue v1, final LazyValue v2) {
+            if (v2 != null) {
+                throw new ExpressionException("Did not expect a second parameter for unary operator");
+            }
+            return () -> AbstractUnaryOperator.this.evalUnary(v1.eval());
+        }
+
+        public Value eval(Value v1, Value v2) {
+            if (v2 != null) {
+                throw new ExpressionException("Did not expect a second parameter for unary operator");
+            }
+            return evalUnary(v1);
+        }
+
+        public abstract Value evalUnary(Value v1);
     }
 }

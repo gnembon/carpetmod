@@ -18,6 +18,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.registry.IRegistry;
 import net.minecraft.world.EnumLightType;
 import net.minecraft.world.WorldServer;
+import net.minecraft.world.gen.Heightmap;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -171,6 +172,28 @@ public class CarpetExpression
 
         this.expr.addNAryFunction("skyLight", 3, (lv) ->
                 new NumericValue(source.getWorld().getLightFor(EnumLightType.SKY, locateBlockPos(lv))));
+
+        this.expr.addNAryFunction("seeSky", 3, (lv) ->
+                new NumericValue(source.getWorld().canSeeSky(locateBlockPos(lv))));
+
+        this.expr.addNAryFunction("topOpaque", -1, (lv) -> {
+            int x;
+            int z;
+            if (lv.get(1) instanceof BlockValue)
+            {
+                BlockPos inpos = ((BlockValue)lv.get(1)).pos;
+                x = inpos.getX();
+                z = inpos.getZ();
+            }
+            else
+            {
+                x = Expression.getNumericalValue(lv.get(0)).intValue();
+                z = Expression.getNumericalValue(lv.get(1)).intValue();
+            }
+            int y = source.getWorld().getChunk(x >> 4, z >> 4).getTopBlockY(Heightmap.Type.LIGHT_BLOCKING, x & 15, z & 15) + 1;
+            BlockPos pos = new BlockPos(x,y,z);
+            return new BlockValue(source.getWorld().getBlockState(pos), pos);
+        });
 
         this.expr.addNAryFunction("loaded", 3, (lv) ->
                 source.getWorld().isBlockLoaded(locateBlockPos(lv)) ? Value.TRUE : Value.FALSE);

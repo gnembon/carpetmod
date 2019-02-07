@@ -8,6 +8,8 @@ public class NumericValue extends Value
 {
     private BigDecimal value;
 
+
+
     @Override
     public String getString()
     {
@@ -86,6 +88,10 @@ public class NumericValue extends Value
     public NumericValue(long value)
     {
         this(new BigDecimal(value));
+    }
+    public NumericValue(boolean boolval)
+    {
+        this(new BigDecimal(boolval?1:0));
     }
 
     public BigDecimal getNumber()
