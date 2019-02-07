@@ -1,7 +1,6 @@
 package carpet.script;
 
 import carpet.CarpetSettings;
-import carpet.script.*;
 import carpet.script.Expression.ExpressionException;
 import carpet.script.Expression.LazyValue;
 import carpet.utils.BlockInfo;
@@ -31,7 +30,7 @@ public class CarpetExpression
 {
     public static class CarpetExpressionException extends ExpressionException
     {
-        public CarpetExpressionException(String message)
+        CarpetExpressionException(String message)
         {
             super(message);
         }
@@ -47,7 +46,7 @@ public class CarpetExpression
         public IBlockState blockState;
         public BlockPos pos;
 
-        public BlockValue(IBlockState arg, BlockPos position)
+        BlockValue(IBlockState arg, BlockPos position)
         {
             super(IRegistry.field_212618_g.getKey(arg.getBlock()).getPath());
             blockState = arg;
@@ -58,12 +57,6 @@ public class CarpetExpression
         public boolean getBoolean()
         {
             return !blockState.isAir();
-        }
-
-        @Override
-        public String getString()
-        {
-            return IRegistry.field_212618_g.getKey(blockState.getBlock()).getPath();
         }
 
         public Value copy()
@@ -80,11 +73,6 @@ public class CarpetExpression
         int xpos = ((NumericValue) params.get(0)).getNumber().intValue();
         int ypos = ((NumericValue) params.get(1)).getNumber().intValue();
         int zpos = ((NumericValue) params.get(2)).getNumber().intValue();
-        return new BlockPos(origin.getX() + xpos, origin.getY() + ypos, origin.getZ() + zpos);
-    }
-
-    private BlockPos locateBlockPos(int xpos, int ypos, int zpos)
-    {
         return new BlockPos(origin.getX() + xpos, origin.getY() + ypos, origin.getZ() + zpos);
     }
 
@@ -359,14 +347,10 @@ public class CarpetExpression
                 {
                     for (int y = cy-sy; y <= cy+sy; y++)
                     {
-                        Value kidYouNotWontChange = acc;
-                        int ser = x;
-                        int you = y;
-                        int sly = z;
-                        this.expr.setVariable("_x", () -> new NumericValue(ser).boundTo("_x"));
-                        this.expr.setVariable("_y", () -> new NumericValue(you).boundTo("_y"));
-                        this.expr.setVariable("_z", () -> new NumericValue(sly).boundTo("_z"));
-                        this.expr.setVariable("_a", () -> kidYouNotWontChange.boundTo("_a"));
+                        this.expr.setVariable("_x", new NumericValue(x));
+                        this.expr.setVariable("_y", new NumericValue(y));
+                        this.expr.setVariable("_z", new NumericValue(z));
+                        this.expr.setVariable("_a", acc);
                         acc = expr.eval();
                     }
                 }
@@ -412,11 +396,10 @@ public class CarpetExpression
             LazyValue _a = this.expr.getVariable("_a");
             for (BlockPos nb: Arrays.asList(pos.down(), pos.north(), pos.south(), pos.east(), pos.west(), pos.up()))
             {
-                Value kidYouNotWontChange = acc;
-                this.expr.setVariable("_x", () -> new NumericValue(nb.getX()).boundTo("_x"));
-                this.expr.setVariable("_y", () -> new NumericValue(nb.getY()).boundTo("_y"));
-                this.expr.setVariable("_z", () -> new NumericValue(nb.getZ()).boundTo("_z"));
-                this.expr.setVariable("_a", () -> kidYouNotWontChange.boundTo("_a"));
+                this.expr.setVariable("_x", new NumericValue(nb.getX()));
+                this.expr.setVariable("_y", new NumericValue(nb.getY()));
+                this.expr.setVariable("_z", new NumericValue(nb.getZ()));
+                this.expr.setVariable("_a", acc);
                 acc = expr.eval();
             }
             //restoring outer scope

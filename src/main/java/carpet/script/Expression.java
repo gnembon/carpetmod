@@ -41,28 +41,15 @@ import java.util.function.Consumer;
 
 
 /**
- * <h1>EvalEx - Java Expression Evaluator</h1>
+ * This Evaluator is initially based on the following project:
  *
- * <h2>Introduction</h2> EvalEx is a handy expression evaluator for Java, that
- * allows to evaluate simple mathematical and boolean expressions. <br>
+ * EvalEx - Java Expression Evaluator
+ *
+ * EvalEx is a handy expression evaluator for Java, that
+ * allows to evaluate simple mathematical and boolean expressions.
  * For more information, see:
  * <a href="https://github.com/uklimaschewski/EvalEx">EvalEx GitHub
  * repository</a>
- * <ul>
- * <li>The software is licensed under the MIT Open Source license (see <a href=
- * "https://raw.githubusercontent.com/uklimaschewski/EvalEx/master/LICENSE">LICENSE
- * file</a>).</li>
- * <li>The *power of* operator (^) implementation was copied from <a href=
- * "http://stackoverflow.com/questions/3579779/how-to-do-a-fractional-power-on-bigdecimal-in-java">Stack
- * Overflow</a>. Thanks to Gene Marin.</li>
- * <li>The SQRT() function implementation was taken from the book <a href=
- * "http://www.amazon.de/Java-Number-Cruncher-Programmers-Numerical/dp/0130460419">The
- * Java Programmers Guide To numerical Computing</a> (Ronald Mak, 2002).</li>
- * </ul>
- *
- * @authors Thanks to all who contributed to this project: <a href=
- * "https://github.com/uklimaschewski/EvalEx/graphs/contributors">Contributors</a>
- * @see <a href="https://github.com/uklimaschewski/EvalEx">GitHub repository</a>
  */
 public class Expression
 {
@@ -87,77 +74,66 @@ public class Expression
     /** The {@link MathContext} to use for calculations. */
     private MathContext mc;
 
-    /** The current infix expression, with optional variable substitutions. */
+    /** The current infix expression */
     private String expression;
 
     /** The cached RPN (Reverse Polish Notation) of the expression. */
     private List<Token> rpn = null;
 
-    /** All defined operators with name and implementation. */
+    /** Cached AST (Abstract Syntax Tree) (root) of the expression */
+    private LazyValue ast = null;
+
     private Map<String, ILazyOperator> operators = new HashMap<>();
 
-    /** All defined functions with name and implementation. */
     private Map<String, ILazyFunction> functions = new HashMap<>();
 
-    /** All defined variables with name and value. */
-    protected Map<String, LazyValue> variables = new HashMap<>();
+    private Map<String, LazyValue> variables = new HashMap<>();
 
-    public LazyValue getVariable(String name)
-    {
-        return variables.get(name);
-    }
-
-
-    /** What character to use for decimal separators. */
-    private static final char decimalSeparator = '.';
-
-    /** What character to use for minus sign (negative values). */
-    private static final char minusSign = '-';
-
+    /** should the evaluator output value of each ;'s statement during execution */
     private Consumer<String> logOutput = null;
 
     /** LazyNumber interface created for lazily evaluated functions */
     @FunctionalInterface
     public interface LazyValue
     {
+        LazyValue FALSE = () -> Value.FALSE;
+        LazyValue TRUE = () -> Value.TRUE;
+        LazyValue EMPTY = () -> Value.EMPTY;
+        LazyValue ZERO = () -> Value.ZERO;
+        /**
+         * The Value representation of the left parenthesis, used for parsing
+         * varying numbers of function parameters.
+         */
+        LazyValue PARAMS_START = () -> null;
+
         Value eval();
     }
 
-    /**
-     * The Value representation of the left parenthesis, used for parsing
-     * varying numbers of function parameters.
-     */
-    private static final LazyValue PARAMS_START = () -> null;
-
     /** The expression evaluators exception class. */
-    public static class ExpressionException extends RuntimeException
+    static class ExpressionException extends RuntimeException
     {
-        public ExpressionException(String message)
+        ExpressionException(String message)
         {
             super(message);
         }
     }
+    /** Exception thrown to terminate execution mid expression (aka return statement) */
     private static class ExitStatement extends RuntimeException
     {
-        public Value retval;
-        public ExitStatement(Value value)
+        Value retval;
+        ExitStatement(Value value)
         {
             retval = value;
         }
     }
 
-    public static LazyValue FALSE = () -> Value.FALSE;
-    public static LazyValue TRUE = () -> Value.TRUE;
-    public static LazyValue EMPTY = () -> Value.EMPTY;
-    public static LazyValue ZERO = () -> Value.ZERO;
-
-    enum TokenType
+    static class Token
     {
-        VARIABLE, FUNCTION, LITERAL, OPERATOR, UNARY_OPERATOR, OPEN_PAREN, COMMA, CLOSE_PAREN, HEX_LITERAL, STRINGPARAM
-    }
-
-    class Token
-    {
+        enum TokenType
+        {
+            VARIABLE, FUNCTION, LITERAL, OPERATOR, UNARY_OPERATOR,
+            OPEN_PAREN, COMMA, CLOSE_PAREN, HEX_LITERAL, STRINGPARAM
+        }
         public String surface = "";
         public TokenType type;
         public int pos;
@@ -193,9 +169,13 @@ public class Expression
      * Expression tokenizer that allows to iterate over a {@link String}
      * expression token by token. Blank characters will be skipped.
      */
-    private class Tokenizer implements Iterator<Token>
+    private static class Tokenizer implements Iterator<Token>
     {
 
+        /** What character to use for decimal separators. */
+        private static final char decimalSeparator = '.';
+        /** What character to use for minus sign (negative values). */
+        private static final char minusSign = '-';
         /** Actual position in expression string. */
         private int pos = 0;
 
@@ -204,14 +184,31 @@ public class Expression
         /** The previous token or <code>null</code> if none. */
         private Token previousToken;
 
-        /**
-         * Creates a new tokenizer for an expression.
-         *
-         * @param input The expression string.
-         */
-        public Tokenizer(String input)
+        private Expression expression;
+
+        public Tokenizer(Expression expr, String input)
         {
             this.input = input.trim();
+            this.expression = expr;
+        }
+
+        private static boolean isNumber(String st)
+        {
+            if (st.charAt(0) == minusSign && st.length() == 1)
+                return false;
+            if (st.charAt(0) == '+' && st.length() == 1)
+                return false;
+            if (st.charAt(0) == decimalSeparator && (st.length() == 1 || !Character.isDigit(st.charAt(1))))
+                return false;
+            if (st.charAt(0) == 'e' || st.charAt(0) == 'E')
+                return false;
+            for (char ch : st.toCharArray())
+            {
+                if (!Character.isDigit(ch) && ch != minusSign && ch != decimalSeparator && ch != 'e' && ch != 'E'
+                        && ch != '+')
+                    return false;
+            }
+            return true;
         }
 
         @Override
@@ -227,14 +224,7 @@ public class Expression
          */
         private char peekNextChar()
         {
-            if (pos < (input.length() - 1))
-            {
-                return input.charAt(pos + 1);
-            }
-            else
-            {
-                return 0;
-            }
+            return (pos < (input.length() - 1)) ? input.charAt(pos + 1) : 0;
         }
 
         private boolean isHexDigit(char ch)
@@ -280,12 +270,12 @@ public class Expression
                     token.append(input.charAt(pos++));
                     ch = pos == input.length() ? 0 : input.charAt(pos);
                 }
-                token.type = isHex ? TokenType.HEX_LITERAL : TokenType.LITERAL;
+                token.type = isHex ? Token.TokenType.HEX_LITERAL : Token.TokenType.LITERAL;
             }
             else if (ch == '\'')
             {
                 pos++;
-                if (previousToken == null || previousToken.type != TokenType.STRINGPARAM)
+                if (previousToken == null || previousToken.type != Token.TokenType.STRINGPARAM)
                 {
                     ch = input.charAt(pos);
                     while (ch != '\'')
@@ -294,7 +284,7 @@ public class Expression
                         ch = pos == input.length() ? 0 : input.charAt(pos);
                     }
                     pos++;
-                    token.type = TokenType.STRINGPARAM;
+                    token.type = Token.TokenType.STRINGPARAM;
                 }
                 else
                 {
@@ -318,21 +308,21 @@ public class Expression
                     }
                     pos--;
                 }
-                token.type = ch == '(' ? TokenType.FUNCTION : TokenType.VARIABLE;
+                token.type = ch == '(' ? Token.TokenType.FUNCTION : Token.TokenType.VARIABLE;
             }
             else if (ch == '(' || ch == ')' || ch == ',')
             {
                 if (ch == '(')
                 {
-                    token.type = TokenType.OPEN_PAREN;
+                    token.type = Token.TokenType.OPEN_PAREN;
                 }
                 else if (ch == ')')
                 {
-                    token.type = TokenType.CLOSE_PAREN;
+                    token.type = Token.TokenType.CLOSE_PAREN;
                 }
                 else
                 {
-                    token.type = TokenType.COMMA;
+                    token.type = Token.TokenType.COMMA;
                 }
                 token.append(ch);
                 pos++;
@@ -349,7 +339,7 @@ public class Expression
                 {
                     greedyMatch += ch;
                     pos++;
-                    if (operators.containsKey(greedyMatch))
+                    if (this.expression.operators.containsKey(greedyMatch))
                     {
                         validOperatorSeenUntil = pos;
                     }
@@ -365,15 +355,15 @@ public class Expression
                     token.append(greedyMatch);
                 }
 
-                if (previousToken == null || previousToken.type == TokenType.OPERATOR
-                        || previousToken.type == TokenType.OPEN_PAREN || previousToken.type == TokenType.COMMA)
+                if (previousToken == null || previousToken.type == Token.TokenType.OPERATOR
+                        || previousToken.type == Token.TokenType.OPEN_PAREN || previousToken.type == Token.TokenType.COMMA)
                 {
                     token.surface += "u";
-                    token.type = TokenType.UNARY_OPERATOR;
+                    token.type = Token.TokenType.UNARY_OPERATOR;
                 }
                 else
                 {
-                    token.type = TokenType.OPERATOR;
+                    token.type = Token.TokenType.OPERATOR;
                 }
             }
             return previousToken = token;
@@ -409,12 +399,12 @@ public class Expression
             throw new ExpressionException("Second operand may not be null");
     }
 
-
-    public static LazyValue assertNotNull(LazyValue lv)
+    public static void assertNotNull(LazyValue lv, LazyValue lv2)
     {
         if (lv == null)
             throw new ExpressionException("Operand may not be null");
-        return lv;
+        if (lv2 == null)
+            throw new ExpressionException("Operand may not be null");
     }
 
     public void addLazyBinaryOperator(String surface, int precedence, boolean leftAssoc,
@@ -425,6 +415,7 @@ public class Expression
             @Override
             public LazyValue eval(LazyValue v1, LazyValue v2) //TODO add nonnull check here, and strip null checks from
             {
+                assertNotNull(v1, v2);
                 return lazyfun.apply(v1, v2);
             }
         });
@@ -602,18 +593,18 @@ public class Expression
 
         addLazyBinaryOperator("&&", precedence.get("and&&"), false, (lv1, lv2) ->
         {
-            boolean b1 = assertNotNull(lv1).eval().getBoolean();
-            if (!b1) return FALSE;
-            boolean b2 = assertNotNull(lv2).eval().getBoolean();
-            return b2 ? TRUE : FALSE;
+            boolean b1 = lv1.eval().getBoolean();
+            if (!b1) return LazyValue.FALSE;
+            boolean b2 = lv2.eval().getBoolean();
+            return b2 ? LazyValue.TRUE : LazyValue.FALSE;
         });
 
         addLazyBinaryOperator("||", precedence.get("or||"), false, (lv1, lv2) ->
         {
-            boolean b1 = assertNotNull(lv1).eval().getBoolean();
-            if (b1) return TRUE;
-            boolean b2 = assertNotNull(lv2).eval().getBoolean();
-            return b2 ? TRUE : FALSE;
+            boolean b1 = lv1.eval().getBoolean();
+            if (b1) return LazyValue.TRUE;
+            boolean b2 = lv2.eval().getBoolean();
+            return b2 ? LazyValue.TRUE : LazyValue.FALSE;
         });
 
         addBinaryOperator(">", precedence.get("compare>=><=<"), false, (v1, v2) ->
@@ -766,16 +757,15 @@ public class Expression
             Value lastOne = Value.ZERO;
             LazyValue expr = lv.get(0);
             //scoping
-            LazyValue _val = variables.get("_");
+            LazyValue _val = getVariable("_");
             for (long i=0; i < limit; i++)
             {
-                long dummy = i;
-                variables.put("_", () -> (new NumericValue(dummy)).boundTo("_"));
+                setVariable("_", new NumericValue(i));
                 lastOne = expr.eval();
             }
-            Value trulyLastOne = lastOne;
             //revering scope
-            variables.put("_", _val);
+            setVariable("_", _val);
+            Value trulyLastOne = lastOne;
             return () -> trulyLastOne;
         });
 
@@ -789,20 +779,19 @@ public class Expression
                 throw new ExpressionException("Second argument of map function should be a list");
             List<Value> list = ((ListValue) rval).getItems();
             //scoping
-            LazyValue _val = variables.get("_");
-            LazyValue _iter = variables.get("_i");
+            LazyValue _val = getVariable("_");
+            LazyValue _iter = getVariable("_i");
             List<Value> result = new ArrayList<>();
             for (int i=0; i< list.size(); i++)
             {
-                int promiseWontChangeMe = i;
-                variables.put("_", () -> list.get(promiseWontChangeMe).boundTo("_"));
-                variables.put("_i", () -> new NumericValue(promiseWontChangeMe).boundTo("_i") );
+                setVariable("_", list.get(i));
+                setVariable("_i", new NumericValue(i));
                 result.add(expr.eval());
             }
             LazyValue ret = () -> new ListValue(result);
             //revering scope
-            variables.put("_", _val);
-            variables.put("_i", _iter);
+            setVariable("_", _val);
+            setVariable("_i", _iter);
             return ret;
         });
 
@@ -817,21 +806,20 @@ public class Expression
                 throw new ExpressionException("Second argument of grep function should be a list");
             List<Value> list = ((ListValue) rval).getItems();
             //scoping
-            LazyValue _val = variables.get("_");
-            LazyValue _iter = variables.get("_i");
+            LazyValue _val = getVariable("_");
+            LazyValue _iter = getVariable("_i");
             List<Value> result = new ArrayList<>();
             for (int i=0; i< list.size(); i++)
             {
-                int promiseWontChangeMe = i;
-                variables.put("_", () -> list.get(promiseWontChangeMe).boundTo("_"));
-                variables.put("_i", () -> new NumericValue(promiseWontChangeMe).boundTo("_i") );
+                setVariable("_", list.get(i));
+                setVariable("_i", new NumericValue(i));
                 if(expr.eval().getBoolean())
                     result.add(list.get(i));
             }
             LazyValue ret = () -> new ListValue(result);
             //revering scope
-            variables.put("_", _val);
-            variables.put("_i", _iter);
+            setVariable("_", _val);
+            setVariable("_i", _iter);
             return ret;
         });
 
@@ -845,20 +833,19 @@ public class Expression
                 throw new ExpressionException("Second argument of for function should be a list");
             List<Value> list = ((ListValue) rval).getItems();
             //scoping
-            LazyValue _val = variables.get("_");
-            LazyValue _iter = variables.get("_i");
+            LazyValue _val = getVariable("_");
+            LazyValue _iter = getVariable("_i");
             int successCount = 0;
             for (int i=0; i< list.size(); i++)
             {
-                int promiseWontChangeMe = i;
-                variables.put("_", () -> list.get(promiseWontChangeMe).boundTo("_"));
-                variables.put("_i", () -> new NumericValue(promiseWontChangeMe).boundTo("_i") );
+                setVariable("_", list.get(i));
+                setVariable("_i", new NumericValue(i));
                 if(expr.eval().getBoolean())
                     successCount++;
             }
             //revering scope
-            variables.put("_", _val);
-            variables.put("_i", _iter);
+            setVariable("_", _val);
+            setVariable("_i", _iter);
             long promiseWontChange = successCount;
             return () -> new NumericValue(promiseWontChange);
         });
@@ -874,17 +861,16 @@ public class Expression
             long i = 0;
             Value lastOne = Value.ZERO;
             //scoping
-            LazyValue _val = variables.get("_");
-            variables.put("_",() -> new NumericValue(0).boundTo("_"));
+            LazyValue _val = getVariable("_");
+            setVariable("_",new NumericValue(0));
             while (i<limit && condition.eval().getBoolean() )
             {
                 lastOne = expr.eval();
                 i++;
-                long notGonnaChangeIPromize = i;
-                variables.put("_",() -> new NumericValue(notGonnaChangeIPromize).boundTo("_"));
+                setVariable("_", new NumericValue(i));
             }
             //revering scope
-            variables.put("_", _val);
+            setVariable("_", _val);
             Value lastValueNoKidding = lastOne;
             return () -> lastValueNoKidding;
         });
@@ -910,20 +896,19 @@ public class Expression
             }
 
             //scoping
-            LazyValue _val = variables.get("_");
-            LazyValue _acc = variables.get("_a");
+            LazyValue _val = getVariable("_");
+            LazyValue _acc = getVariable("_a");
 
             for (Value v: elements)
             {
-                Value kidYouNotWontChange = acc;
-                variables.put("_a", () -> kidYouNotWontChange.boundTo("_a"));
-                variables.put("_", () -> v.boundTo("_"));
+                setVariable("_a", acc);
+                setVariable("_", v);
                 acc = expr.eval();
-
             }
             //reverting scope
-            variables.put("_a", _acc);
-            variables.put("_", _val);
+            setVariable("_a", _acc);
+            setVariable("_", _val);
+
             Value hopeItsEnoughPromise = acc;
             return () -> hopeItsEnoughPromise;
         });
@@ -949,32 +934,6 @@ public class Expression
     }
 
 
-
-    /**
-     * Is the string a number?
-     *
-     * @param st The string.
-     * @return <code>true</code>, if the input string is a number.
-     */
-    private boolean isNumber(String st)
-    {
-        if (st.charAt(0) == minusSign && st.length() == 1)
-            return false;
-        if (st.charAt(0) == '+' && st.length() == 1)
-            return false;
-        if (st.charAt(0) == decimalSeparator && (st.length() == 1 || !Character.isDigit(st.charAt(1))))
-            return false;
-        if (st.charAt(0) == 'e' || st.charAt(0) == 'E')
-            return false;
-        for (char ch : st.toCharArray())
-        {
-            if (!Character.isDigit(ch) && ch != minusSign && ch != decimalSeparator && ch != 'e' && ch != 'E'
-                    && ch != '+')
-                return false;
-        }
-        return true;
-    }
-
     /**
      * Implementation of the <i>Shunting Yard</i> algorithm to transform an
      * infix expression to a RPN expression.
@@ -988,7 +947,7 @@ public class Expression
         List<Token> outputQueue = new ArrayList<>();
         Stack<Token> stack = new Stack<>();
 
-        Tokenizer tokenizer = new Tokenizer(expression);
+        Tokenizer tokenizer = new Tokenizer(this, expression);
 
         Token lastFunction = null;
         Token previousToken = null;
@@ -998,14 +957,14 @@ public class Expression
             switch (token.type)
             {
                 case STRINGPARAM:
-                    //stack.push(token);
+                    //stack.push(token); // changed that so strings are treated like literals
                     //break;
                 case LITERAL:
                 case HEX_LITERAL:
                     if (previousToken != null && (
-                            previousToken.type == TokenType.LITERAL ||
-                                    previousToken.type == TokenType.HEX_LITERAL ||
-                                    previousToken.type == TokenType.STRINGPARAM))
+                            previousToken.type == Token.TokenType.LITERAL ||
+                                    previousToken.type == Token.TokenType.HEX_LITERAL ||
+                                    previousToken.type == Token.TokenType.STRINGPARAM))
                     {
                         throw new ExpressionException("Missing operator at character position " + token.pos);
                     }
@@ -1019,12 +978,12 @@ public class Expression
                     lastFunction = token;
                     break;
                 case COMMA:
-                    if (previousToken != null && previousToken.type == TokenType.OPERATOR)
+                    if (previousToken != null && previousToken.type == Token.TokenType.OPERATOR)
                     {
                         throw new ExpressionException("Missing parameter(s) for operator " + previousToken
                                 + " at character position " + previousToken.pos);
                     }
-                    while (!stack.isEmpty() && stack.peek().type != TokenType.OPEN_PAREN)
+                    while (!stack.isEmpty() && stack.peek().type != Token.TokenType.OPEN_PAREN)
                     {
                         outputQueue.add(stack.pop());
                     }
@@ -1044,7 +1003,7 @@ public class Expression
                 case OPERATOR:
                 {
                     if (previousToken != null
-                            && (previousToken.type == TokenType.COMMA || previousToken.type == TokenType.OPEN_PAREN))
+                            && (previousToken.type == Token.TokenType.COMMA || previousToken.type == Token.TokenType.OPEN_PAREN))
                     {
                         throw new ExpressionException(
                                 "Missing parameter(s) for operator " + token + " at character position " + token.pos);
@@ -1061,8 +1020,8 @@ public class Expression
                 }
                 case UNARY_OPERATOR:
                 {
-                    if (previousToken != null && previousToken.type != TokenType.OPERATOR
-                            && previousToken.type != TokenType.COMMA && previousToken.type != TokenType.OPEN_PAREN)
+                    if (previousToken != null && previousToken.type != Token.TokenType.OPERATOR
+                            && previousToken.type != Token.TokenType.COMMA && previousToken.type != Token.TokenType.OPEN_PAREN)
                     {
                         throw new ExpressionException(
                                 "Invalid position for unary operator " + token + " at character position " + token.pos);
@@ -1082,19 +1041,19 @@ public class Expression
                 case OPEN_PAREN:
                     if (previousToken != null)
                     {
-                        if (previousToken.type == TokenType.LITERAL || previousToken.type == TokenType.CLOSE_PAREN
-                                || previousToken.type == TokenType.VARIABLE
-                                || previousToken.type == TokenType.HEX_LITERAL)
+                        if (previousToken.type == Token.TokenType.LITERAL || previousToken.type == Token.TokenType.CLOSE_PAREN
+                                || previousToken.type == Token.TokenType.VARIABLE
+                                || previousToken.type == Token.TokenType.HEX_LITERAL)
                         {
                             // Implicit multiplication, e.g. 23(a+b) or (a+b)(a-b)
                             Token multiplication = new Token();
                             multiplication.append("*");
-                            multiplication.type = TokenType.OPERATOR;
+                            multiplication.type = Token.TokenType.OPERATOR;
                             stack.push(multiplication);
                         }
                         // if the ( is preceded by a valid function, then it
                         // denotes the start of a parameter list
-                        if (previousToken.type == TokenType.FUNCTION)
+                        if (previousToken.type == Token.TokenType.FUNCTION)
                         {
                             outputQueue.add(token);
                         }
@@ -1102,12 +1061,12 @@ public class Expression
                     stack.push(token);
                     break;
                 case CLOSE_PAREN:
-                    if (previousToken != null && previousToken.type == TokenType.OPERATOR)
+                    if (previousToken != null && previousToken.type == Token.TokenType.OPERATOR)
                     {
                         throw new ExpressionException("Missing parameter(s) for operator " + previousToken
                                 + " at character position " + previousToken.pos);
                     }
-                    while (!stack.isEmpty() && stack.peek().type != TokenType.OPEN_PAREN)
+                    while (!stack.isEmpty() && stack.peek().type != Token.TokenType.OPEN_PAREN)
                     {
                         outputQueue.add(stack.pop());
                     }
@@ -1116,7 +1075,7 @@ public class Expression
                         throw new ExpressionException("Mismatched parentheses");
                     }
                     stack.pop();
-                    if (!stack.isEmpty() && stack.peek().type == TokenType.FUNCTION)
+                    if (!stack.isEmpty() && stack.peek().type == Token.TokenType.FUNCTION)
                     {
                         outputQueue.add(stack.pop());
                     }
@@ -1127,7 +1086,7 @@ public class Expression
         while (!stack.isEmpty())
         {
             Token element = stack.pop();
-            if (element.type == TokenType.OPEN_PAREN || element.type == TokenType.CLOSE_PAREN)
+            if (element.type == Token.TokenType.OPEN_PAREN || element.type == Token.TokenType.CLOSE_PAREN)
             {
                 throw new ExpressionException("Mismatched parentheses");
             }
@@ -1140,8 +1099,8 @@ public class Expression
     {
         Expression.Token nextToken = stack.isEmpty() ? null : stack.peek();
         while (nextToken != null
-                && (nextToken.type == Expression.TokenType.OPERATOR
-                || nextToken.type == Expression.TokenType.UNARY_OPERATOR)
+                && (nextToken.type == Token.TokenType.OPERATOR
+                || nextToken.type == Token.TokenType.UNARY_OPERATOR)
                 && ((o1.isLeftAssoc() && o1.getPrecedence() <= operators.get(nextToken.surface).getPrecedence())
                 || (o1.getPrecedence() < operators.get(nextToken.surface).getPrecedence())))
         {
@@ -1151,7 +1110,7 @@ public class Expression
     }
 
 
-    private LazyValue ast = null;
+
 
     /**
      * Evaluates the expression.
@@ -1207,8 +1166,7 @@ public class Expression
                             variables.put(token.surface, () -> Value.ZERO.boundTo(token.surface));
                         }
                         LazyValue lazyVariable = variables.get(token.surface);
-                        Value value = lazyVariable.eval();
-                        return value;
+                        return lazyVariable.eval();
                     });
                     break;
                 case FUNCTION:
@@ -1216,61 +1174,34 @@ public class Expression
                     ArrayList<LazyValue> p = new ArrayList<>(!f.numParamsVaries() ? f.getNumParams() : 0);
                     // pop parameters off the stack until we hit the start of
                     // this function's parameter list
-                    while (!stack.isEmpty() && stack.peek() != PARAMS_START)
+                    while (!stack.isEmpty() && stack.peek() != LazyValue.PARAMS_START)
                     {
                         p.add(0, stack.pop());
                     }
 
-                    if (stack.peek() == PARAMS_START)
+                    if (stack.peek() == LazyValue.PARAMS_START)
                     {
                         stack.pop();
                     }
 
-                    stack.push(new LazyValue()
-                    {
-                        public Value eval()
-                        {
-                            return f.lazyEval(p).eval();
-                        }
-
-                    });
+                    stack.push(() -> f.lazyEval(p).eval());
                     break;
                 case OPEN_PAREN:
-                    stack.push(PARAMS_START);
+                    stack.push(LazyValue.PARAMS_START);
                     break;
                 case LITERAL:
-                    stack.push(new LazyValue()
+                    stack.push(() ->
                     {
-                        public Value eval()
-                        {
-                            if (token.surface.equalsIgnoreCase("NULL"))
-                            {
-                                return null;
-                            }
-                            return new NumericValue(new BigDecimal(token.surface, mc));
-                        }
-
+                        if (token.surface.equalsIgnoreCase("NULL"))
+                            return null;
+                        return new NumericValue(new BigDecimal(token.surface, mc));
                     });
                     break;
                 case STRINGPARAM:
-                    stack.push(new LazyValue()
-                    {
-                        public Value eval()
-                        {
-                            return new StringValue(token.surface); // was null
-                        }
-
-                    });
+                    stack.push(() -> new StringValue(token.surface) ); // was originally null
                     break;
                 case HEX_LITERAL:
-                    stack.push(new LazyValue()
-                    {
-                        public Value eval()
-                        {
-                            return new NumericValue(new BigDecimal(new BigInteger(token.surface.substring(2), 16), mc));
-                        }
-
-                    });
+                    stack.push(() -> new NumericValue(new BigDecimal(new BigInteger(token.surface.substring(2), 16), mc)));
                     break;
                 default:
                     throw new ExpressionException(
@@ -1280,7 +1211,10 @@ public class Expression
         return stack.pop();
     }
 
-
+    LazyValue getVariable(String name)
+    {
+        return variables.get(name);
+    }
 
     /**
      * Sets a variable value.
@@ -1316,7 +1250,7 @@ public class Expression
      */
     public Expression setVariable(String variable, String value)
     {
-        if (isNumber(value))
+        if (Tokenizer.isNumber(value))
             variables.put(variable, () -> new NumericValue(new BigDecimal(value, mc)).boundTo(variable));
         else if (value.equalsIgnoreCase("null"))
         {
