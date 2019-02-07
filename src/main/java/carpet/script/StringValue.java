@@ -1,4 +1,4 @@
-package carpetscript;
+package carpet.script;
 
 public class StringValue extends Value
 {

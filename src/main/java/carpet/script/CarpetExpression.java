@@ -1,8 +1,10 @@
-package carpet.utils;
+package carpet.script;
 
 import carpet.CarpetSettings;
-import carpetscript.*;
-import carpetscript.Expression.ExpressionException;
+import carpet.script.Expression.ExpressionException;
+import carpet.script.Expression.LazyValue;
+import carpet.utils.BlockInfo;
+import carpet.utils.Messenger;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.command.CommandSource;
@@ -14,8 +16,12 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.registry.IRegistry;
 import net.minecraft.world.EnumLightType;
+import net.minecraft.world.WorldServer;
+import net.minecraft.world.gen.Heightmap;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
@@ -24,7 +30,7 @@ public class CarpetExpression
 {
     public static class CarpetExpressionException extends ExpressionException
     {
-        public CarpetExpressionException(String message)
+        CarpetExpressionException(String message)
         {
             super(message);
         }
@@ -40,7 +46,7 @@ public class CarpetExpression
         public IBlockState blockState;
         public BlockPos pos;
 
-        public BlockValue(IBlockState arg, BlockPos position)
+        BlockValue(IBlockState arg, BlockPos position)
         {
             super(IRegistry.field_212618_g.getKey(arg.getBlock()).getPath());
             blockState = arg;
@@ -53,12 +59,6 @@ public class CarpetExpression
             return !blockState.isAir();
         }
 
-        @Override
-        public String getString()
-        {
-            return IRegistry.field_212618_g.getKey(blockState.getBlock()).getPath();
-        }
-
         public Value copy()
         {
             return new BlockValue(blockState, pos);
@@ -69,20 +69,10 @@ public class CarpetExpression
     private BlockPos locateBlockPos(List<Value> params)
     {
         if (params.size() < 3)
-        {
             throw new ExpressionException("Need three integers for params");
-        }
-
         int xpos = ((NumericValue) params.get(0)).getNumber().intValue();
         int ypos = ((NumericValue) params.get(1)).getNumber().intValue();
         int zpos = ((NumericValue) params.get(2)).getNumber().intValue();
-        /*
-        Try without it first
-        if (ypos < -1000255 || ypos > 1000255 || xpos > 10000 || xpos < -10000 || zpos > 10000 || zpos< -10000)
-        {
-            throw new ExpressionException("Attempting to locate block outside of 10k blocks range");
-        }
-        */
         return new BlockPos(origin.getX() + xpos, origin.getY() + ypos, origin.getZ() + zpos);
     }
 
@@ -170,6 +160,28 @@ public class CarpetExpression
 
         this.expr.addNAryFunction("skyLight", 3, (lv) ->
                 new NumericValue(source.getWorld().getLightFor(EnumLightType.SKY, locateBlockPos(lv))));
+
+        this.expr.addNAryFunction("seeSky", 3, (lv) ->
+                new NumericValue(source.getWorld().canSeeSky(locateBlockPos(lv))));
+
+        this.expr.addNAryFunction("topOpaque", -1, (lv) -> {
+            int x;
+            int z;
+            if (lv.get(1) instanceof BlockValue)
+            {
+                BlockPos inpos = ((BlockValue)lv.get(1)).pos;
+                x = inpos.getX();
+                z = inpos.getZ();
+            }
+            else
+            {
+                x = Expression.getNumericalValue(lv.get(0)).intValue();
+                z = Expression.getNumericalValue(lv.get(1)).intValue();
+            }
+            int y = source.getWorld().getChunk(x >> 4, z >> 4).getTopBlockY(Heightmap.Type.LIGHT_BLOCKING, x & 15, z & 15) + 1;
+            BlockPos pos = new BlockPos(x,y,z);
+            return new BlockValue(source.getWorld().getBlockState(pos), pos);
+        });
 
         this.expr.addNAryFunction("loaded", 3, (lv) ->
                 source.getWorld().isBlockLoaded(locateBlockPos(lv)) ? Value.TRUE : Value.FALSE);
@@ -279,14 +291,124 @@ public class CarpetExpression
             return v; // pass through for variables
         });
 
-        this.expr.addUnaryFunction("neighbours", (v)->
+        this.expr.addNAryFunction("neighbours", 3, (lv)->
         {
-            throw new UnsupportedOperationException(); // TODO
+            BlockPos center = locateBlockPos(lv);
+            WorldServer world = source.getWorld();
+
+            List<Value> neighbours = new ArrayList<>();
+            neighbours.add(new BlockValue(world.getBlockState(center.up()), center.up()));
+            neighbours.add(new BlockValue(world.getBlockState(center.down()), center.down()));
+            neighbours.add(new BlockValue(world.getBlockState(center.north()), center.north()));
+            neighbours.add(new BlockValue(world.getBlockState(center.south()), center.south()));
+            neighbours.add(new BlockValue(world.getBlockState(center.east()), center.east()));
+            neighbours.add(new BlockValue(world.getBlockState(center.west()), center.west()));
+            return new ListValue(neighbours);
         });
 
-        this.expr.addUnaryFunction("conv", (v)->
+        //conv (x,y,z,sx,sy,sz, (_x, _y, _z, _block, _a) -> expr, ?acc) ->
+        this.expr.addLazyFunction("conv", -1, (lv)->
         {
-            throw new UnsupportedOperationException(); // TODO
+            Value acc;
+            if (lv.size() == 7)
+                acc = new NumericValue(0);
+            else if (lv.size() ==8)
+                acc = lv.get(7).eval();
+            else
+                throw new CarpetExpressionException("conv accepts 7 or 8 parameters");
+            LazyValue expr = lv.get(6);
+            int cx;
+            int cy;
+            int cz;
+            int sx;
+            int sy;
+            int sz;
+            try
+            {
+                cx = ((NumericValue) lv.get(0).eval()).getNumber().intValue();
+                cy = ((NumericValue) lv.get(1).eval()).getNumber().intValue();
+                cz = ((NumericValue) lv.get(2).eval()).getNumber().intValue();
+                sx = ((NumericValue) lv.get(3).eval()).getNumber().intValue();
+                sy = ((NumericValue) lv.get(4).eval()).getNumber().intValue();
+                sz = ((NumericValue) lv.get(5).eval()).getNumber().intValue();
+            }
+            catch (ClassCastException exc)
+            {
+                throw new CarpetExpressionException("Attempted to pass a non-number to conv");
+            }
+            //saving outer scope
+            LazyValue _x = this.expr.getVariable("_x");
+            LazyValue _y = this.expr.getVariable("_y");
+            LazyValue _z = this.expr.getVariable("_z");
+            LazyValue _a = this.expr.getVariable("_a");
+            for (int x = cx-sx; x <= cx+sx; x++)
+            {
+                for (int z = cz-sz; z <= cz+sz; z++)
+                {
+                    for (int y = cy-sy; y <= cy+sy; y++)
+                    {
+                        this.expr.setVariable("_x", new NumericValue(x));
+                        this.expr.setVariable("_y", new NumericValue(y));
+                        this.expr.setVariable("_z", new NumericValue(z));
+                        this.expr.setVariable("_a", acc);
+                        acc = expr.eval();
+                    }
+                }
+            }
+            //restoring outer scope
+            this.expr.setVariable("_x", _x);
+            this.expr.setVariable("_y", _y);
+            this.expr.setVariable("_z", _z);
+            this.expr.setVariable("_a", _a);
+            Value honestWontChange = acc;
+            return () -> honestWontChange;
+        });
+
+        //conv (x,y,z,(_x, _y, _z, _a) -> expr, ?acc) ->
+        this.expr.addLazyFunction("convnb", -1, (lv)->
+        {
+            Value acc;
+            if (lv.size() == 4)
+                acc = new NumericValue(0);
+            else if (lv.size() ==5)
+                acc = lv.get(4).eval();
+            else
+                throw new CarpetExpressionException("convnb accepts 4 or 5 parameters");
+            LazyValue expr = lv.get(3);
+            int cx;
+            int cy;
+            int cz;
+            try
+            {
+                cx = ((NumericValue) lv.get(0).eval()).getNumber().intValue();
+                cy = ((NumericValue) lv.get(1).eval()).getNumber().intValue();
+                cz = ((NumericValue) lv.get(2).eval()).getNumber().intValue();
+            }
+            catch (ClassCastException exc)
+            {
+                throw new CarpetExpressionException("Attempted to pass a non-number to conv");
+            }
+            BlockPos pos = new BlockPos(cx, cy, cz); // its deliberately offset wrt origin, only used to get nbs coords
+            //saving outer scope
+            LazyValue _x = this.expr.getVariable("_x");
+            LazyValue _y = this.expr.getVariable("_y");
+            LazyValue _z = this.expr.getVariable("_z");
+            LazyValue _a = this.expr.getVariable("_a");
+            for (BlockPos nb: Arrays.asList(pos.down(), pos.north(), pos.south(), pos.east(), pos.west(), pos.up()))
+            {
+                this.expr.setVariable("_x", new NumericValue(nb.getX()));
+                this.expr.setVariable("_y", new NumericValue(nb.getY()));
+                this.expr.setVariable("_z", new NumericValue(nb.getZ()));
+                this.expr.setVariable("_a", acc);
+                acc = expr.eval();
+            }
+            //restoring outer scope
+            this.expr.setVariable("_x", _x);
+            this.expr.setVariable("_y", _y);
+            this.expr.setVariable("_z", _z);
+            this.expr.setVariable("_a", _a);
+            Value honestWontChange = acc;
+            return () -> honestWontChange;
         });
 
 

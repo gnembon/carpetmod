@@ -1,4 +1,4 @@
-package carpetscript;
+package carpet.script;
 
 public abstract class Value implements Comparable<Value>
 {

@@ -1,7 +1,7 @@
 package carpet.commands;
 
 import carpet.CarpetSettings;
-import carpet.utils.CarpetExpression;
+import carpet.script.CarpetExpression;
 import carpet.utils.Messenger;
 import com.google.common.collect.Lists;
 import com.mojang.brigadier.CommandDispatcher;
@@ -38,6 +38,17 @@ public class DrawCommand
                                 then(argument("from",BlockPosArgument.blockPos()).
                                         then(argument("to",BlockPosArgument.blockPos()).
                                                 then(argument("expr", StringArgumentType.string()).
+                                                        executes((c)-> evalExpr(
+                                                                c.getSource(),
+                                                                StringArgumentType.getString(c, "expr"),
+                                                                BlockPosArgument.getBlockPos(c, "origin"),
+                                                                BlockPosArgument.getBlockPos(c, "from"),
+                                                                BlockPosArgument.getBlockPos(c, "to"),
+                                                                null,
+                                                                null,
+                                                                "solid"
+                                                                )
+                                                        ).
                                                         then(argument("block",BlockStateArgument.blockState()).
                                                                 executes((c)-> evalExpr(
                                                                         c.getSource(),
@@ -68,6 +79,17 @@ public class DrawCommand
                                 then(argument("from",BlockPosArgument.blockPos()).
                                         then(argument("to",BlockPosArgument.blockPos()).
                                                 then(argument("expr", StringArgumentType.string()).
+                                                        executes((c)-> evalExpr(
+                                                                c.getSource(),
+                                                                StringArgumentType.getString(c, "expr"),
+                                                                BlockPosArgument.getBlockPos(c, "origin"),
+                                                                BlockPosArgument.getBlockPos(c, "from"),
+                                                                BlockPosArgument.getBlockPos(c, "to"),
+                                                                null,
+                                                                null,
+                                                                "edge"
+                                                                )
+                                                        ).
                                                         then(argument("block",BlockStateArgument.blockState()).
                                                                 executes((c)-> evalExpr(
                                                                         c.getSource(),
@@ -126,6 +148,30 @@ public class DrawCommand
         if (area.getXSize() * area.getYSize() * area.getZSize() > CarpetSettings.getInt("fillLimit"))
         {
             Messenger.m(source, "r too many blocks to evaluate: "+ area.getXSize() * area.getYSize() * area.getZSize());
+            return 1;
+        }
+        if (block == null && "solid".equalsIgnoreCase(mode))  // only run eval on an area, no block replacement
+        {
+            int successCount = 0;
+            for (int x = area.minX; x <= area.maxX; x++)
+            {
+                for (int y = area.minY; y <= area.maxY; y++)
+                {
+                    for (int z = area.minZ; z <= area.maxZ; z++)
+                    {
+                        try
+                        {
+                            if (cexpr.test(x, y, z))
+                                successCount++;
+                        }
+                        catch (CarpetExpression.CarpetExpressionException ignored)
+                        {
+                            CarpetSettings.LOG.error("Exception: "+ignored);
+                        }
+                    }
+                }
+            }
+            Messenger.m(source, "w Expression successful in "+successCount+" out of "+area.getXSize() * area.getYSize() * area.getZSize()+" blocks");
             return 1;
         }
         boolean[][][] volume = new boolean[area.getXSize()][area.getYSize()][area.getZSize()];
@@ -194,7 +240,11 @@ public class DrawCommand
                     if (volume[x][y][z])
                     {
                         mbpos.setPos(x+area.minX, y+area.minY, z+area.minZ);
-                        if (replacement == null || replacement.test(
+                        if (block == null)
+                        {
+                            ++affected;
+                        }
+                        else if (replacement == null || replacement.test(
                                 new BlockWorldState( world, mbpos, true)))
                         {
                             TileEntity tileentity = world.getTileEntity(mbpos);
@@ -215,7 +265,7 @@ public class DrawCommand
                 }
             }
         }
-        if (CarpetSettings.getBool("fillUpdates"))
+        if (CarpetSettings.getBool("fillUpdates") && block != null)
         {
             for (int x = 0; x <= maxx; x++)
             {
@@ -233,7 +283,7 @@ public class DrawCommand
                 }
             }
         }
-        Messenger.m(source, "gi Drawn "+affected+" blocks");
+        Messenger.m(source, "gi Affected "+affected+" blocks in "+area.getXSize() * area.getYSize() * area.getZSize()+" block volume");
         return 1;
     }
     private static int drawCircle(CommandSource source, BlockPos pos, int radius, BlockStateInput block,

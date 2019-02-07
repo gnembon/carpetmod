@@ -1,6 +1,4 @@
-package carpetscript;
-
-import org.apache.commons.lang3.StringUtils;
+package carpet.script;
 
 import java.util.ArrayList;
 import java.util.List;
