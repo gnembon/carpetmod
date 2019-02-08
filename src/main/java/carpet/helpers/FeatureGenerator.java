@@ -1,13 +1,26 @@
 package carpet.helpers;
 
+import carpet.CarpetSettings;
+import net.minecraft.init.Biomes;
+import net.minecraft.util.SharedSeedRandom;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkPos;
+import net.minecraft.util.math.MutableBoundingBox;
+import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.biome.Biome;
+import net.minecraft.world.gen.AbstractChunkGenerator;
+import net.minecraft.world.gen.ChunkGeneratorDebug;
+import net.minecraft.world.gen.IChunkGenerator;
 import net.minecraft.world.gen.feature.Feature;
 import net.minecraft.world.gen.feature.IFeatureConfig;
 import net.minecraft.world.gen.feature.NoFeatureConfig;
+import net.minecraft.world.gen.feature.structure.*;
 
+import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 public class FeatureGenerator
 {
@@ -24,6 +37,67 @@ public class FeatureGenerator
     private static Map<String, Thing> featureMap = new HashMap<String, Thing>() {{
         put("chorus", simplePlop(Feature.CHORUS_PLANT));
         put("ice_spike", simplePlop(Feature.ICE_SPIKE));
+        put("village", (w, p) -> new VillageStructure()
+            {
+                @Override
+                protected ChunkPos getStartPositionForPosition(
+                        IChunkGenerator<?> chunkGenerator,
+                        Random random,
+                        int x, int z, int spacingOffsetsX, int spacingOffsetsZ)
+                {
+                    return new ChunkPos(new BlockPos(x,0,z));
+                }
+
+                @Override
+                protected boolean hasStartAt(IChunkGenerator<?> chunkGen, Random rand, int chunkPosX, int chunkPosZ)
+                {
+                    return true;
+                }
+
+                @Override
+                protected boolean isEnabledIn(IWorld worldIn)
+                {
+                    return true;
+                }
+
+                @Override
+                protected StructureStart makeStart(IWorld worldIn, IChunkGenerator<?> generator, SharedSeedRandom random, int x, int z)
+                {
+                    IChunkGenerator chunkgen = new ChunkGeneratorDebug(w, null, null)
+                    {
+                        @Nullable
+                        @Override
+                        public IFeatureConfig getStructureConfig(Biome biomeIn, Structure<? extends IFeatureConfig> structureIn)
+                        {
+                            CarpetSettings.LOG.error("called here, returning fixed value");
+                            return new VillageConfig(0, VillagePieces.Type.ACACIA);
+                        }
+                    };
+                    return new VillageStructure.Start(worldIn, chunkgen, random, x, z, Biomes.DEFAULT);
+                }
+
+                public boolean force()
+                {
+                    ChunkPos cp = new ChunkPos(p);
+                    SharedSeedRandom sred = new SharedSeedRandom(w.rand.nextInt());
+                    StructureStart structurestart1 = makeStart(w, w.getChunkProvider().getChunkGenerator(), sred,cp.x, cp.z);
+                    if (structurestart1 == NO_STRUCTURE)
+                    {
+                        CarpetSettings.LOG.error("No structure");
+                        return false;
+                    }
+                    CarpetSettings.LOG.error("generating structure");
+                    CarpetSettings.skipGenerationWarnings = false; // TODO add to IChunk later to disable log spam
+                    structurestart1.generateStructure(
+                            w,
+                            sred,
+                            new MutableBoundingBox(p.getX()-512, p.getX()-512, p.getX()+512, p.getZ()+512),
+                            new ChunkPos(p) );
+                    CarpetSettings.skipGenerationWarnings = true;
+                    return true;
+                }
+            }.force()
+        );
     }};
     public static boolean spawn(String name, World world, BlockPos pos)
     {
