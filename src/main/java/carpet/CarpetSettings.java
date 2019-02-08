@@ -43,7 +43,7 @@ public class CarpetSettings
     public static final CarpetSettingEntry FalseEntry = CarpetSettingEntry.create("void","all","Error").choices("None","");
 
     public static final String[] default_tags = {"tnt","fix","survival","creative", "experimental","optimizations","feature","commands"}; //tab completion only
-    public static boolean skipGenerationWarnings = true;
+    public static boolean skipGenerationWarnings = false;
 
     static {
         settings_store = new HashMap<>();

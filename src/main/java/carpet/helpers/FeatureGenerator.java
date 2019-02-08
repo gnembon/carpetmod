@@ -87,13 +87,13 @@ public class FeatureGenerator
                         return false;
                     }
                     CarpetSettings.LOG.error("generating structure");
-                    CarpetSettings.skipGenerationWarnings = false; // TODO add to IChunk later to disable log spam
+                    CarpetSettings.skipGenerationWarnings = true; // TODO add to IChunk later to disable log spam
                     structurestart1.generateStructure(
                             w,
                             sred,
                             new MutableBoundingBox(p.getX()-512, p.getX()-512, p.getX()+512, p.getZ()+512),
                             new ChunkPos(p) );
-                    CarpetSettings.skipGenerationWarnings = true;
+                    CarpetSettings.skipGenerationWarnings = false;
                     return true;
                 }
             }.force()
