@@ -1,0 +1,18 @@
+--- a/net/minecraft/world/chunk/IChunk.java
++++ b/net/minecraft/world/chunk/IChunk.java
+@@ -1,5 +1,6 @@
+ package net.minecraft.world.chunk;
+ 
++import carpet.CarpetSettings;
+ import it.unimi.dsi.fastutil.longs.LongSet;
+ import java.util.BitSet;
+ import java.util.List;
+@@ -93,7 +94,7 @@
+ 
+ default void markBlockForPostprocessing(BlockPos pos)
+     {
+-        LogManager.getLogger().warn("Trying to mark a block for PostProcessing @ {}, but this operation is not supported.", (Object)pos);
++        if (!CarpetSettings.skipGenerationWarnings) LogManager.getLogger().warn("Trying to mark a block for PostProcessing @ {}, but this operation is not supported.", (Object)pos);
+     }
+ 
+ default void addTileEntity(NBTTagCompound nbt)
