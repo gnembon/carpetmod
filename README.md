@@ -1,4 +1,4 @@
-# CarpetMod for Minecraft 1.13.1
+# CarpetMod for Minecraft 1.13.2
 The most comprehensive and convoluted mod for carpets evar. However it doesn't include carpets yet. Built based on jarmod-buildsystem-2 by Earthcomputer. See Earthcomputer's repo for details on the build system.
 
 ## Requirements
