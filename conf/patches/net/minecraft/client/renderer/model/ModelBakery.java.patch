@@ -1,10 +1,7 @@
 --- a/net/minecraft/client/renderer/model/ModelBakery.java
 +++ b/net/minecraft/client/renderer/model/ModelBakery.java
-@@ -197,6 +197,6 @@
+@@ -196,3 +196,3 @@
+-                     List lvt_9_4_;
++                     List<Pair> lvt_9_4_;
                       try {
                          flag = true;
--                        lvt_9_4_ = this.field_177598_f.func_199004_b(resourcelocation1).stream().map((p_209591_1_) -> {
-+                        lvt_9_4_ = (List)this.field_177598_f.func_199004_b(resourcelocation1).stream().map((p_209591_1_) -> {
-                            try (InputStream inputstream = p_209591_1_.func_199027_b()) {
-                               Pair pair1 = Pair.of(p_209591_1_.func_199026_d(), ModelBlockDefinition.func_209577_a(this.field_209610_F, new InputStreamReader(inputstream, StandardCharsets.UTF_8)));
-                               return pair1;
