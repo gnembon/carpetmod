@@ -128,7 +128,7 @@ public class CarpetSettings
   //                              .extraInfo("Hold a ghast tear to bring a tamed ghast close to you",
   //                                         "Use fire charges when riding to shoot fireballs",
   //                                         "Requires flying to be enabled on the server"),
-  //!rule("explosionNoBlockDamage", "tnt", "Explosions won't destroy blocks"),
+  rule("explosionNoBlockDamage", "tnt", "Explosions won't destroy blocks"),
   rule("tntPrimerMomentumRemoved", "tnt", "Removes random TNT momentum when primed"),
   rule("fastRedstoneDust",      "experimental optimizations", "Lag optimizations for redstone dust")
                                 .extraInfo("by Theosib").boolAccelerate().defaultFalse(),
