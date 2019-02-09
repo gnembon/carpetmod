@@ -3,16 +3,16 @@ echo Cleaning previous installations ...
 rd /s /q build\release
 mkdir build\release
 echo Copying server ...
-copy projects\mcp\build\mcp\downloadServer\server.jar build\release\minecraft_server-1.13.1.jar > nul
+copy projects\mcp\build\mcp\downloadServer\server.jar build\release\minecraft_server-1.13.2.jar > nul
 mkdir build\release\patches
 echo Extracting patches ...
-7za x build\distributions\carpetmod_1.0_Server.zip -bd -obuild\release\patches > nul
+7za x build\distributions\carpetmod_1.13.2_Server.zip -bd -obuild\release\patches > nul
 echo Patch work ...
-7za a build\release\minecraft_server-1.13.1.jar .\build\release\patches\* > nul
+7za a build\release\minecraft_server-1.13.2.jar .\build\release\patches\* > nul
 echo Cleanup ...
 rd /s /q build\release\patches
-move /y build\release\minecraft_server-1.13.1.jar %appdata%\.minecraft\saves\minecraft_server.1.13.1_carpet_test.jar > nul
+move /y build\release\minecraft_server-1.13.2.jar %appdata%\.minecraft\saves\minecraft_server.1.13.2_carpet_test.jar > nul
 pushd %appdata%\.minecraft\saves
 echo Starting server ...
-java -jar minecraft_server.1.13.1_carpet_test.jar --nogui
+java -jar minecraft_server.1.13.2_carpet_test.jar --nogui
 popd

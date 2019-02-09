@@ -1,6 +1,6 @@
 --- a/net/minecraft/world/gen/feature/CoralFeature.java
 +++ b/net/minecraft/world/gen/feature/CoralFeature.java
-@@ -21,6 +21,12 @@
+@@ -20,6 +20,12 @@
          return this.func_204623_a(p_212245_1_, p_212245_3_, p_212245_4_, iblockstate);
      }
  

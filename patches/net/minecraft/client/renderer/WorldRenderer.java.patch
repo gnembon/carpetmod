@@ -56,8 +56,8 @@
          }
 @@ -867,7 +885,7 @@
              this.displayListEntitiesDirty = false;
-             this.renderInfos = Lists.<WorldRenderer.ContainerLocalRenderInformation>newArrayList();
-             Queue<WorldRenderer.ContainerLocalRenderInformation> queue = Queues.<WorldRenderer.ContainerLocalRenderInformation>newArrayDeque();
+             this.renderInfos = Lists.newArrayList();
+             Queue<WorldRenderer.ContainerLocalRenderInformation> queue = Queues.newArrayDeque();
 -            Entity.setRenderDistanceWeight(MathHelper.clamp((double)this.mc.gameSettings.renderDistanceChunks / 8.0D, 1.0D, 2.5D));
 +            Entity.setRenderDistanceWeight(MathHelper.clamp((double)renderDistance / 8.0D, 1.0D, 2.5D)); //[CM] replaced this.mc.gameSettings.renderDistanceChunks with renderDistance
              boolean flag1 = this.mc.renderChunksMany;

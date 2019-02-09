@@ -16,7 +16,7 @@
 +            // except guardians have player baked in their more general predicate together with squidi
 +            // maybe its a good idea that invisibility should be honored for other mob classes as well?
 +            // just a thought Mojang ;-)
-             List<T> list = this.taskOwner.world.<T>getEntitiesWithinAABB(this.targetClass, this.getTargetableArea(this.getTargetDistance()), this.targetEntitySelector);
+             List<T> list = this.taskOwner.world.getEntitiesWithinAABB(this.targetClass, this.getTargetableArea(this.getTargetDistance()), this.targetEntitySelector);
  
              if (list.isEmpty())
 @@ -80,12 +85,18 @@

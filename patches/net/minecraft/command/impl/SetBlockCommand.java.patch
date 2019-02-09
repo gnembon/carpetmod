@@ -5,9 +5,9 @@
  
 +import carpet.CarpetSettings;
  import com.mojang.brigadier.CommandDispatcher;
- import com.mojang.brigadier.builder.LiteralArgumentBuilder;
- import com.mojang.brigadier.builder.RequiredArgumentBuilder;
-@@ -75,13 +76,18 @@
+ import com.mojang.brigadier.exceptions.CommandSyntaxException;
+ import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
+@@ -73,13 +74,18 @@
                  flag = true;
              }
  
@@ -24,6 +24,6 @@
                  worldserver.notifyNeighbors(p_198683_1_, p_198683_2_.getBlockState().getBlock());
 +                }
 +                // CM end
-                 p_198683_0_.sendFeedback(new TextComponentTranslation("commands.setblock.success", new Object[] {p_198683_1_.getX(), p_198683_1_.getY(), p_198683_1_.getZ()}), true);
+                 p_198683_0_.sendFeedback(new TextComponentTranslation("commands.setblock.success", p_198683_1_.getX(), p_198683_1_.getY(), p_198683_1_.getZ()), true);
                  return 1;
              }

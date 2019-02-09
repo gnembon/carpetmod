@@ -1,8 +1,8 @@
 --- a/net/minecraft/tileentity/TileEntityFurnace.java
 +++ b/net/minecraft/tileentity/TileEntityFurnace.java
-@@ -54,6 +54,12 @@
+@@ -53,6 +53,12 @@
      private ITextComponent furnaceCustomName;
-     private final Map<ResourceLocation, Integer> recipeUseCounts = Maps.<ResourceLocation, Integer>newHashMap();
+     private final Map<ResourceLocation, Integer> recipeUseCounts = Maps.newHashMap();
  
 +
 +    //CM

@@ -6,8 +6,8 @@
 +import carpet.CarpetSettings;
  import com.google.common.collect.Lists;
  import com.mojang.brigadier.CommandDispatcher;
- import com.mojang.brigadier.builder.LiteralArgumentBuilder;
-@@ -109,9 +110,9 @@
+ import com.mojang.brigadier.exceptions.CommandSyntaxException;
+@@ -107,9 +108,9 @@
          {
              int i = mutableboundingbox.getXSize() * mutableboundingbox.getYSize() * mutableboundingbox.getZSize();
  
@@ -19,7 +19,7 @@
              }
              else
              {
-@@ -172,12 +173,12 @@
+@@ -170,12 +171,12 @@
                                  ((IInventory)tileentity1).clear();
                              }
  
@@ -34,7 +34,7 @@
                          }
                      }
  
-@@ -196,14 +197,14 @@
+@@ -194,14 +195,14 @@
                              ((IInventory)tileentity2).clear();
                          }
  
@@ -51,7 +51,7 @@
                          {
                              ++i1;
                          }
-@@ -222,8 +223,11 @@
+@@ -220,8 +221,11 @@
                              tileentity3.markDirty();
                          }
  
@@ -64,7 +64,7 @@
  
                      for (CloneCommand.BlockInfo clonecommand$blockinfo3 : list4)
                      {
-@@ -232,6 +236,8 @@
+@@ -230,6 +234,8 @@
  
                      worldserver.getPendingBlockTicks().copyTicks(mutableboundingbox, blockpos);
  
