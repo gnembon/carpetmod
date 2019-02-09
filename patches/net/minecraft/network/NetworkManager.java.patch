@@ -17,7 +17,7 @@
              try
 @@ -215,6 +217,7 @@
          EnumConnectionState enumconnectionstate = EnumConnectionState.getFromPacket(inPacket);
-         EnumConnectionState enumconnectionstate1 = (EnumConnectionState)this.channel.attr(PROTOCOL_ATTRIBUTE_KEY).get();
+         EnumConnectionState enumconnectionstate1 = this.channel.attr(PROTOCOL_ATTRIBUTE_KEY).get();
          ++this.field_211395_r;
 +        PacketCounter.totalOut++;
  

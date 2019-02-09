@@ -1,8 +1,8 @@
 --- a/net/minecraft/entity/monster/EntityZombieVillager.java
 +++ b/net/minecraft/entity/monster/EntityZombieVillager.java
 @@ -36,6 +36,8 @@
-     private static final DataParameter<Boolean> CONVERTING = EntityDataManager.<Boolean>createKey(EntityZombieVillager.class, DataSerializers.BOOLEAN);
-     private static final DataParameter<Integer> PROFESSION = EntityDataManager.<Integer>createKey(EntityZombieVillager.class, DataSerializers.VARINT);
+     private static final DataParameter<Boolean> CONVERTING = EntityDataManager.createKey(EntityZombieVillager.class, DataSerializers.BOOLEAN);
+     private static final DataParameter<Integer> PROFESSION = EntityDataManager.createKey(EntityZombieVillager.class, DataSerializers.VARINT);
      private int conversionTime;
 +    //[CM] public for entity info
 +    public int getConversionTime() { return conversionTime; }

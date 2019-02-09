@@ -10,7 +10,7 @@
  import net.minecraft.entity.Entity;
  import net.minecraft.entity.EntityLivingBase;
  import net.minecraft.entity.EntityType;
-@@ -32,6 +35,10 @@
+@@ -32,10 +35,19 @@
      public Entity ignoreEntity;
      private int ignoreTime;
  
@@ -21,9 +21,6 @@
      protected EntityThrowable(EntityType<?> type, World p_i48540_2_)
      {
          super(type, p_i48540_2_);
-@@ -39,6 +46,11 @@
-         this.yTile = -1;
-         this.zTile = -1;
          this.setSize(0.25F, 0.25F);
 +        //CM
 +        if (LoggerRegistry.__projectiles)
@@ -33,7 +30,7 @@
      }
  
      protected EntityThrowable(EntityType<?> type, double p_i48541_2_, double p_i48541_4_, double p_i48541_6_, World p_i48541_8_)
-@@ -277,9 +289,27 @@
+@@ -274,9 +286,27 @@
              this.motionY -= (double)f2;
          }
  

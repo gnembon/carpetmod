@@ -1,6 +1,6 @@
 --- a/net/minecraft/world/chunk/Chunk.java
 +++ b/net/minecraft/world/chunk/Chunk.java
-@@ -499,9 +499,16 @@
+@@ -489,9 +489,16 @@
          }
      }
  
@@ -17,7 +17,7 @@
          int i = pos.getX() & 15;
          int j = pos.getY();
          int k = pos.getZ() & 15;
-@@ -578,7 +585,8 @@
+@@ -568,7 +575,8 @@
                      }
                  }
  

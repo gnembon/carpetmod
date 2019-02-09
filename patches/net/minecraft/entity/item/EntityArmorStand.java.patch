@@ -1,8 +1,8 @@
 --- a/net/minecraft/entity/item/EntityArmorStand.java
 +++ b/net/minecraft/entity/item/EntityArmorStand.java
 @@ -71,6 +71,10 @@
-     private Rotations leftLegRotation;
-     private Rotations rightLegRotation;
+     private Rotations leftLegRotation = DEFAULT_LEFTLEG_ROTATION;
+     private Rotations rightLegRotation = DEFAULT_RIGHTLEG_ROTATION;
  
 +    // CM
 +    @Override

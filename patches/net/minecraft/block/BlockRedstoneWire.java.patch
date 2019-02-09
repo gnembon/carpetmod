@@ -14,7 +14,7 @@
      private boolean canProvidePower = true;
 +    //CM changed to access for fast redstone
 +    public void setCanProvidePower(boolean v) { canProvidePower = v; }
-     private final Set<BlockPos> blocksNeedingUpdate = Sets.<BlockPos>newHashSet();
+     private final Set<BlockPos> blocksNeedingUpdate = Sets.newHashSet();
  
 +    // [CM] FastRedstoneDust
 +    RedstoneWireTurbo wireTurbo = new RedstoneWireTurbo(this);
@@ -137,7 +137,7 @@
 -
          if (i != j)
          {
-             p_212568_3_ = (IBlockState)p_212568_3_.with(POWER, Integer.valueOf(j));
+             p_212568_3_ = p_212568_3_.with(POWER, Integer.valueOf(j));
 @@ -258,11 +275,14 @@
                  p_212568_1_.setBlockState(p_212568_2_, p_212568_3_, 2);
              }

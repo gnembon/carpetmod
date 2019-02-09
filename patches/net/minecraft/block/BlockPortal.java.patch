@@ -30,7 +30,7 @@
          else
 @@ -120,6 +128,20 @@
          EnumFacing.Axis enumfacing$axis = facing.getAxis();
-         EnumFacing.Axis enumfacing$axis1 = (EnumFacing.Axis)stateIn.get(AXIS);
+         EnumFacing.Axis enumfacing$axis1 = stateIn.get(AXIS);
          boolean flag = enumfacing$axis1 != enumfacing$axis && enumfacing$axis.isHorizontal();
 +        //CM
 +        if (CarpetSettings.getBool("portalCaching")) // broken down statement below to accomodate for clear cache call

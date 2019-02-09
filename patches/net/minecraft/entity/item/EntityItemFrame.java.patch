@@ -1,7 +1,7 @@
 --- a/net/minecraft/entity/item/EntityItemFrame.java
 +++ b/net/minecraft/entity/item/EntityItemFrame.java
 @@ -36,6 +36,11 @@
-     private static final DataParameter<Integer> ROTATION = EntityDataManager.<Integer>createKey(EntityItemFrame.class, DataSerializers.VARINT);
+     private static final DataParameter<Integer> ROTATION = EntityDataManager.createKey(EntityItemFrame.class, DataSerializers.VARINT);
      private float itemDropChance = 1.0F;
  
 +    //CM

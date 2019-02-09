@@ -1,8 +1,8 @@
 --- a/net/minecraft/entity/passive/EntityCod.java
 +++ b/net/minecraft/entity/passive/EntityCod.java
-@@ -14,6 +14,11 @@
+@@ -13,6 +13,11 @@
  
- public class EntityCod extends AbstractFish
+ public class EntityCod extends AbstractGroupFish
  {
 +    //CM
 +    @Override
