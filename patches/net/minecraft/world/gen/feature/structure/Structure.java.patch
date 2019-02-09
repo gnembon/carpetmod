@@ -1,0 +1,28 @@
+--- a/net/minecraft/world/gen/feature/structure/Structure.java
++++ b/net/minecraft/world/gen/feature/structure/Structure.java
+@@ -1,5 +1,6 @@
+ package net.minecraft.world.gen.feature.structure;
+ 
++import carpet.CarpetSettings;
+ import com.google.common.collect.Lists;
+ import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
+ import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+@@ -225,7 +226,7 @@
+ 
+     private StructureStart getStructureStart(IWorld worldIn, IChunkGenerator <? extends IChunkGenSettings > generator, SharedSeedRandom rand, long packedChunkPos)
+     {
+-        if (!generator.getBiomeProvider().hasStructure(this))
++        if (!generator.getBiomeProvider().hasStructure(this) && !CarpetSettings.skipGenerationChecks)
+         {
+             return NO_STRUCTURE;
+         }
+@@ -289,4 +290,9 @@
+     protected abstract String getStructureName();
+ 
+     public abstract int getSize();
++
++    protected StructureStart getAccessedStructureStart(IWorld worldIn, IChunkGenerator <? extends IChunkGenSettings > generator, SharedSeedRandom rand, long packedChunkPos)
++    {
++        return getStructureStart(worldIn, generator, rand, packedChunkPos);
++    }
+ }
