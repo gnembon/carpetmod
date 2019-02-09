@@ -212,9 +212,8 @@ public class CarpetSettings
   rule("mobSpawningAlgorithm","experimental","Using version appropriate spawning rules: ")
                                 .extraInfo(" - 1.8 : fixed 4 mobs per pack for all mobs, 'subchunk' rule",
                                            " - 1.12 : fixed 1 to 4 pack size, ignoring entity collisions, subchunk rule",
-                                           " - 1.13 : vanilla",
-                                           " - 1.13.2 : mobs don't spawn outside of 128 sphere around players")
-                                .choices("1.13","1.8 1.12 1.13 1.13.2")
+                                           " - 1.13 : vanilla (per 1.13.2) mobs don't spawn outside of 128 sphere around players")
+                                .choices("1.13","1.8 1.12 1.13")
                                 .validate( (s) -> {
                                     String value = CarpetSettings.getString("mobSpawningAlgorithm");
                                     CarpetSettings.n_mobSpawningAlgorithm = 113;
@@ -228,9 +227,6 @@ public class CarpetSettings
                                         case "1.11":
                                         case "1.12":
                                             CarpetSettings.n_mobSpawningAlgorithm = 112;
-                                            break;
-                                        case "1.13.2":
-                                            CarpetSettings.n_mobSpawningAlgorithm = 114;
                                             break;
                                     }
                                 }),
