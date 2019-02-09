@@ -285,7 +285,7 @@ public class CarpetExpression
                 StateContainer<Block, IBlockState> states = state.getBlock().getStateContainer();
                 IProperty<?> property = states.getProperty(tag);
                 if (property == null)
-                    return Value.EMPTY;
+                    return Value.NULL;
                 return new StringValue(state.get(property).toString());
 
         });

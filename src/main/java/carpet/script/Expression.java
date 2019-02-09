@@ -98,7 +98,7 @@ public class Expression
     {
         LazyValue FALSE = () -> Value.FALSE;
         LazyValue TRUE = () -> Value.TRUE;
-        LazyValue EMPTY = () -> Value.EMPTY;
+        LazyValue NULL = () -> Value.NULL;
         LazyValue ZERO = () -> Value.ZERO;
         /**
          * The Value representation of the left parenthesis, used for parsing
@@ -546,16 +546,16 @@ public class Expression
     {
         this.mc = defaultMathContext;
         this.expression = expression.trim().replaceAll(";+$", "");
-        variables.put("e", () -> e);
-        variables.put("PI", () -> PI);
-        variables.put("NULL", null);
-        variables.put("TRUE", () -> Value.TRUE);
-        variables.put("FALSE", () -> Value.FALSE);
+        setVariable("e", () -> e);
+        setVariable("PI", () -> PI);
+        setVariable("NULL", () -> Value.NULL);
+        setVariable("TRUE", () -> Value.TRUE);
+        setVariable("FALSE", () -> Value.FALSE);
 
         //special variables for second order functions so we don't need to check them all the time
-        variables.put("_", () -> new NumericValue(0).boundTo("_"));
-        variables.put("_i", () -> new NumericValue(0).boundTo("_i"));
-        variables.put("_a", () -> new NumericValue(0).boundTo("_a"));
+        setVariable("_", new NumericValue(0));
+        setVariable("_i", new NumericValue(0));
+        setVariable("_a", new NumericValue(0));
 
         addBinaryOperator(";",precedence.get("nextop;"), true, (v1, v2) ->
         {
@@ -654,12 +654,7 @@ public class Expression
         addUnaryOperator("!", false, (v)-> v.getBoolean() ? Value.FALSE : Value.TRUE);
         addUnaryFunction("not", (v) -> v.getBoolean() ? Value.FALSE : Value.TRUE);
 
-        addLazyFunction("if", 3, (lv) ->
-        {
-            Value result = lv.get(0).eval();
-            assertNotNull(result);
-            return result.getBoolean() ? lv.get(1) : lv.get(2);
-        });
+
 
         addUnaryFunction("fact", (v) ->
         {
@@ -749,6 +744,25 @@ public class Expression
 
         addFunction("list", ListValue::new);
 
+
+        // if(cond1, expr1, cond2, expr2, ..., ?default) => value
+        addLazyFunction("if", -1, (lv) ->
+        {
+            if ( lv.size() < 2 )
+                throw new ExpressionException("if statement needs to have at least one condition and one case");
+            for (int i=0; i<lv.size()-1; i+=2)
+            {
+                if (lv.get(i).eval().getBoolean())
+                {
+                    int iFinal = i;
+                    return () -> lv.get(iFinal+1).eval();
+                }
+            }
+            if (lv.size()%2 == 1)
+                return () -> lv.get(lv.size() - 1).eval();
+            return () -> new NumericValue(0);
+        });
+
         // loop(expr, 1000) => last_value
         // expr receives bounded variable '_' indicating iteration
         addLazyFunction("loop", 2, (lv) ->
@@ -823,8 +837,72 @@ public class Expression
             return ret;
         });
 
+        // first(expr, list) => elem or null
+        // receives bounded variable '_' with the expression, and "_i" with index
+        // returns first element on the list for which the expr is true
+        addLazyFunction("first", 2, (lv) ->
+        {
+            LazyValue expr = lv.get(0);
+            Value rval= lv.get(1).eval();
+            if (!(rval instanceof ListValue))
+                throw new ExpressionException("Second argument of grep function should be a list");
+            List<Value> list = ((ListValue) rval).getItems();
+            //scoping
+            LazyValue _val = getVariable("_");
+            LazyValue _iter = getVariable("_i");
+            for (int i=0; i< list.size(); i++)
+            {
+                setVariable("_", list.get(i));
+                setVariable("_i", new NumericValue(i));
+                if(expr.eval().getBoolean())
+                {
+                    int iFinal = i;
+                    setVariable("_", _val);
+                    setVariable("_i", _iter);
+                    return () -> list.get(iFinal);
+                }
+            }
+            //revering scope
+            setVariable("_", _val);
+            setVariable("_i", _iter);
+            return LazyValue.NULL;
+        });
+
+
+        // all(expr, list) => boolean
+        // receives bounded variable '_' with the expression, and "_i" with index
+        // returns true if expr is true for all items
+        addLazyFunction("all", 2, (lv) ->
+        {
+            LazyValue expr = lv.get(0);
+            Value rval= lv.get(1).eval();
+            if (!(rval instanceof ListValue))
+                throw new ExpressionException("Second argument of grep function should be a list");
+            List<Value> list = ((ListValue) rval).getItems();
+            //scoping
+            LazyValue _val = getVariable("_");
+            LazyValue _iter = getVariable("_i");
+            for (int i=0; i< list.size(); i++)
+            {
+                setVariable("_", list.get(i));
+                setVariable("_i", new NumericValue(i));
+                if(!expr.eval().getBoolean())
+                {
+                    setVariable("_", _val);
+                    setVariable("_i", _iter);
+                    return () -> new NumericValue(0);
+                }
+            }
+            //revering scope
+            setVariable("_", _val);
+            setVariable("_i", _iter);
+            return () -> new NumericValue(1);
+        });
+
+
         // similar to map, but returns total number of successes
         // for(expr, list) => success_count
+        // can be substituted for first and all, but first is more efficient and all doesn't require knowing list size
         addLazyFunction("for", 2, (lv) ->
         {
             LazyValue expr = lv.get(0);
@@ -912,25 +990,6 @@ public class Expression
             Value hopeItsEnoughPromise = acc;
             return () -> hopeItsEnoughPromise;
         });
-
-        // case(cond1, expr1, cond2, expr2, ..., ?default) => value
-        addLazyFunction("case", -1, (lv) ->
-        {
-            if ( lv.size() < 3 )
-                throw new ExpressionException("case statement needs to have at least one condition and case, and a default value");
-            for (int i=0; i<lv.size()-1; i+=2)
-            {
-                if (lv.get(i).eval().getBoolean())
-                {
-                    Value ret = lv.get(i+1).eval();
-                    return () -> ret;
-                }
-            }
-            if (lv.size()%2 == 1)
-                return () -> lv.get(lv.size() - 1).eval();
-            return () -> new NumericValue(0);
-        });
-
     }
 
 
@@ -1193,7 +1252,7 @@ public class Expression
                     stack.push(() ->
                     {
                         if (token.surface.equalsIgnoreCase("NULL"))
-                            return null;
+                            return Value.NULL;
                         return new NumericValue(new BigDecimal(token.surface, mc));
                     });
                     break;
@@ -1254,7 +1313,7 @@ public class Expression
             variables.put(variable, () -> new NumericValue(new BigDecimal(value, mc)).boundTo(variable));
         else if (value.equalsIgnoreCase("null"))
         {
-            variables.put(variable, null);
+            variables.put(variable, LazyValue.NULL);
         }
         else
         {

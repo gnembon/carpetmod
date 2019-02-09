@@ -5,7 +5,7 @@ public abstract class Value implements Comparable<Value>
     public static Value FALSE = new NumericValue(0);
     public static Value TRUE = new NumericValue(1);
     public static Value ZERO = FALSE;
-    public static Value EMPTY = new StringValue("");
+    public static Value NULL = new NullValue();
 
     public String boundVariable;
 
@@ -30,7 +30,7 @@ public abstract class Value implements Comparable<Value>
 
     public Value add(Value v) {
         String lstr = this.getString();
-        if (lstr == null)
+        if (lstr == null) // null should not happen
             return new StringValue(v.getString());
         String rstr = v.getString();
         if (rstr == null)

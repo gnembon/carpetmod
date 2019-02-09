@@ -36,14 +36,14 @@ import net.minecraft.server.MinecraftServer;
 public class CarpetSettings
 {
     public static boolean locked = false;
-    public static final String carpetVersion = "v19_01_01";
+    public static final String carpetVersion = "v19_02_09";
 
     public static final Logger LOG = LogManager.getLogger();
     private static final Map<String, CarpetSettingEntry> settings_store;
     public static final CarpetSettingEntry FalseEntry = CarpetSettingEntry.create("void","all","Error").choices("None","");
 
     public static final String[] default_tags = {"tnt","fix","survival","creative", "experimental","optimizations","feature","commands"}; //tab completion only
-    public static boolean skipGenerationWarnings = false;
+    public static boolean skipGenerationChecks = false;
 
     static {
         settings_store = new HashMap<>();
@@ -64,10 +64,8 @@ public class CarpetSettings
     public static int pistonGhostBlocksFix = 0;
     public static boolean quasiConnectivity = true;
 
-    public static boolean fastRedstoneDust = false;
     public static float tntRandomRange = -1;
 
-    public static int railPowerLimit = 8;
     public static int waterFlow = 0;
     public static boolean wirelessRedstone;
     public static boolean optimizedTileEntities = false;
