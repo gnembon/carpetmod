@@ -1,7 +1,6 @@
 package carpet.helpers;
 
 import carpet.CarpetSettings;
-import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import net.minecraft.init.Biomes;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.SharedSeedRandom;
@@ -11,7 +10,6 @@ import net.minecraft.util.math.MutableBoundingBox;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
-import net.minecraft.world.chunk.IChunk;
 import net.minecraft.world.gen.*;
 import net.minecraft.world.gen.feature.*;
 import net.minecraft.world.gen.feature.structure.*;
@@ -56,6 +54,8 @@ public class FeatureGenerator
         put("iceberg", simplePlop(Feature.ICEBERG, new IcebergConfig(Blocks.PACKED_ICE.getDefaultState())));
         put("iceberg blue", simplePlop(Feature.ICEBERG, new IcebergConfig(Blocks.BLUE_ICE.getDefaultState())));
         put("boulder", simplePlop(Feature.BLOCK_BLOB, new BlockBlobConfig(Blocks.MOSSY_COBBLESTONE, 0)));
+
+        put("monument",  Feature.OCEAN_MONUMENT::plopAnywhere);
 
         put("village", (w, p) -> new VillageStructure()
             {
@@ -148,65 +148,7 @@ public class FeatureGenerator
                 }.force()
         );
 
-        put("monument", (w, p) -> new OceanMonumentStructure()
-                {
-                    @Override
-                    protected ChunkPos getStartPositionForPosition(IChunkGenerator<?> c, Random r, int x, int z, int ox, int oz) {
-                        return new ChunkPos(new BlockPos(x,0,z));
-                    }
 
-                    @Override
-                    protected boolean hasStartAt(IChunkGenerator<?> c, Random r, int x, int z) { return true; }
-
-                    @Override
-                    protected StructureStart makeStart(IWorld worldIn, IChunkGenerator<?> generator, SharedSeedRandom random, int x, int z)
-                    {
-                        return new OceanMonumentStructure.Start(worldIn, random, x, z, Biomes.DEEP_OCEAN)
-                        {
-                            @Override
-                            public void generateStructure(IWorld worldIn, Random rand, MutableBoundingBox structurebb, ChunkPos p_75068_4_)
-                            {
-                                CarpetSettings.skipGenerationChecks = true;
-                                super.generateStructure(worldIn, rand,
-                                        new MutableBoundingBox(p.getX()-512, p.getX()-512, p.getX()+512, p.getZ()+512), p_75068_4_);
-
-                                CarpetSettings.skipGenerationChecks = false;
-                            }
-                        };
-                    }
-
-                    public boolean plopHere()
-                    {
-                        CarpetSettings.skipGenerationChecks = true;
-                        try
-                        {
-                            SharedSeedRandom rand = new SharedSeedRandom(w.rand.nextInt());
-                            IChunkGenerator<? extends IChunkGenSettings> generator = w.getChunkProvider().getChunkGenerator();
-                            int j = p.getX() >> 4;
-                            int k = p.getZ() >> 4;
-                            long chId = ChunkPos.asLong(p.getX() >> 4, p.getZ() >> 4);
-                            StructureStart structurestart = this.getAccessedStructureStart(w, generator, rand, chId);
-                            if (structurestart == NO_STRUCTURE)
-                            {
-                                CarpetSettings.skipGenerationChecks = false;
-                                return false;
-                            }
-                            generator.getStructurePositionToReferenceMap(this).computeIfAbsent(chId, (x) -> new LongOpenHashSet()).add(chId);
-                            w.getChunkProvider().provideChunkOrPrimer(j, k, true).addStructureReference(this.getStructureName(), chId);
-                            structurestart.generateStructure(
-                                    w,
-                                    rand,
-                                    new MutableBoundingBox(p.getX() - 512, p.getX() - 512, p.getX() + 512, p.getZ() + 512),
-                                    new ChunkPos(j, k)
-                            );
-                            structurestart.notifyPostProcessAt(new ChunkPos(j, k));
-                        }
-                        catch (Exception ignored) { }
-                        CarpetSettings.skipGenerationChecks = false;
-                        return true;
-                    }
-                }.plopHere()  // doesn't work well yet, cannot save in chunk since, it HAS to be from proper class
-        );
 
     }};
 

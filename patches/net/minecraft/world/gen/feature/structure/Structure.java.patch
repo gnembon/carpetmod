@@ -16,13 +16,80 @@
          {
              return NO_STRUCTURE;
          }
-@@ -289,4 +290,9 @@
+@@ -289,4 +290,76 @@
      protected abstract String getStructureName();
  
      public abstract int getSize();
 +
-+    protected StructureStart getAccessedStructureStart(IWorld worldIn, IChunkGenerator <? extends IChunkGenSettings > generator, SharedSeedRandom rand, long packedChunkPos)
++    //protected StructureStart getAccessedStructureStart(IWorld worldIn, IChunkGenerator <? extends IChunkGenSettings > generator, SharedSeedRandom rand, long packedChunkPos)
++    //{
++    //    return getStructureStart(worldIn, generator, rand, packedChunkPos);
++    //}
++
++    public boolean plopAnywhere(IWorld world, BlockPos pos)
 +    {
-+        return getStructureStart(worldIn, generator, rand, packedChunkPos);
++        CarpetSettings.skipGenerationChecks = true;
++        try
++        {
++            SharedSeedRandom rand = new SharedSeedRandom(world.getRandom().nextInt());
++            IChunkGenerator<? extends IChunkGenSettings> generator = world.getChunkProvider().getChunkGenerator();
++            int j = pos.getX() >> 4;
++            int k = pos.getZ() >> 4;
++            long chId = ChunkPos.asLong(j, k);
++            StructureStart structurestart = forceStructureStart(world, generator, rand, chId);
++            if (structurestart == NO_STRUCTURE)
++            {
++                CarpetSettings.skipGenerationChecks = false;
++                return false;
++            }
++            generator.getStructurePositionToReferenceMap(this).computeIfAbsent(chId, (x) -> new LongOpenHashSet()).add(chId);
++            world.getChunkProvider().provideChunkOrPrimer(j, k, true).addStructureReference(this.getStructureName(), chId);
++            structurestart.generateStructure(
++                    world,
++                    rand,
++                    new MutableBoundingBox(pos.getX() - 512, pos.getX() - 512, pos.getX() + 512, pos.getZ() + 512),
++                    new ChunkPos(j, k)
++            );
++            structurestart.notifyPostProcessAt(new ChunkPos(j, k));
++        }
++        catch (Exception ignored) { }
++        CarpetSettings.skipGenerationChecks = false;
++        return true;
 +    }
++
++    private StructureStart forceStructureStart(IWorld worldIn, IChunkGenerator <? extends IChunkGenSettings > generator, SharedSeedRandom rand, long packedChunkPos)
++    {
++
++        Long2ObjectMap<StructureStart> long2objectmap = generator.getStructureReferenceToStartMap(this);
++        StructureStart structurestart = long2objectmap.get(packedChunkPos);
++
++        if (structurestart != null)
++            return structurestart; // structure already exist, will skip
++        ChunkPos chunkpos = new ChunkPos(packedChunkPos);
++        IChunk ichunk = worldIn.getChunkProvider().provideChunkOrPrimer(chunkpos.x, chunkpos.z, false);
++
++        if (ichunk != null)
++        {
++            structurestart = ichunk.getStructureStart(this.getStructureName());
++
++            if (structurestart != null)
++            {
++                long2objectmap.put(packedChunkPos, structurestart);
++                return structurestart;
++            }
++        }
++
++        StructureStart structurestart1 = this.makeStart(worldIn, generator, rand, chunkpos.x, chunkpos.z);
++        structurestart = structurestart1.isSizeableStructure() ? structurestart1 : NO_STRUCTURE;
++
++        if (structurestart.isSizeableStructure())
++        {
++            worldIn.getChunkProvider().provideChunkOrPrimer(chunkpos.x, chunkpos.z, true).putStructureStart(this.getStructureName(), structurestart);
++        }
++
++        long2objectmap.put(packedChunkPos, structurestart);
++        return structurestart;
++    }
++
++
  }

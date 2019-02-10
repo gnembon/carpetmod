@@ -92,6 +92,7 @@ public class Expression
     /** should the evaluator output value of each ;'s statement during execution */
     private Consumer<String> logOutput = null;
 
+
     /** LazyNumber interface created for lazily evaluated functions */
     @FunctionalInterface
     public interface LazyValue
@@ -763,18 +764,19 @@ public class Expression
             return () -> new NumericValue(0);
         });
 
-        // loop(expr, 1000) => last_value
+        // loop(1000, expr) => last_value
         // expr receives bounded variable '_' indicating iteration
         addLazyFunction("loop", 2, (lv) ->
         {
-            long limit = getNumericalValue(lv.get(1).eval()).longValue();
+            long limit = getNumericalValue(lv.get(0).eval()).longValue();
             Value lastOne = Value.ZERO;
-            LazyValue expr = lv.get(0);
+            LazyValue expr = lv.get(1);
             //scoping
             LazyValue _val = getVariable("_");
             for (long i=0; i < limit; i++)
             {
-                setVariable("_", new NumericValue(i));
+                long whyYouAsk = i;
+                setVariable("_", () -> new NumericValue(whyYouAsk).boundTo("_"));
                 lastOne = expr.eval();
             }
             //revering scope
@@ -798,8 +800,9 @@ public class Expression
             List<Value> result = new ArrayList<>();
             for (int i=0; i< list.size(); i++)
             {
-                setVariable("_", list.get(i));
-                setVariable("_i", new NumericValue(i));
+                int doYouReally = i;
+                setVariable("_", () -> list.get(doYouReally).boundTo("_"));
+                setVariable("_i", () -> new NumericValue(doYouReally).boundTo("_i"));
                 result.add(expr.eval());
             }
             LazyValue ret = () -> new ListValue(result);
@@ -825,8 +828,9 @@ public class Expression
             List<Value> result = new ArrayList<>();
             for (int i=0; i< list.size(); i++)
             {
-                setVariable("_", list.get(i));
-                setVariable("_i", new NumericValue(i));
+                int seriously = i;
+                setVariable("_", () -> list.get(seriously).boundTo("_"));
+                setVariable("_i", () -> new NumericValue(seriously).boundTo("_i"));
                 if(expr.eval().getBoolean())
                     result.add(list.get(i));
             }
@@ -852,8 +856,9 @@ public class Expression
             LazyValue _iter = getVariable("_i");
             for (int i=0; i< list.size(); i++)
             {
-                setVariable("_", list.get(i));
-                setVariable("_i", new NumericValue(i));
+                int seriously = i;
+                setVariable("_", () -> list.get(seriously).boundTo("_"));
+                setVariable("_i", () -> new NumericValue(seriously).boundTo("_i"));
                 if(expr.eval().getBoolean())
                 {
                     int iFinal = i;
@@ -884,8 +889,9 @@ public class Expression
             LazyValue _iter = getVariable("_i");
             for (int i=0; i< list.size(); i++)
             {
-                setVariable("_", list.get(i));
-                setVariable("_i", new NumericValue(i));
+                int seriously = i;
+                setVariable("_", () -> list.get(seriously).boundTo("_"));
+                setVariable("_i", () -> new NumericValue(seriously).boundTo("_i"));
                 if(!expr.eval().getBoolean())
                 {
                     setVariable("_", _val);
@@ -916,8 +922,9 @@ public class Expression
             int successCount = 0;
             for (int i=0; i< list.size(); i++)
             {
-                setVariable("_", list.get(i));
-                setVariable("_i", new NumericValue(i));
+                int seriously = i;
+                setVariable("_", () -> list.get(seriously).boundTo("_"));
+                setVariable("_i", () -> new NumericValue(seriously).boundTo("_i"));
                 if(expr.eval().getBoolean())
                     successCount++;
             }
@@ -945,7 +952,8 @@ public class Expression
             {
                 lastOne = expr.eval();
                 i++;
-                setVariable("_", new NumericValue(i));
+                long seriously = i;
+                setVariable("_", () -> new NumericValue(seriously).boundTo("_"));
             }
             //revering scope
             setVariable("_", _val);
@@ -979,8 +987,9 @@ public class Expression
 
             for (Value v: elements)
             {
-                setVariable("_a", acc);
-                setVariable("_", v);
+                Value promiseWontChangeYou = acc;
+                setVariable("_a", () -> promiseWontChangeYou.boundTo("_a"));
+                setVariable("_", () -> v.boundTo("_"));
                 acc = expr.eval();
             }
             //reverting scope
@@ -1012,7 +1021,15 @@ public class Expression
         Token previousToken = null;
         while (tokenizer.hasNext())
         {
-            Token token = tokenizer.next();
+            Token token;
+            try
+            {
+                token = tokenizer.next();
+            }
+            catch (StringIndexOutOfBoundsException e)
+            {
+                throw new ExpressionException("Expression ended prematurely");
+            }
             switch (token.type)
             {
                 case STRINGPARAM:
@@ -1275,38 +1292,17 @@ public class Expression
         return variables.get(name);
     }
 
-    /**
-     * Sets a variable value.
-     *
-     * @param variable The variable name.
-     * @param value    The variable value.
-     * @return The expression, allows to chain methods.
-     */
     public Expression setVariable(String variable, Value value)
     {
         return setVariable(variable, () -> value.boundTo(variable));
     }
 
-    /**
-     * Sets a variable value.
-     *
-     * @param variable The variable name.
-     * @param value    The variable value.
-     * @return The expression, allows to chain methods.
-     */
     public Expression setVariable(String variable, LazyValue value)
     {
         variables.put(variable, value);
         return this;
     }
 
-    /**
-     * Sets a variable value.
-     *
-     * @param variable The variable to set.
-     * @param value    The variable value.
-     * @return The expression, allows to chain methods.
-     */
     public Expression setVariable(String variable, String value)
     {
         if (Tokenizer.isNumber(value))
@@ -1321,29 +1317,24 @@ public class Expression
         }
         return this;
     }
-
-    /**
-     * Sets a variable value.
-     *
-     * @param variable The variable to set.
-     * @param value    The variable value.
-     * @return The expression, allows to chain methods.
-     */
-    public Expression with(String variable, BigDecimal value)
+    /** aliases for setVariable */
+    public Expression with(String variable, Value value)
     {
-        return setVariable(variable, new NumericValue(value)); // variable will be set by setVariable
+        return setVariable(variable, value); // variable will be set by setVariable
     }
 
-    /**
-     * Sets a variable value.
-     *
-     * @param variable The variable to set.
-     * @param value    The variable value.
-     * @return The expression, allows to chain methods.
-     */
     public Expression with(String variable, String value)
     {
         return setVariable(variable, value);
+    }
+    public Expression with(String variable, LazyValue lv)
+    {
+        return setVariable(variable, lv);
+    }
+
+    public void copyStateFrom(Expression expr)
+    {
+        this.variables.putAll(expr.variables);
     }
 
     /**
