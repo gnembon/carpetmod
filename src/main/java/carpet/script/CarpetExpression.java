@@ -499,10 +499,11 @@ public class CarpetExpression
             return () -> honestWontChange;
         });
 
-        this.expr.addNAryFunction("plop", 4, (lv) ->{
+        //not ready yet
+        /*this.expr.addNAryFunction("plop", 4, (lv) ->{
             BlockPos pos = locateBlockPos(lv);
             return new NumericValue(FeatureGenerator.spawn(lv.get(3).getString(), source.getWorld(), pos));
-        });
+        });*/
 
 
     }

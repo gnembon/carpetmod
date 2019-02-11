@@ -1,6 +1,7 @@
 package carpet.helpers;
 
 import carpet.CarpetSettings;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Biomes;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.SharedSeedRandom;
@@ -10,14 +11,15 @@ import net.minecraft.util.math.MutableBoundingBox;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.provider.BiomeProvider;
+import net.minecraft.world.biome.provider.OverworldBiomeProvider;
+import net.minecraft.world.biome.provider.OverworldBiomeProviderSettings;
 import net.minecraft.world.gen.*;
 import net.minecraft.world.gen.feature.*;
 import net.minecraft.world.gen.feature.structure.*;
 
 import javax.annotation.Nullable;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 
 public class FeatureGenerator
 {
@@ -57,56 +59,43 @@ public class FeatureGenerator
 
         put("monument",  Feature.OCEAN_MONUMENT::plopAnywhere);
 
-        put("village", (w, p) -> new VillageStructure()
+        put("village", (w, p) -> {
+            IChunkGenerator chunkgen = new ChunkGeneratorOverworld(w, null, null)
             {
+                @Nullable
                 @Override
-                protected ChunkPos getStartPositionForPosition(IChunkGenerator<?> c, Random r, int x, int z, int ox, int oz) {
-                    return new ChunkPos(new BlockPos(x,0,z));
+                public IFeatureConfig getStructureConfig(Biome biomeIn, Structure<? extends IFeatureConfig> structureIn)
+                {
+                    return new VillageConfig(0, VillagePieces.Type.ACACIA);
                 }
 
                 @Override
-                protected boolean hasStartAt(IChunkGenerator<?> c, Random r, int x, int z) { return true; }
-                @Override
-                protected boolean isEnabledIn(IWorld worldIn) { return true; }
-
-                @Override
-                protected StructureStart makeStart(IWorld worldIn, IChunkGenerator<?> generator, SharedSeedRandom random, int x, int z)
+                public BiomeProvider getBiomeProvider()
                 {
-                    IChunkGenerator chunkgen = new ChunkGeneratorDebug(w, null, null)
+                    return new OverworldBiomeProvider(new OverworldBiomeProviderSettings().
+                            setWorldInfo(w.getWorldInfo()).
+                            setGeneratorSettings(ChunkGeneratorType.SURFACE.createSettings()))
                     {
                         @Nullable
                         @Override
-                        public IFeatureConfig getStructureConfig(Biome biomeIn, Structure<? extends IFeatureConfig> structureIn)
+                        public Biome getBiome(BlockPos pos, @Nullable Biome defaultBiome)
                         {
-                            return new VillageConfig(0, VillagePieces.Type.ACACIA);
+                            return Biomes.PLAINS;
                         }
                     };
-                    return new VillageStructure.Start(worldIn, chunkgen, random, x, z, Biomes.DEFAULT);
                 }
+            };
 
-                public boolean force()
-                {
-                    ChunkPos cp = new ChunkPos(p);
-                    SharedSeedRandom sred = new SharedSeedRandom(w.rand.nextInt());
-                    StructureStart structurestart1 = makeStart(w, w.getChunkProvider().getChunkGenerator(), sred,cp.x, cp.z);
-                    if (structurestart1 == NO_STRUCTURE)
-                    {
-                        CarpetSettings.LOG.error("Unable to make a structure");
-                        return false;
-                    }
-                    CarpetSettings.skipGenerationChecks = true;
-                    structurestart1.generateStructure(
-                            w,
-                            sred,
-                            new MutableBoundingBox(p.getX()-512, p.getX()-512, p.getX()+512, p.getZ()+512),
-                            new ChunkPos(p) );
-                    CarpetSettings.skipGenerationChecks = false;
-                    return true;
-                }
-            }.force()
-        );
 
-        put("fortress", (w, p) -> new FortressStructure()
+            return Feature.VILLAGE.plopAnywhere(w, p, chunkgen);
+        });
+
+        put("fortress", Feature.FORTRESS::plopAnywhere);
+
+
+
+
+        put("fortress1", (w, p) -> new FortressStructure()
                 {
                     @Override
                     protected ChunkPos getStartPositionForPosition(IChunkGenerator<?> c, Random r, int x, int z, int ox, int oz) {
@@ -147,8 +136,6 @@ public class FeatureGenerator
                     }
                 }.force()
         );
-
-
 
     }};
 
