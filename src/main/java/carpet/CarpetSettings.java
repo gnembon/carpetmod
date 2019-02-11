@@ -203,8 +203,8 @@ public class CarpetSettings
                                 .extraInfo("... that scans the area around the block for potential spawnable spots"),
   rule("commandDraw",  "commands", "Enables /draw commands").isACommand()
                                 .extraInfo("... allows for drawing simple shapes"),
-  rule("commandEval",  "commands", "Enables /eval and /evalarea commands").isACommand()
-                                .extraInfo("and enables CarpetScript - a powerful in-game scripting API"),
+  rule("commandScript",  "commands", "Enables /script command").isACommand()
+                                .extraInfo("a powerful in-game scripting API"),
   rule("commandPlayer",         "commands", "Enables /player command to control/spawn players").isACommand(),
   ////rule("commandRNG",            "commands", "Enables /rng command to manipulate and query rng").defaultTrue(),
   ////rule("newLight",              "optimizations", "Uses alternative lighting engine by PhiPros. AKA NewLight mod"),
