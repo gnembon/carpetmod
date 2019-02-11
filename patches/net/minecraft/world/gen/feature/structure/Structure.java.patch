@@ -17,7 +17,7 @@
          {
              return NO_STRUCTURE;
          }
-@@ -289,4 +291,82 @@
+@@ -289,4 +291,106 @@
      protected abstract String getStructureName();
  
      public abstract int getSize();
@@ -50,13 +50,37 @@
 +            }
 +            generator.getStructurePositionToReferenceMap(this).computeIfAbsent(chId, (x) -> new LongOpenHashSet()).add(chId);
 +            world.getChunkProvider().provideChunkOrPrimer(j, k, true).addStructureReference(this.getStructureName(), chId);
++            MutableBoundingBox box = structurestart.getBoundingBox();
++            CarpetSettings.LOG.error("Original Box:"+box);
 +            structurestart.generateStructure(
 +                    world,
 +                    rand,
-+                    new MutableBoundingBox(pos.getX() - 512, pos.getZ() - 512, pos.getX() + 512, pos.getZ() + 512),
++                    new MutableBoundingBox(
++                            pos.getX() - this.getSize()*16,
++                            pos.getZ() - this.getSize()*16,
++                            pos.getX() + (this.getSize()+1)*16,
++                            pos.getZ() + (1+this.getSize())*16),
 +                    new ChunkPos(j, k)
 +            );
++            CarpetSettings.LOG.error("Current Box:"+structurestart.getBoundingBox());
 +            structurestart.notifyPostProcessAt(new ChunkPos(j, k));
++
++            int i = this.getSize();
++            for (int k1 = j - i; k1 <= j + i; ++k1)
++            {
++                for (int l1 = k - i; l1 <= k + i; ++l1)
++                {
++                    if (k1 == j && l1 == k) continue;
++                    long nbchkid = ChunkPos.asLong(k1, l1);
++                    if (box.intersectsWith(k1>>4, l1>>4, (k1>>4) + 15, (l1>>4) + 15))
++                    {
++                        CarpetSettings.LOG.error("intersects with "+k1+" "+l1);
++                        generator.getStructurePositionToReferenceMap(this).computeIfAbsent(nbchkid, (__) -> new LongOpenHashSet()).add(chId);
++                        world.getChunkProvider().provideChunkOrPrimer(k1, l1, true).addStructureReference(this.getStructureName(), chId);
++                        structurestart.notifyPostProcessAt(new ChunkPos(k1, l1));
++                    }
++                }
++            }
 +        }
 +        catch (Exception ignored) { CarpetSettings.LOG.error("Exception"+ignored); ignored.printStackTrace();}
 +        CarpetSettings.skipGenerationChecks = false;
