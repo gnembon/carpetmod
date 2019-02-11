@@ -129,6 +129,10 @@ public class ScriptCommand
         {
             Messenger.m(source, "r Exception white evaluating expression at "+pos+": "+e.getMessage());
         }
+        catch (ArithmeticException e)
+        {
+            Messenger.m(source, "r Your math is wrong, sorry: "+e.getMessage());
+        }
         return 1;
     }
 
@@ -150,7 +154,13 @@ public class ScriptCommand
                 {
                     for (int z = area.minZ; z <= area.maxZ; z++)
                     {
-                        if (cexpr.test(x, y, z)) successCount++;
+                        try
+                        {
+                            if (cexpr.test(x, y, z)) successCount++;
+                        }
+                        catch (ArithmeticException ignored)
+                        {
+                        }
                     }
                 }
             }
@@ -182,30 +192,7 @@ public class ScriptCommand
             Messenger.m(source, "r too many blocks to evaluate: "+ area.getXSize() * area.getYSize() * area.getZSize());
             return 1;
         }
-        if (block == null && "solid".equalsIgnoreCase(mode))  // only run eval on an area, no block replacement
-        {
-            int successCount = 0;
-            for (int x = area.minX; x <= area.maxX; x++)
-            {
-                for (int y = area.minY; y <= area.maxY; y++)
-                {
-                    for (int z = area.minZ; z <= area.maxZ; z++)
-                    {
-                        try
-                        {
-                            if (cexpr.test(x, y, z))
-                                successCount++;
-                        }
-                        catch (CarpetExpression.CarpetExpressionException ignored)
-                        {
-                            CarpetSettings.LOG.error("Exception: "+ignored);
-                        }
-                    }
-                }
-            }
-            Messenger.m(source, "w Expression successful in "+successCount+" out of "+area.getXSize() * area.getYSize() * area.getZSize()+" blocks");
-            return 1;
-        }
+
         boolean[][][] volume = new boolean[area.getXSize()][area.getYSize()][area.getZSize()];
 
         BlockPos.MutableBlockPos mbpos = new BlockPos.MutableBlockPos(origin);
@@ -225,9 +212,13 @@ public class ScriptCommand
                             volume[x-area.minX][y-area.minY][z-area.minZ]=true;
                         }
                     }
-                    catch (CarpetExpression.CarpetExpressionException ignored)
+                    catch (CarpetExpression.CarpetExpressionException e)
                     {
-                        CarpetSettings.LOG.error("Exception: "+ignored);
+                        CarpetSettings.LOG.error("Exception: "+e);
+                        return 0;
+                    }
+                    catch (ArithmeticException e)
+                    {
                     }
                 }
             }
@@ -272,11 +263,7 @@ public class ScriptCommand
                     if (volume[x][y][z])
                     {
                         mbpos.setPos(x+area.minX, y+area.minY, z+area.minZ);
-                        if (block == null)
-                        {
-                            ++affected;
-                        }
-                        else if (replacement == null || replacement.test(
+                        if (replacement == null || replacement.test(
                                 new BlockWorldState( world, mbpos, true)))
                         {
                             TileEntity tileentity = world.getTileEntity(mbpos);
