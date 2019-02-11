@@ -19,7 +19,7 @@
 +    public IBlockState getStateForPlacement(BlockItemUseContext context)
 +    {
 +        IBlockState state = super.getStateForPlacement(context);
-+        if (context.getPlayer() != null)
++        if (context.getPlayer() != null && !context.getWorld().isRemote)
 +        {
 +            WoolTool.carpetPlacedAction(this.color, context.getPlayer(), context.getPos(), context.getWorld());
 +        }
