@@ -1,14 +1,13 @@
 --- a/net/minecraft/world/gen/feature/structure/Structure.java
 +++ b/net/minecraft/world/gen/feature/structure/Structure.java
-@@ -1,5 +1,7 @@
+@@ -1,5 +1,6 @@
  package net.minecraft.world.gen.feature.structure;
  
 +import carpet.CarpetSettings;
-+import carpet.script.CarpetExpression;
  import com.google.common.collect.Lists;
  import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
  import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
-@@ -225,7 +227,7 @@
+@@ -225,7 +226,7 @@
  
      private StructureStart getStructureStart(IWorld worldIn, IChunkGenerator <? extends IChunkGenSettings > generator, SharedSeedRandom rand, long packedChunkPos)
      {
@@ -17,15 +16,10 @@
          {
              return NO_STRUCTURE;
          }
-@@ -289,4 +291,106 @@
+@@ -289,4 +290,101 @@
      protected abstract String getStructureName();
  
      public abstract int getSize();
-+
-+    //protected StructureStart getAccessedStructureStart(IWorld worldIn, IChunkGenerator <? extends IChunkGenSettings > generator, SharedSeedRandom rand, long packedChunkPos)
-+    //{
-+    //    return getStructureStart(worldIn, generator, rand, packedChunkPos);
-+    //}
 +
 +    public boolean plopAnywhere(IWorld world, BlockPos pos)
 +    {
@@ -40,18 +34,15 @@
 +            int j = pos.getX() >> 4;
 +            int k = pos.getZ() >> 4;
 +            long chId = ChunkPos.asLong(j, k);
-+            CarpetSettings.LOG.error("Creating strucuture map");
 +            StructureStart structurestart = forceStructureStart(world, generator, rand, chId);
 +            if (structurestart == NO_STRUCTURE)
 +            {
 +                CarpetSettings.skipGenerationChecks = false;
-+                CarpetSettings.LOG.error("Not gonna plop");
 +                return false;
 +            }
 +            generator.getStructurePositionToReferenceMap(this).computeIfAbsent(chId, (x) -> new LongOpenHashSet()).add(chId);
 +            world.getChunkProvider().provideChunkOrPrimer(j, k, true).addStructureReference(this.getStructureName(), chId);
 +            MutableBoundingBox box = structurestart.getBoundingBox();
-+            CarpetSettings.LOG.error("Original Box:"+box);
 +            structurestart.generateStructure(
 +                    world,
 +                    rand,
@@ -62,7 +53,6 @@
 +                            pos.getZ() + (1+this.getSize())*16),
 +                    new ChunkPos(j, k)
 +            );
-+            CarpetSettings.LOG.error("Current Box:"+structurestart.getBoundingBox());
 +            structurestart.notifyPostProcessAt(new ChunkPos(j, k));
 +
 +            int i = this.getSize();
@@ -72,9 +62,8 @@
 +                {
 +                    if (k1 == j && l1 == k) continue;
 +                    long nbchkid = ChunkPos.asLong(k1, l1);
-+                    if (box.intersectsWith(k1>>4, l1>>4, (k1>>4) + 15, (l1>>4) + 15))
++                    if (box.intersectsWith(k1<<4, l1<<4, (k1<<4) + 15, (l1<<4) + 15))
 +                    {
-+                        CarpetSettings.LOG.error("intersects with "+k1+" "+l1);
 +                        generator.getStructurePositionToReferenceMap(this).computeIfAbsent(nbchkid, (__) -> new LongOpenHashSet()).add(chId);
 +                        world.getChunkProvider().provideChunkOrPrimer(k1, l1, true).addStructureReference(this.getStructureName(), chId);
 +                        structurestart.notifyPostProcessAt(new ChunkPos(k1, l1));
@@ -82,7 +71,13 @@
 +                }
 +            }
 +        }
-+        catch (Exception ignored) { CarpetSettings.LOG.error("Exception"+ignored); ignored.printStackTrace();}
++        catch (Exception ignored)
++        {
++            CarpetSettings.LOG.error("Unknown Exception while plopping structure: "+ignored);
++            ignored.printStackTrace();
++            CarpetSettings.skipGenerationChecks = false;
++            return false;
++        }
 +        CarpetSettings.skipGenerationChecks = false;
 +        return true;
 +    }
@@ -95,7 +90,6 @@
 +
 +        if (structurestart != null)
 +        {
-+            CarpetSettings.LOG.error("already  here");
 +            return structurestart; // structure already exist, will skip
 +        }
 +        ChunkPos chunkpos = new ChunkPos(packedChunkPos);

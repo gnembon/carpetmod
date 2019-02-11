@@ -37,6 +37,41 @@ public class FeatureGenerator
         return (w, p) -> feature.func_212245_a(w, w.getChunkProvider().getChunkGenerator(), w.rand, p, config);
     }
 
+    private static Thing spawnVillage(VillagePieces.Type type)
+    {
+        return (w, p) -> {
+            IChunkGenerator chunkgen = new ChunkGeneratorOverworld(w, null, new OverworldGenSettings())
+            {
+                @Nullable
+                @Override
+                public IFeatureConfig getStructureConfig(Biome biomeIn, Structure<? extends IFeatureConfig> structureIn)
+                {
+                    return new VillageConfig(0, type);
+                }
+
+                @Override
+                public BiomeProvider getBiomeProvider()
+                {
+                    return new OverworldBiomeProvider(new OverworldBiomeProviderSettings().
+                            setWorldInfo(w.getWorldInfo())) // setGeneratorSettings(new OverworldGenSettings()
+                            //new OverworldGenSettings()) // setGeneratorSettings(ChunkGeneratorType.SURFACE.createSettings())
+                    {
+                        @Nullable
+                        @Override
+                        public Biome getBiome(BlockPos pos, @Nullable Biome defaultBiome)
+                        {
+                            return Biomes.PLAINS;
+                        }
+                    };
+                }
+            };
+
+
+            return Feature.VILLAGE.plopAnywhere(w, p, chunkgen);
+        };
+    }
+
+
 
     public static boolean spawn(String name, World world, BlockPos pos)
     {
@@ -56,86 +91,19 @@ public class FeatureGenerator
         put("iceberg", simplePlop(Feature.ICEBERG, new IcebergConfig(Blocks.PACKED_ICE.getDefaultState())));
         put("iceberg blue", simplePlop(Feature.ICEBERG, new IcebergConfig(Blocks.BLUE_ICE.getDefaultState())));
         put("boulder", simplePlop(Feature.BLOCK_BLOB, new BlockBlobConfig(Blocks.MOSSY_COBBLESTONE, 0)));
+        //put("well", simplePlop(Feature.DESERT_WELLS));
+
 
         put("monument",  Feature.OCEAN_MONUMENT::plopAnywhere);
-
-        put("village", (w, p) -> {
-            IChunkGenerator chunkgen = new ChunkGeneratorOverworld(w, null, null)
-            {
-                @Nullable
-                @Override
-                public IFeatureConfig getStructureConfig(Biome biomeIn, Structure<? extends IFeatureConfig> structureIn)
-                {
-                    return new VillageConfig(0, VillagePieces.Type.ACACIA);
-                }
-
-                @Override
-                public BiomeProvider getBiomeProvider()
-                {
-                    return new OverworldBiomeProvider(new OverworldBiomeProviderSettings().
-                            setWorldInfo(w.getWorldInfo()).
-                            setGeneratorSettings(ChunkGeneratorType.SURFACE.createSettings()))
-                    {
-                        @Nullable
-                        @Override
-                        public Biome getBiome(BlockPos pos, @Nullable Biome defaultBiome)
-                        {
-                            return Biomes.PLAINS;
-                        }
-                    };
-                }
-            };
-
-
-            return Feature.VILLAGE.plopAnywhere(w, p, chunkgen);
-        });
-
         put("fortress", Feature.FORTRESS::plopAnywhere);
+        put("mansion", Feature.WOODLAND_MANSION::plopAnywhere);
+        put("jungleTemple", Feature.JUNGLE_PYRAMID::plopAnywhere);
+        put("desertTemple", Feature.DESERT_PYRAMID::plopAnywhere);
 
-
-
-
-        put("fortress1", (w, p) -> new FortressStructure()
-                {
-                    @Override
-                    protected ChunkPos getStartPositionForPosition(IChunkGenerator<?> c, Random r, int x, int z, int ox, int oz) {
-                        return new ChunkPos(new BlockPos(x,0,z));
-                    }
-
-                    @Override
-                    protected boolean hasStartAt(IChunkGenerator<?> c, Random r, int x, int z) { return true; }
-                    @Override
-                    protected boolean isEnabledIn(IWorld worldIn) { return true; }
-
-
-                    @Override
-                    protected StructureStart makeStart(IWorld worldIn, IChunkGenerator<?> generator, SharedSeedRandom random, int x, int z)
-                    {
-                        return new FortressStructure.Start(worldIn, random, x, z, Biomes.NETHER);
-                    }
-
-                    public boolean force()
-                    {
-                        ChunkPos cp = new ChunkPos(p);
-                        SharedSeedRandom sred = new SharedSeedRandom(w.rand.nextInt());
-                        StructureStart structurestart1 = makeStart(w, w.getChunkProvider().getChunkGenerator(), sred,cp.x, cp.z);
-                        if (structurestart1 == NO_STRUCTURE)
-                        {
-                            CarpetSettings.LOG.error("No structure");
-                            return false;
-                        }
-                        CarpetSettings.LOG.error("generating structure");
-                        CarpetSettings.skipGenerationChecks = true;
-                        structurestart1.generateStructure(
-                                w,
-                                sred,
-                                new MutableBoundingBox(p.getX()-512, p.getX()-512, p.getX()+512, p.getZ()+512),
-                                new ChunkPos(p) );
-                        CarpetSettings.skipGenerationChecks = false;
-                        return true;
-                    }
-                }.force()
-        );
+        put("village", spawnVillage(VillagePieces.Type.OAK));
+        put("village desert", spawnVillage(VillagePieces.Type.SANDSTONE));
+        put("village savanna", spawnVillage(VillagePieces.Type.ACACIA));
+        put("village taiga", spawnVillage(VillagePieces.Type.SPRUCE));
 
     }};
 
