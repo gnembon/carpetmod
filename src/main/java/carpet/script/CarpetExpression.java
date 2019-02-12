@@ -502,7 +502,10 @@ public class CarpetExpression
         //not ready yet
         this.expr.addNAryFunction("plop", 4, (lv) ->{
             BlockPos pos = locateBlockPos(lv);
-            return new NumericValue(FeatureGenerator.spawn(lv.get(3).getString(), source.getWorld(), pos));
+            Boolean res = FeatureGenerator.spawn(lv.get(3).getString(), source.getWorld(), pos);
+            if (res == null)
+                return Value.NULL;
+            return new NumericValue(res);
         });
 
 

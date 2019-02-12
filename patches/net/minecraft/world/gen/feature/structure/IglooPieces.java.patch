@@ -1,0 +1,18 @@
+--- a/net/minecraft/world/gen/feature/structure/IglooPieces.java
++++ b/net/minecraft/world/gen/feature/structure/IglooPieces.java
+@@ -1,5 +1,6 @@
+ package net.minecraft.world.gen.feature.structure;
+ 
++import carpet.CarpetSettings;
+ import com.google.common.collect.ImmutableMap;
+ import java.util.List;
+ import java.util.Map;
+@@ -111,7 +112,7 @@
+                 PlacementSettings placementsettings = (new PlacementSettings()).setRotation(this.field_207616_e).setMirror(Mirror.NONE).setCenterOffset(IglooPieces.field_207621_d.get(this.field_207615_d));
+                 BlockPos blockpos = IglooPieces.field_207622_e.get(this.field_207615_d);
+                 BlockPos blockpos1 = this.templatePosition.add(Template.transformedBlockPos(placementsettings, new BlockPos(3 - blockpos.getX(), 0, 0 - blockpos.getZ())));
+-                int i = worldIn.getHeight(Heightmap.Type.WORLD_SURFACE_WG, blockpos1.getX(), blockpos1.getZ());
++                int i = worldIn.getHeight(CarpetSettings.skipGenerationChecks?Heightmap.Type.WORLD_SURFACE:Heightmap.Type.WORLD_SURFACE_WG, blockpos1.getX(), blockpos1.getZ());
+                 BlockPos blockpos2 = this.templatePosition;
+                 this.templatePosition = this.templatePosition.add(0, i - 90 - 1, 0);
+                 boolean flag = super.addComponentParts(worldIn, randomIn, structureBoundingBoxIn, p_74875_4_);
