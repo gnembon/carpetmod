@@ -1,0 +1,20 @@
+--- a/net/minecraft/world/gen/feature/structure/BuriedTreasurePieces.java
++++ b/net/minecraft/world/gen/feature/structure/BuriedTreasurePieces.java
+@@ -1,6 +1,8 @@
+ package net.minecraft.world.gen.feature.structure;
+ 
+ import java.util.Random;
++
++import carpet.CarpetSettings;
+ import net.minecraft.block.state.IBlockState;
+ import net.minecraft.init.Blocks;
+ import net.minecraft.nbt.NBTTagCompound;
+@@ -42,7 +44,7 @@
+ 
+             public boolean addComponentParts(IWorld worldIn, Random randomIn, MutableBoundingBox structureBoundingBoxIn, ChunkPos p_74875_4_)
+             {
+-                int i = worldIn.getHeight(Heightmap.Type.OCEAN_FLOOR_WG, this.boundingBox.minX, this.boundingBox.minZ);
++                int i = worldIn.getHeight(CarpetSettings.skipGenerationChecks?Heightmap.Type.OCEAN_FLOOR:Heightmap.Type.OCEAN_FLOOR_WG, this.boundingBox.minX, this.boundingBox.minZ);
+                 BlockPos.MutableBlockPos blockpos$mutableblockpos = new BlockPos.MutableBlockPos(this.boundingBox.minX, i, this.boundingBox.minZ);
+ 
+                 while (blockpos$mutableblockpos.getY() > 0)

@@ -1,0 +1,22 @@
+--- a/net/minecraft/world/gen/feature/FossilsFeature.java
++++ b/net/minecraft/world/gen/feature/FossilsFeature.java
+@@ -1,6 +1,8 @@
+ package net.minecraft.world.gen.feature;
+ 
+ import java.util.Random;
++
++import carpet.CarpetSettings;
+ import net.minecraft.util.Mirror;
+ import net.minecraft.util.ResourceLocation;
+ import net.minecraft.util.Rotation;
+@@ -57,7 +59,9 @@
+         {
+             for (int j1 = 0; j1 < blockpos.getX(); ++j1)
+             {
+-                l = Math.min(l, p_212245_1_.getHeight(Heightmap.Type.OCEAN_FLOOR_WG, p_212245_4_.getX() + i1 + j, p_212245_4_.getZ() + j1 + k));
++                l = Math.min(l, p_212245_1_.getHeight(
++                        CarpetSettings.skipGenerationChecks?Heightmap.Type.OCEAN_FLOOR:Heightmap.Type.OCEAN_FLOOR_WG,
++                        p_212245_4_.getX() + i1 + j, p_212245_4_.getZ() + j1 + k));
+             }
+         }
+ 
