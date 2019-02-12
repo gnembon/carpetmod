@@ -352,6 +352,47 @@ public class CarpetExpression
             return Value.TRUE;
         });
 
+        this.expr.addLazyFunction("area", 4, (lv) -> {
+            int xrange = Expression.getNumericalValue(lv.get(0).eval()).intValue();
+            int yrange = Expression.getNumericalValue(lv.get(1).eval()).intValue();
+            int zrange = Expression.getNumericalValue(lv.get(2).eval()).intValue();
+            LazyValue expr = lv.get(3);
+
+            //saving outer scope
+            LazyValue _x = this.expr.getVariable("_x");
+            LazyValue _y = this.expr.getVariable("_y");
+            LazyValue _z = this.expr.getVariable("_z");
+            LazyValue __ = this.expr.getVariable("_");
+            int sCount = 0;
+            for (int y=0; y < yrange; y++)
+            {
+                int yFinal = y;
+                this.expr.setVariable("_y", () -> new NumericValue(yFinal).boundTo("_y"));
+                for (int x = 0; x < xrange; x++)
+                {
+                    int xFinal = x;
+                    this.expr.setVariable("_x", () -> new NumericValue(xFinal).boundTo("_x"));
+                    for (int z = 0; z < zrange; z++)
+                    {
+                        int zFinal = z;
+                        this.expr.setVariable( "_", () -> blockValueFromCoords(xFinal,yFinal,zFinal).boundTo("_"));
+                        this.expr.setVariable("_z", () -> new NumericValue(xFinal).boundTo("_z"));
+                        if (expr.eval().getBoolean())
+                        {
+                            sCount += 1;
+                        }
+                    }
+                }
+            }
+            //restoring outer scope
+            this.expr.setVariable("_x", _x);
+            this.expr.setVariable("_y", _y);
+            this.expr.setVariable("_z", _z);
+            this.expr.setVariable("_", __);
+            int finalSCount = sCount;
+            return () -> new NumericValue(finalSCount);
+        });
+
 
         this.expr.addUnaryFunction("print", (v) ->
         {
@@ -421,18 +462,19 @@ public class CarpetExpression
             LazyValue _z = this.expr.getVariable("_z");
             LazyValue _a = this.expr.getVariable("_a");
             LazyValue __ = this.expr.getVariable("_");
-            for (int x = cx-sx; x <= cx+sx; x++)
+            for (int y = cy-sy; y <= cy+sy; y++)
             {
-                for (int z = cz-sz; z <= cz+sz; z++)
+                int yFinal = y;
+                this.expr.setVariable("_y", () -> new NumericValue(yFinal).boundTo("_y"));
+                for (int x = cx-sx; x <= cx+sx; x++)
                 {
-                    for (int y = cy-sy; y <= cy+sy; y++)
+                    int xFinal = x;
+                    this.expr.setVariable("_x", () -> new NumericValue(xFinal).boundTo("_x"));
+                    for (int z = cz-sz; z <= cz+sz; z++)
                     {
-                        int xFinal = x;
-                        int yFinal = y;
+
                         int zFinal = z;
                         this.expr.setVariable( "_", () -> blockValueFromCoords(xFinal,yFinal,zFinal).boundTo("_"));
-                        this.expr.setVariable("_x", () -> new NumericValue(xFinal).boundTo("_x"));
-                        this.expr.setVariable("_y", () -> new NumericValue(yFinal).boundTo("_y"));
                         this.expr.setVariable("_z", () -> new NumericValue(zFinal).boundTo("_z"));
                         this.expr.setVariable("_a", acc);
                         acc = expr.eval();
