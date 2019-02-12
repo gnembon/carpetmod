@@ -1225,6 +1225,10 @@ public class Expression
         {
             return exit.retval;
         }
+        catch (StackOverflowError ignored)
+        {
+            throw new ExpressionException("Your thoughts are too deep");
+        }
     }
 
     private LazyValue getAST()
