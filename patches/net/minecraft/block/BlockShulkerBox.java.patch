@@ -9,20 +9,14 @@
  import net.minecraft.block.material.EnumPushReaction;
  import net.minecraft.block.state.BlockFaceShape;
  import net.minecraft.block.state.IBlockState;
-@@ -177,7 +179,15 @@
+@@ -177,7 +179,10 @@
                  if (!tileentityshulkerbox.isCleared() && tileentityshulkerbox.shouldDrop())
                  {
                      ItemStack itemstack = new ItemStack(this);
--                    itemstack.getOrCreateTag().setTag("BlockEntityTag", ((TileEntityShulkerBox)tileentity).saveToNbt(new NBTTagCompound()));
-+                    // [CM] Added nbttagcompound and if
-+                    NBTTagCompound nbttagcompound = new NBTTagCompound();
-+                    NBTTagCompound nbttagcompound1 = new NBTTagCompound();
-+                    nbttagcompound.setTag("BlockEntityTag", ((TileEntityShulkerBox)tileentity).saveToNbt(nbttagcompound1));
-+                    if(!CarpetSettings.getBool("stackableEmptyShulkerBoxes") || nbttagcompound1.size() > 0)
-+                    {
-+                        itemstack.setTag(nbttagcompound);
++                    if(!CarpetSettings.getBool("stackableShulkerBoxes") || !tileentityshulkerbox.isEmpty())
++                    { // really don't need to set nbt if its empty
+                     itemstack.getOrCreateTag().setTag("BlockEntityTag", ((TileEntityShulkerBox)tileentity).saveToNbt(new NBTTagCompound()));
 +                    }
-+                    // [CM] end
  
                      if (tileentityshulkerbox.hasCustomName())
                      {
