@@ -87,6 +87,7 @@ public class Expression
 
     private Map<String, ILazyFunction> functions = new HashMap<>();
 
+    private static Map<String, LazyValue> static_variables = new HashMap<>();
     private Map<String, LazyValue> variables = new HashMap<>();
 
     /** should the evaluator output value of each ;'s statement during execution */
@@ -554,9 +555,9 @@ public class Expression
         setVariable("FALSE", () -> Value.FALSE);
 
         //special variables for second order functions so we don't need to check them all the time
-        setVariable("_", new NumericValue(0));
-        setVariable("_i", new NumericValue(0));
-        setVariable("_a", new NumericValue(0));
+        setVariable("_", () -> new NumericValue(0).boundTo("_"));
+        setVariable("_i", () -> new NumericValue(0).boundTo("_i"));
+        setVariable("_a", () -> new NumericValue(0).boundTo("_a"));
 
         addBinaryOperator(";",precedence.get("nextop;"), true, (v1, v2) ->
         {
@@ -629,8 +630,7 @@ public class Expression
             if (varname.startsWith("_"))
                 throw new ExpressionException("Cannot replace local built-in variables, i.e. those that start with '_'");
             Value boundedLHS = v2.boundTo(varname);
-            LazyValue lazyLHS = () -> boundedLHS;
-            variables.put(varname, lazyLHS);
+            setVariable(varname, () -> boundedLHS);
             return boundedLHS;
         });
 
@@ -644,7 +644,7 @@ public class Expression
             if (varname.startsWith("_"))
                 throw new ExpressionException("Cannot replace local built-in variables, i.e. those that start with '_'");
 
-            variables.put(varname, lv2);
+            setVariable(varname, lv2);
             return () -> v1;
         });
 
@@ -658,8 +658,8 @@ public class Expression
                 throw new ExpressionException("Cannot swap with local built-in variables, i.e. those that start with '_'");
             Value lval = v2.boundTo(lvalvar);
             Value rval = v1.boundTo(rvalvar);
-            variables.put(lvalvar, () -> lval);
-            variables.put(rvalvar, () -> rval);
+            setVariable(lvalvar, () -> lval);
+            setVariable(rvalvar, () -> rval);
             return lval;
         });
 
@@ -763,6 +763,53 @@ public class Expression
 
         addFunction("list", ListValue::new);
 
+        addLazyFunction("var", 1, (lv) -> {
+            String varname = lv.get(0).eval().getString();
+            //if (functions.containsKey(token.surface.toLowerCase(Locale.ROOT)))
+            //{
+            //    throw new ExpressionException("Variable would mask function: " + token);
+            //} lets see if we could do that
+            if (!isAVariable(varname))
+                setVariable(varname, Value.ZERO);
+            return getVariable(varname);
+        });
+
+        addUnaryFunction("undef", (v) -> {
+            String varname = v.getString();
+            //if (functions.containsKey(token.surface.toLowerCase(Locale.ROOT)))
+            //{
+            //    throw new ExpressionException("Variable would mask function: " + token);
+            //} lets see if we could do that
+            if (!isAVariable(varname))
+                return Value.FALSE;
+            static_variables.remove(varname);
+            variables.remove(varname);
+            return Value.TRUE;
+        });
+
+
+
+        addUnaryFunction("vars", (v) -> {
+            String prefix = v.getString();
+            List<Value> values = new ArrayList<>();
+            if (prefix.startsWith("global"))
+            {
+                for (String k: static_variables.keySet())
+                {
+                    if (k.startsWith(prefix))
+                        values.add(new StringValue(k));
+                }
+            }
+            else
+            {
+                for (String k: variables.keySet())
+                {
+                    if (k.startsWith(prefix))
+                        values.add(new StringValue(k));
+                }
+            }
+            return new ListValue(values);
+        });
 
         // if(cond1, expr1, cond2, expr2, ..., ?default) => value
         addLazyFunction("if", -1, (lv) ->
@@ -965,7 +1012,7 @@ public class Expression
             Value lastOne = Value.ZERO;
             //scoping
             LazyValue _val = getVariable("_");
-            setVariable("_",new NumericValue(0));
+            setVariable("_",() -> new NumericValue(0).boundTo("_"));
             while (i<limit && condition.eval().getBoolean() )
             {
                 lastOne = expr.eval();
@@ -1252,18 +1299,18 @@ public class Expression
                     stack.push(result);
                     break;
                 case VARIABLE:
-                    if (functions.containsKey(token.surface.toUpperCase(Locale.ROOT)))
+                    if (functions.containsKey(token.surface.toLowerCase(Locale.ROOT)))
                     {
                         throw new ExpressionException("Variable would mask function: " + token);
                     }
 
                     stack.push(() ->
                     {
-                        if (!variables.containsKey(token.surface)) // new variable
+                        if (!isAVariable(token.surface)) // new variable
                         {
-                            variables.put(token.surface, () -> Value.ZERO.boundTo(token.surface));
+                            setVariable(token.surface, Value.ZERO);
                         }
-                        LazyValue lazyVariable = variables.get(token.surface);
+                        LazyValue lazyVariable = getVariable(token.surface);
                         return lazyVariable.eval();
                     });
                     break;
@@ -1311,44 +1358,39 @@ public class Expression
 
     LazyValue getVariable(String name)
     {
+        if (name.startsWith("global_"))
+        {
+            return static_variables.get(name);
+        }
         return variables.get(name);
     }
 
+    boolean isAVariable(String name)
+    {
+        return variables.containsKey(name) || static_variables.containsKey(name);
+    }
+
+
+    /** only use this one if the value is already computed, and won't benefit from lazy evaluation
+     */
     public Expression setVariable(String variable, Value value)
     {
         return setVariable(variable, () -> value.boundTo(variable));
     }
 
+    /** Use this one instead
+     */
     public Expression setVariable(String variable, LazyValue value)
     {
+        if (variable.startsWith("global_"))
+        {
+            static_variables.put(variable, value);
+            return this;
+        }
         variables.put(variable, value);
         return this;
     }
 
-    public Expression setVariable(String variable, String value)
-    {
-        if (Tokenizer.isNumber(value))
-            variables.put(variable, () -> new NumericValue(new BigDecimal(value, mc)).boundTo(variable));
-        else if (value.equalsIgnoreCase("null"))
-        {
-            variables.put(variable, LazyValue.NULL);
-        }
-        else
-        {
-            variables.put(variable, () -> new StringValue(value).boundTo(variable));
-        }
-        return this;
-    }
-    /** aliases for setVariable */
-    public Expression with(String variable, Value value)
-    {
-        return setVariable(variable, value); // variable will be set by setVariable
-    }
-
-    public Expression with(String variable, String value)
-    {
-        return setVariable(variable, value);
-    }
     public Expression with(String variable, LazyValue lv)
     {
         return setVariable(variable, lv);
