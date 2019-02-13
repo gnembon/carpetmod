@@ -121,7 +121,7 @@ public class ScriptCommand
         try
         {
             CarpetExpression ex = new CarpetExpression(expr, source, new BlockPos(0, 0, 0));
-            if (source.getWorld().getGameRules().getBoolean("logAdminCommands"))
+            if (source.getWorld().getGameRules().getBoolean("commandBlockOutput"))
                 ex.setLogOutput(true);
             Messenger.m(source, "wi "+expr,"wi  = ", "wb "+ex.eval(pos));
         }
