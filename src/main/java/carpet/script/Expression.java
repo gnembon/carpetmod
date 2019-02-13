@@ -624,12 +624,28 @@ public class Expression
         addBinaryOperator("=", precedence.get("assign=<>"), false, (v1, v2) ->
         {
             if (!v1.isBound())
-                throw new ExpressionException("LHS of assignment needs to be a variable");
+                throw new ExpressionException("LHS of assignment needs to be a free variable");
             String varname = v1.getVariable();
+            if (varname.startsWith("_"))
+                throw new ExpressionException("Cannot replace local built-in variables, i.e. those that start with '_'");
             Value boundedLHS = v2.boundTo(varname);
             LazyValue lazyLHS = () -> boundedLHS;
             variables.put(varname, lazyLHS);
             return boundedLHS;
+        });
+
+        //assigns const procedure to the lhs, returning its previous value
+        addLazyBinaryOperator("->", precedence.get("assign=<>"), false, (lv1, lv2) ->
+        {
+            Value v1 = lv1.eval();
+            if (!v1.isBound())
+                throw new ExpressionException("LHS of procedure needs to be a free variable");
+            String varname = v1.getVariable();
+            if (varname.startsWith("_"))
+                throw new ExpressionException("Cannot replace local built-in variables, i.e. those that start with '_'");
+
+            variables.put(varname, lv2);
+            return () -> v1;
         });
 
         addBinaryOperator("<>", precedence.get("assign=<>"), false, (v1, v2) ->
@@ -638,6 +654,8 @@ public class Expression
                 throw new ExpressionException("Both sides of swapping assignment need to be variables");
             String lvalvar = v1.getVariable();
             String rvalvar = v2.getVariable();
+            if (lvalvar.startsWith("_") || rvalvar.startsWith("_"))
+                throw new ExpressionException("Cannot swap with local built-in variables, i.e. those that start with '_'");
             Value lval = v2.boundTo(lvalvar);
             Value rval = v1.boundTo(rvalvar);
             variables.put(lvalvar, () -> lval);
@@ -1206,6 +1224,10 @@ public class Expression
         catch (ExitStatement exit)
         {
             return exit.retval;
+        }
+        catch (StackOverflowError ignored)
+        {
+            throw new ExpressionException("Your thoughts are too deep");
         }
     }
 
