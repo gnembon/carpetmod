@@ -50,12 +50,13 @@ public class CarpetExpression
     public static class BlockValue extends StringValue
     {
         public static final BlockValue AIR = new BlockValue(Blocks.AIR.getDefaultState(), BlockPos.ORIGIN);
+        public static final BlockValue NULL = new BlockValue(null, null);
         public IBlockState blockState;
         public BlockPos pos;
 
         BlockValue(IBlockState arg, BlockPos position)
         {
-            super(IRegistry.field_212618_g.getKey(arg.getBlock()).getPath());
+            super(arg != null ? IRegistry.field_212618_g.getKey(arg.getBlock()).getPath() : "");
             blockState = arg;
             pos = position;
         }
@@ -63,7 +64,7 @@ public class CarpetExpression
         @Override
         public boolean getBoolean()
         {
-            return !blockState.isAir();
+            return this != NULL && !blockState.isAir();
         }
 
         public Value copy()
@@ -76,6 +77,24 @@ public class CarpetExpression
     {
         BlockPos pos = locateBlockPos(x,y,z);
         return new BlockValue(world.getBlockState(pos), pos);
+    }
+
+    private BlockValue blockFromString(String str)
+    {
+        try
+        {
+            ResourceLocation blockId = ResourceLocation.read(new StringReader(str));
+            if (IRegistry.field_212618_g.func_212607_c(blockId))
+            {
+
+                Block block = IRegistry.field_212618_g.get(blockId);
+                return new BlockValue(block.getDefaultState(), origin);
+            }
+        }
+        catch (CommandSyntaxException ignored)
+        {
+        }
+        return BlockValue.NULL;
     }
 
 
@@ -160,7 +179,8 @@ public class CarpetExpression
                 }
                 if (lv.size() == 1)
                 {
-                    return new BlockValue(IRegistry.field_212618_g.get(new ResourceLocation(lv.get(0).getString())).getDefaultState(), origin);
+                    return blockFromString(lv.get(0).getString());
+                    //return new BlockValue(IRegistry.field_212618_g.get(new ResourceLocation(lv.get(0).getString())).getDefaultState(), origin);
                 }
                 BlockPos pos = locateBlockPos(lv);
                 return new BlockValue(source.getWorld().getBlockState(pos), pos);
@@ -249,9 +269,10 @@ public class CarpetExpression
             if (lv.size() < 4 || lv.size() % 2 == 1)
                 throw new CarpetExpressionException("set block should have at least 4 params and odd attributes");
             BlockPos pos = locateBlockPos(lv);
-            if (!(lv.get(3) instanceof BlockValue))
-                throw new CarpetExpressionException("fourth parameter of set should be a block");
-            IBlockState bs = ((BlockValue) lv.get(3)).blockState;
+            BlockValue bv = ((lv.get(3) instanceof BlockValue)) ? (BlockValue) lv.get(3) : blockFromString(lv.get(3).getString());
+            if (bv == BlockValue.NULL)
+                throw new CarpetExpressionException("fourth parameter of set should be a valid block");
+            IBlockState bs = bv.blockState;
 
             IBlockState targetBlockState = source.getWorld().getBlockState(pos);
             if (lv.size()==4) // no reqs for properties
