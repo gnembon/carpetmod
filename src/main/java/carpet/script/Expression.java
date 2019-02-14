@@ -53,7 +53,7 @@ import java.util.function.Consumer;
  */
 public class Expression
 {
-    private Map<String, Integer> precedence = new HashMap<String,Integer>() {{
+    private static final Map<String, Integer> precedence = new HashMap<String,Integer>() {{
         put("unary+-!", 60);
         put("exponent^", 40);
         put("multiplication*/%", 30);
@@ -86,8 +86,9 @@ public class Expression
     private Map<String, ILazyOperator> operators = new HashMap<>();
 
     private Map<String, ILazyFunction> functions = new HashMap<>();
+    private static Map<String, ILazyFunction> global_functions = new HashMap<>();
 
-    private static Map<String, LazyValue> static_variables = new HashMap<>();
+    private static Map<String, LazyValue> global_variables = new HashMap<>(); //
     private Map<String, LazyValue> variables = new HashMap<>();
 
     /** should the evaluator output value of each ;'s statement during execution */
@@ -523,6 +524,59 @@ public class Expression
             }
         });
     }
+    public void addContextFunction(String name, List<String> arguments, LazyValue code)
+    {
+        name = name.toLowerCase(Locale.ROOT);
+        if (global_functions.containsKey(name))
+            throw new ExpressionException("Function "+name+" was already defined");
+        global_functions.put(name, new AbstractContextFunction(name, arguments)
+        {
+            @Override
+            public LazyValue lazyEval(List<LazyValue> lazyParams)
+            {
+                if (arguments.size() != lazyParams.size())
+                {
+                    throw new ExpressionException(
+                            "Incorrect number of arguments for function "+name+
+                            ". Should be "+arguments.size()+", not "+lazyParams.size()
+                    );
+                }
+
+                Map<String, LazyValue> context = new HashMap<>();
+                //saving context and placing args
+                for (int i=0; i<arguments.size(); i++)
+                {
+                    String arg = arguments.get(i);
+                    context.put(arg, getVariable(arg));
+                    Value val = lazyParams.get(i).eval();
+                    setVariable(arg, () -> val);
+                    //setVariable(arg, lazyParams.get(i) ) overflows stack
+                }
+                Value retVal = code.eval();
+
+                //restoring context
+                for (Map.Entry<String, LazyValue> entry : context.entrySet())
+                {
+                    if (entry.getValue() == null)
+                    {
+                        delVariable(entry.getKey());
+                    }
+                    else
+                    {
+                        setVariable(entry.getKey(), entry.getValue());
+                    }
+                }
+                return () -> retVal;
+            }
+        });
+    }
+
+
+    static
+    {
+
+    }
+
 
     /**
      * Creates a new expression instance from an expression string with a given
@@ -564,6 +618,31 @@ public class Expression
             if (logOutput != null)
                 logOutput.accept(v1.getString());
             return v2;
+        });
+
+        addLazyFunction(".",-1, (lv) -> {
+            String name = lv.get(lv.size()-1).eval().getString();
+            //lv.remove(lv.size()-1); // aint gonna cut it
+            if (global_functions.containsKey(name))
+            {
+                List<LazyValue> lvargs = new ArrayList<>(lv.size()-1);
+                for (int i=0; i< lv.size()-1; i++)
+                {
+                    lvargs.add(lv.get(i));
+                }
+                return () -> global_functions.get(name).lazyEval(lvargs).eval();
+            }
+            List<String> args = new ArrayList<>(lv.size()-1);
+            for (int i=0; i<lv.size()-1;i++ )
+            {
+                Value v = lv.get(i).eval();
+                if (!v.isBound())
+                {
+                    throw new ExpressionException("Only variables can be used in function signature, not  "+v.getString());
+                }
+                args.add(v.boundVariable);
+            }
+            return () -> new FunctionSignatureValue(name, args);
         });
 
         addBinaryOperator("+", precedence.get("addition+-"), true, Value::add);
@@ -638,14 +717,21 @@ public class Expression
         addLazyBinaryOperator("->", precedence.get("assign=<>"), false, (lv1, lv2) ->
         {
             Value v1 = lv1.eval();
-            if (!v1.isBound())
-                throw new ExpressionException("LHS of procedure needs to be a free variable");
-            String varname = v1.getVariable();
-            if (varname.startsWith("_"))
-                throw new ExpressionException("Cannot replace local built-in variables, i.e. those that start with '_'");
-
-            setVariable(varname, lv2);
-            return () -> v1;
+            if (v1 instanceof FunctionSignatureValue)
+            {
+                FunctionSignatureValue sign = (FunctionSignatureValue) v1;
+                addContextFunction(sign.getName(), sign.getArgs(), lv2);
+                return () -> Value.TRUE;
+            }
+            else if (v1.isBound())
+            {
+                setGlobalVariable(v1.getVariable(), lv2);
+                return () -> v1;
+            }
+            else
+            {
+                throw new ExpressionException("LHS of procedure definition needs to be a function signature, or a variable");
+            }
         });
 
         addBinaryOperator("<>", precedence.get("assign=<>"), false, (v1, v2) ->
@@ -720,7 +806,7 @@ public class Expression
         addMathematicalUnaryFunction("log1p", Math::log1p);
         addMathematicalUnaryFunction("sqrt", Math::sqrt);
 
-        addFunction("min", (lv) ->
+        addFunction("max", (lv) ->
         {
             if (lv.size() == 0)
                 throw new ExpressionException("MAX requires at least one parameter");
@@ -774,18 +860,21 @@ public class Expression
             return getVariable(varname);
         });
 
-        addUnaryFunction("undef", (v) -> {
-            String varname = v.getString();
-            //if (functions.containsKey(token.surface.toLowerCase(Locale.ROOT)))
-            //{
-            //    throw new ExpressionException("Variable would mask function: " + token);
-            //} lets see if we could do that
-            if (!isAVariable(varname))
-                return Value.FALSE;
-            static_variables.remove(varname);
+        addUnaryFunction("undef", (v) ->
+        {
+            if (!v.isBound())
+                throw new ExpressionException("Cannot undefine what is not variable nor function");
+            String varname = v.getVariable();
+            if (varname.startsWith("_"))
+                throw new ExpressionException("Cannot replace local built-in variables, i.e. those that start with '_'");
+            //functions.remove(varname);
+            global_functions.remove(varname);
+            global_variables.remove(varname);
             variables.remove(varname);
-            return Value.TRUE;
+            return Value.NULL;
         });
+
+
 
 
 
@@ -794,7 +883,7 @@ public class Expression
             List<Value> values = new ArrayList<>();
             if (prefix.startsWith("global"))
             {
-                for (String k: static_variables.keySet())
+                for (String k: global_variables.keySet())
                 {
                     if (k.startsWith(prefix))
                         values.add(new StringValue(k));
@@ -1299,10 +1388,12 @@ public class Expression
                     stack.push(result);
                     break;
                 case VARIABLE:
-                    if (functions.containsKey(token.surface.toLowerCase(Locale.ROOT)))
-                    {
-                        throw new ExpressionException("Variable would mask function: " + token);
-                    }
+                    //String varname = token.surface.toLowerCase(Locale.ROOT);
+                    //if (functions.containsKey(varname) || global_functions.containsKey(varname))
+                    //{
+                    //    throw new ExpressionException("Variable would mask function: " + token);
+                    //    // note: this would actually never happen
+                    //} undef requires identifier
 
                     stack.push(() ->
                     {
@@ -1315,14 +1406,27 @@ public class Expression
                     });
                     break;
                 case FUNCTION:
-                    ILazyFunction f = functions.get(token.surface.toLowerCase(Locale.ROOT));
-                    ArrayList<LazyValue> p = new ArrayList<>(!f.numParamsVaries() ? f.getNumParams() : 0);
+                    String name = token.surface.toLowerCase(Locale.ROOT);
+                    ILazyFunction f;
+                    ArrayList<LazyValue> p;
+                    boolean isKnown = functions.containsKey(name); // globals will be evaluated lazily, not at compile time via .
+                    if (isKnown)
+                    {
+                        f = functions.get(name);
+                        p = new ArrayList<>(!f.numParamsVaries() ? f.getNumParams() : 0);
+                    }
+                    else // potentially unknown function or just unknown function
+                    {
+                        f = functions.get(".");
+                        p = new ArrayList<>();
+                    }
                     // pop parameters off the stack until we hit the start of
                     // this function's parameter list
                     while (!stack.isEmpty() && stack.peek() != LazyValue.PARAMS_START)
                     {
                         p.add(0, stack.pop());
                     }
+                    if (!isKnown) p.add( () -> new StringValue(name));
 
                     if (stack.peek() == LazyValue.PARAMS_START)
                     {
@@ -1358,16 +1462,16 @@ public class Expression
 
     LazyValue getVariable(String name)
     {
-        if (name.startsWith("global_"))
+        if (variables.containsKey(name))
         {
-            return static_variables.get(name);
+            return variables.get(name);
         }
-        return variables.get(name);
+        return global_variables.get(name);
     }
 
     boolean isAVariable(String name)
     {
-        return variables.containsKey(name) || static_variables.containsKey(name);
+        return variables.containsKey(name) || global_variables.containsKey(name);
     }
 
 
@@ -1384,11 +1488,26 @@ public class Expression
     {
         if (variable.startsWith("global_"))
         {
-            static_variables.put(variable, value);
+            global_variables.put(variable, value);
             return this;
         }
         variables.put(variable, value);
         return this;
+    }
+
+    public void setGlobalVariable(String variable, LazyValue value)
+    {
+        global_variables.put(variable, value);
+    }
+
+    public void delVariable(String variable)
+    {
+        if (variable.startsWith("global_"))
+        {
+            global_variables.remove(variable);
+            return;
+        }
+        variables.remove(variable);
     }
 
     public Expression with(String variable, LazyValue lv)
@@ -1461,14 +1580,9 @@ public class Expression
                     stack.set(stack.size() - 1, stack.peek() - 2 + 1);
                     break;
                 case FUNCTION:
-                    ILazyFunction f = functions.get(token.surface.toLowerCase(Locale.ROOT));
-                    if (f == null)
-                    {
-                        throw new ExpressionException("Unknown function '" + token + "' at position " + (token.pos + 1));
-                    }
-
+                    ILazyFunction f = functions.get(token.surface.toLowerCase(Locale.ROOT));// don't validate global - userdef functions
                     int numParams = stack.pop();
-                    if (!f.numParamsVaries() && numParams != f.getNumParams())
+                    if (f != null && !f.numParamsVaries() && numParams != f.getNumParams())
                     {
                         throw new ExpressionException(
                                 "IFunction " + token + " expected " + f.getNumParams() + " parameters, got " + numParams);
@@ -1543,6 +1657,21 @@ public class Expression
         Value eval(Value v1, Value v2);
     }
 
+    public abstract static class AbstractContextFunction extends AbstractLazyFunction implements ILazyFunction
+    {
+        protected List<String> arguments;
+        protected AbstractContextFunction(String name, List<String>args)
+        {
+            super(name, args.size());
+            arguments = args;
+        }
+        public List<String> getArguments()
+        {
+            return arguments;
+        }
+
+    }
+
     public abstract static class AbstractLazyFunction implements ILazyFunction
     {
         protected String name;
@@ -1574,6 +1703,7 @@ public class Expression
             super(name, numParams);
         }
 
+        @Override
         public LazyValue lazyEval(final List<LazyValue> lazyParams) {
             return new LazyValue() {
 
