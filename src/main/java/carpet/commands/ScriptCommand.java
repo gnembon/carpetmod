@@ -46,18 +46,8 @@ public class ScriptCommand
                                                                 BlockPosArgument.getBlockPos(c, "origin"),
                                                                 BlockPosArgument.getBlockPos(c, "from"),
                                                                 BlockPosArgument.getBlockPos(c, "to"),
-                                                                StringArgumentType.getString(c, "expr"),
-                                                                null
-                                                        )).
-                                                        then(argument("summary", StringArgumentType.string()).
-                                                                executes( (c) -> scriptSpace(
-                                                                        c.getSource(),
-                                                                        BlockPosArgument.getBlockPos(c, "origin"),
-                                                                        BlockPosArgument.getBlockPos(c, "from"),
-                                                                        BlockPosArgument.getBlockPos(c, "to"),
-                                                                        StringArgumentType.getString(c, "expr"),
-                                                                        StringArgumentType.getString(c, "summary"))
-                                                                ))))))).
+                                                                StringArgumentType.getString(c, "expr")
+                                                        ))))))).
                 then(literal("fill").
                         then(argument("origin", BlockPosArgument.blockPos()).
                                 then(argument("from", BlockPosArgument.blockPos()).
@@ -136,7 +126,7 @@ public class ScriptCommand
         return 1;
     }
 
-    private static int scriptSpace(CommandSource source, BlockPos origin, BlockPos a, BlockPos b, String expr, String summary)
+    private static int scriptSpace(CommandSource source, BlockPos origin, BlockPos a, BlockPos b, String expr)
     {
         MutableBoundingBox area = new MutableBoundingBox(a, b);
         CarpetExpression cexpr = new CarpetExpression(expr, source, origin);
@@ -169,12 +159,6 @@ public class ScriptCommand
         {
             Messenger.m(source, "r Error while processing command: "+exc);
             return 0;
-        }
-        if (summary != null)
-        {
-            CarpetExpression summaryExpression = new CarpetExpression(summary, source, origin);
-            summaryExpression.copyStateFrom(cexpr);
-            summaryExpression.execute();
         }
         Messenger.m(source, "w Expression successful in " + successCount + " out of " + area.getXSize() * area.getYSize() * area.getZSize() + " blocks");
         return successCount;
