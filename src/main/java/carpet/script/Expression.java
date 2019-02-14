@@ -700,6 +700,26 @@ public class Expression
 
         addBinaryOperator("=", precedence.get("assign=<>"), false, (v1, v2) ->
         {
+            if (v1 instanceof ListValue && v2 instanceof ListValue)
+            {
+                 List<Value> ll = ((ListValue)v1).getItems();
+                 List<Value> rl = ((ListValue)v2).getItems();
+                 if (ll.size() < rl.size())
+                 {
+                     throw new ExpressionException("Too many values to unpack");
+                 }
+                 if (ll.size() > rl.size())
+                 {
+                     throw new ExpressionException("Too few values to unpack");
+                 }
+                 for (Value v: ll)
+                 {
+                     if (!v.isBound())
+                         throw new ExpressionException("List assignment needs to only have variables on the LHS");
+                     // ...
+                 }
+
+            }
             if (!v1.isBound())
                 throw new ExpressionException("LHS of assignment needs to be a free variable");
             String varname = v1.getVariable();
