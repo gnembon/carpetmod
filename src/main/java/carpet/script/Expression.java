@@ -529,6 +529,8 @@ public class Expression
         name = name.toLowerCase(Locale.ROOT);
         if (global_functions.containsKey(name))
             throw new ExpressionException("Function "+name+" was already defined");
+        if (functions.containsKey(name))
+            throw new ExpressionException("Function "+name+" would mask a built-in function");
         global_functions.put(name, new AbstractContextFunction(name, arguments)
         {
             @Override
@@ -569,12 +571,6 @@ public class Expression
                 return () -> retVal;
             }
         });
-    }
-
-
-    static
-    {
-
     }
 
 
@@ -620,6 +616,7 @@ public class Expression
             return v2;
         });
 
+        // artificial construct to handle user defined functions and function definitions
         addLazyFunction(".",-1, (lv) -> {
             String name = lv.get(lv.size()-1).eval().getString();
             //lv.remove(lv.size()-1); // aint gonna cut it
@@ -708,6 +705,7 @@ public class Expression
             String varname = v1.getVariable();
             if (varname.startsWith("_"))
                 throw new ExpressionException("Cannot replace local built-in variables, i.e. those that start with '_'");
+
             Value boundedLHS = v2.boundTo(varname);
             setVariable(varname, () -> boundedLHS);
             return boundedLHS;
@@ -721,17 +719,16 @@ public class Expression
             {
                 FunctionSignatureValue sign = (FunctionSignatureValue) v1;
                 addContextFunction(sign.getName(), sign.getArgs(), lv2);
-                return () -> Value.TRUE;
             }
             else if (v1.isBound())
             {
-                setGlobalVariable(v1.getVariable(), lv2);
-                return () -> v1;
+                setVariable(v1.getVariable(), lv2);
             }
             else
             {
                 throw new ExpressionException("LHS of procedure definition needs to be a function signature, or a variable");
             }
+            return () -> Value.TRUE;
         });
 
         addBinaryOperator("<>", precedence.get("assign=<>"), false, (v1, v2) ->
@@ -1486,7 +1483,7 @@ public class Expression
      */
     public Expression setVariable(String variable, LazyValue value)
     {
-        if (variable.startsWith("global_"))
+        if (variable.startsWith("global_") || global_variables.containsKey(variable))
         {
             global_variables.put(variable, value);
             return this;
