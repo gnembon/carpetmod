@@ -172,6 +172,10 @@ public class CarpetExpression
         this.world = source.getWorld();
         this.expr = new Expression(expression);
 
+        this.expr.setVariable("_x", () -> new NumericValue(origin.getX()).boundTo("_x"));
+        this.expr.setVariable("_y", () -> new NumericValue(origin.getY()).boundTo("_y"));
+        this.expr.setVariable("_z", () -> new NumericValue(origin.getZ()).boundTo("_z"));
+
         this.expr.addFunction("block", (lv) ->
         {
                 if (lv.size() == 0)
@@ -385,6 +389,7 @@ public class CarpetExpression
             return Value.TRUE;
         });
 
+        // consider changing to scan
         this.expr.addLazyFunction("area", 7, (lv) ->
         {
             int cx = Expression.getNumericalValue(lv.get(0).eval()).intValue();
@@ -463,6 +468,7 @@ public class CarpetExpression
             return new ListValue(neighbours);
         });
 
+        // consider abbrev to convsq
         //conv (x,y,z,sx,sy,sz, (_x, _y, _z, _block, _a) -> expr, ?acc) ->
         this.expr.addLazyFunction("convsquare", -1, (lv)->
         {
