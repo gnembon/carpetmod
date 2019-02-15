@@ -410,6 +410,7 @@ public class Expression
             throw new ExpressionException("Operand may not be null");
     }
 
+
     public void addLazyBinaryOperator(String surface, int precedence, boolean leftAssoc,
                             java.util.function.BiFunction<LazyValue, LazyValue, LazyValue> lazyfun)
     {
@@ -704,28 +705,20 @@ public class Expression
             {
                  List<Value> ll = ((ListValue)v1).getItems();
                  List<Value> rl = ((ListValue)v2).getItems();
-                 if (ll.size() < rl.size())
+                 if (ll.size() < rl.size()) throw new ExpressionException("Too many values to unpack");
+                 if (ll.size() > rl.size()) throw new ExpressionException("Too few values to unpack");
+                 for (Value v: ll) v.assertAssignable();
+                 Iterator<Value> li = ll.iterator();
+                 Iterator<Value> ri = rl.iterator();
+                 while(li.hasNext())
                  {
-                     throw new ExpressionException("Too many values to unpack");
+                     String lname = li.next().getVariable();
+                     setVariable(lname, () -> ri.next().boundTo(lname));
                  }
-                 if (ll.size() > rl.size())
-                 {
-                     throw new ExpressionException("Too few values to unpack");
-                 }
-                 for (Value v: ll)
-                 {
-                     if (!v.isBound())
-                         throw new ExpressionException("List assignment needs to only have variables on the LHS");
-                     // ...
-                 }
-
+                 return Value.TRUE;
             }
-            if (!v1.isBound())
-                throw new ExpressionException("LHS of assignment needs to be a free variable");
+            v1.assertAssignable();
             String varname = v1.getVariable();
-            if (varname.startsWith("_"))
-                throw new ExpressionException("Cannot replace local built-in variables, i.e. those that start with '_'");
-
             Value boundedLHS = v2.boundTo(varname);
             setVariable(varname, () -> boundedLHS);
             return boundedLHS;
@@ -740,13 +733,10 @@ public class Expression
                 FunctionSignatureValue sign = (FunctionSignatureValue) v1;
                 addContextFunction(sign.getName(), sign.getArgs(), lv2);
             }
-            else if (v1.isBound())
-            {
-                setVariable(v1.getVariable(), lv2);
-            }
             else
             {
-                throw new ExpressionException("LHS of procedure definition needs to be a function signature, or a variable");
+                v1.assertAssignable();
+                setVariable(v1.getVariable(), lv2);
             }
             return () -> Value.TRUE;
         });
@@ -864,7 +854,7 @@ public class Expression
         });
         addUnaryFunction("return", (v) -> { throw new ExitStatement(v); });
 
-        addFunction("list", ListValue::new);
+        addFunction("l", ListValue::new);
 
         addLazyFunction("var", 1, (lv) -> {
             String varname = lv.get(0).eval().getString();

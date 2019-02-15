@@ -29,6 +29,7 @@ import net.minecraft.world.gen.Heightmap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.function.BiFunction;
 
@@ -204,7 +205,17 @@ public class CarpetExpression
         this.expr.addNAryFunction("seeSky", 3, (lv) ->
                 new NumericValue(source.getWorld().canSeeSky(locateBlockPos(lv))));
 
-        this.expr.addNAryFunction("topOpaque", -1, (lv) -> {
+        this.expr.addNAryFunction("top", -1, (lv) -> {
+            String type = lv.get(0).getString().toLowerCase(Locale.ROOT);
+            Heightmap.Type htype;
+            switch (type)
+            {
+                case "light": htype = Heightmap.Type.LIGHT_BLOCKING; break;
+                case "motion": htype = Heightmap.Type.MOTION_BLOCKING; break;
+                case "surface": htype = Heightmap.Type.WORLD_SURFACE; break;
+                case "ocean floor": htype = Heightmap.Type.OCEAN_FLOOR; break;
+                default: htype = Heightmap.Type.LIGHT_BLOCKING;
+            }
             int x;
             int z;
             if (lv.get(1) instanceof BlockValue)
@@ -215,12 +226,13 @@ public class CarpetExpression
             }
             else
             {
-                x = Expression.getNumericalValue(lv.get(0)).intValue();
-                z = Expression.getNumericalValue(lv.get(1)).intValue();
+                x = Expression.getNumericalValue(lv.get(1)).intValue();
+                z = Expression.getNumericalValue(lv.get(2)).intValue();
             }
-            int y = source.getWorld().getChunk(x >> 4, z >> 4).getTopBlockY(Heightmap.Type.LIGHT_BLOCKING, x & 15, z & 15) + 1;
-            BlockPos pos = new BlockPos(x,y,z);
-            return new BlockValue(source.getWorld().getBlockState(pos), pos);
+            int y = source.getWorld().getChunk(x >> 4, z >> 4).getTopBlockY(htype, x & 15, z & 15) + 1;
+            return new NumericValue(y);
+            //BlockPos pos = new BlockPos(x,y,z);
+            //return new BlockValue(source.getWorld().getBlockState(pos), pos);
         });
 
         this.expr.addNAryFunction("loaded", 3, (lv) ->
@@ -373,11 +385,15 @@ public class CarpetExpression
             return Value.TRUE;
         });
 
-        this.expr.addLazyFunction("area", 4, (lv) -> {
-            int xrange = Expression.getNumericalValue(lv.get(0).eval()).intValue();
-            int yrange = Expression.getNumericalValue(lv.get(1).eval()).intValue();
-            int zrange = Expression.getNumericalValue(lv.get(2).eval()).intValue();
-            LazyValue expr = lv.get(3);
+        this.expr.addLazyFunction("area", 7, (lv) ->
+        {
+            int cx = Expression.getNumericalValue(lv.get(0).eval()).intValue();
+            int cy = Expression.getNumericalValue(lv.get(1).eval()).intValue();
+            int cz = Expression.getNumericalValue(lv.get(2).eval()).intValue();
+            int xrange = Expression.getNumericalValue(lv.get(3).eval()).intValue();
+            int yrange = Expression.getNumericalValue(lv.get(4).eval()).intValue();
+            int zrange = Expression.getNumericalValue(lv.get(5).eval()).intValue();
+            LazyValue expr = lv.get(6);
 
             //saving outer scope
             LazyValue _x = this.expr.getVariable("_x");
@@ -385,19 +401,19 @@ public class CarpetExpression
             LazyValue _z = this.expr.getVariable("_z");
             LazyValue __ = this.expr.getVariable("_");
             int sCount = 0;
-            for (int y=0; y < yrange; y++)
+            for (int y=cy-yrange; y <= cy+yrange; y++)
             {
                 int yFinal = y;
                 this.expr.setVariable("_y", () -> new NumericValue(yFinal).boundTo("_y"));
-                for (int x = 0; x < xrange; x++)
+                for (int x=cx-xrange; x <= cx+xrange; x++)
                 {
                     int xFinal = x;
                     this.expr.setVariable("_x", () -> new NumericValue(xFinal).boundTo("_x"));
-                    for (int z = 0; z < zrange; z++)
+                    for (int z=cz-zrange; z <= cz+zrange; z++)
                     {
                         int zFinal = z;
                         this.expr.setVariable( "_", () -> blockValueFromCoords(xFinal,yFinal,zFinal).boundTo("_"));
-                        this.expr.setVariable("_z", () -> new NumericValue(xFinal).boundTo("_z"));
+                        this.expr.setVariable("_z", () -> new NumericValue(zFinal).boundTo("_z"));
                         if (expr.eval().getBoolean())
                         {
                             sCount += 1;
@@ -606,8 +622,8 @@ public class CarpetExpression
 
     public String eval(int x, int y, int z)
     {
-        try
-        {
+        //try
+        //{
             return this.expr.
                     with("x", () -> new NumericValue(x - origin.getX()).boundTo("x")).
                     with("y", () -> new NumericValue(y - origin.getY()).boundTo("y")).
@@ -617,11 +633,12 @@ public class CarpetExpression
                         return new BlockValue(world.getBlockState(pos), pos).boundTo("block");
                     }).
                     eval().getString();
-        }
-        catch (ExpressionException e)
-        {
-            throw new CarpetExpressionException(e.getMessage());
-        }
+        //}
+        //catch (ExpressionException e)
+        //{
+            //throw
+            //throw new CarpetExpressionException(e.getMessage());
+        //}
     }
 
     public void copyStateFrom(CarpetExpression other)

@@ -75,4 +75,17 @@ public abstract class Value implements Comparable<Value>
         return lstr.compareTo(rstr);
     }
 
+    public void assertAssignable()
+    {
+        if (boundVariable == null || boundVariable.startsWith("_"))
+        {
+            if (boundVariable != null)
+            {
+                throw new Expression.ExpressionException(boundVariable+ " cannot be assigned a new value");
+            }
+            throw new Expression.ExpressionException(getString()+ "is not a variable");
+        }
+
+    }
+
 }
