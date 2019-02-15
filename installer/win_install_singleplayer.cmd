@@ -11,7 +11,7 @@ if exist %appdata%\.minecraft\versions\1.13.2-carpet (
 )
 mkdir %appdata%\.minecraft\versions\1.13.2-carpet > nul
 copy %appdata%\.minecraft\versions\1.13.2\1.13.2.jar %appdata%\.minecraft\versions\1.13.2-carpet\1.13.2-carpet.jar > nul
-copy 1.13.2_carpet.json %appdata%\.minecraft\versions\1.13.2-carpet > nul
+copy 1.13.2-carpet.json %appdata%\.minecraft\versions\1.13.2-carpet > nul
 echo Xtracting patches ...
 mkdir ____patches
 7za x carpetmod_1.13.2_Client.zip -bd -y -o____patches > nul
