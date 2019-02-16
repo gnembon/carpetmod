@@ -18,6 +18,7 @@ copy 7za.exe output-win > nul
 copy win_install_server.cmd output-win > nul
 copy win_install_singleplayer.cmd output-win > nul
 copy README.txt output-win > nul
+copy 1.13.2-carpet.json output-win > nul
 if exist carpet_package_win.zip del /q carpet_package_win.zip
 echo Zipping ...
 7za a carpet_package_win.zip .\output-win\* > nul
