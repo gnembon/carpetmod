@@ -7,7 +7,7 @@ import java.util.stream.Stream;
 
 public class ListValue extends Value
 {
-    private List<Value> items;
+    protected List<Value> items;
     @Override
     public String getString()
     {
@@ -20,7 +20,7 @@ public class ListValue extends Value
     }
 
     @Override
-    public Value copy()
+    public Value clone()
     {
         return new ListValue(items);
     }

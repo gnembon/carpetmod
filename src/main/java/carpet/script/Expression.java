@@ -36,8 +36,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Stack;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 
 /**
@@ -88,8 +90,8 @@ public class Expression
     private Map<String, ILazyFunction> functions = new HashMap<>();
     private static Map<String, ILazyFunction> global_functions = new HashMap<>();
 
-    private static Map<String, LazyValue> global_variables = new HashMap<>(); //
-    private Map<String, LazyValue> variables = new HashMap<>();
+    public static Map<String, LazyValue> global_variables = new HashMap<>(); //
+    protected Map<String, LazyValue> defaultVariables = new HashMap<>();
 
     /** should the evaluator output value of each ;'s statement during execution */
     private Consumer<String> logOutput = null;
@@ -99,17 +101,17 @@ public class Expression
     @FunctionalInterface
     public interface LazyValue
     {
-        LazyValue FALSE = () -> Value.FALSE;
-        LazyValue TRUE = () -> Value.TRUE;
-        LazyValue NULL = () -> Value.NULL;
-        LazyValue ZERO = () -> Value.ZERO;
+        LazyValue FALSE = (c) -> Value.FALSE;
+        LazyValue TRUE = (c) -> Value.TRUE;
+        LazyValue NULL = (c) -> Value.NULL;
+        LazyValue ZERO = (c) -> Value.ZERO;
         /**
          * The Value representation of the left parenthesis, used for parsing
          * varying numbers of function parameters.
          */
-        LazyValue PARAMS_START = () -> null;
+        LazyValue PARAMS_START = (c) -> null;
 
-        Value eval();
+        Value evalValue(Context c);
     }
 
     /** The expression evaluators exception class. */
@@ -412,15 +414,15 @@ public class Expression
 
 
     public void addLazyBinaryOperator(String surface, int precedence, boolean leftAssoc,
-                            java.util.function.BiFunction<LazyValue, LazyValue, LazyValue> lazyfun)
+                            TriFunction<Context, LazyValue, LazyValue, LazyValue> lazyfun)
     {
-        operators.put(surface, new AbstractLazyOperator(surface, precedence, leftAssoc)
+        operators.put(surface, new AbstractLazyOperator(precedence, leftAssoc)
         {
             @Override
-            public LazyValue eval(LazyValue v1, LazyValue v2) //TODO add nonnull check here, and strip null checks from
+            public LazyValue lazyEval(Context c, LazyValue v1, LazyValue v2)
             {
                 assertNotNull(v1, v2);
-                return lazyfun.apply(v1, v2);
+                return lazyfun.apply(c, v1, v2);
             }
         });
     }
@@ -428,7 +430,7 @@ public class Expression
 
     public void addUnaryOperator(String surface, boolean leftAssoc, java.util.function.Function<Value, Value> fun)
     {
-        operators.put(surface+"u", new AbstractUnaryOperator(surface, precedence.get("unary+-!"), leftAssoc)
+        operators.put(surface+"u", new AbstractUnaryOperator(precedence.get("unary+-!"), leftAssoc)
         {
             @Override
             public Value evalUnary(Value v1)
@@ -440,7 +442,7 @@ public class Expression
 
     public void addBinaryOperator(String surface, int precedence, boolean leftAssoc, java.util.function.BiFunction<Value, Value, Value> fun)
     {
-        operators.put(surface, new AbstractOperator(surface, precedence, leftAssoc)
+        operators.put(surface, new AbstractOperator(precedence, leftAssoc)
         {
             @Override
             public Value eval(Value v1, Value v2) //TODO add nonnull check here, and strip null checks from number checks
@@ -455,7 +457,7 @@ public class Expression
     public void addUnaryFunction(String name, java.util.function.Function<Value, Value> fun)
     {
         name = name.toLowerCase(Locale.ROOT);
-        functions.put(name,  new AbstractFunction(name, 1)
+        functions.put(name,  new AbstractFunction(1)
         {
             @Override
             public Value eval(List<Value> parameters)
@@ -468,7 +470,7 @@ public class Expression
     public void addBinaryFunction(String name, java.util.function.BiFunction<Value, Value, Value> fun)
     {
         name = name.toLowerCase(Locale.ROOT);
-        functions.put(name, new AbstractFunction(name, 2)
+        functions.put(name, new AbstractFunction(2)
         {
             @Override
             public Value eval(List<Value> parameters)
@@ -484,7 +486,7 @@ public class Expression
     public void addNAryFunction(String name, int numArgs, java.util.function.Function<List<Value>, Value> fun)
     {
         name = name.toLowerCase(Locale.ROOT);
-        functions.put(name, new AbstractFunction(name, numArgs)
+        functions.put(name, new AbstractFunction(numArgs)
         {
             @Override
             public Value eval(List<Value> parameters)
@@ -513,31 +515,29 @@ public class Expression
     }
 
 
-    public void addLazyFunction(String name, int num_params, java.util.function.Function<List<LazyValue>, LazyValue> fun)//ILazyFunction function)
+    public void addLazyFunction(String name, int num_params, java.util.function.BiFunction<Context, List<LazyValue>, LazyValue> fun)//ILazyFunction function)
     {
         name = name.toLowerCase(Locale.ROOT);
-        functions.put(name, new AbstractLazyFunction(name, num_params)
+        functions.put(name, new AbstractLazyFunction(num_params)
         {
             @Override
-            public LazyValue lazyEval(List<LazyValue> lazyParams)
+            public LazyValue lazyEval(Context c, List<LazyValue> lazyParams)
             {
-                return fun.apply(lazyParams);
+                return fun.apply(c, lazyParams);
             }
         });
     }
     public void addContextFunction(String name, List<String> arguments, LazyValue code)
     {
         name = name.toLowerCase(Locale.ROOT);
-        if (global_functions.containsKey(name))
-            throw new ExpressionException("Function "+name+" was already defined");
         if (functions.containsKey(name))
             throw new ExpressionException("Function "+name+" would mask a built-in function");
-        global_functions.put(name, new AbstractContextFunction(name, arguments)
+        global_functions.put(name, new AbstractContextFunction(arguments)
         {
             @Override
-            public LazyValue lazyEval(List<LazyValue> lazyParams)
+            public LazyValue lazyEval(Context c, List<LazyValue> lazyParams)
             {
-                if (arguments.size() != lazyParams.size())
+                if (arguments.size() != lazyParams.size()) // something that might be subject to change in the future
                 {
                     throw new ExpressionException(
                             "Incorrect number of arguments for function "+name+
@@ -550,26 +550,26 @@ public class Expression
                 for (int i=0; i<arguments.size(); i++)
                 {
                     String arg = arguments.get(i);
-                    context.put(arg, getVariable(arg));
-                    Value val = lazyParams.get(i).eval();
-                    setVariable(arg, () -> val);
-                    //setVariable(arg, lazyParams.get(i) ) overflows stack
+                    context.put(arg, c.getVariable(arg));
+                    Value val = lazyParams.get(i).evalValue(c);
+                    c.setVariable(arg, (cc) -> val);
+                    //c.setVariable(arg, lazyParams.get(i) ) overflows stack
                 }
-                Value retVal = code.eval();
+                Value retVal = code.evalValue(c);
 
                 //restoring context
                 for (Map.Entry<String, LazyValue> entry : context.entrySet())
                 {
                     if (entry.getValue() == null)
                     {
-                        delVariable(entry.getKey());
+                        c.delVariable(entry.getKey());
                     }
                     else
                     {
-                        setVariable(entry.getKey(), entry.getValue());
+                        c.setVariable(entry.getKey(), entry.getValue());
                     }
                 }
-                return () -> retVal;
+                return (cc) -> retVal;
             }
         });
     }
@@ -599,48 +599,55 @@ public class Expression
     {
         this.mc = defaultMathContext;
         this.expression = expression.trim().replaceAll(";+$", "");
-        setVariable("e", () -> e);
-        setVariable("PI", () -> PI);
-        setVariable("NULL", () -> Value.NULL);
-        setVariable("TRUE", () -> Value.TRUE);
-        setVariable("FALSE", () -> Value.FALSE);
+        defaultVariables.put("e", (c) -> e);
+        defaultVariables.put("PI", (c) -> PI);
+        defaultVariables.put("NULL", (c) -> Value.NULL);
+        defaultVariables.put("TRUE", (c) -> Value.TRUE);
+        defaultVariables.put("FALSE", (c) -> Value.FALSE);
 
         //special variables for second order functions so we don't need to check them all the time
-        setVariable("_", () -> new NumericValue(0).boundTo("_"));
-        setVariable("_i", () -> new NumericValue(0).boundTo("_i"));
-        setVariable("_a", () -> new NumericValue(0).boundTo("_a"));
+        defaultVariables.put("_", (c) -> new NumericValue(0).boundTo("_"));
+        defaultVariables.put("_i", (c) -> new NumericValue(0).boundTo("_i"));
+        defaultVariables.put("_a", (c) -> new NumericValue(0).boundTo("_a"));
 
-        addBinaryOperator(";",precedence.get("nextop;"), true, (v1, v2) ->
+        addLazyBinaryOperator(";",precedence.get("nextop;"), true, (c, lv1, lv2) ->
         {
-            if (logOutput != null)
-                logOutput.accept(v1.getString());
-            return v2;
+            Value v1 = lv1.evalValue(c);//.withExpected(Context.VOID));
+            if (c.logOutput != null)
+                c.logOutput.accept(v1.getString());
+            return lv2;
         });
 
         // artificial construct to handle user defined functions and function definitions
-        addLazyFunction(".",-1, (lv) -> {
-            String name = lv.get(lv.size()-1).eval().getString();
+        addLazyFunction(".",-1, (c, lv) -> { // adjust based on c
+            String name = lv.get(lv.size()-1).evalValue(c).getString();
             //lv.remove(lv.size()-1); // aint gonna cut it
-            if (global_functions.containsKey(name))
+            if (c.expected != Context.SIGNATURE) // just call the function
             {
+                if (!global_functions.containsKey(name))
+                {
+                    throw new ExpressionException("Function "+name+" is not defined yet");
+                }
                 List<LazyValue> lvargs = new ArrayList<>(lv.size()-1);
                 for (int i=0; i< lv.size()-1; i++)
                 {
                     lvargs.add(lv.get(i));
                 }
-                return () -> global_functions.get(name).lazyEval(lvargs).eval();
+                return (cc) -> global_functions.get(name).lazyEval(c, lvargs).evalValue(c);
             }
-            List<String> args = new ArrayList<>(lv.size()-1);
-            for (int i=0; i<lv.size()-1;i++ )
+
+            // gimme signature
+            List<String> args = new ArrayList<>(lv.size() - 1);
+            for (int i = 0; i < lv.size() - 1; i++)
             {
-                Value v = lv.get(i).eval();
+                Value v = lv.get(i).evalValue(c);
                 if (!v.isBound())
                 {
-                    throw new ExpressionException("Only variables can be used in function signature, not  "+v.getString());
+                    throw new ExpressionException("Only variables can be used in function signature, not  " + v.getString());
                 }
                 args.add(v.boundVariable);
             }
-            return () -> new FunctionSignatureValue(name, args);
+            return (cc) -> new FunctionSignatureValue(name, args);
         });
 
         addBinaryOperator("+", precedence.get("addition+-"), true, Value::add);
@@ -670,21 +677,23 @@ public class Expression
             return new NumericValue(result);
         });
 
-        addLazyBinaryOperator("&&", precedence.get("and&&"), false, (lv1, lv2) ->
+        addLazyBinaryOperator("&&", precedence.get("and&&"), false, (c, lv1, lv2) ->
         {
-            boolean b1 = lv1.eval().getBoolean();
+            boolean b1 = lv1.evalValue(c).getBoolean();
             if (!b1) return LazyValue.FALSE;
-            boolean b2 = lv2.eval().getBoolean();
+            boolean b2 = lv2.evalValue(c).getBoolean();
             return b2 ? LazyValue.TRUE : LazyValue.FALSE;
         });
 
-        addLazyBinaryOperator("||", precedence.get("or||"), false, (lv1, lv2) ->
+        addLazyBinaryOperator("||", precedence.get("or||"), false, (c, lv1, lv2) ->
         {
-            boolean b1 = lv1.eval().getBoolean();
+            boolean b1 = lv1.evalValue(c).getBoolean();
             if (b1) return LazyValue.TRUE;
-            boolean b2 = lv2.eval().getBoolean();
+            boolean b2 = lv2.evalValue(c).getBoolean();
             return b2 ? LazyValue.TRUE : LazyValue.FALSE;
         });
+
+        addBinaryOperator("~", precedence.get("compare>=><=<"), true, (v1, v2) -> v1.in(v2));
 
         addBinaryOperator(">", precedence.get("compare>=><=<"), false, (v1, v2) ->
                 v1.compareTo(v2) > 0 ? Value.TRUE : Value.FALSE);
@@ -699,8 +708,10 @@ public class Expression
         addBinaryOperator("!=", precedence.get("equal==!="), false, (v1, v2) ->
                 v1.compareTo(v2) == 0 ? Value.TRUE : Value.FALSE);
 
-        addBinaryOperator("=", precedence.get("assign=<>"), false, (v1, v2) ->
+        addLazyBinaryOperator("=", precedence.get("assign=<>"), false, (c, lv1, lv2) ->
         {
+            Value v1 = lv1.evalValue(c);
+            Value v2 = lv2.evalValue(c);
             if (v1 instanceof ListValue && v2 instanceof ListValue)
             {
                  List<Value> ll = ((ListValue)v1).getItems();
@@ -713,21 +724,21 @@ public class Expression
                  while(li.hasNext())
                  {
                      String lname = li.next().getVariable();
-                     setVariable(lname, () -> ri.next().boundTo(lname));
+                     c.setVariable(lname, (cc) -> ri.next().boundTo(lname));
                  }
-                 return Value.TRUE;
+                 return (cc) -> Value.TRUE;
             }
             v1.assertAssignable();
             String varname = v1.getVariable();
             Value boundedLHS = v2.boundTo(varname);
-            setVariable(varname, () -> boundedLHS);
-            return boundedLHS;
+            c.setVariable(varname, (cc) -> boundedLHS);
+            return (cc) -> boundedLHS;
         });
 
         //assigns const procedure to the lhs, returning its previous value
-        addLazyBinaryOperator("->", precedence.get("assign=<>"), false, (lv1, lv2) ->
+        addLazyBinaryOperator("->", precedence.get("assign=<>"), false, (c, lv1, lv2) ->
         {
-            Value v1 = lv1.eval();
+            Value v1 = lv1.evalValue(c.withExpected(Context.SIGNATURE));
             if (v1 instanceof FunctionSignatureValue)
             {
                 FunctionSignatureValue sign = (FunctionSignatureValue) v1;
@@ -736,13 +747,15 @@ public class Expression
             else
             {
                 v1.assertAssignable();
-                setVariable(v1.getVariable(), lv2);
+                c.setVariable(v1.getVariable(), lv2);
             }
-            return () -> Value.TRUE;
+            return (cc) -> new StringValue("OK");
         });
 
-        addBinaryOperator("<>", precedence.get("assign=<>"), false, (v1, v2) ->
+        addLazyBinaryOperator("<>", precedence.get("assign=<>"), false, (c, lv1, lv2) ->
         {
+            Value v1 = lv1.evalValue(c);
+            Value v2 = lv2.evalValue(c);
             if (!v1.isBound() || !v2.isBound())
                 throw new ExpressionException("Both sides of swapping assignment need to be variables");
             String lvalvar = v1.getVariable();
@@ -751,9 +764,9 @@ public class Expression
                 throw new ExpressionException("Cannot swap with local built-in variables, i.e. those that start with '_'");
             Value lval = v2.boundTo(lvalvar);
             Value rval = v1.boundTo(rvalvar);
-            setVariable(lvalvar, () -> lval);
-            setVariable(rvalvar, () -> rval);
-            return lval;
+            c.setVariable(lvalvar, (cc) -> lval);
+            c.setVariable(rvalvar, (cc) -> rval);
+            return (cc) -> lval;
         });
 
         addUnaryOperator("-",  false, (v) -> new NumericValue(getNumericalValue(v).multiply(new BigDecimal(-1))));
@@ -856,37 +869,27 @@ public class Expression
 
         addFunction("l", ListValue::new);
 
-        addLazyFunction("var", 1, (lv) -> {
-            String varname = lv.get(0).eval().getString();
-            //if (functions.containsKey(token.surface.toLowerCase(Locale.ROOT)))
-            //{
-            //    throw new ExpressionException("Variable would mask function: " + token);
-            //} lets see if we could do that
-            if (!isAVariable(varname))
-                setVariable(varname, Value.ZERO);
-            return getVariable(varname);
+        addLazyFunction("var", 1, (c, lv) -> {
+            String varname = lv.get(0).evalValue(c).getString();
+            if (!c.isAVariable(varname))
+                c.setVariable(varname, Value.ZERO);
+            return c.getVariable(varname);
         });
 
-        addUnaryFunction("undef", (v) ->
+        addLazyFunction("undef", 1, (c, lv) ->
         {
-            if (!v.isBound())
-                throw new ExpressionException("Cannot undefine what is not variable nor function");
-            String varname = v.getVariable();
+            String varname = lv.get(0).evalValue(c).getString();
             if (varname.startsWith("_"))
                 throw new ExpressionException("Cannot replace local built-in variables, i.e. those that start with '_'");
-            //functions.remove(varname);
             global_functions.remove(varname);
             global_variables.remove(varname);
-            variables.remove(varname);
-            return Value.NULL;
+            c.variables.remove(varname);
+            return (cc) -> Value.NULL;
         });
 
 
-
-
-
-        addUnaryFunction("vars", (v) -> {
-            String prefix = v.getString();
+        addLazyFunction("vars", 1, (c, lv) -> {
+            String prefix = lv.get(0).evalValue(c).getString();
             List<Value> values = new ArrayList<>();
             if (prefix.startsWith("global"))
             {
@@ -898,240 +901,242 @@ public class Expression
             }
             else
             {
-                for (String k: variables.keySet())
+                for (String k: c.variables.keySet())
                 {
                     if (k.startsWith(prefix))
                         values.add(new StringValue(k));
                 }
             }
-            return new ListValue(values);
+            return (__) -> new ListValue(values);
         });
 
         // if(cond1, expr1, cond2, expr2, ..., ?default) => value
-        addLazyFunction("if", -1, (lv) ->
+        addLazyFunction("if", -1, (c, lv) ->
         {
             if ( lv.size() < 2 )
                 throw new ExpressionException("if statement needs to have at least one condition and one case");
             for (int i=0; i<lv.size()-1; i+=2)
             {
-                if (lv.get(i).eval().getBoolean())
+                if (lv.get(i).evalValue(c).getBoolean())
                 {
                     int iFinal = i;
-                    return () -> lv.get(iFinal+1).eval();
+                    return (cc) -> lv.get(iFinal+1).evalValue(c);
                 }
             }
             if (lv.size()%2 == 1)
-                return () -> lv.get(lv.size() - 1).eval();
-            return () -> new NumericValue(0);
+                return (cc) -> lv.get(lv.size() - 1).evalValue(c);
+            return (cc) -> new NumericValue(0);
         });
 
-        // loop(1000, expr) => last_value
+        // loop(Num or list, expr, exit_condition) => last_value
+        // loop(list, expr,
         // expr receives bounded variable '_' indicating iteration
-        addLazyFunction("loop", 2, (lv) ->
+        addLazyFunction("loop", 2, (c, lv) ->
         {
-            long limit = getNumericalValue(lv.get(0).eval()).longValue();
+            long limit = getNumericalValue(lv.get(0).evalValue(c)).longValue();
             Value lastOne = Value.ZERO;
             LazyValue expr = lv.get(1);
             //scoping
-            LazyValue _val = getVariable("_");
+            LazyValue _val = c.getVariable("_");
             for (long i=0; i < limit; i++)
             {
                 long whyYouAsk = i;
-                setVariable("_", () -> new NumericValue(whyYouAsk).boundTo("_"));
-                lastOne = expr.eval();
+                c.setVariable("_", (cc) -> new NumericValue(whyYouAsk).boundTo("_"));
+                lastOne = expr.evalValue(c);
             }
             //revering scope
-            setVariable("_", _val);
+            c.setVariable("_", _val);
             Value trulyLastOne = lastOne;
-            return () -> trulyLastOne;
+            return (cc) -> trulyLastOne;
         });
 
-        // map(expr, list) => list
+        // map(list or Num, expr, exit_cond) => list_results
         // receives bounded variable '_' with the expression
-        addLazyFunction("map", 2, (lv) ->
+        addLazyFunction("map", 2, (c, lv) ->
         {
             LazyValue expr = lv.get(0);
-            Value rval= lv.get(1).eval();
+            Value rval= lv.get(1).evalValue(c);
             if (!(rval instanceof ListValue))
                 throw new ExpressionException("Second argument of map function should be a list");
             List<Value> list = ((ListValue) rval).getItems();
             //scoping
-            LazyValue _val = getVariable("_");
-            LazyValue _iter = getVariable("_i");
+            LazyValue _val = c.getVariable("_");
+            LazyValue _iter = c.getVariable("_i");
             List<Value> result = new ArrayList<>();
             for (int i=0; i< list.size(); i++)
             {
                 int doYouReally = i;
-                setVariable("_", () -> list.get(doYouReally).boundTo("_"));
-                setVariable("_i", () -> new NumericValue(doYouReally).boundTo("_i"));
-                result.add(expr.eval());
+                c.setVariable("_", (cc) -> list.get(doYouReally).boundTo("_"));
+                c.setVariable("_i", (cc) -> new NumericValue(doYouReally).boundTo("_i"));
+                result.add(expr.evalValue(c));
             }
-            LazyValue ret = () -> new ListValue(result);
+            LazyValue ret = (cc) -> new ListValue(result);
             //revering scope
-            setVariable("_", _val);
-            setVariable("_i", _iter);
+            c.setVariable("_", _val);
+            c.setVariable("_i", _iter);
             return ret;
         });
 
-        // grep(expr, list) => list
+        // grep(list or num, expr, exit_expr) => list
         // receives bounded variable '_' with the expression, and "_i" with index
         // produces list of values for which the expression is true
-        addLazyFunction("grep", 2, (lv) ->
+        addLazyFunction("grep", 2, (c, lv) ->
         {
             LazyValue expr = lv.get(0);
-            Value rval= lv.get(1).eval();
+            Value rval= lv.get(1).evalValue(c);
             if (!(rval instanceof ListValue))
                 throw new ExpressionException("Second argument of grep function should be a list");
             List<Value> list = ((ListValue) rval).getItems();
             //scoping
-            LazyValue _val = getVariable("_");
-            LazyValue _iter = getVariable("_i");
+            LazyValue _val = c.getVariable("_");
+            LazyValue _iter = c.getVariable("_i");
             List<Value> result = new ArrayList<>();
             for (int i=0; i< list.size(); i++)
             {
                 int seriously = i;
-                setVariable("_", () -> list.get(seriously).boundTo("_"));
-                setVariable("_i", () -> new NumericValue(seriously).boundTo("_i"));
-                if(expr.eval().getBoolean())
+                c.setVariable("_", (cc) -> list.get(seriously).boundTo("_"));
+                c.setVariable("_i", (cc) -> new NumericValue(seriously).boundTo("_i"));
+                if(expr.evalValue(c).getBoolean())
                     result.add(list.get(i));
             }
-            LazyValue ret = () -> new ListValue(result);
+            LazyValue ret = (cc) -> new ListValue(result);
             //revering scope
-            setVariable("_", _val);
-            setVariable("_i", _iter);
+            c.setVariable("_", _val);
+            c.setVariable("_i", _iter);
             return ret;
         });
 
-        // first(expr, list) => elem or null
+        // first(list, expr) => elem or null
         // receives bounded variable '_' with the expression, and "_i" with index
         // returns first element on the list for which the expr is true
-        addLazyFunction("first", 2, (lv) ->
+        addLazyFunction("first", 2, (c, lv) ->
         {
             LazyValue expr = lv.get(0);
-            Value rval= lv.get(1).eval();
+            Value rval= lv.get(1).evalValue(c);
             if (!(rval instanceof ListValue))
                 throw new ExpressionException("Second argument of grep function should be a list");
             List<Value> list = ((ListValue) rval).getItems();
             //scoping
-            LazyValue _val = getVariable("_");
-            LazyValue _iter = getVariable("_i");
+            LazyValue _val = c.getVariable("_");
+            LazyValue _iter = c.getVariable("_i");
             for (int i=0; i< list.size(); i++)
             {
                 int seriously = i;
-                setVariable("_", () -> list.get(seriously).boundTo("_"));
-                setVariable("_i", () -> new NumericValue(seriously).boundTo("_i"));
-                if(expr.eval().getBoolean())
+                c.setVariable("_", (cc) -> list.get(seriously).boundTo("_"));
+                c.setVariable("_i", (cc) -> new NumericValue(seriously).boundTo("_i"));
+                if(expr.evalValue(c).getBoolean())
                 {
                     int iFinal = i;
-                    setVariable("_", _val);
-                    setVariable("_i", _iter);
-                    return () -> list.get(iFinal);
+                    c.setVariable("_", _val);
+                    c.setVariable("_i", _iter);
+                    return (cc) -> list.get(iFinal);
                 }
             }
             //revering scope
-            setVariable("_", _val);
-            setVariable("_i", _iter);
+            c.setVariable("_", _val);
+            c.setVariable("_i", _iter);
             return LazyValue.NULL;
         });
 
 
-        // all(expr, list) => boolean
+        // all(list, expr) => boolean
         // receives bounded variable '_' with the expression, and "_i" with index
         // returns true if expr is true for all items
-        addLazyFunction("all", 2, (lv) ->
+        addLazyFunction("all", 2, (c, lv) ->
         {
             LazyValue expr = lv.get(0);
-            Value rval= lv.get(1).eval();
+            Value rval= lv.get(1).evalValue(c);
             if (!(rval instanceof ListValue))
                 throw new ExpressionException("Second argument of grep function should be a list");
             List<Value> list = ((ListValue) rval).getItems();
             //scoping
-            LazyValue _val = getVariable("_");
-            LazyValue _iter = getVariable("_i");
+            LazyValue _val = c.getVariable("_");
+            LazyValue _iter = c.getVariable("_i");
             for (int i=0; i< list.size(); i++)
             {
                 int seriously = i;
-                setVariable("_", () -> list.get(seriously).boundTo("_"));
-                setVariable("_i", () -> new NumericValue(seriously).boundTo("_i"));
-                if(!expr.eval().getBoolean())
+                c.setVariable("_", (cc) -> list.get(seriously).boundTo("_"));
+                c.setVariable("_i", (cc) -> new NumericValue(seriously).boundTo("_i"));
+                if(!expr.evalValue(c).getBoolean())
                 {
-                    setVariable("_", _val);
-                    setVariable("_i", _iter);
-                    return () -> new NumericValue(0);
+                    c.setVariable("_", _val);
+                    c.setVariable("_i", _iter);
+                    return (cc) -> new NumericValue(0);
                 }
             }
             //revering scope
-            setVariable("_", _val);
-            setVariable("_i", _iter);
-            return () -> new NumericValue(1);
+            c.setVariable("_", _val);
+            c.setVariable("_i", _iter);
+            return (cc) -> new NumericValue(1);
         });
 
 
         // similar to map, but returns total number of successes
-        // for(expr, list) => success_count
+        // for(list or num, expr, exit_expr) => success_count
         // can be substituted for first and all, but first is more efficient and all doesn't require knowing list size
-        addLazyFunction("for", 2, (lv) ->
+        addLazyFunction("for", 2, (c, lv) ->
         {
             LazyValue expr = lv.get(0);
-            Value rval= lv.get(1).eval();
+            Value rval= lv.get(1).evalValue(c);
             if (!(rval instanceof ListValue))
                 throw new ExpressionException("Second argument of for function should be a list");
             List<Value> list = ((ListValue) rval).getItems();
             //scoping
-            LazyValue _val = getVariable("_");
-            LazyValue _iter = getVariable("_i");
+            LazyValue _val = c.getVariable("_");
+            LazyValue _iter = c.getVariable("_i");
             int successCount = 0;
             for (int i=0; i< list.size(); i++)
             {
                 int seriously = i;
-                setVariable("_", () -> list.get(seriously).boundTo("_"));
-                setVariable("_i", () -> new NumericValue(seriously).boundTo("_i"));
-                if(expr.eval().getBoolean())
+                c.setVariable("_", (cc) -> list.get(seriously).boundTo("_"));
+                c.setVariable("_i", (cc) -> new NumericValue(seriously).boundTo("_i"));
+                if(expr.evalValue(c).getBoolean())
                     successCount++;
             }
             //revering scope
-            setVariable("_", _val);
-            setVariable("_i", _iter);
+            c.setVariable("_", _val);
+            c.setVariable("_i", _iter);
             long promiseWontChange = successCount;
-            return () -> new NumericValue(promiseWontChange);
+            return (cc) -> new NumericValue(promiseWontChange);
         });
 
         //condition and expression will get a bound 'i'
         //returns last successful expression or false
         // while(cond, limit, expr) => ??
-        addLazyFunction("while", 3, (lv) ->
+        //replaced with for
+        addLazyFunction("while", 3, (c, lv) ->
         {
-            long limit = getNumericalValue(lv.get(1).eval()).longValue();
+            long limit = getNumericalValue(lv.get(1).evalValue(c)).longValue();
             LazyValue condition = lv.get(0);
             LazyValue expr = lv.get(2);
             long i = 0;
             Value lastOne = Value.ZERO;
             //scoping
-            LazyValue _val = getVariable("_");
-            setVariable("_",() -> new NumericValue(0).boundTo("_"));
-            while (i<limit && condition.eval().getBoolean() )
+            LazyValue _val = c.getVariable("_");
+            c.setVariable("_",(cc) -> new NumericValue(0).boundTo("_"));
+            while (i<limit && condition.evalValue(c).getBoolean() )
             {
-                lastOne = expr.eval();
+                lastOne = expr.evalValue(c);
                 i++;
                 long seriously = i;
-                setVariable("_", () -> new NumericValue(seriously).boundTo("_"));
+                c.setVariable("_", (cc) -> new NumericValue(seriously).boundTo("_"));
             }
             //revering scope
-            setVariable("_", _val);
+            c.setVariable("_", _val);
             Value lastValueNoKidding = lastOne;
-            return () -> lastValueNoKidding;
+            return (cc) -> lastValueNoKidding;
         });
 
-        // reduce(expr, list, ?acc) => value
+        // reduce(list, expr, ?acc) => value
         // reduces values in the list with expression that gets accumulator
         // each iteration expr receives acc - accumulator, and '_' - current list value
         // returned value is substituted to the accumulator
-        addLazyFunction("reduce", 3, (lv) ->
+        addLazyFunction("reduce", 3, (c, lv) ->
         {
-            LazyValue expr = lv.get(0);
+            LazyValue expr = lv.get(1);
 
-            Value acc = lv.get(2).eval();
-            Value rval= lv.get(1).eval();
+            Value acc = lv.get(2).evalValue(c);
+            Value rval= lv.get(0).evalValue(c);
             if (!(rval instanceof ListValue))
                 throw new ExpressionException("Second argument of for function should be a list");
             List<Value> elements= ((ListValue) rval).getItems();
@@ -1139,26 +1144,26 @@ public class Expression
             if (elements.isEmpty())
             {
                 Value seriouslyWontChange = acc;
-                return () -> seriouslyWontChange;
+                return (cc) -> seriouslyWontChange;
             }
 
             //scoping
-            LazyValue _val = getVariable("_");
-            LazyValue _acc = getVariable("_a");
+            LazyValue _val = c.getVariable("_");
+            LazyValue _acc = c.getVariable("_a");
 
             for (Value v: elements)
             {
                 Value promiseWontChangeYou = acc;
-                setVariable("_a", () -> promiseWontChangeYou.boundTo("_a"));
-                setVariable("_", () -> v.boundTo("_"));
-                acc = expr.eval();
+                c.setVariable("_a", (cc) -> promiseWontChangeYou.boundTo("_a"));
+                c.setVariable("_", (cc) -> v.boundTo("_"));
+                acc = expr.evalValue(c);
             }
             //reverting scope
-            setVariable("_a", _acc);
-            setVariable("_", _val);
+            c.setVariable("_a", _acc);
+            c.setVariable("_", _val);
 
             Value hopeItsEnoughPromise = acc;
-            return () -> hopeItsEnoughPromise;
+            return (cc) -> hopeItsEnoughPromise;
         });
     }
 
@@ -1354,7 +1359,7 @@ public class Expression
      *
      * @return The result of the expression.
      */
-    public Value eval()
+    public Value eval(Context c)
     {
         if (ast == null)
         {
@@ -1362,7 +1367,7 @@ public class Expression
         }
         try
         {
-            return ast.eval();
+            return ast.evalValue(c);
         }
         catch (ExitStatement exit)
         {
@@ -1384,14 +1389,14 @@ public class Expression
                 case UNARY_OPERATOR:
                 {
                     final LazyValue value = stack.pop();
-                    LazyValue result = () -> operators.get(token.surface).eval(value, null).eval();
+                    LazyValue result = (c) -> operators.get(token.surface).lazyEval(c, value, null).evalValue(c);
                     stack.push(result);
                     break;
                 }
                 case OPERATOR:
                     final LazyValue v1 = stack.pop();
                     final LazyValue v2 = stack.pop();
-                    LazyValue result = () -> operators.get(token.surface).eval(v2, v1).eval();
+                    LazyValue result = (c) -> operators.get(token.surface).lazyEval(c, v2, v1).evalValue(c);
                     stack.push(result);
                     break;
                 case VARIABLE:
@@ -1402,14 +1407,14 @@ public class Expression
                     //    // note: this would actually never happen
                     //} undef requires identifier
 
-                    stack.push(() ->
+                    stack.push((c) ->
                     {
-                        if (!isAVariable(token.surface)) // new variable
+                        if (!c.isAVariable(token.surface)) // new variable
                         {
-                            setVariable(token.surface, Value.ZERO);
+                            c.setVariable(token.surface, Value.ZERO);
                         }
-                        LazyValue lazyVariable = getVariable(token.surface);
-                        return lazyVariable.eval();
+                        LazyValue lazyVariable = c.getVariable(token.surface);
+                        return lazyVariable.evalValue(c);
                     });
                     break;
                 case FUNCTION:
@@ -1433,20 +1438,20 @@ public class Expression
                     {
                         p.add(0, stack.pop());
                     }
-                    if (!isKnown) p.add( () -> new StringValue(name));
+                    if (!isKnown) p.add( (c) -> new StringValue(name));
 
                     if (stack.peek() == LazyValue.PARAMS_START)
                     {
                         stack.pop();
                     }
 
-                    stack.push(() -> f.lazyEval(p).eval());
+                    stack.push((c) -> f.lazyEval(c, p).evalValue(c));
                     break;
                 case OPEN_PAREN:
                     stack.push(LazyValue.PARAMS_START);
                     break;
                 case LITERAL:
-                    stack.push(() ->
+                    stack.push((c) ->
                     {
                         if (token.surface.equalsIgnoreCase("NULL"))
                             return Value.NULL;
@@ -1454,10 +1459,10 @@ public class Expression
                     });
                     break;
                 case STRINGPARAM:
-                    stack.push(() -> new StringValue(token.surface) ); // was originally null
+                    stack.push((c) -> new StringValue(token.surface) ); // was originally null
                     break;
                 case HEX_LITERAL:
-                    stack.push(() -> new NumericValue(new BigDecimal(new BigInteger(token.surface.substring(2), 16), mc)));
+                    stack.push((c) -> new NumericValue(new BigDecimal(new BigInteger(token.surface.substring(2), 16), mc)));
                     break;
                 default:
                     throw new ExpressionException(
@@ -1467,65 +1472,7 @@ public class Expression
         return stack.pop();
     }
 
-    LazyValue getVariable(String name)
-    {
-        if (variables.containsKey(name))
-        {
-            return variables.get(name);
-        }
-        return global_variables.get(name);
-    }
 
-    boolean isAVariable(String name)
-    {
-        return variables.containsKey(name) || global_variables.containsKey(name);
-    }
-
-
-    /** only use this one if the value is already computed, and won't benefit from lazy evaluation
-     */
-    public Expression setVariable(String variable, Value value)
-    {
-        return setVariable(variable, () -> value.boundTo(variable));
-    }
-
-    /** Use this one instead
-     */
-    public Expression setVariable(String variable, LazyValue value)
-    {
-        if (variable.startsWith("global_") || global_variables.containsKey(variable))
-        {
-            global_variables.put(variable, value);
-            return this;
-        }
-        variables.put(variable, value);
-        return this;
-    }
-
-    public void setGlobalVariable(String variable, LazyValue value)
-    {
-        global_variables.put(variable, value);
-    }
-
-    public void delVariable(String variable)
-    {
-        if (variable.startsWith("global_"))
-        {
-            global_variables.remove(variable);
-            return;
-        }
-        variables.remove(variable);
-    }
-
-    public Expression with(String variable, LazyValue lv)
-    {
-        return setVariable(variable, lv);
-    }
-
-    public void copyStateFrom(Expression expr)
-    {
-        this.variables.putAll(expr.variables);
-    }
 
     /**
      * Cached access to the RPN notation of this expression, ensures only one
@@ -1629,18 +1576,121 @@ public class Expression
     }
 
 
-
-
     /** Fluff section below */
+    public static class Context implements Cloneable
+    {
+        public static final int NONE = 0;
+        public static final int VOID = 1;
+        public static final int BOOLEAN = 2;
+        public static final int NUMBER = 3;
+        public static final int STRING = 4;
+        public static final int LIST = 5;
+        public static final int ITERATOR = 6;
+        public static final int SIGNATURE = 7;
+
+        public int expected;
+        private Map<String, LazyValue> variables = new HashMap<>();
+        public Consumer<String> logOutput;
+
+
+        public Context(Expression expr, int str)
+        {
+            expected = str;
+            variables.putAll(expr.defaultVariables);
+            logOutput = expr.logOutput;
+        }
+
+        @Override
+        protected Context clone() throws CloneNotSupportedException
+        {
+            Context clone = (Context) super.clone();
+            clone.expected = this.expected;
+            clone.variables = this.variables;
+            clone.logOutput = this.logOutput;
+            return clone;
+        }
+        public Context withExpected(int expectedResult)
+        {
+            Context other = null;
+            try
+            {
+                other = this.clone();
+            }
+            catch (CloneNotSupportedException e1)
+            {
+                throw new ExpressionException("Clone not supported");
+            }
+            other.expected = expectedResult;
+            return other;
+        }
+
+
+        LazyValue getVariable(String name)
+        {
+            if (variables.containsKey(name))
+            {
+                return variables.get(name);
+            }
+            return global_variables.get(name);
+        }
+
+        public void setVariable(String name, LazyValue lv)
+        {
+            if (name.startsWith("global_"))
+            {
+                global_variables.put(name, lv);
+                return;
+            }
+            variables.put(name, lv);
+        }
+        public void setVariable(String name, Value val)
+        {
+            setVariable(name, (c) -> val.boundTo(name));
+        }
+
+
+        boolean isAVariable(String name)
+        {
+            return variables.containsKey(name) || global_variables.containsKey(name);
+        }
+
+
+        public void delVariable(String variable)
+        {
+            if (variable.startsWith("global_"))
+            {
+                global_variables.remove(variable);
+                return;
+            }
+            variables.remove(variable);
+        }
+
+        public Context with(String variable, LazyValue lv)
+        {
+            variables.put(variable, lv);
+            return this;
+        }
+    }
+
+    @FunctionalInterface
+    interface TriFunction<A,B,C,R> {
+
+        R apply(A a, B b, C c);
+
+        default <V> TriFunction<A, B, C, V> andThen(
+                Function<? super R, ? extends V> after) {
+            Objects.requireNonNull(after);
+            return (A a, B b, C c) -> after.apply(apply(a, b, c));
+        }
+    }
     public interface ILazyFunction
     {
-        String getName();
-
         int getNumParams();
 
         boolean numParamsVaries();
 
-        LazyValue lazyEval(List<LazyValue> lazyParams);
+        LazyValue lazyEval(Context c, List<LazyValue> lazyParams);
+        // lazy function has a chance to change execution based on contxt
     }
 
     public interface IFunction extends ILazyFunction
@@ -1650,13 +1700,11 @@ public class Expression
 
     public interface ILazyOperator
     {
-        String getOper();
-
         int getPrecedence();
 
         boolean isLeftAssoc();
 
-        LazyValue eval(LazyValue v1, LazyValue v2);
+        LazyValue lazyEval(Context c, LazyValue v1, LazyValue v2);
     }
 
     public interface IOperator extends ILazyOperator
@@ -1667,9 +1715,9 @@ public class Expression
     public abstract static class AbstractContextFunction extends AbstractLazyFunction implements ILazyFunction
     {
         protected List<String> arguments;
-        protected AbstractContextFunction(String name, List<String>args)
+        protected AbstractContextFunction(List<String>args)
         {
-            super(name, args.size());
+            super(args.size());
             arguments = args;
         }
         public List<String> getArguments()
@@ -1684,9 +1732,8 @@ public class Expression
         protected String name;
         protected int numParams;
 
-        protected AbstractLazyFunction(String name, int numParams)
+        protected AbstractLazyFunction(int numParams)
         {
-            this.name = name;
             this.numParams = numParams;
         }
 
@@ -1706,25 +1753,25 @@ public class Expression
 
     public abstract static class AbstractFunction extends AbstractLazyFunction implements IFunction
     {
-        protected AbstractFunction(String name, int numParams) {
-            super(name, numParams);
+        protected AbstractFunction(int numParams) {
+            super(numParams);
         }
 
         @Override
-        public LazyValue lazyEval(final List<LazyValue> lazyParams) {
+        public LazyValue lazyEval(Context cc, final List<LazyValue> lazyParams) {
             return new LazyValue() {
 
                 private List<Value> params;
 
-                public Value eval() {
-                    return AbstractFunction.this.eval(getParams());
+                public Value evalValue(Context c) {
+                    return AbstractFunction.this.eval(getParams(c));
                 }
 
-                private List<Value> getParams() {
+                private List<Value> getParams(Context c) {
                     if (params == null) {
-                        params = new ArrayList<Value>();
+                        params = new ArrayList<>();
                         for (LazyValue lazyParam : lazyParams) {
-                            params.add(lazyParam.eval());
+                            params.add(lazyParam.evalValue(c));
                         }
                     }
                     return params;
@@ -1735,21 +1782,13 @@ public class Expression
 
     public abstract static class AbstractLazyOperator implements ILazyOperator
     {
-        protected String oper;
-
         protected int precedence;
 
         protected boolean leftAssoc;
 
-
-        protected AbstractLazyOperator(String oper, int precedence, boolean leftAssoc) {
-            this.oper = oper;
+        protected AbstractLazyOperator(int precedence, boolean leftAssoc) {
             this.precedence = precedence;
             this.leftAssoc = leftAssoc;
-        }
-
-        public String getOper() {
-            return oper;
         }
 
         public int getPrecedence() {
@@ -1765,28 +1804,30 @@ public class Expression
     public abstract static class AbstractOperator extends AbstractLazyOperator implements IOperator
     {
 
-        protected AbstractOperator(String oper, int precedence, boolean leftAssoc) {
-            super(oper, precedence, leftAssoc);
+        protected AbstractOperator(int precedence, boolean leftAssoc) {
+            super(precedence, leftAssoc);
         }
 
-        public LazyValue eval(final LazyValue v1, final LazyValue v2) {
-            return () -> AbstractOperator.this.eval(v1.eval(), v2.eval());
+        public LazyValue lazyEval(Context cc, final LazyValue v1, final LazyValue v2) {
+            return (c) -> AbstractOperator.this.eval(v1.evalValue(c), v2.evalValue(c));
         }
     }
 
     public abstract static class AbstractUnaryOperator extends AbstractOperator
     {
-        protected AbstractUnaryOperator(String oper, int precedence, boolean leftAssoc) {
-            super(oper, precedence, leftAssoc);
+        protected AbstractUnaryOperator(int precedence, boolean leftAssoc) {
+            super(precedence, leftAssoc);
         }
 
-        public LazyValue eval(final LazyValue v1, final LazyValue v2) {
+        @Override
+        public LazyValue lazyEval(Context cc, final LazyValue v1, final LazyValue v2) {
             if (v2 != null) {
                 throw new ExpressionException("Did not expect a second parameter for unary operator");
             }
-            return () -> AbstractUnaryOperator.this.evalUnary(v1.eval());
+            return (c) -> AbstractUnaryOperator.this.evalUnary(v1.evalValue(c));
         }
 
+        @Override
         public Value eval(Value v1, Value v2) {
             if (v2 != null) {
                 throw new ExpressionException("Did not expect a second parameter for unary operator");

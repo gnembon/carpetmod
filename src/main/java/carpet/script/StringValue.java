@@ -15,13 +15,13 @@ public class StringValue extends Value
     }
 
     @Override
-    public Value copy()
+    public Value clone()
     {
         return new StringValue(str);
     }
+
     public StringValue(String str)
     {
         this.str = str;
     }
-
 }

@@ -15,9 +15,9 @@ public class NullValue extends Value
     }
 
     @Override
-    public Value copy()
+    public Value clone()
     {
-        return this; // there is only one
+        return new NullValue();
     }
     public NullValue()
     {}

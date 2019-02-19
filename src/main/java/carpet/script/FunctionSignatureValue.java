@@ -20,7 +20,7 @@ public class FunctionSignatureValue extends Value
     }
 
     @Override
-    public Value copy()
+    public Value clone()
     {
         throw new Expression.ExpressionException("Function "+identifier+" is not defined yet");
     }

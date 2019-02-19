@@ -1,6 +1,9 @@
 package carpet.script;
 
-public abstract class Value implements Comparable<Value>
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+public abstract class Value implements Comparable<Value>, Cloneable
 {
     public static Value FALSE = new NumericValue(0);
     public static Value TRUE = new NumericValue(1);
@@ -19,7 +22,16 @@ public abstract class Value implements Comparable<Value>
     }
     public Value boundTo(String var)
     {
-        Value copy = copy();
+        Value copy = null;
+        try
+        {
+            copy = (Value)clone();
+        }
+        catch (CloneNotSupportedException e)
+        {
+            // should not happen
+            e.printStackTrace();
+        }
         copy.boundVariable = var;
         return copy;
     }
@@ -57,7 +69,14 @@ public abstract class Value implements Comparable<Value>
         return new StringValue(getString()+"/"+v.getString());
     }
 
-    public abstract Value copy();
+    public Value(Value other)
+    {
+        this();
+    }
+    public Value()
+    {
+        this.boundVariable = null;
+    }
 
     @Override
     public int compareTo(final Value o)
@@ -88,4 +107,11 @@ public abstract class Value implements Comparable<Value>
 
     }
 
+    public Value in(Value value1)
+    {
+        final Pattern p = Pattern.compile(value1.getString());
+        final Matcher m = p.matcher(this.getString());
+        boolean matches = m.find();
+        return matches?Value.TRUE:Value.FALSE;
+    }
 }
