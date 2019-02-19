@@ -58,7 +58,7 @@ public class NumericValue extends Value
 
 
     @Override
-    public Value copy()
+    public Value clone()
     {
         return new NumericValue(value);
     }

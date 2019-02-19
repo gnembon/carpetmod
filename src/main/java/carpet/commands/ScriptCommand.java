@@ -113,7 +113,16 @@ public class ScriptCommand
             CarpetExpression ex = new CarpetExpression(expr, source, new BlockPos(0, 0, 0));
             if (source.getWorld().getGameRules().getBoolean("commandBlockOutput"))
                 ex.setLogOutput(true);
-            Messenger.m(source, "wi "+expr,"wi  = ", "wb "+ex.eval(pos));
+            long start = System.nanoTime();
+            String result = ex.eval(pos);
+            int time = (int)(System.nanoTime()-start)/1000;
+            String metric = "\u00B5s";
+            if (time > 2000)
+            {
+                time /= 1000;
+                metric = "ms";
+            }
+            Messenger.m(source, "wi "+expr,"wi  = ", "wb "+result, "gi  ("+time+metric+")");
         }
         catch (CarpetExpression.CarpetExpressionException e)
         {
