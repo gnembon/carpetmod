@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Random;
 import java.util.Stack;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -67,6 +68,7 @@ public class Expression
         put("assign=<>", 2);
         put("nextop;", 1);
     }};
+    public static final Random randomizer = new Random();
     public static final Value PI = new NumericValue(
             "3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679");
 
@@ -793,7 +795,7 @@ public class Expression
             return new NumericValue(factorial);
         });
 
-        addMathematicalUnaryFunction("rand", (d) -> d*Math.random());
+        addMathematicalUnaryFunction("rand", (d) -> d*randomizer.nextFloat());
         addMathematicalUnaryFunction("sin",    (d) -> Math.sin(Math.toRadians(d)));
         addMathematicalUnaryFunction("cos",    (d) -> Math.cos(Math.toRadians(d)));
         addMathematicalUnaryFunction("tan",    (d) -> Math.tan(Math.toRadians(d)));
