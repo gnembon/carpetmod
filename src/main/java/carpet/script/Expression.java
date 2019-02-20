@@ -38,7 +38,11 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.Stack;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
+
+import static java.lang.Math.max;
+import static java.lang.Math.min;
 
 
 /**
@@ -71,7 +75,7 @@ public class Expression
     public static final Value PI = new NumericValue(
             "3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679");
 
-    public static final Value e = new NumericValue(
+    public static final Value euler = new NumericValue(
             "2.71828182845904523536028747135266249775724709369995957496696762772407663");
 
     /** The {@link MathContext} to use for calculations. */
@@ -135,6 +139,42 @@ public class Expression
         }
     }
 
+    public static QuadFunction<String,Token,String, String, String> errorMaker = (expr, token, fname, errmessage) ->
+    {
+
+        String errMsg;
+        if (token.lineno < 0)
+        {
+            errMsg = "Error while evaluating "+fname+" at line "+(token.lineno+1)+" and position "+(token.linepos+1)+"\n";
+            String[] lines = expr.split("\n");
+            if (token.lineno > 0)
+            {
+                errMsg+=lines[token.lineno-1];
+            }
+            errMsg +=lines[token.lineno].substring(max(0, token.linepos-20), token.linepos)+"<<HERE>>"+
+                    lines[token.lineno].substring(token.linepos+1, min(token.linepos+1, expr.length()));
+
+            if (token.lineno < lines.length-1)
+            {
+                errMsg+=lines[token.lineno+1];
+            }
+        }
+        else
+        {
+            errMsg = "Error while evaluating "+fname+" at position "+(token.pos+1)+"\n";
+            errMsg +=expr.substring(max(0, token.pos-20), token.pos)+"<<HERE>>"+expr.substring(token.pos+1, min(token.pos+1, expr.length()));
+        }
+
+        return errMsg;
+    };
+
+
+    private static void handleException(String expression, Token token, String fname, String error)
+    {
+        String message = errorMaker.apply(expression, token, fname, error);
+        throw new ExpressionException(message);
+    }
+
     static class Token
     {
         enum TokenType
@@ -188,7 +228,7 @@ public class Expression
         private static final char minusSign = '-';
         /** Actual position in expression string. */
         private int pos = 0;
-        private int lineno = 0;
+        private int lineno = -1;
         private int linepos = 0;
 
 
@@ -201,7 +241,7 @@ public class Expression
 
         Tokenizer(Expression expr, String input)
         {
-            this.input = input.trim();
+            this.input = input;
             this.expression = expr;
         }
 
@@ -425,111 +465,119 @@ public class Expression
 
 
     private void addLazyBinaryOperator(String surface, int precedence, boolean leftAssoc,
-                                       TriFunction<Context, LazyValue, LazyValue, LazyValue> lazyfun)
+                                       QuinnFunction<Context, Expression, Token, LazyValue, LazyValue, LazyValue> lazyfun)
     {
         operators.put(surface, new AbstractLazyOperator(precedence, leftAssoc)
         {
             @Override
-            public LazyValue lazyEval(Context c, LazyValue v1, LazyValue v2)
+            public LazyValue lazyEval(Context c, Expression e, Token t, LazyValue v1, LazyValue v2)
             {
                 assertNotNull(v1, v2);
-                return lazyfun.apply(c, v1, v2);
+                return lazyfun.apply(c, e, t, v1, v2);
             }
         });
     }
 
 
-    private void addUnaryOperator(String surface, boolean leftAssoc, java.util.function.Function<Value, Value> fun)
+    private void addUnaryOperator(String surface, boolean leftAssoc, TriFunction<Expression, Token, Value, Value> fun)
     {
         operators.put(surface+"u", new AbstractUnaryOperator(precedence.get("unary+-!"), leftAssoc)
         {
             @Override
-            public Value evalUnary(Value v1)
+            public Value evalUnary(Expression e, Token t, Value v1)
             {
-                return fun.apply(assertNotNull(v1));
+                return fun.apply(e, t, assertNotNull(v1));
             }
         });
     }
 
-    private void addBinaryOperator(String surface, int precedence, boolean leftAssoc, java.util.function.BiFunction<Value, Value, Value> fun)
+    private void addBinaryOperator(String surface, int precedence, boolean leftAssoc, BiFunction<Value, Value, Value> fun)
     {
         operators.put(surface, new AbstractOperator(precedence, leftAssoc)
         {
             @Override
-            public Value eval(Value v1, Value v2) //TODO add nonnull check here, and strip null checks from number checks
+            public Value eval(Expression e, Token t, Value v1, Value v2) //TODO add nonnull check here, and strip null checks from number checks
             {
                 assertNotNull(v1, v2);
-                return fun.apply(v1, v2);
+                try
+                {
+                    return fun.apply(v1, v2);
+                }
+                catch (ExpressionException exc)
+                {
+                    handleException(e.expression, t, null, exc.getMessage());
+                    return null; //wont happen
+                }
             }
         });
     }
 
 
-    private void addUnaryFunction(String name, java.util.function.Function<Value, Value> fun)
+    private void addUnaryFunction(String name, TriFunction<Expression, Token, Value, Value> fun)
     {
         name = name.toLowerCase(Locale.ROOT);
         functions.put(name,  new AbstractFunction(1)
         {
             @Override
-            public Value eval(List<Value> parameters)
+            public Value eval(Expression e, Token t, List<Value> parameters)
             {
-                return fun.apply(assertNotNull(parameters.get(0)));
+                return fun.apply(e, t, assertNotNull(parameters.get(0)));
             }
         });
     }
 
-    void addBinaryFunction(String name, java.util.function.BiFunction<Value, Value, Value> fun)
+    void addBinaryFunction(String name, QuadFunction<Expression, Token, Value, Value, Value> fun)
     {
         name = name.toLowerCase(Locale.ROOT);
         functions.put(name, new AbstractFunction(2)
         {
             @Override
-            public Value eval(List<Value> parameters)
+            public Value eval(Expression e, Token t, List<Value> parameters)
             {
                 Value v1 = parameters.get(0);
                 Value v2 = parameters.get(1);
                 assertNotNull(v1, v2);
-                return fun.apply(v1, v2);
+                return fun.apply(e, t, v1, v2);
             }
         });
     }
 
-    private void addFunction(String name, java.util.function.Function<List<Value>, Value> fun)
+    private void addFunction(String name, TriFunction<Expression, Token, List<Value>, Value> fun)
     {
         name = name.toLowerCase(Locale.ROOT);
         functions.put(name, new AbstractFunction(-1)
         {
             @Override
-            public Value eval(List<Value> parameters)
+            public Value eval(Expression e, Token t, List<Value> parameters)
             {
                 for (Value v: parameters)
                     assertNotNull(v);
-                return fun.apply(parameters);
+                return fun.apply(e, t, parameters);
             }
         });
     }
 
-    private void addMathematicalUnaryFunction(String name, java.util.function.Function<Double, Double> fun)
+    private void addMathematicalUnaryFunction(String name, TriFunction<Expression, Token, Double, Double> fun)
     {
-        addUnaryFunction(name, (v) -> new NumericValue(new BigDecimal(fun.apply(getNumericalValue(v).doubleValue()),mc)));
+        addUnaryFunction(name, (e, t, v) -> new NumericValue(new BigDecimal(fun.apply(e, t, getNumericalValue(v).doubleValue()),mc)));
     }
 
-    private void addMathematicalBinaryFunction(String name, java.util.function.BiFunction<Double, Double, Double> fun)
+    private void addMathematicalBinaryFunction(String name, QuadFunction<Expression, Token, Double, Double, Double> fun)
     {
-        addBinaryFunction(name, (w,v) ->
-                new NumericValue(new BigDecimal(fun.apply(getNumericalValue(w).doubleValue(), getNumericalValue(v).doubleValue()), mc)));
+        addBinaryFunction(name, (e, t, w, v) ->
+                new NumericValue(new BigDecimal(fun.apply(e, t, getNumericalValue(w).doubleValue(), getNumericalValue(v).doubleValue()), mc)));
     }
 
 
-    void addLazyFunction(String name, int num_params, java.util.function.BiFunction<Context, List<LazyValue>, LazyValue> fun)//ILazyFunction function)
+    void addLazyFunction(String name, int num_params, QuadFunction<Context, Expression, Token, List<LazyValue>, LazyValue> fun)//ILazyFunction function)
     {
         name = name.toLowerCase(Locale.ROOT);
         functions.put(name, new AbstractLazyFunction(num_params)
         {
             @Override
-            public LazyValue lazyEval(Context c, List<LazyValue> lazyParams)
+            public LazyValue lazyEval(Context c, Expression e, Token t, List<LazyValue> lazyParams)
             {
-                return fun.apply(c, lazyParams);
+                return fun.apply(c, e, t, lazyParams);
             }
         });
     }
@@ -541,7 +589,7 @@ public class Expression
         global_functions.put(name, new AbstractContextFunction(arguments)
         {
             @Override
-            public LazyValue lazyEval(Context c, List<LazyValue> lazyParams)
+            public LazyValue lazyEval(Context c, Expression e, Token t, List<LazyValue> lazyParams)
             {
                 if (arguments.size() != lazyParams.size()) // something that might be subject to change in the future
                 {
@@ -606,7 +654,7 @@ public class Expression
         this.mc = defaultMathContext;
         expression = expression.trim().replaceAll(";+$", "");
         this.expression = expression.replaceAll("\\$", "\n");
-        defaultVariables.put("e", (c) -> e);
+        defaultVariables.put("e", (c) -> euler);
         defaultVariables.put("PI", (c) -> PI);
         defaultVariables.put("NULL", (c) -> Value.NULL);
         defaultVariables.put("TRUE", (c) -> Value.TRUE);
@@ -617,7 +665,7 @@ public class Expression
         defaultVariables.put("_i", (c) -> new NumericValue(0).boundTo("_i"));
         defaultVariables.put("_a", (c) -> new NumericValue(0).boundTo("_a"));
 
-        addLazyBinaryOperator(";",precedence.get("nextop;"), true, (c, lv1, lv2) ->
+        addLazyBinaryOperator(";",precedence.get("nextop;"), true, (c, e, t, lv1, lv2) ->
         {
             Value v1 = lv1.evalValue(c);//.withExpected(Context.VOID));
             if (c.logOutput != null)
@@ -626,7 +674,7 @@ public class Expression
         });
 
         // artificial construct to handle user defined functions and function definitions
-        addLazyFunction(".",-1, (c, lv) -> { // adjust based on c
+        addLazyFunction(".",-1, (c, e, t, lv) -> { // adjust based on c
             String name = lv.get(lv.size()-1).evalValue(c).getString();
             //lv.remove(lv.size()-1); // aint gonna cut it
             if (c.expected != Context.SIGNATURE) // just call the function
@@ -640,7 +688,7 @@ public class Expression
                 {
                     lvargs.add(lv.get(i));
                 }
-                return (cc) -> global_functions.get(name).lazyEval(c, lvargs).evalValue(c);
+                return (cc) -> global_functions.get(name).lazyEval(c, e, t, lvargs).evalValue(c); ///!!!! dono might need to store expr and token in statics? (e? t?)
             }
 
             // gimme signature
@@ -1201,7 +1249,7 @@ public class Expression
             }
             catch (StringIndexOutOfBoundsException e)
             {
-                throw new ExpressionException("Expression ended prematurely");
+                throw new ExpressionException("Script ended prematurely");
             }
             switch (token.type)
             {
@@ -1396,14 +1444,14 @@ public class Expression
                 case UNARY_OPERATOR:
                 {
                     final LazyValue value = stack.pop();
-                    LazyValue result = (c) -> operators.get(token.surface).lazyEval(c, value, null).evalValue(c);
+                    LazyValue result = (c) -> operators.get(token.surface).lazyEval(c, this, token, value, null).evalValue(c);
                     stack.push(result);
                     break;
                 }
                 case OPERATOR:
                     final LazyValue v1 = stack.pop();
                     final LazyValue v2 = stack.pop();
-                    LazyValue result = (c) -> operators.get(token.surface).lazyEval(c, v2, v1).evalValue(c);
+                    LazyValue result = (c) -> operators.get(token.surface).lazyEval(c, this, token, v2, v1).evalValue(c);
                     stack.push(result);
                     break;
                 case VARIABLE:
@@ -1452,7 +1500,7 @@ public class Expression
                         stack.pop();
                     }
 
-                    stack.push((c) -> f.lazyEval(c, p).evalValue(c));
+                    stack.push((c) -> f.lazyEval(c, this, token, p).evalValue(c));
                     break;
                 case OPEN_PAREN:
                     stack.push(LazyValue.PARAMS_START);
@@ -1680,23 +1728,25 @@ public class Expression
     }
 
     @FunctionalInterface
-    interface TriFunction<A,B,C,R>
-    {
-        R apply(A a, B b, C c);
-    }
+    public interface TriFunction<A, B, C, R> { R apply(A a, B b, C c); }
+    @FunctionalInterface
+    public interface QuadFunction<A, B, C, D, R> { R apply(A a, B b, C c, D d);}
+    @FunctionalInterface
+    public interface QuinnFunction<A, B, C, D, E, R> { R apply(A a, B b, C c, D d, E e);}
+
     public interface ILazyFunction
     {
         int getNumParams();
 
         boolean numParamsVaries();
 
-        LazyValue lazyEval(Context c, List<LazyValue> lazyParams);
+        LazyValue lazyEval(Context c, Expression expr, Token token, List<LazyValue> lazyParams);
         // lazy function has a chance to change execution based on contxt
     }
 
     public interface IFunction extends ILazyFunction
     {
-        Value eval(List<Value> parameters);
+        Value eval(Expression e, Token t, List<Value> parameters);
     }
 
     public interface ILazyOperator
@@ -1705,12 +1755,12 @@ public class Expression
 
         boolean isLeftAssoc();
 
-        LazyValue lazyEval(Context c, LazyValue v1, LazyValue v2);
+        LazyValue lazyEval(Context c, Expression e, Token t, LazyValue v1, LazyValue v2);
     }
 
     public interface IOperator extends ILazyOperator
     {
-        Value eval(Value v1, Value v2);
+        Value eval(Expression e, Token t, Value v1, Value v2);
     }
 
     public abstract static class AbstractContextFunction extends AbstractLazyFunction implements ILazyFunction
@@ -1759,13 +1809,13 @@ public class Expression
         }
 
         @Override
-        public LazyValue lazyEval(Context cc, final List<LazyValue> lazyParams) {
+        public LazyValue lazyEval(Context cc, Expression e, Token t, final List<LazyValue> lazyParams) {
             return new LazyValue() {
 
                 private List<Value> params;
 
                 public Value evalValue(Context c) {
-                    return AbstractFunction.this.eval(getParams(c));
+                    return AbstractFunction.this.eval(e, t, getParams(c));
                 }
 
                 private List<Value> getParams(Context c) {
@@ -1809,8 +1859,9 @@ public class Expression
             super(precedence, leftAssoc);
         }
 
-        public LazyValue lazyEval(Context cc, final LazyValue v1, final LazyValue v2) {
-            return (c) -> AbstractOperator.this.eval(v1.evalValue(c), v2.evalValue(c));
+        @Override
+        public LazyValue lazyEval(Context cc, Expression e, Token t, final LazyValue v1, final LazyValue v2) {
+            return (c) -> AbstractOperator.this.eval(e, t, v1.evalValue(c), v2.evalValue(c));
         }
     }
 
@@ -1821,21 +1872,21 @@ public class Expression
         }
 
         @Override
-        public LazyValue lazyEval(Context cc, final LazyValue v1, final LazyValue v2) {
+        public LazyValue lazyEval(Context cc, Expression e, Token t, final LazyValue v1, final LazyValue v2) {
             if (v2 != null) {
                 throw new ExpressionException("Did not expect a second parameter for unary operator");
             }
-            return (c) -> AbstractUnaryOperator.this.evalUnary(v1.evalValue(c));
+            return (c) -> AbstractUnaryOperator.this.evalUnary(e, t, v1.evalValue(c));
         }
 
         @Override
-        public Value eval(Value v1, Value v2) {
+        public Value eval(Expression e, Token t, Value v1, Value v2) {
             if (v2 != null) {
                 throw new ExpressionException("Did not expect a second parameter for unary operator");
             }
-            return evalUnary(v1);
+            return evalUnary(e, t, v1);
         }
 
-        public abstract Value evalUnary(Value v1);
+        public abstract Value evalUnary(Expression e, Token t, Value v1);
     }
 }
