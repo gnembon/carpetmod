@@ -36,15 +36,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Random;
 import java.util.Stack;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 
 /**
- * This Evaluator is initially based on the following project:
+ * This Evaluator is initially (very loosely, as of now) based on the following project:
  *
  * EvalEx - Java Expression Evaluator
  *
@@ -68,7 +66,8 @@ public class Expression
         put("assign=<>", 2);
         put("nextop;", 1);
     }};
-    public static final Random randomizer = new Random();
+    private static final Random randomizer = new Random();
+
     public static final Value PI = new NumericValue(
             "3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679");
 
@@ -90,10 +89,12 @@ public class Expression
     private Map<String, ILazyOperator> operators = new HashMap<>();
 
     private Map<String, ILazyFunction> functions = new HashMap<>();
+
     private static Map<String, ILazyFunction> global_functions = new HashMap<>();
 
-    public static Map<String, LazyValue> global_variables = new HashMap<>(); //
-    protected Map<String, LazyValue> defaultVariables = new HashMap<>();
+    private static Map<String, LazyValue> global_variables = new HashMap<>();
+
+    Map<String, LazyValue> defaultVariables = new HashMap<>();
 
     /** should the evaluator output value of each ;'s statement during execution */
     private Consumer<String> logOutput = null;
@@ -193,29 +194,10 @@ public class Expression
 
         private Expression expression;
 
-        public Tokenizer(Expression expr, String input)
+        Tokenizer(Expression expr, String input)
         {
             this.input = input.trim();
             this.expression = expr;
-        }
-
-        private static boolean isNumber(String st)
-        {
-            if (st.charAt(0) == minusSign && st.length() == 1)
-                return false;
-            if (st.charAt(0) == '+' && st.length() == 1)
-                return false;
-            if (st.charAt(0) == decimalSeparator && (st.length() == 1 || !Character.isDigit(st.charAt(1))))
-                return false;
-            if (st.charAt(0) == 'e' || st.charAt(0) == 'E')
-                return false;
-            for (char ch : st.toCharArray())
-            {
-                if (!Character.isDigit(ch) && ch != minusSign && ch != decimalSeparator && ch != 'e' && ch != 'E'
-                        && ch != '+')
-                    return false;
-            }
-            return true;
         }
 
         @Override
@@ -384,21 +366,21 @@ public class Expression
 
     }
 
-    public static Value assertNotNull(Value v1)
+    private static Value assertNotNull(Value v1)
     {
         if (v1 == null)
             throw new ExpressionException("Operand may not be null");
         return v1;
     }
 
-    public static BigDecimal getNumericalValue(Value v1)
+    static BigDecimal getNumericalValue(Value v1)
     {
         if (!(v1 instanceof NumericValue))
             throw new ExpressionException("Operand has to be of a numeric type");
         return ((NumericValue) v1).getNumber();
     }
 
-    public static void assertNotNull(Value v1, Value v2)
+    private static void assertNotNull(Value v1, Value v2)
     {
         if (v1 == null)
             throw new ExpressionException("First operand may not be null");
@@ -406,7 +388,7 @@ public class Expression
             throw new ExpressionException("Second operand may not be null");
     }
 
-    public static void assertNotNull(LazyValue lv, LazyValue lv2)
+    private static void assertNotNull(LazyValue lv, LazyValue lv2)
     {
         if (lv == null)
             throw new ExpressionException("Operand may not be null");
@@ -415,8 +397,8 @@ public class Expression
     }
 
 
-    public void addLazyBinaryOperator(String surface, int precedence, boolean leftAssoc,
-                            TriFunction<Context, LazyValue, LazyValue, LazyValue> lazyfun)
+    private void addLazyBinaryOperator(String surface, int precedence, boolean leftAssoc,
+                                       TriFunction<Context, LazyValue, LazyValue, LazyValue> lazyfun)
     {
         operators.put(surface, new AbstractLazyOperator(precedence, leftAssoc)
         {
@@ -430,7 +412,7 @@ public class Expression
     }
 
 
-    public void addUnaryOperator(String surface, boolean leftAssoc, java.util.function.Function<Value, Value> fun)
+    private void addUnaryOperator(String surface, boolean leftAssoc, java.util.function.Function<Value, Value> fun)
     {
         operators.put(surface+"u", new AbstractUnaryOperator(precedence.get("unary+-!"), leftAssoc)
         {
@@ -442,7 +424,7 @@ public class Expression
         });
     }
 
-    public void addBinaryOperator(String surface, int precedence, boolean leftAssoc, java.util.function.BiFunction<Value, Value, Value> fun)
+    private void addBinaryOperator(String surface, int precedence, boolean leftAssoc, java.util.function.BiFunction<Value, Value, Value> fun)
     {
         operators.put(surface, new AbstractOperator(precedence, leftAssoc)
         {
@@ -456,7 +438,7 @@ public class Expression
     }
 
 
-    public void addUnaryFunction(String name, java.util.function.Function<Value, Value> fun)
+    private void addUnaryFunction(String name, java.util.function.Function<Value, Value> fun)
     {
         name = name.toLowerCase(Locale.ROOT);
         functions.put(name,  new AbstractFunction(1)
@@ -469,7 +451,7 @@ public class Expression
         });
     }
 
-    public void addBinaryFunction(String name, java.util.function.BiFunction<Value, Value, Value> fun)
+    void addBinaryFunction(String name, java.util.function.BiFunction<Value, Value, Value> fun)
     {
         name = name.toLowerCase(Locale.ROOT);
         functions.put(name, new AbstractFunction(2)
@@ -485,10 +467,10 @@ public class Expression
         });
     }
 
-    public void addNAryFunction(String name, int numArgs, java.util.function.Function<List<Value>, Value> fun)
+    private void addFunction(String name, java.util.function.Function<List<Value>, Value> fun)
     {
         name = name.toLowerCase(Locale.ROOT);
-        functions.put(name, new AbstractFunction(numArgs)
+        functions.put(name, new AbstractFunction(-1)
         {
             @Override
             public Value eval(List<Value> parameters)
@@ -500,24 +482,19 @@ public class Expression
         });
     }
 
-    public void addFunction(String name, java.util.function.Function<List<Value>, Value> fun)
-    {
-        addNAryFunction(name, -1, fun);
-    }
-
-    public void addMathematicalUnaryFunction(String name, java.util.function.Function<Double, Double> fun)
+    private void addMathematicalUnaryFunction(String name, java.util.function.Function<Double, Double> fun)
     {
         addUnaryFunction(name, (v) -> new NumericValue(new BigDecimal(fun.apply(getNumericalValue(v).doubleValue()),mc)));
     }
 
-    public void addMathematicalBinaryFunction(String name, java.util.function.BiFunction<Double, Double, Double> fun)
+    private void addMathematicalBinaryFunction(String name, java.util.function.BiFunction<Double, Double, Double> fun)
     {
         addBinaryFunction(name, (w,v) ->
                 new NumericValue(new BigDecimal(fun.apply(getNumericalValue(w).doubleValue(), getNumericalValue(v).doubleValue()), mc)));
     }
 
 
-    public void addLazyFunction(String name, int num_params, java.util.function.BiFunction<Context, List<LazyValue>, LazyValue> fun)//ILazyFunction function)
+    void addLazyFunction(String name, int num_params, java.util.function.BiFunction<Context, List<LazyValue>, LazyValue> fun)//ILazyFunction function)
     {
         name = name.toLowerCase(Locale.ROOT);
         functions.put(name, new AbstractLazyFunction(num_params)
@@ -529,7 +506,7 @@ public class Expression
             }
         });
     }
-    public void addContextFunction(String name, List<String> arguments, LazyValue code)
+    private void addContextFunction(String name, List<String> arguments, LazyValue code)
     {
         name = name.toLowerCase(Locale.ROOT);
         if (functions.containsKey(name))
@@ -695,7 +672,7 @@ public class Expression
             return b2 ? LazyValue.TRUE : LazyValue.FALSE;
         });
 
-        addBinaryOperator("~", precedence.get("compare>=><=<"), true, (v1, v2) -> v1.in(v2));
+        addBinaryOperator("~", precedence.get("compare>=><=<"), true, Value::in);
 
         addBinaryOperator(">", precedence.get("compare>=><=<"), false, (v1, v2) ->
                 v1.compareTo(v2) > 0 ? Value.TRUE : Value.FALSE);
@@ -1508,7 +1485,7 @@ public class Expression
         // each
         // layer on the stack being the count of the number of parameters in
         // that scope
-        Stack<Integer> stack = new Stack<Integer>();
+        Stack<Integer> stack = new Stack<>();
 
         // push the 'global' scope
         stack.push(0);
@@ -1572,7 +1549,7 @@ public class Expression
         }
     }
 
-    public void setLogOutput(Consumer<String> to)
+    void setLogOutput(Consumer<String> to)
     {
         logOutput = to;
     }
@@ -1581,21 +1558,21 @@ public class Expression
     /** Fluff section below */
     public static class Context implements Cloneable
     {
-        public static final int NONE = 0;
-        public static final int VOID = 1;
-        public static final int BOOLEAN = 2;
-        public static final int NUMBER = 3;
-        public static final int STRING = 4;
-        public static final int LIST = 5;
-        public static final int ITERATOR = 6;
-        public static final int SIGNATURE = 7;
+        static final int NONE = 0;
+        static final int VOID = 1;
+        static final int BOOLEAN = 2;
+        static final int NUMBER = 3;
+        static final int STRING = 4;
+        static final int LIST = 5;
+        static final int ITERATOR = 6;
+        static final int SIGNATURE = 7;
 
         public int expected;
         private Map<String, LazyValue> variables = new HashMap<>();
-        public Consumer<String> logOutput;
+        Consumer<String> logOutput;
 
 
-        public Context(Expression expr, int str)
+        Context(Expression expr, int str)
         {
             expected = str;
             variables.putAll(expr.defaultVariables);
@@ -1611,9 +1588,9 @@ public class Expression
             clone.logOutput = this.logOutput;
             return clone;
         }
-        public Context withExpected(int expectedResult)
+        Context withExpected(int expectedResult)
         {
-            Context other = null;
+            Context other;
             try
             {
                 other = this.clone();
@@ -1636,7 +1613,7 @@ public class Expression
             return global_variables.get(name);
         }
 
-        public void setVariable(String name, LazyValue lv)
+        void setVariable(String name, LazyValue lv)
         {
             if (name.startsWith("global_"))
             {
@@ -1645,7 +1622,7 @@ public class Expression
             }
             variables.put(name, lv);
         }
-        public void setVariable(String name, Value val)
+        void setVariable(String name, Value val)
         {
             setVariable(name, (c) -> val.boundTo(name));
         }
@@ -1657,7 +1634,7 @@ public class Expression
         }
 
 
-        public void delVariable(String variable)
+        void delVariable(String variable)
         {
             if (variable.startsWith("global_"))
             {
@@ -1675,15 +1652,9 @@ public class Expression
     }
 
     @FunctionalInterface
-    interface TriFunction<A,B,C,R> {
-
+    interface TriFunction<A,B,C,R>
+    {
         R apply(A a, B b, C c);
-
-        default <V> TriFunction<A, B, C, V> andThen(
-                Function<? super R, ? extends V> after) {
-            Objects.requireNonNull(after);
-            return (A a, B b, C c) -> after.apply(apply(a, b, c));
-        }
     }
     public interface ILazyFunction
     {
@@ -1717,7 +1688,7 @@ public class Expression
     public abstract static class AbstractContextFunction extends AbstractLazyFunction implements ILazyFunction
     {
         protected List<String> arguments;
-        protected AbstractContextFunction(List<String>args)
+        AbstractContextFunction(List<String> args)
         {
             super(args.size());
             arguments = args;
@@ -1732,9 +1703,9 @@ public class Expression
     public abstract static class AbstractLazyFunction implements ILazyFunction
     {
         protected String name;
-        protected int numParams;
+        int numParams;
 
-        protected AbstractLazyFunction(int numParams)
+        AbstractLazyFunction(int numParams)
         {
             this.numParams = numParams;
         }
@@ -1755,7 +1726,7 @@ public class Expression
 
     public abstract static class AbstractFunction extends AbstractLazyFunction implements IFunction
     {
-        protected AbstractFunction(int numParams) {
+        AbstractFunction(int numParams) {
             super(numParams);
         }
 
@@ -1784,11 +1755,11 @@ public class Expression
 
     public abstract static class AbstractLazyOperator implements ILazyOperator
     {
-        protected int precedence;
+        int precedence;
 
-        protected boolean leftAssoc;
+        boolean leftAssoc;
 
-        protected AbstractLazyOperator(int precedence, boolean leftAssoc) {
+        AbstractLazyOperator(int precedence, boolean leftAssoc) {
             this.precedence = precedence;
             this.leftAssoc = leftAssoc;
         }
@@ -1806,7 +1777,7 @@ public class Expression
     public abstract static class AbstractOperator extends AbstractLazyOperator implements IOperator
     {
 
-        protected AbstractOperator(int precedence, boolean leftAssoc) {
+        AbstractOperator(int precedence, boolean leftAssoc) {
             super(precedence, leftAssoc);
         }
 
@@ -1817,7 +1788,7 @@ public class Expression
 
     public abstract static class AbstractUnaryOperator extends AbstractOperator
     {
-        protected AbstractUnaryOperator(int precedence, boolean leftAssoc) {
+        AbstractUnaryOperator(int precedence, boolean leftAssoc) {
             super(precedence, leftAssoc);
         }
 

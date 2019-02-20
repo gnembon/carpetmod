@@ -36,12 +36,12 @@ public class ScriptCommand
                                         c.getSource(),
                                         StringArgumentType.getString(c, "expr")
                                 )))).
-                then(literal("space").
+                then(literal("scan").
                         then(argument("origin", BlockPosArgument.blockPos()).
                                 then(argument("from", BlockPosArgument.blockPos()).
                                         then(argument("to", BlockPosArgument.blockPos()).
                                                 then(argument("expr", StringArgumentType.string()).
-                                                        executes( (c) -> scriptSpace(
+                                                        executes( (c) -> scriptScan(
                                                                 c.getSource(),
                                                                 BlockPosArgument.getBlockPos(c, "origin"),
                                                                 BlockPosArgument.getBlockPos(c, "from"),
@@ -135,7 +135,7 @@ public class ScriptCommand
         return 1;
     }
 
-    private static int scriptSpace(CommandSource source, BlockPos origin, BlockPos a, BlockPos b, String expr)
+    private static int scriptScan(CommandSource source, BlockPos origin, BlockPos a, BlockPos b, String expr)
     {
         MutableBoundingBox area = new MutableBoundingBox(a, b);
         CarpetExpression cexpr = new CarpetExpression(expr, source, origin);

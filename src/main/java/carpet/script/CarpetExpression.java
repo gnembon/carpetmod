@@ -48,7 +48,7 @@ public class CarpetExpression
     {
         public CommandSource s;
         public BlockPos origin;
-        public CarpetContext(Expression expr, int expected, CommandSource source, BlockPos origin)
+        CarpetContext(Expression expr, int expected, CommandSource source, BlockPos origin)
         {
             super(expr, expected);
             s = source;
@@ -153,7 +153,7 @@ public class CarpetExpression
         return new BlockPos(c.origin.getX() + xpos, c.origin.getY() + ypos, c.origin.getZ() + zpos);
     }
 
-    BlockPos locateBlockPos(CarpetContext c, int xpos, int ypos, int zpos)
+    private BlockPos locateBlockPos(CarpetContext c, int xpos, int ypos, int zpos)
     {
         return new BlockPos(c.origin.getX() + xpos, c.origin.getY() + ypos, c.origin.getZ() + zpos);
     }
