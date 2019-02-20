@@ -145,6 +145,8 @@ public class Expression
         public String surface = "";
         public TokenType type;
         public int pos;
+        public int linepos;
+        public int lineno;
 
         public void append(char c)
         {
@@ -186,6 +188,9 @@ public class Expression
         private static final char minusSign = '-';
         /** Actual position in expression string. */
         private int pos = 0;
+        private int lineno = 0;
+        private int linepos = 0;
+
 
         /** The original input expression. */
         private String input;
@@ -235,8 +240,16 @@ public class Expression
             while (Character.isWhitespace(ch) && pos < input.length())
             {
                 ch = input.charAt(++pos);
+                linepos++;
+                if (ch=='\n')
+                {
+                    lineno++;
+                    linepos = 0;
+                }
             }
             token.pos = pos;
+            token.lineno = lineno;
+            token.linepos = linepos;
 
             boolean isHex = false;
 
@@ -257,6 +270,7 @@ public class Expression
                         && (pos < input.length()))
                 {
                     token.append(input.charAt(pos++));
+                    linepos++;
                     ch = pos == input.length() ? 0 : input.charAt(pos);
                 }
                 token.type = isHex ? Token.TokenType.HEX_LITERAL : Token.TokenType.LITERAL;
@@ -264,15 +278,18 @@ public class Expression
             else if (ch == '\'')
             {
                 pos++;
+                linepos++;
                 if (previousToken == null || previousToken.type != Token.TokenType.STRINGPARAM)
                 {
                     ch = input.charAt(pos);
                     while (ch != '\'')
                     {
                         token.append(input.charAt(pos++));
+                        linepos++;
                         ch = pos == input.length() ? 0 : input.charAt(pos);
                     }
                     pos++;
+                    linepos++;
                     token.type = Token.TokenType.STRINGPARAM;
                 }
                 else
@@ -286,6 +303,7 @@ public class Expression
                         || token.length() == 0 && "_".indexOf(ch) >= 0) && (pos < input.length()))
                 {
                     token.append(input.charAt(pos++));
+                    linepos++;
                     ch = pos == input.length() ? 0 : input.charAt(pos);
                 }
                 // Remove optional white spaces after function or variable name
@@ -294,8 +312,15 @@ public class Expression
                     while (Character.isWhitespace(ch) && pos < input.length())
                     {
                         ch = input.charAt(pos++);
+                        linepos++;
+                        if (ch=='\n')
+                        {
+                            lineno++;
+                            linepos = 0;
+                        }
                     }
                     pos--;
+                    linepos--;
                 }
                 token.type = ch == '(' ? Token.TokenType.FUNCTION : Token.TokenType.VARIABLE;
             }
@@ -315,6 +340,7 @@ public class Expression
                 }
                 token.append(ch);
                 pos++;
+                linepos++;
             }
             else
             {
@@ -328,6 +354,7 @@ public class Expression
                 {
                     greedyMatch += ch;
                     pos++;
+                    linepos++;
                     if (this.expression.operators.containsKey(greedyMatch))
                     {
                         validOperatorSeenUntil = pos;
@@ -577,7 +604,8 @@ public class Expression
     public Expression(String expression, MathContext defaultMathContext)
     {
         this.mc = defaultMathContext;
-        this.expression = expression.trim().replaceAll(";+$", "");
+        expression = expression.trim().replaceAll(";+$", "");
+        this.expression = expression.replaceAll("\\$", "\n");
         defaultVariables.put("e", (c) -> e);
         defaultVariables.put("PI", (c) -> PI);
         defaultVariables.put("NULL", (c) -> Value.NULL);
