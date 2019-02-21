@@ -2,6 +2,7 @@ package carpet.commands;
 
 import carpet.CarpetSettings;
 import carpet.script.CarpetExpression;
+import carpet.script.Expression;
 import carpet.utils.Messenger;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -19,6 +20,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MutableBoundingBox;
 import net.minecraft.world.WorldServer;
 
+import java.util.List;
 import java.util.function.Predicate;
 
 import static net.minecraft.command.Commands.argument;
@@ -30,6 +32,7 @@ public class ScriptCommand
     {
         LiteralArgumentBuilder<CommandSource> command = literal("script").
                 requires((player) -> CarpetSettings.getBool("commandScript")).
+                then(literal("globals").executes( (c) -> listGlobals(c.getSource()))).
                 then(literal("run").
                         then(argument("expr", StringArgumentType.greedyString()).
                                 executes((c) -> compute(
@@ -105,11 +108,40 @@ public class ScriptCommand
 
         dispatcher.register(command);
     }
+    private static int listGlobals(CommandSource source)
+    {
+        Messenger.m(source, "w Global functions:");
+        String code = "";
+        for (String fname : Expression.global_functions.keySet())
+        {
+            Expression.AbstractContextFunction acf = Expression.global_functions.get(fname);
+
+            String expr = acf.getExpression().getCodeString();
+            Expression.Token tok = acf.getToken();
+            List<String> snippet = Expression.getExpressionSnippet(tok, expr);
+            Messenger.m(source, "w Function "+fname+" defined at: line "+(tok.lineno+1)+" pos "+(tok.linepos+1));
+            for (String snippetLine: snippet)
+            {
+                Messenger.m(source, "w "+snippetLine);
+            }
+            Messenger.m(source, "gi ----------------");
+            code = acf.getExpression().getCodeString();
+        }
+        //Messenger.m(source, "w "+code);
+        Messenger.m(source, "w Global Variables:");
+
+        for (String vname : Expression.global_variables.keySet())
+        {
+            Messenger.m(source, "w Variable "+vname+": ", "wb "+Expression.global_variables.get(vname).evalValue(null).getString());
+        }
+        return 1;
+    }
     private static int compute(CommandSource source, String expr)
     {
         BlockPos pos = new BlockPos(source.getPos());
         try
         {
+            CarpetExpression.setChatErrorSnooper(source);
             CarpetExpression ex = new CarpetExpression(expr, source, new BlockPos(0, 0, 0));
             if (source.getWorld().getGameRules().getBoolean("commandBlockOutput"))
                 ex.setLogOutput(true);
@@ -132,6 +164,7 @@ public class ScriptCommand
         {
             Messenger.m(source, "r Your math is wrong, sorry: "+e.getMessage());
         }
+        CarpetExpression.resetErrorSnooper();
         return 1;
     }
 

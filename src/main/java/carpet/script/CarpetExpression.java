@@ -3,6 +3,7 @@ package carpet.script;
 import carpet.CarpetSettings;
 import carpet.helpers.FeatureGenerator;
 import carpet.script.Expression.ExpressionException;
+import carpet.script.Expression.InternalExpressionException;
 import carpet.script.Expression.LazyValue;
 import carpet.utils.BlockInfo;
 import carpet.utils.Messenger;
@@ -88,7 +89,7 @@ public class CarpetExpression
                 blockState = world.getBlockState(pos);
                 return blockState;
             }
-            throw new CarpetExpressionException("Attemted to fetch blockstate without world or stored blockstate");
+            throw new InternalExpressionException("Attemted to fetch blockstate without world or stored blockstate");
         }
 
         BlockValue(IBlockState arg, World world, BlockPos position)
@@ -146,7 +147,7 @@ public class CarpetExpression
     private BlockPos locateBlockPos(CarpetContext c, List<LazyValue> params, int offset)
     {
         if (params.size() < 3+offset)
-            throw new ExpressionException("Need three integers for params");
+            throw new InternalExpressionException("Need three integers for params");
         int xpos = ((NumericValue) params.get(0+offset).evalValue(c)).getNumber().intValue();
         int ypos = ((NumericValue) params.get(1+offset).evalValue(c)).getNumber().intValue();
         int zpos = ((NumericValue) params.get(2+offset).evalValue(c)).getNumber().intValue();
@@ -169,7 +170,7 @@ public class CarpetExpression
         CarpetContext cc = (CarpetContext) c;
         if (params.size() == 0)
         {
-            throw new ExpressionException(name + " requires at least one parameter");
+            throw new InternalExpressionException(name + " requires at least one parameter");
         }
         Value v0 = params.get(0).evalValue(c);
         if (v0 instanceof BlockValue)
@@ -188,7 +189,7 @@ public class CarpetExpression
         CarpetContext cc = (CarpetContext) c;
         if (params.size() == 0)
         {
-            throw new ExpressionException(name + " requires at least one parameter");
+            throw new InternalExpressionException(name + " requires at least one parameter");
         }
 
         Value v0 = params.get(0).evalValue(c);
@@ -210,7 +211,7 @@ public class CarpetExpression
         }
         else
         {
-            throw new CarpetExpressionException(value + " is not a valid value for property " + name);
+            throw new InternalExpressionException(value + " is not a valid value for property " + name);
         }
         return bs;
     }
@@ -230,7 +231,7 @@ public class CarpetExpression
             CarpetContext cc = (CarpetContext) c;
                 if (lv.size() == 0)
                 {
-                    throw new ExpressionException("block requires at least one parameter");
+                    throw new InternalExpressionException("block requires at least one parameter");
                 }
                 if (lv.size() == 1)
                 {
@@ -343,12 +344,12 @@ public class CarpetExpression
             CarpetContext cc = (CarpetContext)c;
             World world = cc.s.getWorld();
             if (lv.size() < 4 || lv.size() % 2 == 1)
-                throw new CarpetExpressionException("set block should have at least 4 params and odd attributes");
+                throw new InternalExpressionException("set block should have at least 4 params and odd attributes");
             BlockPos pos = locateBlockPos(cc, lv, 0);
             Value v3 = lv.get(3).evalValue(cc);
             BlockValue bv = ((v3 instanceof BlockValue)) ? (BlockValue) v3 : blockFromString(v3.getString());
             if (bv == BlockValue.NULL)
-                throw new CarpetExpressionException("fourth parameter of set should be a valid block");
+                throw new InternalExpressionException("fourth parameter of set should be a valid block");
             IBlockState bs = bv.blockState;
 
             IBlockState targetBlockState = world.getBlockState(pos);
@@ -363,7 +364,7 @@ public class CarpetExpression
                 String paramString = lv.get(i).evalValue(c).getString();
                 IProperty<?> property = states.getProperty(paramString);
                 if (property == null)
-                    throw new CarpetExpressionException("property " + paramString + " doesn't apply to " + v3.getString());
+                    throw new InternalExpressionException("property " + paramString + " doesn't apply to " + v3.getString());
 
                 String paramValue = lv.get(i + 1).evalValue(c).getString();
 
@@ -393,7 +394,7 @@ public class CarpetExpression
         this.expr.addBinaryFunction("property", (v1, v2) ->
         {
             if (!(v1 instanceof BlockValue))
-                    throw new ExpressionException("First Argument of tag should be a block");
+                    throw new InternalExpressionException("First Argument of tag should be a block");
             IBlockState state = ((BlockValue) v1).blockState;
             String tag = v2.getString();
             StateContainer<Block, IBlockState> states = state.getBlock().getStateContainer();
@@ -544,7 +545,7 @@ public class CarpetExpression
             else if (lv.size() ==8)
                 acc = lv.get(7).evalValue(c);
             else
-                throw new CarpetExpressionException("convsquare accepts 7 or 8 parameters");
+                throw new InternalExpressionException("convsquare accepts 7 or 8 parameters");
             LazyValue expr = lv.get(6);
             int cx;
             int cy;
@@ -563,7 +564,7 @@ public class CarpetExpression
             }
             catch (ClassCastException exc)
             {
-                throw new CarpetExpressionException("Attempted to pass a non-number to conv");
+                throw new InternalExpressionException("Attempted to pass a non-number to conv");
             }
             //saving outer scope
             LazyValue _x = c.getVariable("_x");
@@ -609,7 +610,7 @@ public class CarpetExpression
             else if (lv.size() ==5)
                 acc = lv.get(4).evalValue(c);
             else
-                throw new CarpetExpressionException("convnb accepts 4 or 5 parameters");
+                throw new InternalExpressionException("convnb accepts 4 or 5 parameters");
             LazyValue expr = lv.get(3);
             int cx;
             int cy;
@@ -622,7 +623,7 @@ public class CarpetExpression
             }
             catch (ClassCastException exc)
             {
-                throw new CarpetExpressionException("Attempted to pass a non-number to conv");
+                throw new InternalExpressionException("Attempted to pass a non-number to conv");
             }
             BlockPos pos = new BlockPos(cx, cy, cz); // its deliberately offset wrt origin, only used to get nbs coords
             //saving outer scope
@@ -711,5 +712,53 @@ public class CarpetExpression
     public void setLogOutput(boolean to)
     {
         this.expr.setLogOutput(to ? (s) -> Messenger.m(source, "gi " + s) : null);
+    }
+    public static void setChatErrorSnooper(CommandSource source)
+    {
+        ExpressionException.errorSnooper = (expr, token, message) ->
+        {
+            try
+            {
+                source.asPlayer();
+            }
+            catch (CommandSyntaxException e)
+            {
+                return null;
+            }
+            String[] lines = expr.getCodeString().split("\n");
+
+            String shebang = message;
+
+            if (lines.length > 1)
+            {
+                shebang += " at line "+(token.lineno+1)+", pos "+(token.linepos+1);
+            }
+            else
+            {
+                shebang += " at pos "+(token.pos+1);
+            }
+            if (expr.getName() != null)
+            {
+                shebang += " in "+expr.getName()+"";
+            }
+            Messenger.m(source, "r "+shebang);
+
+            if (lines.length > 1 && token.lineno > 0)
+            {
+                Messenger.m(source, "l "+lines[token.lineno-1]);
+            }
+            Messenger.m(source, "l "+lines[token.lineno].substring(0, token.linepos), "r  HERE>> ", "l "+
+                    lines[token.lineno].substring(token.linepos));
+
+            if (lines.length > 1 && token.lineno < lines.length-1)
+            {
+                Messenger.m(source, "l "+lines[token.lineno+1]);
+            }
+            return new ArrayList<>();
+        };
+    }
+    public static void resetErrorSnooper()
+    {
+        ExpressionException.errorSnooper=null;
     }
 }
