@@ -31,6 +31,7 @@ import java.math.BigInteger;
 import java.math.MathContext;
 import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -42,6 +43,7 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static java.lang.Math.abs;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 
@@ -728,7 +730,7 @@ public class Expression implements Cloneable
      */
     public Expression(String expression)
     {
-        this(expression, MathContext.DECIMAL64);
+        this(expression, MathContext.DECIMAL32);
     }
 
     /**
@@ -871,7 +873,8 @@ public class Expression implements Cloneable
                  while(li.hasNext())
                  {
                      String lname = li.next().getVariable();
-                     c.setVariable(lname, (cc, tt) -> ri.next().boundTo(lname));
+                     Value vval = ri.next();
+                     c.setVariable(lname, (cc, tt) -> vval.boundTo(lname));
                  }
                  return (cc, tt) -> Value.TRUE;
             }
@@ -997,6 +1000,17 @@ public class Expression implements Cloneable
             return min;
         });
 
+        addFunction("sort", (lv) ->
+        {
+            List<Value> toSort = lv;
+            if (lv.size()==1 && lv.get(0) instanceof ListValue)
+            {
+                toSort = ((ListValue)lv.get(1)).getItems();
+            }
+            Collections.sort(toSort);
+            return new ListValue(toSort);
+        });
+
         addUnaryFunction("abs", (v) -> new NumericValue(getNumericalValue(v).abs(mc)));
         addBinaryFunction("round", (v1, v2) ->
         {
@@ -1015,6 +1029,20 @@ public class Expression implements Cloneable
         addUnaryFunction("return", (v) -> { throw new ExitStatement(v); });
 
         addFunction("l", ListValue::new);
+
+        addBinaryFunction("element", (v1, v2) -> {
+            if (!(v1 instanceof ListValue))
+            {
+                throw new InternalExpressionException("First argument of element should be a list");
+            }
+            List<Value> items = ((ListValue)v1).getItems();
+            int index = getNumericalValue(v2).intValue();
+            int numitems = items.size();
+            int range = abs(index)/numitems;
+            index += (range+2)*numitems;
+            index = index % numitems;
+            return items.get(index);
+        });
 
         addLazyFunction("var", 1, (c, t, lv) -> {
             String varname = lv.get(0).evalValue(c).getString();

@@ -160,10 +160,10 @@ public class ScriptCommand
         {
             Messenger.m(source, "r Exception white evaluating expression at "+pos+": "+e.getMessage());
         }
-        catch (ArithmeticException e)
-        {
-            Messenger.m(source, "r Your math is wrong, sorry: "+e.getMessage());
-        }
+        //catch (ArithmeticException e)
+        //{
+        //    Messenger.m(source, "r Your math is wrong, sorry: "+e.getMessage());
+        //}
         CarpetExpression.resetErrorSnooper();
         return 1;
     }
