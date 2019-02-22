@@ -89,12 +89,10 @@ public class Expression implements Cloneable
     private String name;
     public String getName() {return name;}
 
-    /** The cached RPN (Reverse Polish Notation) of the expression. */
-    private List<Token> rpn = null;
-
     /** Cached AST (Abstract Syntax Tree) (root) of the expression */
     private LazyValue ast = null;
 
+    /** script specific operatos and built-in functions */
     private Map<String, ILazyOperator> operators = new HashMap<>();
 
     private Map<String, ILazyFunction> functions = new HashMap<>();
@@ -103,13 +101,10 @@ public class Expression implements Cloneable
 
     public static Map<String, LazyValue> global_variables = new HashMap<>();
 
-
-
     Map<String, LazyValue> defaultVariables = new HashMap<>();
 
     /** should the evaluator output value of each ;'s statement during execution */
     private Consumer<String> logOutput = null;
-
 
     @Override
     protected Expression clone() throws CloneNotSupportedException
@@ -493,11 +488,25 @@ public class Expression implements Cloneable
 
     }
 
-    private static Value assertNotNull(Value v1)
+    private static <T> T assertNotNull(T t)
     {
-        if (v1 == null)
+        if (t == null)
             throw new InternalExpressionException("Operand may not be null");
-        return v1;
+        return t;
+    }
+
+    private static <T> void assertIsNull(T t)
+    {
+        if (t != null)
+            throw new InternalExpressionException("Received extra operand");
+    }
+
+    private static <T> void assertNotNull(T t1, T t2)
+    {
+        if (t1 == null)
+            throw new InternalExpressionException("First operand may not be null");
+        if (t2 == null)
+            throw new InternalExpressionException("Second operand may not be null");
     }
 
     static BigDecimal getNumericalValue(Value v1)
@@ -505,22 +514,6 @@ public class Expression implements Cloneable
         if (!(v1 instanceof NumericValue))
             throw new InternalExpressionException("Operand has to be of a numeric type");
         return ((NumericValue) v1).getNumber();
-    }
-
-    private static void assertNotNull(Value v1, Value v2)
-    {
-        if (v1 == null)
-            throw new InternalExpressionException("First operand may not be null");
-        if (v2 == null)
-            throw new InternalExpressionException("Second operand may not be null");
-    }
-
-    private static void assertNotNull(LazyValue lv, LazyValue lv2)
-    {
-        if (lv == null)
-            throw new InternalExpressionException("Operand may not be null");
-        if (lv2 == null)
-            throw new InternalExpressionException("Operand may not be null");
     }
 
 
@@ -566,22 +559,14 @@ public class Expression implements Cloneable
         });
     }
 
-
     private void addUnaryOperator(String surface, boolean leftAssoc, Function<Value, Value> fun)
     {
         operators.put(surface+"u", new AbstractUnaryOperator(precedence.get("unary+-!"), leftAssoc)
         {
             @Override
-            public Value evalUnary(Expression e, Token t, Value v1)
+            public Value evalUnary(Value v1)
             {
-                try
-                {
-                    return fun.apply(assertNotNull(v1));
-                }
-                catch (InternalExpressionException exc)
-                {
-                    throw new ExpressionException(e, t, exc.getMessage());
-                }
+                return fun.apply(assertNotNull(v1));
             }
         });
     }
@@ -591,17 +576,10 @@ public class Expression implements Cloneable
         operators.put(surface, new AbstractOperator(precedence, leftAssoc)
         {
             @Override
-            public Value eval(Expression e, Token t, Value v1, Value v2)
+            public Value eval(Value v1, Value v2)
             {
-                try
-                {
-                    assertNotNull(v1, v2);
-                    return fun.apply(v1, v2);
-                }
-                catch (InternalExpressionException exc)
-                {
-                    throw new ExpressionException(e, t, exc.getMessage());
-                }
+                assertNotNull(v1, v2);
+                return fun.apply(v1, v2);
             }
         });
     }
@@ -613,16 +591,9 @@ public class Expression implements Cloneable
         functions.put(name,  new AbstractFunction(1)
         {
             @Override
-            public Value eval(Expression e, Token t, List<Value> parameters)
+            public Value eval(List<Value> parameters)
             {
-                try
-                {
-                    return fun.apply(assertNotNull(parameters.get(0)));
-                }
-                catch (InternalExpressionException exc)
-                {
-                    throw new ExpressionException(e, t, exc.getMessage());
-                }
+                return fun.apply(assertNotNull(parameters.get(0)));
             }
         });
     }
@@ -633,19 +604,12 @@ public class Expression implements Cloneable
         functions.put(name, new AbstractFunction(2)
         {
             @Override
-            public Value eval(Expression e, Token t, List<Value> parameters)
+            public Value eval(List<Value> parameters)
             {
-                try
-                {
-                    Value v1 = parameters.get(0);
-                    Value v2 = parameters.get(1);
-                    assertNotNull(v1, v2);
-                    return fun.apply(v1, v2);
-                }
-                catch (InternalExpressionException exc)
-                {
-                    throw new ExpressionException(e, t, exc.getMessage());
-                }
+                Value v1 = parameters.get(0);
+                Value v2 = parameters.get(1);
+                assertNotNull(v1, v2);
+                return fun.apply(v1, v2);
             }
         });
     }
@@ -656,18 +620,11 @@ public class Expression implements Cloneable
         functions.put(name, new AbstractFunction(-1)
         {
             @Override
-            public Value eval(Expression e, Token t, List<Value> parameters)
+            public Value eval(List<Value> parameters)
             {
-                try
-                {
-                    for (Value v: parameters)
-                        assertNotNull(v);
-                    return fun.apply(parameters);
-                }
-                catch (InternalExpressionException exc)
-                {
-                    throw new ExpressionException(e, t, exc.getMessage());
-                }
+                for (Value v: parameters)
+                    assertNotNull(v);
+                return fun.apply(parameters);
             }
         });
     }
@@ -1657,19 +1614,14 @@ public class Expression implements Cloneable
 
 
     /**
-     * Cached access to the RPN notation of this expression, ensures only one
-     * calculation of the RPN per expression instance. If no cached instance
-     * exists, a new one will be created and put to the cache.
+     * RPN notation of this expression
      *
-     * @return The cached RPN instance.
+     * @return The RPN token list.
      */
     private List<Token> getRPN()
     {
-        if (rpn == null)
-        {
-            rpn = shuntingYard(this.expression);
-            validate(rpn);
-        }
+        List<Token> rpn = shuntingYard(this.expression);
+        validate(rpn);
         return rpn;
     }
 
@@ -1874,7 +1826,7 @@ public class Expression implements Cloneable
 
     public interface IFunction extends ILazyFunction
     {
-        Value eval(Expression e, Token t, List<Value> parameters);
+        Value eval(List<Value> parameters);
     }
 
     public interface ILazyOperator
@@ -1888,7 +1840,7 @@ public class Expression implements Cloneable
 
     public interface IOperator extends ILazyOperator
     {
-        Value eval(Expression e, Token t, Value v1, Value v2);
+        Value eval(Value v1, Value v2);
     }
 
     public abstract static class AbstractContextFunction extends AbstractLazyFunction implements ILazyFunction
@@ -1951,25 +1903,33 @@ public class Expression implements Cloneable
         }
 
         @Override
-        public LazyValue lazyEval(Context cc, Integer type, Expression e, Token t, final List<LazyValue> lazyParams) {
-            return new LazyValue() { // eager evaluation always ignores the required type and evals params by none default
+        public LazyValue lazyEval(Context cc, Integer type, Expression e, Token t, final List<LazyValue> lazyParams)
+        {
+            try
+            {
+                return new LazyValue()
+                { // eager evaluation always ignores the required type and evals params by none default
+                    private List<Value> params;
 
-                private List<Value> params;
-
-                public Value evalValue(Context c, Integer type) {
-                    return AbstractFunction.this.eval(e, t, getParams(c));
-                }
-
-                private List<Value> getParams(Context c) {
-                    if (params == null) {
-                        params = new ArrayList<>();
-                        for (LazyValue lazyParam : lazyParams) {
-                            params.add(lazyParam.evalValue(c)); // none type default by design
-                        }
+                    public Value evalValue(Context c, Integer type) {
+                        return AbstractFunction.this.eval(getParams(c));
                     }
-                    return params;
-                }
-            };
+
+                    private List<Value> getParams(Context c) {
+                        if (params == null) {
+                            params = new ArrayList<>();
+                            for (LazyValue lazyParam : lazyParams) {
+                                params.add(lazyParam.evalValue(c)); // none type default by design
+                            }
+                        }
+                        return params;
+                    }
+                };
+            }
+            catch (InternalExpressionException exc)
+            {
+                throw new ExpressionException(e, t, exc.getMessage());
+            }
         }
     }
 
@@ -2002,8 +1962,16 @@ public class Expression implements Cloneable
         }
 
         @Override
-        public LazyValue lazyEval(Context c_ignored, Integer type, Expression e, Token t, final LazyValue v1, final LazyValue v2) {
-            return (c, type_ignored) -> AbstractOperator.this.eval(e, t, v1.evalValue(c), v2.evalValue(c));
+        public LazyValue lazyEval(Context c_ignored, Integer type, Expression e, Token t, final LazyValue v1, final LazyValue v2)
+        {
+            try
+            {
+                return (c, type_ignored) -> AbstractOperator.this.eval(v1.evalValue(c), v2.evalValue(c));
+            }
+            catch (InternalExpressionException exc)
+            {
+                throw new ExpressionException(e, t, exc.getMessage());
+            }
         }
     }
 
@@ -2014,21 +1982,28 @@ public class Expression implements Cloneable
         }
 
         @Override
-        public LazyValue lazyEval(Context cc, Integer type, Expression e, Token t, final LazyValue v1, final LazyValue v2) {
-            if (v2 != null) {
-                throw new ExpressionException(e, t, "Did not expect a second parameter for unary operator");
+        public LazyValue lazyEval(Context cc, Integer type, Expression e, Token t, final LazyValue v1, final LazyValue v2)
+        {
+            try
+            {
+                if (v2 != null)
+                {
+                    throw new ExpressionException(e, t, "Did not expect a second parameter for unary operator");
+                }
+                return (c, ignored_type) -> AbstractUnaryOperator.this.evalUnary(v1.evalValue(c));
             }
-            return (c, ignored_type) -> AbstractUnaryOperator.this.evalUnary(e, t, v1.evalValue(c));
+            catch (InternalExpressionException exc) // might not actually throw it
+            {
+                throw new ExpressionException(e, t, exc.getMessage());
+            }
         }
 
         @Override
-        public Value eval(Expression e, Token t, Value v1, Value v2) {
-            if (v2 != null) {
-                throw new ExpressionException(e, t, "Did not expect a second parameter for unary operator");
-            }
-            return evalUnary(e, t, v1);
+        public Value eval(Value v1, Value v2)
+        {
+            throw new ExpressionException("Shouldn't end up here");
         }
 
-        public abstract Value evalUnary(Expression e, Token t, Value v1);
+        public abstract Value evalUnary(Value v1);
     }
 }
