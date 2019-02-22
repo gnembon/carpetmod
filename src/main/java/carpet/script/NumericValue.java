@@ -92,17 +92,13 @@ public class NumericValue extends Value
         return super.equals(o);
     }
 
-    public NumericValue(BigDecimal value)
-    {
-        this.value = value.doubleValue();
-    }
     public NumericValue(double value)
     {
         this.value = value;
     }
     public NumericValue(String value)
     {
-        this(new BigDecimal(value));
+        this(new BigDecimal(value).doubleValue());
     }
     public NumericValue(long value)
     {

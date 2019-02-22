@@ -26,10 +26,8 @@
  */
 package carpet.script;
 
-import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
-import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -80,9 +78,6 @@ public class Expression implements Cloneable
 
     public static final Value euler = new NumericValue(
             "2.71828182845904523536028747135266249775724709369995957496696762772407663");
-
-    /** The {@link MathContext} to use for calculations. */
-    private MathContext mc;
 
     /** The current infix expression */
     private String expression;
@@ -536,6 +531,10 @@ public class Expression implements Cloneable
                 {
                     throw new ExpressionException(e, t, exc.getMessage());
                 }
+                catch (ArithmeticException exc)
+                {
+                    throw new ExpressionException(e, t, "Your math is wrong, "+exc.getMessage());
+                }
             }
         });
     }
@@ -556,6 +555,10 @@ public class Expression implements Cloneable
                 catch (InternalExpressionException exc)
                 {
                     throw new ExpressionException(e, token, exc.getMessage());
+                }
+                catch (ArithmeticException exc)
+                {
+                    throw new ExpressionException(e, token, "Your math is wrong, "+exc.getMessage());
                 }
             }
         });
@@ -659,6 +662,10 @@ public class Expression implements Cloneable
                 {
                     throw new ExpressionException(e, t, exc.getMessage());
                 }
+                catch (ArithmeticException exc)
+                {
+                    throw new ExpressionException(e, t, "Your math is wrong, "+exc.getMessage());
+                }
             }
         });
     }
@@ -730,20 +737,6 @@ public class Expression implements Cloneable
      */
     public Expression(String expression)
     {
-        this(expression, MathContext.DECIMAL32);
-    }
-
-    /**
-     * Creates a new expression instance from an expression string with a given
-     * default match context.
-     *
-     * @param expression         The expression. E.g. <code>"2.4*sin(3)/(2-4)"</code> or
-     *                           <code>"sin(y)>0 & max(z, 3)>3"</code>
-     * @param defaultMathContext The {@link MathContext} to use by default.
-     */
-    public Expression(String expression, MathContext defaultMathContext)
-    {
-        this.mc = defaultMathContext;
         this.name = null;
         expression = expression.trim().replaceAll(";+$", "");
         this.expression = expression.replaceAll("\\$", "\n");
@@ -906,6 +899,7 @@ public class Expression implements Cloneable
         addUnaryOperator("+", false, (v) -> new NumericValue(getNumericValue(v).getDouble()));
 
         addUnaryOperator("!", false, (v)-> v.getBoolean() ? Value.FALSE : Value.TRUE); // might need context boolean
+
         addUnaryFunction("not", (v) -> v.getBoolean() ? Value.FALSE : Value.TRUE);
 
         addUnaryFunction("fact", (v) ->
@@ -1594,14 +1588,14 @@ public class Expression implements Cloneable
                     {
                         if (token.surface.equalsIgnoreCase("NULL"))
                             return Value.NULL;
-                        return new NumericValue(new BigDecimal(token.surface, mc));
+                        return new NumericValue(token.surface);
                     });
                     break;
                 case STRINGPARAM:
                     stack.push((c, t) -> new StringValue(token.surface) ); // was originally null
                     break;
                 case HEX_LITERAL:
-                    stack.push((c, t) -> new NumericValue(new BigDecimal(new BigInteger(token.surface.substring(2), 16), mc)));
+                    stack.push((c, t) -> new NumericValue(new BigInteger(token.surface.substring(2), 16).doubleValue()));
                     break;
                 default:
                     throw new ExpressionException(this, token, "Unexpected token '" + token.surface + "'");
@@ -1971,6 +1965,10 @@ public class Expression implements Cloneable
             {
                 throw new ExpressionException(e, t, exc.getMessage());
             }
+            catch (ArithmeticException exc)
+            {
+                throw new ExpressionException(e, t, "Your math is wrong, "+exc.getMessage());
+            }
         }
     }
 
@@ -1994,6 +1992,10 @@ public class Expression implements Cloneable
             catch (InternalExpressionException exc) // might not actually throw it
             {
                 throw new ExpressionException(e, t, exc.getMessage());
+            }
+            catch (ArithmeticException exc)
+            {
+                throw new ExpressionException(e, t, "Your math is wrong, "+exc.getMessage());
             }
         }
 
