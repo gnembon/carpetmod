@@ -174,9 +174,9 @@ public class CarpetExpression
         }
         Value v0 = params.get(0).evalValue(c);
         if (v0 instanceof BlockValue)
-            return (__) -> test.apply(((BlockValue) v0).blockState, ((BlockValue) v0).pos) ? Value.TRUE : Value.FALSE;
+            return (c_, t_) -> test.apply(((BlockValue) v0).blockState, ((BlockValue) v0).pos) ? Value.TRUE : Value.FALSE;
         BlockPos pos = locateBlockPos(cc, params, 0);
-        return (__) -> test.apply(cc.s.getWorld().getBlockState(pos), pos) ? Value.TRUE : Value.FALSE;
+        return (c_, t_) -> test.apply(cc.s.getWorld().getBlockState(pos), pos) ? Value.TRUE : Value.FALSE;
     }
 
     private LazyValue stateStringQuery(
@@ -194,9 +194,9 @@ public class CarpetExpression
 
         Value v0 = params.get(0).evalValue(c);
         if (v0 instanceof BlockValue)
-            return (__) -> new StringValue(test.apply( ((BlockValue) v0).blockState, ((BlockValue) v0).pos));
+            return (c_, t_) -> new StringValue(test.apply( ((BlockValue) v0).blockState, ((BlockValue) v0).pos));
         BlockPos pos = locateBlockPos(cc, params, 0);
-        return (__) -> new StringValue(test.apply(cc.s.getWorld().getBlockState(pos), pos));
+        return (c_, t_) -> new StringValue(test.apply(cc.s.getWorld().getBlockState(pos), pos));
     }
 
 
@@ -222,11 +222,11 @@ public class CarpetExpression
         this.source = source;
         this.expr = new Expression(expression);
 
-        this.expr.defaultVariables.put("_x", (c) -> new NumericValue(origin.getX()).boundTo("_x"));
-        this.expr.defaultVariables.put("_y", (c) -> new NumericValue(origin.getY()).boundTo("_y"));
-        this.expr.defaultVariables.put("_z", (c) -> new NumericValue(origin.getZ()).boundTo("_z"));
+        this.expr.defaultVariables.put("_x", (c, t) -> new NumericValue(origin.getX()).boundTo("_x"));
+        this.expr.defaultVariables.put("_y", (c, t) -> new NumericValue(origin.getY()).boundTo("_y"));
+        this.expr.defaultVariables.put("_z", (c, t) -> new NumericValue(origin.getZ()).boundTo("_z"));
 
-        this.expr.addLazyFunction("block", -1, (c, lv) ->
+        this.expr.addLazyFunction("block", -1, (c, t, lv) ->
         {
             CarpetContext cc = (CarpetContext) c;
                 if (lv.size() == 0)
@@ -235,36 +235,36 @@ public class CarpetExpression
                 }
                 if (lv.size() == 1)
                 {
-                    return (__) -> blockFromString(lv.get(0).evalValue(cc).getString());
+                    return (c_, t_) -> blockFromString(lv.get(0).evalValue(cc).getString());
                     //return new BlockValue(IRegistry.field_212618_g.get(new ResourceLocation(lv.get(0).getString())).getDefaultState(), origin);
                 }
                 BlockPos pos = locateBlockPos((CarpetContext) c, lv, 0);
-                return (__) -> new BlockValue(null, cc.s.getWorld(), pos);
+                return (c_, t_) -> new BlockValue(null, cc.s.getWorld(), pos);
         });
 
 
-        this.expr.addLazyFunction("solid", 2, (c, lv) ->
+        this.expr.addLazyFunction("solid", 2, (c, t, lv) ->
                 booleanStateTest(c, "solid", lv, (s, p) -> s.isSolid()));
 
-        this.expr.addLazyFunction("air", 2, (c, lv) ->
+        this.expr.addLazyFunction("air", 2, (c, t, lv) ->
                 booleanStateTest(c, "air", lv, (s, p) -> s.isAir()));
 
-        this.expr.addLazyFunction("liquid", 2, (c, lv) ->
+        this.expr.addLazyFunction("liquid", 2, (c, t, lv) ->
                 booleanStateTest(c, "liquid", lv, (s, p) -> !s.getFluidState().isEmpty()));
 
-        this.expr.addLazyFunction("light", 3, (c, lv) ->
-                (cc) -> new NumericValue(((CarpetContext)c).s.getWorld().getLight(locateBlockPos((CarpetContext) c, lv, 0))));
+        this.expr.addLazyFunction("light", 3, (c, t, lv) ->
+                (c_, t_) -> new NumericValue(((CarpetContext)c).s.getWorld().getLight(locateBlockPos((CarpetContext) c, lv, 0))));
 
-        this.expr.addLazyFunction("blockLight", 3, (c, lv) ->
-                (cc) -> new NumericValue(((CarpetContext)c).s.getWorld().getLightFor(EnumLightType.BLOCK, locateBlockPos((CarpetContext) c, lv, 0))));
+        this.expr.addLazyFunction("blockLight", 3, (c, t, lv) ->
+                (c_, t_) -> new NumericValue(((CarpetContext)c).s.getWorld().getLightFor(EnumLightType.BLOCK, locateBlockPos((CarpetContext) c, lv, 0))));
 
-        this.expr.addLazyFunction("skyLight", 3, (c, lv) ->
-                (cc) -> new NumericValue(((CarpetContext)c).s.getWorld().getLightFor(EnumLightType.SKY, locateBlockPos((CarpetContext) c, lv, 0))));
+        this.expr.addLazyFunction("skyLight", 3, (c, t, lv) ->
+                (c_, t_) -> new NumericValue(((CarpetContext)c).s.getWorld().getLightFor(EnumLightType.SKY, locateBlockPos((CarpetContext) c, lv, 0))));
 
-        this.expr.addLazyFunction("seeSky", 3, (c, lv) ->
-                (cc) -> new NumericValue(((CarpetContext)c).s.getWorld().canSeeSky(locateBlockPos((CarpetContext) c, lv, 0))));
+        this.expr.addLazyFunction("seeSky", 3, (c, t, lv) ->
+                (c_, t_) -> new NumericValue(((CarpetContext)c).s.getWorld().canSeeSky(locateBlockPos((CarpetContext) c, lv, 0))));
 
-        this.expr.addLazyFunction("top", -1, (c, lv) -> {
+        this.expr.addLazyFunction("top", -1, (c, t, lv) -> {
             String type = lv.get(0).evalValue(c).getString().toLowerCase(Locale.ROOT);
             Heightmap.Type htype;
             switch (type)
@@ -290,38 +290,38 @@ public class CarpetExpression
                 z = Expression.getNumericalValue(lv.get(2).evalValue(c)).intValue();
             }
             int y = ((CarpetContext)c).s.getWorld().getChunk(x >> 4, z >> 4).getTopBlockY(htype, x & 15, z & 15) + 1;
-            return (__) -> new NumericValue(y);
+            return (c_, t_) -> new NumericValue(y);
             //BlockPos pos = new BlockPos(x,y,z);
             //return new BlockValue(source.getWorld().getBlockState(pos), pos);
         });
 
-        this.expr.addLazyFunction("loaded", 3, (c, lv) ->
-                (__) -> ((CarpetContext)c).s.getWorld().isBlockLoaded(locateBlockPos((CarpetContext) c, lv, 0)) ? Value.TRUE : Value.FALSE);
+        this.expr.addLazyFunction("loaded", 3, (c, t, lv) ->
+                (c_, t_) -> ((CarpetContext)c).s.getWorld().isBlockLoaded(locateBlockPos((CarpetContext) c, lv, 0)) ? Value.TRUE : Value.FALSE);
 
-        this.expr.addLazyFunction("loadedEP", 3, (c, lv) ->
+        this.expr.addLazyFunction("loadedEP", 3, (c, t, lv) ->
         {
             BlockPos pos = locateBlockPos((CarpetContext)c, lv, 0);
-            return (__) -> ((CarpetContext)c).s.getWorld().isAreaLoaded(pos.getX() - 32, 0, pos.getZ() - 32,
+            return (c_, t_) -> ((CarpetContext)c).s.getWorld().isAreaLoaded(pos.getX() - 32, 0, pos.getZ() - 32,
                     pos.getX() + 32, 0, pos.getZ() + 32, true) ? Value.TRUE : Value.FALSE;
         });
 
-        this.expr.addLazyFunction("suffocates", -1, (c, lv) ->
+        this.expr.addLazyFunction("suffocates", -1, (c, t, lv) ->
                 booleanStateTest(c, "suffocates", lv, (s, p) -> s.causesSuffocation()));
 
-        this.expr.addLazyFunction("power", 3, (c, lv) ->
-                (__) -> new NumericValue(((CarpetContext)c).s.getWorld().getRedstonePowerFromNeighbors(locateBlockPos((CarpetContext) c, lv, 0))));
+        this.expr.addLazyFunction("power", 3, (c, t, lv) ->
+                (c_, t_) -> new NumericValue(((CarpetContext)c).s.getWorld().getRedstonePowerFromNeighbors(locateBlockPos((CarpetContext) c, lv, 0))));
 
-        this.expr.addLazyFunction("ticksRandomly", -1, (c, lv) ->
+        this.expr.addLazyFunction("ticksRandomly", -1, (c, t, lv) ->
                 booleanStateTest(c, "ticksRandomly", lv, (s, p) -> s.needsRandomTick()));
 
-        this.expr.addLazyFunction("update", -1, (c, lv) ->
+        this.expr.addLazyFunction("update", -1, (c, t, lv) ->
                 booleanStateTest(c, "update", lv, (s, p) ->
                 {
                     ((CarpetContext) c).s.getWorld().neighborChanged(p, s.getBlock(), p);
                     return true;
                 }));
 
-        this.expr.addLazyFunction("forcetick", -1, (c, lv) ->
+        this.expr.addLazyFunction("forcetick", -1, (c, t, lv) ->
                 booleanStateTest(c, "forcetick", lv, (s, p) ->
                 {
                     World w = ((CarpetContext)c).s.getWorld();
@@ -329,7 +329,7 @@ public class CarpetExpression
                     return true;
                 }));
 
-        this.expr.addLazyFunction("tick", -1, (c, lv) ->
+        this.expr.addLazyFunction("tick", -1, (c, t, lv) ->
                 booleanStateTest(c, "tick", lv, (s, p) ->
                 {
                     World w = ((CarpetContext)c).s.getWorld();
@@ -339,7 +339,7 @@ public class CarpetExpression
                 }));
 
 
-        this.expr.addLazyFunction("set", -1, (c, lv) ->
+        this.expr.addLazyFunction("set", -1, (c, t, lv) ->
         {
             CarpetContext cc = (CarpetContext)c;
             World world = cc.s.getWorld();
@@ -355,7 +355,7 @@ public class CarpetExpression
             IBlockState targetBlockState = world.getBlockState(pos);
             if (lv.size()==4) // no reqs for properties
                 if (targetBlockState.getBlock() == bs.getBlock())
-                    return (__) -> Value.FALSE;
+                    return (c_, t_) -> Value.FALSE;
 
             StateContainer<Block, IBlockState> states = bs.getBlock().getStateContainer();
 
@@ -372,22 +372,22 @@ public class CarpetExpression
             }
             cc.s.getWorld().setBlockState(pos, bs, 2 | (CarpetSettings.getBool("fillUpdates") ? 0 : 1024));
             final IBlockState finalBS = bs;
-            return (__) -> new BlockValue(finalBS, world, pos);
+            return (c_, t_) -> new BlockValue(finalBS, world, pos);
         });
 
-        this.expr.addLazyFunction("blocksMovement", -1, (c, lv) ->
+        this.expr.addLazyFunction("blocksMovement", -1, (c, t, lv) ->
                 booleanStateTest(c, "blocksMovement", lv, (s, p) ->
                         !s.allowsMovement(((CarpetContext) c).s.getWorld(), p, PathType.LAND)));
 
-        this.expr.addLazyFunction("sound", -1, (c, lv) ->
+        this.expr.addLazyFunction("sound", -1, (c, t, lv) ->
                 stateStringQuery(c, "sound", lv, (s, p) ->
                         BlockInfo.soundName.get(s.getBlock().getSoundType())));
 
-        this.expr.addLazyFunction("material",-1, (c, lv) ->
+        this.expr.addLazyFunction("material",-1, (c, t, lv) ->
                 stateStringQuery(c, "material", lv, (s, p) ->
                         BlockInfo.materialName.get(s.getMaterial())));
 
-        this.expr.addLazyFunction("mapColour", -1,  (c, lv) ->
+        this.expr.addLazyFunction("mapColour", -1,  (c, t, lv) ->
                 stateStringQuery(c, "mapColour", lv, (s, p) ->
                         BlockInfo.mapColourName.get(s.getMapColor(((CarpetContext)c).s.getWorld(), p))));
 
@@ -405,7 +405,7 @@ public class CarpetExpression
         });
 
         //particle(x,y,z,"particle",count?10, duration,bool all)
-        this.expr.addLazyFunction("particle", -1, (c, lv) ->
+        this.expr.addLazyFunction("particle", -1, (c, t, lv) ->
         {
             CarpetContext cc = (CarpetContext)c;
             MinecraftServer ms = cc.s.getServer();
@@ -434,7 +434,7 @@ public class CarpetExpression
             }
             catch (CommandSyntaxException e)
             {
-                return (__) -> Value.NULL;
+                return (c_, t_) -> Value.NULL;
             }
             if (player == null)
             {
@@ -452,11 +452,11 @@ public class CarpetExpression
                     0.5, 0.5, 0.5, speed);
             }
 
-            return (__) -> Value.TRUE;
+            return (c_, t_) -> Value.TRUE;
         });
 
         // consider changing to scan
-        this.expr.addLazyFunction("area", 7, (c, lv) ->
+        this.expr.addLazyFunction("area", 7, (c, t, lv) ->
         {
             int cx = Expression.getNumericalValue(lv.get(0).evalValue(c)).intValue();
             int cy = Expression.getNumericalValue(lv.get(1).evalValue(c)).intValue();
@@ -475,16 +475,16 @@ public class CarpetExpression
             for (int y=cy-yrange; y <= cy+yrange; y++)
             {
                 int yFinal = y;
-                c.setVariable("_y", (cc) -> new NumericValue(yFinal).boundTo("_y"));
+                c.setVariable("_y", (c_, t_) -> new NumericValue(yFinal).boundTo("_y"));
                 for (int x=cx-xrange; x <= cx+xrange; x++)
                 {
                     int xFinal = x;
-                    c.setVariable("_x", (cc) -> new NumericValue(xFinal).boundTo("_x"));
+                    c.setVariable("_x", (c_, t_) -> new NumericValue(xFinal).boundTo("_x"));
                     for (int z=cz-zrange; z <= cz+zrange; z++)
                     {
                         int zFinal = z;
-                        c.setVariable( "_", (cc) -> blockValueFromCoords(((CarpetContext)c), xFinal,yFinal,zFinal).boundTo("_"));
-                        c.setVariable("_z", (cc) -> new NumericValue(zFinal).boundTo("_z"));
+                        c.setVariable( "_", (cc_, t_c) -> blockValueFromCoords(((CarpetContext)c), xFinal,yFinal,zFinal).boundTo("_"));
+                        c.setVariable("_z", (c_, t_) -> new NumericValue(zFinal).boundTo("_z"));
                         if (expr.evalValue(c).getBoolean())
                         {
                             sCount += 1;
@@ -498,17 +498,17 @@ public class CarpetExpression
             c.setVariable("_z", _z);
             c.setVariable("_", __);
             int finalSCount = sCount;
-            return (cc) -> new NumericValue(finalSCount);
+            return (c_, t_) -> new NumericValue(finalSCount);
         });
 
-        this.expr.addLazyFunction("print", 1, (c, lv) ->
+        this.expr.addLazyFunction("print", 1, (c, t, lv) ->
         {
             Messenger.m(((CarpetContext)c).s, "w " + lv.get(0).evalValue(c).getString());
             return lv.get(0); // pass through for variables
         });
 
 
-        this.expr.addLazyFunction("run", 1, (c, lv) -> {
+        this.expr.addLazyFunction("run", 1, (c, t, lv) -> {
             BlockPos target = locateBlockPos((CarpetContext) c,
                     Expression.getNumericalValue(c.getVariable("x").evalValue(c)).intValue(),
                     Expression.getNumericalValue(c.getVariable("y").evalValue(c)).intValue(),
@@ -516,11 +516,11 @@ public class CarpetExpression
             );
             Vec3d posf = new Vec3d((double)target.getX()+0.5D,(double)target.getY(),(double)target.getZ()+0.5D);
             CommandSource s = ((CarpetContext)c).s;
-            return (cc) -> new NumericValue(s.getServer().getCommandManager().handleCommand(
+            return (c_, t_) -> new NumericValue(s.getServer().getCommandManager().handleCommand(
                     s.withPos(posf).withFeedbackDisabled(), lv.get(0).evalValue(c).getString()));
         });
 
-        this.expr.addLazyFunction("neighbours", 3, (c, lv)->
+        this.expr.addLazyFunction("neighbours", 3, (c, t, lv)->
         {
             BlockPos center = locateBlockPos((CarpetContext) c, lv,0);
             World world = ((CarpetContext) c).s.getWorld();
@@ -532,12 +532,12 @@ public class CarpetExpression
             neighbours.add(new BlockValue(null, world, center.south()));
             neighbours.add(new BlockValue(null, world, center.east()));
             neighbours.add(new BlockValue(null, world, center.west()));
-            return (__) -> new ListValue(neighbours);
+            return (c_, t_) -> new ListValue(neighbours);
         });
 
         // consider abbrev to convsq
         //conv (x,y,z,sx,sy,sz, (_x, _y, _z, _block, _a) -> expr, ?acc) ->
-        this.expr.addLazyFunction("convsquare", -1, (c, lv)->
+        this.expr.addLazyFunction("convsquare", -1, (c, t, lv)->
         {
             Value acc;
             if (lv.size() == 7)
@@ -575,17 +575,17 @@ public class CarpetExpression
             for (int y = cy-sy; y <= cy+sy; y++)
             {
                 int yFinal = y;
-                c.setVariable("_y", (cc) -> new NumericValue(yFinal).boundTo("_y"));
+                c.setVariable("_y", (c_, t_) -> new NumericValue(yFinal).boundTo("_y"));
                 for (int x = cx-sx; x <= cx+sx; x++)
                 {
                     int xFinal = x;
-                    c.setVariable("_x", (cc) -> new NumericValue(xFinal).boundTo("_x"));
+                    c.setVariable("_x", (c_, t_) -> new NumericValue(xFinal).boundTo("_x"));
                     for (int z = cz-sz; z <= cz+sz; z++)
                     {
 
                         int zFinal = z;
-                        c.setVariable( "_", (cc) -> blockValueFromCoords((CarpetContext) c, xFinal,yFinal,zFinal).boundTo("_"));
-                        c.setVariable("_z", (cc) -> new NumericValue(zFinal).boundTo("_z"));
+                        c.setVariable( "_", (c_, t_) -> blockValueFromCoords((CarpetContext) c, xFinal,yFinal,zFinal).boundTo("_"));
+                        c.setVariable("_z", (c_, t_) -> new NumericValue(zFinal).boundTo("_z"));
                         c.setVariable("_a", acc);
                         acc = expr.evalValue(c);
                     }
@@ -598,11 +598,11 @@ public class CarpetExpression
             c.setVariable("_a", _a);
             c.setVariable("_", __);
             Value honestWontChange = acc;
-            return (cc) -> honestWontChange;
+            return (c_, t_) -> honestWontChange;
         });
 
         //conv (x,y,z,(_x, _y, _z, _a) -> expr, ?acc) ->
-        this.expr.addLazyFunction("convnb", -1, (c, lv)->
+        this.expr.addLazyFunction("convnb", -1, (c, t, lv)->
         {
             Value acc;
             if (lv.size() == 4)
@@ -634,10 +634,10 @@ public class CarpetExpression
             LazyValue __ = c.getVariable("_");
             for (BlockPos nb: Arrays.asList(pos.down(), pos.north(), pos.south(), pos.east(), pos.west(), pos.up()))
             {
-                c.setVariable( "_", (cc) -> new BlockValue(null, ((CarpetContext)c).s.getWorld(), nb).boundTo("_"));
-                c.setVariable("_x", (cc) -> new NumericValue(nb.getX()).boundTo("_x"));
-                c.setVariable("_y", (cc) -> new NumericValue(nb.getY()).boundTo("_y"));
-                c.setVariable("_z", (cc) -> new NumericValue(nb.getZ()).boundTo("_z"));
+                c.setVariable( "_", (c_, t_) -> new BlockValue(null, ((CarpetContext)c).s.getWorld(), nb).boundTo("_"));
+                c.setVariable("_x", (c_, t_) -> new NumericValue(nb.getX()).boundTo("_x"));
+                c.setVariable("_y", (c_, t_) -> new NumericValue(nb.getY()).boundTo("_y"));
+                c.setVariable("_z", (c_, t_) -> new NumericValue(nb.getZ()).boundTo("_z"));
                 c.setVariable("_a", acc);
                 acc = expr.evalValue(c);
             }
@@ -648,16 +648,16 @@ public class CarpetExpression
             c.setVariable("_a", _a);
             c.setVariable("_", __);
             Value honestWontChange = acc;
-            return (cc) -> honestWontChange;
+            return (c_, t_) -> honestWontChange;
         });
 
         //not ready yet
-        this.expr.addLazyFunction("plop", 4, (c, lv) ->{
+        this.expr.addLazyFunction("plop", 4, (c, t, lv) ->{
             BlockPos pos = locateBlockPos((CarpetContext)c, lv, 0);
             Boolean res = FeatureGenerator.spawn(lv.get(3).evalValue(c).getString(), ((CarpetContext)c).s.getWorld(), pos);
             if (res == null)
-                return (cc) -> Value.NULL;
-            return (cc) -> new NumericValue(res);
+                return (c_, t_) -> Value.NULL;
+            return (c_, t_) -> new NumericValue(res);
         });
     }
 
@@ -671,9 +671,9 @@ public class CarpetExpression
         try
         {
             Expression.Context context = new CarpetContext(this.expr, Expression.Context.NONE, source, origin).
-                    with("x", (cc) -> new NumericValue(x - ((CarpetContext)cc).origin.getX()).boundTo("x")).
-                    with("y", (cc) -> new NumericValue(y - ((CarpetContext)cc).origin.getY()).boundTo("y")).
-                    with("z", (cc) -> new NumericValue(z - ((CarpetContext)cc).origin.getZ()).boundTo("z"));
+                    with("x", (c, t) -> new NumericValue(x - origin.getX()).boundTo("x")).
+                    with("y", (c, t) -> new NumericValue(y - origin.getY()).boundTo("y")).
+                    with("z", (c, t) -> new NumericValue(z - origin.getZ()).boundTo("z"));
             return this.expr.eval(context).getBoolean();
         }
         catch (ExpressionException e)
@@ -692,9 +692,9 @@ public class CarpetExpression
         try
         {
             Expression.Context context = new CarpetContext(this.expr, Expression.Context.NONE, source, origin).
-                    with("x", (cc) -> new NumericValue(x - ((CarpetContext)cc).origin.getX()).boundTo("x")).
-                    with("y", (cc) -> new NumericValue(y - ((CarpetContext)cc).origin.getY()).boundTo("y")).
-                    with("z", (cc) -> new NumericValue(z - ((CarpetContext)cc).origin.getZ()).boundTo("z"));
+                    with("x", (c, t) -> new NumericValue(x - origin.getX()).boundTo("x")).
+                    with("y", (c, t) -> new NumericValue(y - origin.getY()).boundTo("y")).
+                    with("z", (c, t) -> new NumericValue(z - origin.getZ()).boundTo("z"));
             return this.expr.eval(context).getString();
         }
         catch (ExpressionException e)
