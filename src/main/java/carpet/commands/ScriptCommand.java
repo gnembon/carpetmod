@@ -147,7 +147,7 @@ public class ScriptCommand
                 ex.setLogOutput(true);
             long start = System.nanoTime();
             String result = ex.eval(pos);
-            int time = (int)(System.nanoTime()-start)/1000;
+            int time = (int)((System.nanoTime()-start)/1000);
             String metric = "\u00B5s";
             if (time > 2000)
             {

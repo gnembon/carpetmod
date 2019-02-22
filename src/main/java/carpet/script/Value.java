@@ -64,7 +64,7 @@ public abstract class Value implements Comparable<Value>, Cloneable
         if (v instanceof NumericValue)
         {
             String lstr = getString();
-            return new StringValue(lstr.substring(0, (int)(lstr.length()/ ((NumericValue) v).getNumber().floatValue())));
+            return new StringValue(lstr.substring(0, (int)(lstr.length()/ ((NumericValue) v).getDouble())));
         }
         return new StringValue(getString()+"/"+v.getString());
     }
@@ -92,6 +92,10 @@ public abstract class Value implements Comparable<Value>, Cloneable
         if (rstr == null)
             return -1;
         return lstr.compareTo(rstr);
+    }
+    public boolean equals(final Value o)
+    {
+        return this.compareTo(o)==0;
     }
 
     public void assertAssignable()
