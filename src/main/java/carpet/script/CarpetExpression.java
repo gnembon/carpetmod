@@ -148,9 +148,9 @@ public class CarpetExpression
     {
         if (params.size() < 3+offset)
             throw new InternalExpressionException("Need three integers for params");
-        int xpos = ((NumericValue) params.get(0+offset).evalValue(c)).getNumber().intValue();
-        int ypos = ((NumericValue) params.get(1+offset).evalValue(c)).getNumber().intValue();
-        int zpos = ((NumericValue) params.get(2+offset).evalValue(c)).getNumber().intValue();
+        int xpos = (int)((NumericValue) params.get(0+offset).evalValue(c)).getLong();
+        int ypos = (int)((NumericValue) params.get(1+offset).evalValue(c)).getLong();
+        int zpos = (int)((NumericValue) params.get(2+offset).evalValue(c)).getLong();
         return new BlockPos(c.origin.getX() + xpos, c.origin.getY() + ypos, c.origin.getZ() + zpos);
     }
 
@@ -286,8 +286,8 @@ public class CarpetExpression
             }
             else
             {
-                x = Expression.getNumericalValue(lv.get(1).evalValue(c)).intValue();
-                z = Expression.getNumericalValue(lv.get(2).evalValue(c)).intValue();
+                x = (int)Expression.getNumericValue(lv.get(1).evalValue(c)).getLong();
+                z = (int)Expression.getNumericValue(lv.get(2).evalValue(c)).getLong();
             }
             int y = ((CarpetContext)c).s.getWorld().getChunk(x >> 4, z >> 4).getTopBlockY(htype, x & 15, z & 15) + 1;
             return (c_, t_) -> new NumericValue(y);
@@ -413,14 +413,14 @@ public class CarpetExpression
             BlockPos pos = locateBlockPos(cc, lv, 0);
             String particleName = lv.get(3).evalValue(c).getString();
             int count = 10;
-            float speed = 0;
+            double speed = 0;
             EntityPlayerMP player = null;
             if (lv.size() > 4)
             {
-                count = Expression.getNumericalValue(lv.get(4).evalValue(c)).intValue();
+                count = (int)Expression.getNumericValue(lv.get(4).evalValue(c)).getLong();
                 if (lv.size() > 5)
                 {
-                    speed = Expression.getNumericalValue(lv.get(5).evalValue(c)).floatValue();
+                    speed = Expression.getNumericValue(lv.get(5).evalValue(c)).getDouble();
                     if (lv.size() > 6)
                     {
                         player = ms.getPlayerList().getPlayerByUsername(lv.get(6).evalValue(c).getString());
@@ -458,12 +458,12 @@ public class CarpetExpression
         // consider changing to scan
         this.expr.addLazyFunction("area", 7, (c, t, lv) ->
         {
-            int cx = Expression.getNumericalValue(lv.get(0).evalValue(c)).intValue();
-            int cy = Expression.getNumericalValue(lv.get(1).evalValue(c)).intValue();
-            int cz = Expression.getNumericalValue(lv.get(2).evalValue(c)).intValue();
-            int xrange = Expression.getNumericalValue(lv.get(3).evalValue(c)).intValue();
-            int yrange = Expression.getNumericalValue(lv.get(4).evalValue(c)).intValue();
-            int zrange = Expression.getNumericalValue(lv.get(5).evalValue(c)).intValue();
+            int cx = (int)Expression.getNumericValue(lv.get(0).evalValue(c)).getLong();
+            int cy = (int)Expression.getNumericValue(lv.get(1).evalValue(c)).getLong();
+            int cz = (int)Expression.getNumericValue(lv.get(2).evalValue(c)).getLong();
+            int xrange = (int)Expression.getNumericValue(lv.get(3).evalValue(c)).getLong();
+            int yrange = (int)Expression.getNumericValue(lv.get(4).evalValue(c)).getLong();
+            int zrange = (int)Expression.getNumericValue(lv.get(5).evalValue(c)).getLong();
             LazyValue expr = lv.get(6);
 
             //saving outer scope
@@ -510,9 +510,9 @@ public class CarpetExpression
 
         this.expr.addLazyFunction("run", 1, (c, t, lv) -> {
             BlockPos target = locateBlockPos((CarpetContext) c,
-                    Expression.getNumericalValue(c.getVariable("x").evalValue(c)).intValue(),
-                    Expression.getNumericalValue(c.getVariable("y").evalValue(c)).intValue(),
-                    Expression.getNumericalValue(c.getVariable("z").evalValue(c)).intValue()
+                    (int)Expression.getNumericValue(c.getVariable("x").evalValue(c)).getLong(),
+                    (int)Expression.getNumericValue(c.getVariable("y").evalValue(c)).getLong(),
+                    (int)Expression.getNumericValue(c.getVariable("z").evalValue(c)).getLong()
             );
             Vec3d posf = new Vec3d((double)target.getX()+0.5D,(double)target.getY(),(double)target.getZ()+0.5D);
             CommandSource s = ((CarpetContext)c).s;
@@ -555,12 +555,12 @@ public class CarpetExpression
             int sz;
             try
             {
-                cx = ((NumericValue) lv.get(0).evalValue(c)).getNumber().intValue();
-                cy = ((NumericValue) lv.get(1).evalValue(c)).getNumber().intValue();
-                cz = ((NumericValue) lv.get(2).evalValue(c)).getNumber().intValue();
-                sx = ((NumericValue) lv.get(3).evalValue(c)).getNumber().intValue();
-                sy = ((NumericValue) lv.get(4).evalValue(c)).getNumber().intValue();
-                sz = ((NumericValue) lv.get(5).evalValue(c)).getNumber().intValue();
+                cx = (int)((NumericValue) lv.get(0).evalValue(c)).getLong();
+                cy = (int)((NumericValue) lv.get(1).evalValue(c)).getLong();
+                cz = (int)((NumericValue) lv.get(2).evalValue(c)).getLong();
+                sx = (int)((NumericValue) lv.get(3).evalValue(c)).getLong();
+                sy = (int)((NumericValue) lv.get(4).evalValue(c)).getLong();
+                sz = (int)((NumericValue) lv.get(5).evalValue(c)).getLong();
             }
             catch (ClassCastException exc)
             {
@@ -617,9 +617,9 @@ public class CarpetExpression
             int cz;
             try
             {
-                cx = ((NumericValue) lv.get(0).evalValue(c)).getNumber().intValue();
-                cy = ((NumericValue) lv.get(1).evalValue(c)).getNumber().intValue();
-                cz = ((NumericValue) lv.get(2).evalValue(c)).getNumber().intValue();
+                cx = (int)((NumericValue) lv.get(0).evalValue(c)).getLong();
+                cy = (int)((NumericValue) lv.get(1).evalValue(c)).getLong();
+                cz = (int)((NumericValue) lv.get(2).evalValue(c)).getLong();
             }
             catch (ClassCastException exc)
             {

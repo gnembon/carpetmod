@@ -4,22 +4,32 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;
 
+import static java.lang.Math.abs;
+
 public class NumericValue extends Value
 {
-    private BigDecimal value;
-
+    private Double value;
+    final static double epsilon = 1024*Double.MIN_VALUE;
 
 
     @Override
     public String getString()
     {
-        return value.stripTrailingZeros().toPlainString();
+        return new BigDecimal(value).stripTrailingZeros().toPlainString();
     }
 
     @Override
     public boolean getBoolean()
     {
-        return value != null && value.compareTo(BigDecimal.ZERO) != 0;
+        return value != null && abs(value) > epsilon;
+    }
+    public double getDouble()
+    {
+        return value;
+    }
+    public long getLong()
+    {
+        return (long)(value+epsilon);
     }
 
     @Override
@@ -27,15 +37,14 @@ public class NumericValue extends Value
     {  // TODO test if definintn add(NumericVlaue) woud solve the casting
         if (v instanceof NumericValue)
         {
-            return new NumericValue(value.doubleValue() + (((NumericValue) v).getNumber()).doubleValue());
+            return new NumericValue(value + ((NumericValue) v).getDouble() );
         }
         return super.add(v);
     }
     public Value subtract(Value v) {  // TODO test if definintn add(NumericVlaue) woud solve the casting
         if (v instanceof NumericValue)
         {
-            //return new NumericValue(value.subtract(((NumericValue) v).getNumber()));
-            return new NumericValue(value.doubleValue() - (((NumericValue) v).getNumber()).doubleValue());
+            return new NumericValue(value - (((NumericValue) v).getDouble()));
         }
         return super.subtract(v);
     }
@@ -43,8 +52,7 @@ public class NumericValue extends Value
     {
         if (v instanceof NumericValue)
         {
-            //return new NumericValue(value.multiply(((NumericValue) v).getNumber()));
-            return new NumericValue(value.doubleValue()  * (((NumericValue) v).getNumber().doubleValue()));
+            return new NumericValue(value * ((NumericValue) v).getDouble() );
         }
         return new StringValue(StringUtils.repeat(v.getString(), value.intValue()));
     }
@@ -52,8 +60,7 @@ public class NumericValue extends Value
     {
         if (v instanceof NumericValue)
         {
-            //return new NumericValue(value.divide(((NumericValue) v).getNumber()));
-            return new NumericValue(value.doubleValue() / (((NumericValue) v).getNumber().doubleValue()));
+            return new NumericValue(value / ((NumericValue) v).getDouble() );
         }
         return super.divide(v);
     }
@@ -71,18 +78,27 @@ public class NumericValue extends Value
     {
         if (o instanceof NumericValue)
         {
-            return value.compareTo(((NumericValue) o).getNumber());
+            return value.compareTo(((NumericValue) o).getDouble());
         }
         return super.compareTo(o);
+    }
+    @Override
+    public boolean equals(Value o)
+    {
+        if (o instanceof NumericValue)
+        {
+            return !this.subtract(o).getBoolean();
+        }
+        return super.equals(o);
     }
 
     public NumericValue(BigDecimal value)
     {
-        this.value = value;
+        this.value = value.doubleValue();
     }
     public NumericValue(double value)
     {
-        this(new BigDecimal(value));
+        this.value = value;
     }
     public NumericValue(String value)
     {
@@ -90,16 +106,16 @@ public class NumericValue extends Value
     }
     public NumericValue(long value)
     {
-        this(new BigDecimal(value));
+        this.value = (double)value;
     }
     public NumericValue(boolean boolval)
     {
-        this(new BigDecimal(boolval?1:0));
+        this(boolval?1.0D:0.0D);
     }
 
-    public BigDecimal getNumber()
-    {
-        return value;
-    }
+    //public BigDecimal getNumber()
+    //{
+    //    return value;
+    //}
 
 }
