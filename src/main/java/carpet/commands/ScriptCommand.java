@@ -20,11 +20,16 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MutableBoundingBox;
 import net.minecraft.world.WorldServer;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import static net.minecraft.command.Commands.argument;
 import static net.minecraft.command.Commands.literal;
+import static net.minecraft.command.ISuggestionProvider.suggest;
 
 public class ScriptCommand
 {
@@ -39,6 +44,61 @@ public class ScriptCommand
                                         c.getSource(),
                                         StringArgumentType.getString(c, "expr")
                                 )))).
+
+                then(literal("invoke").
+                        then(argument("call", StringArgumentType.word()).suggests( (c, b)->suggest(getGlobalCalls(),b)).
+                                executes( (c) -> invoke(
+                                        c.getSource(),
+                                        StringArgumentType.getString(c, "call"),
+                                        null,
+                                        null,
+                                        ""
+                                )).
+                                then(argument("arguments", StringArgumentType.greedyString()).
+                                        executes( (c) -> invoke(
+                                                c.getSource(),
+                                                StringArgumentType.getString(c, "call"),
+                                                null,
+                                                null,
+                                                StringArgumentType.getString(c, "arguments")
+                                        ))))).
+                then(literal("invokepoint").
+                        then(argument("call", StringArgumentType.word()).suggests( (c, b)->suggest(getGlobalCalls(),b)).
+                                then(argument("origin", BlockPosArgument.blockPos()).
+                                        executes( (c) -> invoke(
+                                                c.getSource(),
+                                                StringArgumentType.getString(c, "call"),
+                                                BlockPosArgument.getBlockPos(c, "origin"),
+                                                null,
+                                                ""
+                                        )).
+                                        then(argument("arguments", StringArgumentType.greedyString()).
+                                                executes( (c) -> invoke(
+                                                        c.getSource(),
+                                                        StringArgumentType.getString(c, "call"),
+                                                        BlockPosArgument.getBlockPos(c, "origin"),
+                                                        null,
+                                                        StringArgumentType.getString(c, "arguments")
+                                                )))))).
+                then(literal("invokearea").
+                        then(argument("call", StringArgumentType.word()).suggests( (c, b)->suggest(getGlobalCalls(),b)).
+                                then(argument("from", BlockPosArgument.blockPos()).
+                                        then(argument("to", BlockPosArgument.blockPos()).
+                                                executes( (c) -> invoke(
+                                                        c.getSource(),
+                                                        StringArgumentType.getString(c, "call"),
+                                                        BlockPosArgument.getBlockPos(c, "from"),
+                                                        BlockPosArgument.getBlockPos(c, "to"),
+                                                        ""
+                                                )).
+                                                then(argument("arguments", StringArgumentType.greedyString()).
+                                                        executes( (c) -> invoke(
+                                                                c.getSource(),
+                                                                StringArgumentType.getString(c, "call"),
+                                                                BlockPosArgument.getBlockPos(c, "from"),
+                                                                BlockPosArgument.getBlockPos(c, "to"),
+                                                                StringArgumentType.getString(c, "arguments")
+                                                        ))))))).
                 then(literal("scan").
                         then(argument("origin", BlockPosArgument.blockPos()).
                                 then(argument("from", BlockPosArgument.blockPos()).
@@ -136,6 +196,39 @@ public class ScriptCommand
         }
         return 1;
     }
+    public static Set<String> getGlobalCalls()
+    {
+        return Expression.global_functions.keySet().stream().filter((s) -> !s.startsWith("_")).collect(Collectors.toSet());
+    }
+
+
+    private static int invoke(CommandSource source, String call, BlockPos pos1, BlockPos pos2,  String args)
+    {
+        if (call.startsWith("__"))
+        {
+            Messenger.m(source, "r Hidden functions are only callable in scripts");
+            return 0;
+        }
+        List<String> arguments = new ArrayList<>();
+        if (pos1 != null)
+        {
+            arguments.add(Integer.toString(pos1.getX()));
+            arguments.add(Integer.toString(pos1.getY()));
+            arguments.add(Integer.toString(pos1.getZ()));
+        }
+        if (pos2 != null)
+        {
+            arguments.add(Integer.toString(pos2.getX()));
+            arguments.add(Integer.toString(pos2.getY()));
+            arguments.add(Integer.toString(pos2.getZ()));
+        }
+        if (!(args.trim().isEmpty()))
+            arguments.addAll(Arrays.asList(args.trim().split("\\s+")));
+        Messenger.m(source, "w "+CarpetExpression.invokeGlobal(source, call,arguments));
+        return 1;
+    }
+
+
     private static int compute(CommandSource source, String expr)
     {
         BlockPos pos = new BlockPos(source.getPos());
@@ -160,10 +253,6 @@ public class ScriptCommand
         {
             Messenger.m(source, "r Exception white evaluating expression at "+pos+": "+e.getMessage());
         }
-        //catch (ArithmeticException e)
-        //{
-        //    Messenger.m(source, "r Your math is wrong, sorry: "+e.getMessage());
-        //}
         CarpetExpression.resetErrorSnooper();
         return 1;
     }

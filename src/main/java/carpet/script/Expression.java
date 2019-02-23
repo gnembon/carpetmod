@@ -740,11 +740,11 @@ public class Expression implements Cloneable
         this.name = null;
         expression = expression.trim().replaceAll(";+$", "");
         this.expression = expression.replaceAll("\\$", "\n");
-        defaultVariables.put("e", (c, t) -> euler);
-        defaultVariables.put("PI", (c, t) -> PI);
-        defaultVariables.put("NULL", (c, t) -> Value.NULL);
-        defaultVariables.put("TRUE", (c, t) -> Value.TRUE);
-        defaultVariables.put("FALSE", (c, t) -> Value.FALSE);
+        defaultVariables.put("euler", (c, t) -> euler);
+        defaultVariables.put("pi", (c, t) -> PI);
+        defaultVariables.put("null", (c, t) -> Value.NULL);
+        defaultVariables.put("true", (c, t) -> Value.TRUE);
+        defaultVariables.put("false", (c, t) -> Value.FALSE);
 
         //special variables for second order functions so we don't need to check them all the time
         defaultVariables.put("_", (c, t) -> new NumericValue(0).boundTo("_"));
@@ -941,9 +941,12 @@ public class Expression implements Cloneable
         });
         addMathematicalUnaryFunction("rad",  Math::toRadians);
         addMathematicalUnaryFunction("deg", Math::toDegrees);
-        addMathematicalUnaryFunction("log", Math::log);
+        addMathematicalUnaryFunction("ln", Math::log);
+        addMathematicalUnaryFunction("ln1p", Math::log1p);
         addMathematicalUnaryFunction("log10", Math::log10);
-        addMathematicalUnaryFunction("log1p", Math::log1p);
+        addMathematicalUnaryFunction("log", a -> Math.log(a)/Math.log(2));
+        addMathematicalUnaryFunction("log1p", x -> Math.log1p(x)/Math.log(2));
+
         addMathematicalUnaryFunction("sqrt", Math::sqrt);
         addMathematicalUnaryFunction("abs", Math::abs);
         addMathematicalUnaryFunction("round", (d) -> (double)Math.round(d));

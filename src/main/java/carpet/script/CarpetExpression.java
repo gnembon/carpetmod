@@ -45,7 +45,7 @@ public class CarpetExpression
             super(message);
         }
     }
-    public class CarpetContext extends Expression.Context implements Cloneable
+    public static class CarpetContext extends Expression.Context implements Cloneable
     {
         public CommandSource s;
         public BlockPos origin;
@@ -687,6 +687,7 @@ public class CarpetExpression
         return eval(pos.getX(), pos.getY(), pos.getZ());
     }
 
+
     public String eval(int x, int y, int z)
     {
         try
@@ -702,6 +703,33 @@ public class CarpetExpression
             throw new CarpetExpressionException(e.getMessage());
         }
     }
+
+    public static String invokeGlobal(CommandSource source, String call, List<String> argv)
+    {
+        Expression.AbstractContextFunction acf = Expression.global_functions.get(call);
+        List<String> args = acf.getArguments();
+        if (argv.size() != args.size())
+        {
+            return "Fail: stored function "+call+" takes "+args.size()+" arguments, not "+argv.size()+
+                  ": "+String.join(", ", args);
+        }
+        try
+        {
+            Vec3d pos = source.getPos();
+            Expression expr = new Expression(call+"("+String.join(" , ",argv)+" ) ");
+            Expression.Context context = new CarpetContext(expr, Expression.Context.NONE, source, BlockPos.ORIGIN).
+                    with("x", (c, t) -> new NumericValue(Math.round(pos.x)).boundTo("x")).
+                    with("y", (c, t) -> new NumericValue(Math.round(pos.y)).boundTo("y")).
+                    with("z", (c, t) -> new NumericValue(Math.round(pos.z)).boundTo("z"));
+            return expr.eval(context).getString();
+        }
+        catch (ExpressionException e)
+        {
+             return e.getMessage();
+        }
+
+    }
+
 
     public void execute()
     {
