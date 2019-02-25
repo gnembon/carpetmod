@@ -28,6 +28,7 @@ import net.minecraft.world.EnumLightType;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.gen.Heightmap;
+import net.minecraft.world.storage.SessionLockException;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -109,7 +110,7 @@ public class CarpetExpression
         @Override
         public boolean getBoolean()
         {
-            return this != NULL && !blockState.isAir();
+            return this != NULL && !getBlockState().isAir();
         }
 
         @Override
@@ -329,8 +330,8 @@ public class CarpetExpression
                     return true;
                 }));
 
-        this.expr.addLazyFunction("tick", -1, (c, t, lv) ->
-                booleanStateTest(c, "tick", lv, (s, p) ->
+        this.expr.addLazyFunction("randomtick", -1, (c, t, lv) ->
+                booleanStateTest(c, "randomtick", lv, (s, p) ->
                 {
                     World w = ((CarpetContext)c).s.getWorld();
                     if (s.needsRandomTick() || s.getFluidState().getTickRandomly())
@@ -350,7 +351,7 @@ public class CarpetExpression
             BlockValue bv = ((v3 instanceof BlockValue)) ? (BlockValue) v3 : blockFromString(v3.getString());
             if (bv == BlockValue.NULL)
                 throw new InternalExpressionException("fourth parameter of set should be a valid block");
-            IBlockState bs = bv.blockState;
+            IBlockState bs = bv.getBlockState();
 
             IBlockState targetBlockState = world.getBlockState(pos);
             if (lv.size()==4) // no reqs for properties
@@ -519,6 +520,34 @@ public class CarpetExpression
             return (c_, t_) -> new NumericValue(s.getServer().getCommandManager().handleCommand(
                     s.withPos(posf).withFeedbackDisabled(), lv.get(0).evalValue(c).getString()));
         });
+
+        this.expr.addLazyFunction("save", 0, (c, t, lv) -> {
+            CommandSource s = ((CarpetContext)c).s;
+
+            s.getServer().getPlayerList().saveAllPlayerData();
+            boolean saving = s.getWorld().disableLevelSaving;
+            s.getWorld().disableLevelSaving = false;
+            try
+            {
+                s.getWorld().saveAllChunks(true,null);
+            }
+            catch (SessionLockException ignored) { }
+            s.getWorld().getChunkProvider().tick(() -> true);
+            s.getWorld().getChunkProvider().flushToDisk();
+            s.getWorld().disableLevelSaving = saving;
+            CarpetSettings.LOG.warn("Saved chunks");
+            return (cc, tt) -> Value.TRUE;
+        });
+
+        this.expr.addLazyFunction("tick", 0, (c, t, lv) -> {
+            CommandSource s = ((CarpetContext)c).s;
+            s.getServer().tick( () -> true);
+            s.getServer().dontPanic();
+            Thread.yield();
+            return (cc, tt) -> Value.TRUE;
+        });
+
+
 
         this.expr.addLazyFunction("neighbours", 3, (c, t, lv)->
         {

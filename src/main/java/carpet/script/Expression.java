@@ -200,31 +200,63 @@ public class Expression implements Cloneable
     }
     public static List<String> getExpressionSnippet(Token token, String expr)
     {
+
+        List<String> output = new ArrayList<>();
+        for (String line: getExpressionSnippetLeftContext(token, expr, 1))
+        {
+            output.add(line);
+        }
+        List<String> context = getExpressionSnippetContext(token, expr);
+        output.add(context.get(0)+" HERE>> "+context.get(1));
+        for (String line: getExpressionSnippetRightContext(token, expr, 1))
+        {
+            output.add(line);
+        }
+        return output;
+    }
+
+    public static List<String> getExpressionSnippetLeftContext(Token token, String expr, int contextsize)
+    {
+        List<String> output = new ArrayList<>();
+        String[] lines = expr.split("\n");
+        if (lines.length == 1) return output;
+        for (int lno=token.lineno-1; lno >=0 && output.size() < contextsize; lno-- )
+        {
+            output.add(lines[lno]);
+        }
+        Collections.reverse(output);
+        return output;
+    }
+
+    public static List<String> getExpressionSnippetContext(Token token, String expr)
+    {
         List<String> output = new ArrayList<>();
         String[] lines = expr.split("\n");
         if (lines.length > 1)
         {
-            if (token.lineno > 0)
-            {
-                output.add(lines[token.lineno-1]);
-            }
-            output.add(lines[token.lineno].substring(0, token.linepos)+" HERE>> "+
-                    lines[token.lineno].substring(token.linepos));
-
-            if (token.lineno < lines.length-1)
-            {
-                output.add(lines[token.lineno+1]);
-            }
-            return output;
+            output.add(lines[token.lineno].substring(0, token.linepos));
+            output.add(lines[token.lineno].substring(token.linepos));
         }
         else
         {
-            output.add(
-            expr.substring(max(0, token.pos-40), token.pos)+" HERE>> "+
-                    expr.substring(token.pos, min(token.pos+1+40, expr.length())));
+            output.add( expr.substring(max(0, token.pos-40), token.pos));
+            output.add( expr.substring(token.pos, min(token.pos+1+40, expr.length())));
         }
         return output;
     }
+
+    public static List<String> getExpressionSnippetRightContext(Token token, String expr, int contextsize)
+    {
+        List<String> output = new ArrayList<>();
+        String[] lines = expr.split("\n");
+        if (lines.length == 1) { return output; }
+        for (int lno=token.lineno+1; lno < lines.length && output.size() < contextsize; lno++ )
+        {
+            output.add(lines[lno]);
+        }
+        return output;
+    }
+
 
 
     public static class Token
@@ -953,6 +985,24 @@ public class Expression implements Cloneable
         addMathematicalUnaryFunction("floor", Math::floor);
         addMathematicalUnaryFunction("ceil", Math::ceil);
 
+        addLazyFunction("mandelbrot", 3, (c, t, lv) -> {
+            double a0 = getNumericValue(lv.get(0).evalValue(c)).getDouble();
+            double b0 = getNumericValue(lv.get(1).evalValue(c)).getDouble();
+            long maxiter = getNumericValue(lv.get(2).evalValue(c)).getLong();
+            double a = 0.0D;
+            double b = 0.0D;
+            long iter = 0;
+            while(a*a+b*b<4 && iter < maxiter)
+            {
+                double temp = a*a-b*b+a0;
+                b = 2*a*b+b0;
+                a = temp;
+                iter++;
+            }
+            long iFinal = iter;
+            return (cc, tt) -> new NumericValue(iFinal);
+        });
+
         addFunction("max", (lv) ->
         {
             if (lv.size() == 0)
@@ -994,6 +1044,21 @@ public class Expression implements Cloneable
             System.out.println(v.getString());
             return v; // pass through for variables
         });
+        addUnaryFunction("sleep", (v) ->
+        {
+            long time = getNumericValue(v).getLong();
+            try
+            {
+                Thread.sleep(time);
+                Thread.yield();
+            }
+            catch (InterruptedException ignored) { }
+            return v; // pass through for variables
+        });
+        addLazyFunction("time", 0, (c, t, lv) ->
+                (cc, tt) -> new NumericValue(System.nanoTime()/1000));
+
+
         addUnaryFunction("return", (v) -> { throw new ExitStatement(v); });
 
         addFunction("l", ListValue::new);

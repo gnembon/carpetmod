@@ -168,11 +168,14 @@ public class ScriptCommand
 
         dispatcher.register(command);
     }
+    private static Set<String> getGlobalCalls()
+    {
+        return Expression.global_functions.keySet().stream().filter((s) -> !s.startsWith("_")).collect(Collectors.toSet());
+    }
     private static int listGlobals(CommandSource source)
     {
         Messenger.m(source, "w Global functions:");
-        String code = "";
-        for (String fname : Expression.global_functions.keySet())
+        for (String fname : getGlobalCalls())
         {
             Expression.AbstractContextFunction acf = Expression.global_functions.get(fname);
 
@@ -182,10 +185,9 @@ public class ScriptCommand
             Messenger.m(source, "w Function "+fname+" defined at: line "+(tok.lineno+1)+" pos "+(tok.linepos+1));
             for (String snippetLine: snippet)
             {
-                Messenger.m(source, "w "+snippetLine);
+                Messenger.m(source, "li "+snippetLine);
             }
             Messenger.m(source, "gi ----------------");
-            code = acf.getExpression().getCodeString();
         }
         //Messenger.m(source, "w "+code);
         Messenger.m(source, "w Global Variables:");
@@ -196,10 +198,7 @@ public class ScriptCommand
         }
         return 1;
     }
-    public static Set<String> getGlobalCalls()
-    {
-        return Expression.global_functions.keySet().stream().filter((s) -> !s.startsWith("_")).collect(Collectors.toSet());
-    }
+
 
 
     private static int invoke(CommandSource source, String call, BlockPos pos1, BlockPos pos2,  String args)
