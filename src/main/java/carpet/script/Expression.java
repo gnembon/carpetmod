@@ -56,6 +56,29 @@ import static java.lang.Math.min;
  * For more information, see:
  * <a href="https://github.com/uklimaschewski/EvalEx">EvalEx GitHub
  * repository</a>
+ *
+ * There is a bunch of operators you can use inside the expression. Those could be considered
+ * gneeric type operators
+ *
+ * <h2>Operator '+'</h2>
+ * <p>Allows to add the results of two expressions. If the operands resolve to numbers, the result is
+ * arithmetic operation</p>
+ * <p>Examples:</p>
+ *
+ * <p><code> 2+3 =&gt; 5  </code></p>
+ * <p><code> 'foo'+3+2 =&gt; 'abc32'  </code></p>
+ * <p><code> 3+2+'bar' =&gt; '5bar'  </code></p>
+ *
+ * <h2>Operator '-'</h2>
+ * <p>Allows to add the results of two expressions. If the operands resolve to numbers, the result is
+ * arithmetic operation</p>
+ *
+ * <p>Examples:</p>
+ *
+ * <p><code> 2+3 =&gt; 5  </code></p>
+ * <p><code> 'foo'+3+2 =&gt; 'abc32'  </code></p>
+ * <p><code> 3+2+'bar' =&gt; '5bar'  </code></p>
+ *
  */
 public class Expression implements Cloneable
 {
@@ -414,6 +437,16 @@ public class Expression implements Cloneable
                     pos--;
                     linepos--;
                 }
+                if (previousToken != null && (
+                        previousToken.type == Token.TokenType.VARIABLE ||
+                        previousToken.type == Token.TokenType.FUNCTION ||
+                        previousToken.type == Token.TokenType.LITERAL ||
+                        previousToken.type == Token.TokenType.CLOSE_PAREN ||
+                        previousToken.type == Token.TokenType.HEX_LITERAL ||
+                        previousToken.type == Token.TokenType.STRINGPARAM ) )
+                {
+                    throw new ExpressionException(this.expression, previousToken, token.surface +" is not allowed after "+previousToken.surface);
+                }
                 token.type = ch == '(' ? Token.TokenType.FUNCTION : Token.TokenType.VARIABLE;
             }
             else if (ch == '(' || ch == ')' || ch == ',')
@@ -733,7 +766,7 @@ public class Expression implements Cloneable
      * default match context of {@link MathContext#DECIMAL64}.
      *
      * @param expression The expression. E.g. <code>"2.4*sin(3)/(2-4)"</code> or
-     *                   <code>"sin(y)>0 & max(z, 3)>3"</code>
+     *                   <code>"sin(y)&gt;0 &amp; max(z, 3)&gt;3"</code>
      */
     public Expression(String expression)
     {
@@ -1494,6 +1527,7 @@ public class Expression implements Cloneable
      * Evaluates the expression.
      *
      * @return The result of the expression.
+     * @param c - Context with pre-initialized variables
      */
     public Value eval(Context c)
     {
