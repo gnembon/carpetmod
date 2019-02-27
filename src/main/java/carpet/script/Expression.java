@@ -1210,11 +1210,12 @@ public class Expression implements Cloneable
         // loop(Num or list, expr, exit_condition) => last_value
         // loop(list, expr,
         // expr receives bounded variable '_' indicating iteration
-        addLazyFunction("loop", 2, (c, t, lv) ->
+        addLazyFunction("loop", -1, (c, t, lv) ->
         {
             long limit = getNumericValue(lv.get(0).evalValue(c)).getLong();
             Value lastOne = Value.ZERO;
             LazyValue expr = lv.get(1);
+            LazyValue cond = lv.get(2);
             //scoping
             LazyValue _val = c.getVariable("_");
             for (long i=0; i < limit; i++)
@@ -1222,6 +1223,10 @@ public class Expression implements Cloneable
                 long whyYouAsk = i;
                 c.setVariable("_", (cc, tt) -> new NumericValue(whyYouAsk).boundTo("_"));
                 lastOne = expr.evalValue(c);
+                if (cond != null && cond.evalValue(c).getBoolean())
+                {
+                    break;
+                }
             }
             //revering scope
             c.setVariable("_", _val);
