@@ -578,6 +578,35 @@ public class Expression implements Cloneable
         return ((NumericValue) v1);
     }
 
+    private void addLazyUnaryOperator(String surface, int precedence, boolean leftAssoc,
+                                       TriFunction<Context, Integer, LazyValue, LazyValue> lazyfun)
+    {
+        operators.put(surface+"u", new AbstractLazyOperator(precedence, leftAssoc)
+        {
+            @Override
+            public LazyValue lazyEval(Context c, Integer t, Expression e, Token token, LazyValue v, LazyValue v2)
+            {
+                try
+                {
+                    if (v2 != null)
+                    {
+                        throw new ExpressionException(e, token, "Did not expect a second parameter for unary operator");
+                    }
+                    assertNotNull(v);
+                    return lazyfun.apply(c, t, v);
+                }
+                catch (InternalExpressionException exc)
+                {
+                    throw new ExpressionException(e, token, exc.getMessage());
+                }
+                catch (ArithmeticException exc)
+                {
+                    throw new ExpressionException(e, token, "Your math is wrong, "+exc.getMessage());
+                }
+            }
+        });
+    }
+
 
     private void addLazyBinaryOperatorWithDelegation(String surface, int precedence, boolean leftAssoc,
                                        SexFunction<Context, Integer, Expression, Token, LazyValue, LazyValue, LazyValue> lazyfun)
@@ -963,9 +992,9 @@ public class Expression implements Cloneable
 
         addUnaryOperator("+", false, (v) -> new NumericValue(getNumericValue(v).getDouble()));
 
-        addUnaryOperator("!", false, (v)-> v.getBoolean() ? Value.FALSE : Value.TRUE); // might need context boolean
+        addLazyUnaryOperator("!", precedence.get("unary+-!"), false, (c, t, lv)-> lv.evalValue(c, Context.BOOLEAN).getBoolean() ? (cc, tt)-> Value.FALSE : (cc, tt) -> Value.TRUE); // might need context boolean
 
-        addUnaryFunction("not", (v) -> v.getBoolean() ? Value.FALSE : Value.TRUE);
+        addLazyFunction("not", 1, (c, t, lv) -> lv.get(0).evalValue(c, Context.BOOLEAN).getBoolean() ? ((cc, tt) -> Value.FALSE) : ((cc, tt) -> Value.TRUE));
 
         addUnaryFunction("fact", (v) ->
         {
@@ -978,7 +1007,7 @@ public class Expression implements Cloneable
             return new NumericValue(factorial);
         });
 
-        addMathematicalUnaryFunction("rand", (d) -> d*randomizer.nextFloat());
+
         addMathematicalUnaryFunction("sin",    (d) -> Math.sin(Math.toRadians(d)));
         addMathematicalUnaryFunction("cos",    (d) -> Math.cos(Math.toRadians(d)));
         addMathematicalUnaryFunction("tan",    (d) -> Math.tan(Math.toRadians(d)));
@@ -1017,6 +1046,15 @@ public class Expression implements Cloneable
         addMathematicalUnaryFunction("round", (d) -> (double)Math.round(d));
         addMathematicalUnaryFunction("floor", Math::floor);
         addMathematicalUnaryFunction("ceil", Math::ceil);
+
+        addLazyFunction("rand", 1, (c, t, lv) -> {
+            if (t == Context.BOOLEAN)
+            {
+                double rv = getNumericValue(lv.get(0).evalValue(c)).getDouble()*randomizer.nextFloat();
+                return (cc, tt) -> rv<1.0D?Value.FALSE:Value.TRUE;
+            }
+            return (cc, tt) -> new NumericValue(getNumericValue(lv.get(0).evalValue(c)).getDouble()*randomizer.nextFloat());
+        });
 
         addLazyFunction("mandelbrot", 3, (c, t, lv) -> {
             double a0 = getNumericValue(lv.get(0).evalValue(c)).getDouble();
@@ -1089,7 +1127,7 @@ public class Expression implements Cloneable
             return v; // pass through for variables
         });
         addLazyFunction("time", 0, (c, t, lv) ->
-                (cc, tt) -> new NumericValue(System.nanoTime()/1000));
+                (cc, tt) -> new NumericValue(1.0*System.nanoTime()/1000));
 
 
         addUnaryFunction("return", (v) -> { throw new ExitStatement(v); });
