@@ -4,7 +4,6 @@ import carpet.CarpetSettings;
 import carpet.helpers.FeatureGenerator;
 import carpet.script.Expression.ExpressionException;
 import carpet.script.Expression.InternalExpressionException;
-import carpet.script.Expression.LazyValue;
 import carpet.utils.BlockInfo;
 import carpet.utils.Messenger;
 import com.mojang.brigadier.StringReader;
@@ -46,24 +45,15 @@ public class CarpetExpression
             super(message);
         }
     }
-    public static class CarpetContext extends Expression.Context implements Cloneable
+    private static class CarpetContext extends Context
     {
         public CommandSource s;
         public BlockPos origin;
-        CarpetContext(Expression expr, int expected, CommandSource source, BlockPos origin)
+        CarpetContext(Expression expr, CommandSource source, BlockPos origin)
         {
-            super(expr, expected);
+            super(expr);
             s = source;
             this.origin = origin;
-        }
-
-        @Override
-        protected CarpetContext clone() throws CloneNotSupportedException
-        {
-            CarpetContext c = (CarpetContext) super.clone();
-            c.s = this.s;
-            c.origin = this.origin;
-            return c;
         }
     }
 
@@ -162,7 +152,7 @@ public class CarpetExpression
 
 
     private LazyValue booleanStateTest(
-            Expression.Context c,
+            Context c,
             String name,
             List<LazyValue> params,
             BiFunction<IBlockState, BlockPos, Boolean> test
@@ -181,7 +171,7 @@ public class CarpetExpression
     }
 
     private LazyValue stateStringQuery(
-            Expression.Context c,
+            Context c,
             String name,
             List<LazyValue> params,
             BiFunction<IBlockState, BlockPos, String> test
@@ -699,7 +689,7 @@ public class CarpetExpression
     {
         try
         {
-            Expression.Context context = new CarpetContext(this.expr, Expression.Context.NONE, source, origin).
+            Context context = new CarpetContext(this.expr, source, origin).
                     with("x", (c, t) -> new NumericValue(x - origin.getX()).boundTo("x")).
                     with("y", (c, t) -> new NumericValue(y - origin.getY()).boundTo("y")).
                     with("z", (c, t) -> new NumericValue(z - origin.getZ()).boundTo("z"));
@@ -721,7 +711,7 @@ public class CarpetExpression
     {
         try
         {
-            Expression.Context context = new CarpetContext(this.expr, Expression.Context.NONE, source, origin).
+            Context context = new CarpetContext(this.expr, source, origin).
                     with("x", (c, t) -> new NumericValue(x - origin.getX()).boundTo("x")).
                     with("y", (c, t) -> new NumericValue(y - origin.getY()).boundTo("y")).
                     with("z", (c, t) -> new NumericValue(z - origin.getZ()).boundTo("z"));
@@ -735,7 +725,7 @@ public class CarpetExpression
 
     public static String invokeGlobal(CommandSource source, String call, List<String> argv)
     {
-        Expression.AbstractContextFunction acf = Expression.global_functions.get(call);
+        Expression.UserDefinedFunction acf = Expression.global_functions.get(call);
         List<String> args = acf.getArguments();
         if (argv.size() != args.size())
         {
@@ -746,7 +736,7 @@ public class CarpetExpression
         {
             Vec3d pos = source.getPos();
             Expression expr = new Expression(call+"("+String.join(" , ",argv)+" ) ");
-            Expression.Context context = new CarpetContext(expr, Expression.Context.NONE, source, BlockPos.ORIGIN).
+            Context context = new CarpetContext(expr, source, BlockPos.ORIGIN).
                     with("x", (c, t) -> new NumericValue(Math.round(pos.x)).boundTo("x")).
                     with("y", (c, t) -> new NumericValue(Math.round(pos.y)).boundTo("y")).
                     with("z", (c, t) -> new NumericValue(Math.round(pos.z)).boundTo("z"));
@@ -762,7 +752,7 @@ public class CarpetExpression
 
     public void execute()
     {
-        this.expr.eval(new CarpetContext(this.expr, Expression.Context.NONE, source, origin)).getString();
+        this.expr.eval(new CarpetContext(this.expr, source, origin)).getString();
     }
 
 

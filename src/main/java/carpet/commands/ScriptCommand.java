@@ -3,6 +3,7 @@ package carpet.commands;
 import carpet.CarpetSettings;
 import carpet.script.CarpetExpression;
 import carpet.script.Expression;
+import carpet.script.Tokenizer;
 import carpet.utils.Messenger;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -177,10 +178,10 @@ public class ScriptCommand
         Messenger.m(source, "w Global functions:");
         for (String fname : getGlobalCalls())
         {
-            Expression.AbstractContextFunction acf = Expression.global_functions.get(fname);
+            Expression.UserDefinedFunction acf = Expression.global_functions.get(fname);
 
             String expr = acf.getExpression().getCodeString();
-            Expression.Token tok = acf.getToken();
+            Tokenizer.Token tok = acf.getToken();
             List<String> snippet = Expression.getExpressionSnippet(tok, expr);
             Messenger.m(source, "w Function "+fname+" defined at: line "+(tok.lineno+1)+" pos "+(tok.linepos+1));
             for (String snippetLine: snippet)

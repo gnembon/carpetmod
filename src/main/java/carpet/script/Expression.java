@@ -27,16 +27,7 @@
 package carpet.script;
 
 import java.math.BigInteger;
-import java.math.MathContext;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Random;
-import java.util.Stack;
+import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -114,17 +105,20 @@ public class Expression implements Cloneable
 
     /** script specific operatos and built-in functions */
     private Map<String, ILazyOperator> operators = new HashMap<>();
+    boolean isAnOperator(String opname) { return operators.containsKey(opname) || operators.containsKey(opname+"u");}
 
     private Map<String, ILazyFunction> functions = new HashMap<>();
 
-    public static Map<String, AbstractContextFunction> global_functions = new HashMap<>();
+    public static Map<String, UserDefinedFunction> global_functions = new HashMap<>();
 
     public static Map<String, LazyValue> global_variables = new HashMap<>();
 
     Map<String, LazyValue> defaultVariables = new HashMap<>();
 
-    /** should the evaluator output value of each ;'s statement during execution */
+    /* should the evaluator output value of each ;'s statement during execution */
     private Consumer<String> logOutput = null;
+    public Consumer<String> getLogger() {return logOutput;}
+    void setLogOutput(Consumer<String> to) { logOutput = to; }
 
     @Override
     protected Expression clone() throws CloneNotSupportedException
@@ -135,32 +129,12 @@ public class Expression implements Cloneable
         copy.name = this.name;
         return copy;
     }
-    /** LazyNumber interface created for lazily evaluated functions */
-    @FunctionalInterface
-    public interface LazyValue
-    {
-        LazyValue FALSE = (c, t) -> Value.FALSE;
-        LazyValue TRUE = (c, t) -> Value.TRUE;
-        LazyValue NULL = (c, t) -> Value.NULL;
-        LazyValue ZERO = (c, t) -> Value.ZERO;
-        /**
-         * The Value representation of the left parenthesis, used for parsing
-         * varying numbers of function parameters.
-         */
-        LazyValue PARAMS_START = (c, t) -> null;
 
-        Value evalValue(Context c, Integer type);
-
-        default Value evalValue(Context c){
-            return evalValue(c, 0);
-        }
-    }
-
-    /** The expression evaluators exception class. */
+    /* The expression evaluators exception class. */
     static class ExpressionException extends RuntimeException
     {
 
-        private static TriFunction<Expression,Token, String, List<String>> errorMaker = (expr, token, errmessage) ->
+        private static TriFunction<Expression, Tokenizer.Token, String, List<String>> errorMaker = (expr, token, errmessage) ->
         {
 
             List<String> snippet = getExpressionSnippet(token, expr.expression);
@@ -180,13 +154,13 @@ public class Expression implements Cloneable
             errMsg.add(errmessage);
             return errMsg;
         };
-        public static TriFunction<Expression,Token, String, List<String>> errorSnooper = null;
+        public static TriFunction<Expression, Tokenizer.Token, String, List<String>> errorSnooper = null;
 
         ExpressionException(String message)
         {
             super(message);
         }
-        public static String makeMessage(Expression e, Token t, String message) throws ExpressionException
+        public static String makeMessage(Expression e, Tokenizer.Token t, String message) throws ExpressionException
         {
             if (errorSnooper != null)
             {
@@ -199,12 +173,12 @@ public class Expression implements Cloneable
             return String.join("\n", errorMaker.apply(e, t, message));
         }
 
-        ExpressionException(Expression e, Token t, String message)
+        ExpressionException(Expression e, Tokenizer.Token t, String message)
         {
             super(makeMessage(e, t, message));
         }
     }
-    /** The internal expression evaluators exception class. */
+    /* The internal expression evaluators exception class. */
     static class InternalExpressionException extends ExpressionException
     {
         InternalExpressionException(String message)
@@ -212,7 +186,7 @@ public class Expression implements Cloneable
             super(message);
         }
     }
-    /** Exception thrown to terminate execution mid expression (aka return statement) */
+    /* Exception thrown to terminate execution mid expression (aka return statement) */
     private static class ExitStatement extends RuntimeException
     {
         Value retval;
@@ -221,7 +195,9 @@ public class Expression implements Cloneable
             retval = value;
         }
     }
-    public static List<String> getExpressionSnippet(Token token, String expr)
+
+
+    public static List<String> getExpressionSnippet(Tokenizer.Token token, String expr)
     {
 
         List<String> output = new ArrayList<>();
@@ -238,7 +214,7 @@ public class Expression implements Cloneable
         return output;
     }
 
-    public static List<String> getExpressionSnippetLeftContext(Token token, String expr, int contextsize)
+    public static List<String> getExpressionSnippetLeftContext(Tokenizer.Token token, String expr, int contextsize)
     {
         List<String> output = new ArrayList<>();
         String[] lines = expr.split("\n");
@@ -251,7 +227,7 @@ public class Expression implements Cloneable
         return output;
     }
 
-    public static List<String> getExpressionSnippetContext(Token token, String expr)
+    public static List<String> getExpressionSnippetContext(Tokenizer.Token token, String expr)
     {
         List<String> output = new ArrayList<>();
         String[] lines = expr.split("\n");
@@ -268,7 +244,7 @@ public class Expression implements Cloneable
         return output;
     }
 
-    public static List<String> getExpressionSnippetRightContext(Token token, String expr, int contextsize)
+    public static List<String> getExpressionSnippetRightContext(Tokenizer.Token token, String expr, int contextsize)
     {
         List<String> output = new ArrayList<>();
         String[] lines = expr.split("\n");
@@ -281,286 +257,11 @@ public class Expression implements Cloneable
     }
 
 
-
-    public static class Token
-    {
-        enum TokenType
-        {
-            VARIABLE, FUNCTION, LITERAL, OPERATOR, UNARY_OPERATOR,
-            OPEN_PAREN, COMMA, CLOSE_PAREN, HEX_LITERAL, STRINGPARAM
-        }
-        public String surface = "";
-        public TokenType type;
-        public int pos;
-        public int linepos;
-        public int lineno;
-
-        public void append(char c)
-        {
-            surface += c;
-        }
-
-        public void append(String s)
-        {
-            surface += s;
-        }
-
-        public char charAt(int pos)
-        {
-            return surface.charAt(pos);
-        }
-
-        public int length()
-        {
-            return surface.length();
-        }
-
-        @Override
-        public String toString()
-        {
-            return surface;
-        }
-    }
-
-    /**
-     * Expression tokenizer that allows to iterate over a {@link String}
-     * expression token by token. Blank characters will be skipped.
-     */
-    private static class Tokenizer implements Iterator<Token>
-    {
-
-        /** What character to use for decimal separators. */
-        private static final char decimalSeparator = '.';
-        /** What character to use for minus sign (negative values). */
-        private static final char minusSign = '-';
-        /** Actual position in expression string. */
-        private int pos = 0;
-        private int lineno = 0;
-        private int linepos = 0;
-
-
-        /** The original input expression. */
-        private String input;
-        /** The previous token or <code>null</code> if none. */
-        private Token previousToken;
-
-        private Expression expression;
-
-        Tokenizer(Expression expr, String input)
-        {
-            this.input = input;
-            this.expression = expr;
-        }
-
-        @Override
-        public boolean hasNext()
-        {
-            return (pos < input.length());
-        }
-
-        /**
-         * Peek at the next character, without advancing the iterator.
-         *
-         * @return The next character or character 0, if at end of string.
-         */
-        private char peekNextChar()
-        {
-            return (pos < (input.length() - 1)) ? input.charAt(pos + 1) : 0;
-        }
-
-        private boolean isHexDigit(char ch)
-        {
-            return ch == 'x' || ch == 'X' || (ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f')
-                    || (ch >= 'A' && ch <= 'F');
-        }
-
-        @Override
-        public Token next()
-        {
-            Token token = new Token();
-
-            if (pos >= input.length())
-            {
-                return previousToken = null;
-            }
-            char ch = input.charAt(pos);
-            while (Character.isWhitespace(ch) && pos < input.length())
-            {
-                linepos++;
-                if (ch=='\n')
-                {
-                    lineno++;
-                    linepos = 0;
-                }
-                ch = input.charAt(++pos);
-            }
-            token.pos = pos;
-            token.lineno = lineno;
-            token.linepos = linepos;
-
-            boolean isHex = false;
-
-            if (Character.isDigit(ch) || (ch == decimalSeparator && Character.isDigit(peekNextChar())))
-            {
-                if (ch == '0' && (peekNextChar() == 'x' || peekNextChar() == 'X'))
-                    isHex = true;
-                while ((isHex
-                        && isHexDigit(
-                        ch))
-                        || (Character.isDigit(ch) || ch == decimalSeparator || ch == 'e' || ch == 'E'
-                        || (ch == minusSign && token.length() > 0
-                        && ('e' == token.charAt(token.length() - 1)
-                        || 'E' == token.charAt(token.length() - 1)))
-                        || (ch == '+' && token.length() > 0
-                        && ('e' == token.charAt(token.length() - 1)
-                        || 'E' == token.charAt(token.length() - 1))))
-                        && (pos < input.length()))
-                {
-                    token.append(input.charAt(pos++));
-                    linepos++;
-                    ch = pos == input.length() ? 0 : input.charAt(pos);
-                }
-                token.type = isHex ? Token.TokenType.HEX_LITERAL : Token.TokenType.LITERAL;
-            }
-            else if (ch == '\'')
-            {
-                pos++;
-                linepos++;
-                if (previousToken == null || previousToken.type != Token.TokenType.STRINGPARAM)
-                {
-                    ch = input.charAt(pos);
-                    while (ch != '\'')
-                    {
-                        token.append(input.charAt(pos++));
-                        linepos++;
-                        ch = pos == input.length() ? 0 : input.charAt(pos);
-                    }
-                    pos++;
-                    linepos++;
-                    token.type = Token.TokenType.STRINGPARAM;
-                }
-                else
-                {
-                    return next();
-                }
-            }
-            else if (Character.isLetter(ch) || "_".indexOf(ch) >= 0)
-            {
-                while ((Character.isLetter(ch) || Character.isDigit(ch) || "_".indexOf(ch) >= 0
-                        || token.length() == 0 && "_".indexOf(ch) >= 0) && (pos < input.length()))
-                {
-                    token.append(input.charAt(pos++));
-                    linepos++;
-                    ch = pos == input.length() ? 0 : input.charAt(pos);
-                }
-                // Remove optional white spaces after function or variable name
-                if (Character.isWhitespace(ch))
-                {
-                    while (Character.isWhitespace(ch) && pos < input.length())
-                    {
-                        ch = input.charAt(pos++);
-                        linepos++;
-                        if (ch=='\n')
-                        {
-                            lineno++;
-                            linepos = 0;
-                        }
-                    }
-                    pos--;
-                    linepos--;
-                }
-                if (previousToken != null && (
-                        previousToken.type == Token.TokenType.VARIABLE ||
-                        previousToken.type == Token.TokenType.FUNCTION ||
-                        previousToken.type == Token.TokenType.LITERAL ||
-                        previousToken.type == Token.TokenType.CLOSE_PAREN ||
-                        previousToken.type == Token.TokenType.HEX_LITERAL ||
-                        previousToken.type == Token.TokenType.STRINGPARAM ) )
-                {
-                    throw new ExpressionException(this.expression, previousToken, token.surface +" is not allowed after "+previousToken.surface);
-                }
-                token.type = ch == '(' ? Token.TokenType.FUNCTION : Token.TokenType.VARIABLE;
-            }
-            else if (ch == '(' || ch == ')' || ch == ',')
-            {
-                if (ch == '(')
-                {
-                    token.type = Token.TokenType.OPEN_PAREN;
-                }
-                else if (ch == ')')
-                {
-                    token.type = Token.TokenType.CLOSE_PAREN;
-                }
-                else
-                {
-                    token.type = Token.TokenType.COMMA;
-                }
-                token.append(ch);
-                pos++;
-                linepos++;
-            }
-            else
-            {
-                String greedyMatch = "";
-                int initialPos = pos;
-                ch = input.charAt(pos);
-                int validOperatorSeenUntil = -1;
-                while (!Character.isLetter(ch) && !Character.isDigit(ch) && "_".indexOf(ch) < 0
-                        && !Character.isWhitespace(ch) && ch != '(' && ch != ')' && ch != ','
-                        && (pos < input.length()))
-                {
-                    greedyMatch += ch;
-                    pos++;
-                    linepos++;
-                    if (this.expression.operators.containsKey(greedyMatch))
-                    {
-                        validOperatorSeenUntil = pos;
-                    }
-                    ch = pos == input.length() ? 0 : input.charAt(pos);
-                }
-                if (validOperatorSeenUntil != -1)
-                {
-                    token.append(input.substring(initialPos, validOperatorSeenUntil));
-                    pos = validOperatorSeenUntil;
-                }
-                else
-                {
-                    token.append(greedyMatch);
-                }
-
-                if (previousToken == null || previousToken.type == Token.TokenType.OPERATOR
-                        || previousToken.type == Token.TokenType.OPEN_PAREN || previousToken.type == Token.TokenType.COMMA)
-                {
-                    token.surface += "u";
-                    token.type = Token.TokenType.UNARY_OPERATOR;
-                }
-                else
-                {
-                    token.type = Token.TokenType.OPERATOR;
-                }
-            }
-            return previousToken = token;
-        }
-
-        @Override
-        public void remove()
-        {
-            throw new InternalExpressionException("remove() not supported");
-        }
-
-    }
-
     private static <T> T assertNotNull(T t)
     {
         if (t == null)
             throw new InternalExpressionException("Operand may not be null");
         return t;
-    }
-
-    private static <T> void assertIsNull(T t)
-    {
-        if (t != null)
-            throw new InternalExpressionException("Received extra operand");
     }
 
     private static <T> void assertNotNull(T t1, T t2)
@@ -584,7 +285,7 @@ public class Expression implements Cloneable
         operators.put(surface+"u", new AbstractLazyOperator(precedence, leftAssoc)
         {
             @Override
-            public LazyValue lazyEval(Context c, Integer t, Expression e, Token token, LazyValue v, LazyValue v2)
+            public LazyValue lazyEval(Context c, Integer t, Expression e, Tokenizer.Token token, LazyValue v, LazyValue v2)
             {
                 try
                 {
@@ -609,12 +310,12 @@ public class Expression implements Cloneable
 
 
     private void addLazyBinaryOperatorWithDelegation(String surface, int precedence, boolean leftAssoc,
-                                       SexFunction<Context, Integer, Expression, Token, LazyValue, LazyValue, LazyValue> lazyfun)
+                                       SexFunction<Context, Integer, Expression, Tokenizer.Token, LazyValue, LazyValue, LazyValue> lazyfun)
     {
         operators.put(surface, new AbstractLazyOperator(precedence, leftAssoc)
         {
             @Override
-            public LazyValue lazyEval(Context c, Integer type, Expression e, Token t, LazyValue v1, LazyValue v2)
+            public LazyValue lazyEval(Context c, Integer type, Expression e, Tokenizer.Token t, LazyValue v1, LazyValue v2)
             {
                 try
                 {
@@ -639,7 +340,7 @@ public class Expression implements Cloneable
         operators.put(surface, new AbstractLazyOperator(precedence, leftAssoc)
         {
             @Override
-            public LazyValue lazyEval(Context c, Integer t, Expression e, Token token, LazyValue v1, LazyValue v2)
+            public LazyValue lazyEval(Context c, Integer t, Expression e, Tokenizer.Token token, LazyValue v1, LazyValue v2)
             {
                 try
                 {
@@ -746,7 +447,7 @@ public class Expression implements Cloneable
         functions.put(name, new AbstractLazyFunction(num_params)
         {
             @Override
-            public LazyValue lazyEval(Context c, Integer i, Expression e, Token t, List<LazyValue> lazyParams)
+            public LazyValue lazyEval(Context c, Integer i, Expression e, Tokenizer.Token t, List<LazyValue> lazyParams)
             {
                 try
                 {
@@ -763,7 +464,7 @@ public class Expression implements Cloneable
             }
         });
     }
-    private void addContextFunction(String name, Expression expr, Token token, List<String> arguments, LazyValue code)
+    private void addContextFunction(String name, Expression expr, Tokenizer.Token token, List<String> arguments, LazyValue code)
     {
         name = name.toLowerCase(Locale.ROOT);
         if (functions.containsKey(name))
@@ -779,10 +480,10 @@ public class Expression implements Cloneable
             throw new ExpressionException(expr, token, "Problems in allocating global function "+name);
         }
 
-        global_functions.put(name, new AbstractContextFunction(arguments, function_context, token)
+        global_functions.put(name, new UserDefinedFunction(arguments, function_context, token)
         {
             @Override
-            public LazyValue lazyEval(Context c, Integer type, Expression e, Token t, List<LazyValue> lazyParams)
+            public LazyValue lazyEval(Context c, Integer type, Expression e, Tokenizer.Token t, List<LazyValue> lazyParams)
             {
                 if (arguments.size() != lazyParams.size()) // something that might be subject to change in the future
                 {
@@ -823,8 +524,7 @@ public class Expression implements Cloneable
 
 
     /**
-     * Creates a new expression instance from an expression string with a given
-     * default match context of {@link MathContext#DECIMAL64}.
+     * Creates a new expression instance from an expression string
      *
      * @param expression The expression. E.g. <code>"2.4*sin(3)/(2-4)"</code> or
      *                   <code>"sin(y)&gt;0 &amp; max(z, 3)&gt;3"</code>
@@ -845,13 +545,7 @@ public class Expression implements Cloneable
         defaultVariables.put("_i", (c, t) -> new NumericValue(0).boundTo("_i"));
         defaultVariables.put("_a", (c, t) -> new NumericValue(0).boundTo("_a"));
 
-        addLazyBinaryOperator(";",precedence.get("nextop;"), true, (c, t, lv1, lv2) ->
-        {
-            Value v1 = lv1.evalValue(c, Context.VOID);//.withExpected(Context.VOID));
-            if (c.logOutput != null)
-                c.logOutput.accept(v1.getString());
-            return lv2;
-        });
+
 
         // artificial construct to handle user defined functions and function definitions
         addLazyFunction(".",-1, (c, t, lv) -> { // adjust based on c
@@ -868,7 +562,7 @@ public class Expression implements Cloneable
                 {
                     lvargs.add(lv.get(i));
                 }
-                AbstractContextFunction acf = global_functions.get(name);
+                UserDefinedFunction acf = global_functions.get(name);
                 return (cc, tt) -> acf.lazyEval(c, t, acf.expression, acf.token, lvargs).evalValue(c); ///!!!! dono might need to store expr and token in statics? (e? t?)
             }
 
@@ -884,6 +578,14 @@ public class Expression implements Cloneable
                 args.add(v.boundVariable);
             }
             return (cc, tt) -> new FunctionSignatureValue(name, args);
+        });
+
+        addLazyBinaryOperator(";",precedence.get("nextop;"), true, (c, t, lv1, lv2) ->
+        {
+            Value v1 = lv1.evalValue(c, Context.VOID);//.withExpected(Context.VOID));
+            if (c.getLogger() != null)
+                c.getLogger().accept(v1.getString());
+            return lv2;
         });
 
         addBinaryOperator("+", precedence.get("addition+-"), true, Value::add);
@@ -1162,7 +864,7 @@ public class Expression implements Cloneable
                 throw new InternalExpressionException("Cannot replace local built-in variables, i.e. those that start with '_'");
             global_functions.remove(varname);
             global_variables.remove(varname);
-            c.variables.remove(varname);
+            c.delVariable(varname);
             return (cc, tt) -> Value.NULL;
         });
 
@@ -1180,7 +882,7 @@ public class Expression implements Cloneable
             }
             else
             {
-                for (String k: c.variables.keySet())
+                for (String k: c.getAllVariableNames())
                 {
                     if (k.startsWith(prefix))
                         values.add(new StringValue(k));
@@ -1460,18 +1162,18 @@ public class Expression implements Cloneable
      * @return A RPN representation of the expression, with each token as a list
      * member.
      */
-    private List<Token> shuntingYard(String expression)
+    private List<Tokenizer.Token> shuntingYard(String expression)
     {
-        List<Token> outputQueue = new ArrayList<>();
-        Stack<Token> stack = new Stack<>();
+        List<Tokenizer.Token> outputQueue = new ArrayList<>();
+        Stack<Tokenizer.Token> stack = new Stack<>();
 
         Tokenizer tokenizer = new Tokenizer(this, expression);
 
-        Token lastFunction = null;
-        Token previousToken = null;
+        Tokenizer.Token lastFunction = null;
+        Tokenizer.Token previousToken = null;
         while (tokenizer.hasNext())
         {
-            Token token;
+            Tokenizer.Token token;
             try
             {
                 token = tokenizer.next();
@@ -1488,9 +1190,9 @@ public class Expression implements Cloneable
                 case LITERAL:
                 case HEX_LITERAL:
                     if (previousToken != null && (
-                            previousToken.type == Token.TokenType.LITERAL ||
-                                    previousToken.type == Token.TokenType.HEX_LITERAL ||
-                                    previousToken.type == Token.TokenType.STRINGPARAM))
+                            previousToken.type == Tokenizer.Token.TokenType.LITERAL ||
+                                    previousToken.type == Tokenizer.Token.TokenType.HEX_LITERAL ||
+                                    previousToken.type == Tokenizer.Token.TokenType.STRINGPARAM))
                     {
                         throw new ExpressionException(this, token, "Missing operator");
                     }
@@ -1504,11 +1206,11 @@ public class Expression implements Cloneable
                     lastFunction = token;
                     break;
                 case COMMA:
-                    if (previousToken != null && previousToken.type == Token.TokenType.OPERATOR)
+                    if (previousToken != null && previousToken.type == Tokenizer.Token.TokenType.OPERATOR)
                     {
                         throw new ExpressionException(this, previousToken, "Missing parameter(s) for operator ");
                     }
-                    while (!stack.isEmpty() && stack.peek().type != Token.TokenType.OPEN_PAREN)
+                    while (!stack.isEmpty() && stack.peek().type != Tokenizer.Token.TokenType.OPEN_PAREN)
                     {
                         outputQueue.add(stack.pop());
                     }
@@ -1527,7 +1229,7 @@ public class Expression implements Cloneable
                 case OPERATOR:
                 {
                     if (previousToken != null
-                            && (previousToken.type == Token.TokenType.COMMA || previousToken.type == Token.TokenType.OPEN_PAREN))
+                            && (previousToken.type == Tokenizer.Token.TokenType.COMMA || previousToken.type == Tokenizer.Token.TokenType.OPEN_PAREN))
                     {
                         throw new ExpressionException(this, token, "Missing parameter(s) for operator '" + token+"'");
                     }
@@ -1543,8 +1245,8 @@ public class Expression implements Cloneable
                 }
                 case UNARY_OPERATOR:
                 {
-                    if (previousToken != null && previousToken.type != Token.TokenType.OPERATOR
-                            && previousToken.type != Token.TokenType.COMMA && previousToken.type != Token.TokenType.OPEN_PAREN)
+                    if (previousToken != null && previousToken.type != Tokenizer.Token.TokenType.OPERATOR
+                            && previousToken.type != Tokenizer.Token.TokenType.COMMA && previousToken.type != Tokenizer.Token.TokenType.OPEN_PAREN)
                     {
                         throw new ExpressionException(this, token, "Invalid position for unary operator " + token );
                     }
@@ -1561,19 +1263,19 @@ public class Expression implements Cloneable
                 case OPEN_PAREN:
                     if (previousToken != null)
                     {
-                        if (previousToken.type == Token.TokenType.LITERAL || previousToken.type == Token.TokenType.CLOSE_PAREN
-                                || previousToken.type == Token.TokenType.VARIABLE
-                                || previousToken.type == Token.TokenType.HEX_LITERAL)
+                        if (previousToken.type == Tokenizer.Token.TokenType.LITERAL || previousToken.type == Tokenizer.Token.TokenType.CLOSE_PAREN
+                                || previousToken.type == Tokenizer.Token.TokenType.VARIABLE
+                                || previousToken.type == Tokenizer.Token.TokenType.HEX_LITERAL)
                         {
                             // Implicit multiplication, e.g. 23(a+b) or (a+b)(a-b)
-                            Token multiplication = new Token();
+                            Tokenizer.Token multiplication = new Tokenizer.Token();
                             multiplication.append("*");
-                            multiplication.type = Token.TokenType.OPERATOR;
+                            multiplication.type = Tokenizer.Token.TokenType.OPERATOR;
                             stack.push(multiplication);
                         }
                         // if the ( is preceded by a valid function, then it
                         // denotes the start of a parameter list
-                        if (previousToken.type == Token.TokenType.FUNCTION)
+                        if (previousToken.type == Tokenizer.Token.TokenType.FUNCTION)
                         {
                             outputQueue.add(token);
                         }
@@ -1581,11 +1283,11 @@ public class Expression implements Cloneable
                     stack.push(token);
                     break;
                 case CLOSE_PAREN:
-                    if (previousToken != null && previousToken.type == Token.TokenType.OPERATOR)
+                    if (previousToken != null && previousToken.type == Tokenizer.Token.TokenType.OPERATOR)
                     {
                         throw new ExpressionException(this, previousToken, "Missing parameter(s) for operator " + previousToken);
                     }
-                    while (!stack.isEmpty() && stack.peek().type != Token.TokenType.OPEN_PAREN)
+                    while (!stack.isEmpty() && stack.peek().type != Tokenizer.Token.TokenType.OPEN_PAREN)
                     {
                         outputQueue.add(stack.pop());
                     }
@@ -1594,7 +1296,7 @@ public class Expression implements Cloneable
                         throw new ExpressionException("Mismatched parentheses");
                     }
                     stack.pop();
-                    if (!stack.isEmpty() && stack.peek().type == Token.TokenType.FUNCTION)
+                    if (!stack.isEmpty() && stack.peek().type == Tokenizer.Token.TokenType.FUNCTION)
                     {
                         outputQueue.add(stack.pop());
                     }
@@ -1604,8 +1306,8 @@ public class Expression implements Cloneable
 
         while (!stack.isEmpty())
         {
-            Token element = stack.pop();
-            if (element.type == Token.TokenType.OPEN_PAREN || element.type == Token.TokenType.CLOSE_PAREN)
+            Tokenizer.Token element = stack.pop();
+            if (element.type == Tokenizer.Token.TokenType.OPEN_PAREN || element.type == Tokenizer.Token.TokenType.CLOSE_PAREN)
             {
                 throw new ExpressionException(this, element, "Mismatched parentheses");
             }
@@ -1614,12 +1316,12 @@ public class Expression implements Cloneable
         return outputQueue;
     }
 
-    private void shuntOperators(List<Token> outputQueue, Stack<Token> stack, ILazyOperator o1)
+    private void shuntOperators(List<Tokenizer.Token> outputQueue, Stack<Tokenizer.Token> stack, ILazyOperator o1)
     {
-        Expression.Token nextToken = stack.isEmpty() ? null : stack.peek();
+        Tokenizer.Token nextToken = stack.isEmpty() ? null : stack.peek();
         while (nextToken != null
-                && (nextToken.type == Token.TokenType.OPERATOR
-                || nextToken.type == Token.TokenType.UNARY_OPERATOR)
+                && (nextToken.type == Tokenizer.Token.TokenType.OPERATOR
+                || nextToken.type == Tokenizer.Token.TokenType.UNARY_OPERATOR)
                 && ((o1.isLeftAssoc() && o1.getPrecedence() <= operators.get(nextToken.surface).getPrecedence())
                 || (o1.getPrecedence() < operators.get(nextToken.surface).getPrecedence())))
         {
@@ -1639,13 +1341,17 @@ public class Expression implements Cloneable
      */
     public Value eval(Context c)
     {
+        return eval(c, Context.NONE);
+    }
+    public Value eval(Context c, Integer expectedType)
+    {
         if (ast == null)
         {
             ast = getAST();
         }
         try
         {
-            return ast.evalValue(c);
+            return ast.evalValue(c, expectedType);
         }
         catch (ExitStatement exit)
         {
@@ -1660,7 +1366,9 @@ public class Expression implements Cloneable
     private LazyValue getAST()
     {
         Stack<LazyValue> stack = new Stack<>();
-        for (final Token token : getRPN())
+        List<Tokenizer.Token> rpn = shuntingYard(this.expression);
+        validate(rpn);
+        for (final Tokenizer.Token token : rpn)
         {
             switch (token.type)
             {
@@ -1678,13 +1386,6 @@ public class Expression implements Cloneable
                     stack.push(result);
                     break;
                 case VARIABLE:
-                    //String varname = token.surface.toLowerCase(Locale.ROOT);
-                    //if (functions.containsKey(varname) || global_functions.containsKey(varname))
-                    //{
-                    //    throw new ExpressionException("Variable would mask function: " + token);
-                    //    // note: this would actually never happen
-                    //} undef requires identifier
-
                     stack.push((c, t) ->
                     {
                         if (!c.isAVariable(token.surface)) // new variable
@@ -1749,26 +1450,12 @@ public class Expression implements Cloneable
         return stack.pop();
     }
 
-
-
-    /**
-     * RPN notation of this expression
-     *
-     * @return The RPN token list.
-     */
-    private List<Token> getRPN()
-    {
-        List<Token> rpn = shuntingYard(this.expression);
-        validate(rpn);
-        return rpn;
-    }
-
     /**
      * Check that the expression has enough numbers and variables to fit the
      * requirements of the operators and functions, also check for only 1 result
      * stored at the end of the evaluation.
      */
-    private void validate(List<Token> rpn)
+    private void validate(List<Tokenizer.Token> rpn)
     {
         /*-
          * Thanks to Norman Ramsey:
@@ -1783,7 +1470,7 @@ public class Expression implements Cloneable
         // push the 'global' scope
         stack.push(0);
 
-        for (final Token token : rpn)
+        for (final Tokenizer.Token token : rpn)
         {
             switch (token.type)
             {
@@ -1841,107 +1528,8 @@ public class Expression implements Cloneable
         }
     }
 
-    void setLogOutput(Consumer<String> to)
-    {
-        logOutput = to;
-    }
 
 
-    /** Fluff section below */
-    public static class Context implements Cloneable
-    {
-        static final int NONE = 0;
-        static final int VOID = 1;
-        static final int BOOLEAN = 2;
-        static final int NUMBER = 3;
-        static final int STRING = 4;
-        static final int LIST = 5;
-        static final int ITERATOR = 6;
-        static final int SIGNATURE = 7;
-
-        public int expected;
-        private Map<String, LazyValue> variables = new HashMap<>();
-        Consumer<String> logOutput;
-
-
-        Context(Expression expr, int str)
-        {
-            expected = str;
-            variables.putAll(expr.defaultVariables);
-            logOutput = expr.logOutput;
-        }
-
-        @Override
-        protected Context clone() throws CloneNotSupportedException
-        {
-            Context clone = (Context) super.clone();
-            clone.expected = this.expected;
-            clone.variables = this.variables;
-            clone.logOutput = this.logOutput;
-            return clone;
-        }
-        Context withExpected(int expectedResult)
-        {
-            Context other;
-            try
-            {
-                other = this.clone();
-            }
-            catch (CloneNotSupportedException e1)
-            {
-                throw new ExpressionException("Clone not supported");
-            }
-            other.expected = expectedResult;
-            return other;
-        }
-
-
-        LazyValue getVariable(String name)
-        {
-            if (variables.containsKey(name))
-            {
-                return variables.get(name);
-            }
-            return global_variables.get(name);
-        }
-
-        void setVariable(String name, LazyValue lv)
-        {
-            if (name.startsWith("global_"))
-            {
-                global_variables.put(name, lv);
-                return;
-            }
-            variables.put(name, lv);
-        }
-        void setVariable(String name, Value val)
-        {
-            setVariable(name, (c, t) -> val.boundTo(name));
-        }
-
-
-        boolean isAVariable(String name)
-        {
-            return variables.containsKey(name) || global_variables.containsKey(name);
-        }
-
-
-        void delVariable(String variable)
-        {
-            if (variable.startsWith("global_"))
-            {
-                global_variables.remove(variable);
-                return;
-            }
-            variables.remove(variable);
-        }
-
-        public Context with(String variable, LazyValue lv)
-        {
-            variables.put(variable, lv);
-            return this;
-        }
-    }
 
     @FunctionalInterface
     public interface TriFunction<A, B, C, R> { R apply(A a, B b, C c); }
@@ -1952,41 +1540,41 @@ public class Expression implements Cloneable
     @FunctionalInterface
     public interface SexFunction<A, B, C, D, E, F, R> { R apply(A a, B b, C c, D d, E e, F f);}
 
-    public interface ILazyFunction
+    private interface ILazyFunction
     {
         int getNumParams();
 
         boolean numParamsVaries();
 
-        LazyValue lazyEval(Context c, Integer type, Expression expr, Token token, List<LazyValue> lazyParams);
+        LazyValue lazyEval(Context c, Integer type, Expression expr, Tokenizer.Token token, List<LazyValue> lazyParams);
         // lazy function has a chance to change execution based on contxt
     }
 
-    public interface IFunction extends ILazyFunction
+    private interface IFunction extends ILazyFunction
     {
         Value eval(List<Value> parameters);
     }
 
-    public interface ILazyOperator
+    private interface ILazyOperator
     {
         int getPrecedence();
 
         boolean isLeftAssoc();
 
-        LazyValue lazyEval(Context c, Integer type, Expression e, Token t, LazyValue v1, LazyValue v2);
+        LazyValue lazyEval(Context c, Integer type, Expression e, Tokenizer.Token t, LazyValue v1, LazyValue v2);
     }
 
-    public interface IOperator extends ILazyOperator
+    private interface IOperator extends ILazyOperator
     {
         Value eval(Value v1, Value v2);
     }
 
-    public abstract static class AbstractContextFunction extends AbstractLazyFunction implements ILazyFunction
+    public abstract static class UserDefinedFunction extends AbstractLazyFunction implements ILazyFunction
     {
         protected List<String> arguments;
         protected Expression expression;
-        protected Token token;
-        AbstractContextFunction(List<String> args, Expression expr, Token t)
+        protected Tokenizer.Token token;
+        UserDefinedFunction(List<String> args, Expression expr, Tokenizer.Token t)
         {
             super(args.size());
             arguments = args;
@@ -2001,7 +1589,7 @@ public class Expression implements Cloneable
         {
             return expression;
         }
-        public Token getToken()
+        public Tokenizer.Token getToken()
         {
             return token;
         }
@@ -2010,7 +1598,7 @@ public class Expression implements Cloneable
 
     }
 
-    public abstract static class AbstractLazyFunction implements ILazyFunction
+    private abstract static class AbstractLazyFunction implements ILazyFunction
     {
         protected String name;
         int numParams;
@@ -2034,14 +1622,14 @@ public class Expression implements Cloneable
         }
     }
 
-    public abstract static class AbstractFunction extends AbstractLazyFunction implements IFunction
+    private abstract static class AbstractFunction extends AbstractLazyFunction implements IFunction
     {
         AbstractFunction(int numParams) {
             super(numParams);
         }
 
         @Override
-        public LazyValue lazyEval(Context cc, Integer type, Expression e, Token t, final List<LazyValue> lazyParams)
+        public LazyValue lazyEval(Context cc, Integer type, Expression e, Tokenizer.Token t, final List<LazyValue> lazyParams)
         {
             try
             {
@@ -2071,7 +1659,7 @@ public class Expression implements Cloneable
         }
     }
 
-    public abstract static class AbstractLazyOperator implements ILazyOperator
+    private abstract static class AbstractLazyOperator implements ILazyOperator
     {
         int precedence;
 
@@ -2092,7 +1680,7 @@ public class Expression implements Cloneable
 
     }
 
-    public abstract static class AbstractOperator extends AbstractLazyOperator implements IOperator
+    private abstract static class AbstractOperator extends AbstractLazyOperator implements IOperator
     {
 
         AbstractOperator(int precedence, boolean leftAssoc) {
@@ -2100,7 +1688,7 @@ public class Expression implements Cloneable
         }
 
         @Override
-        public LazyValue lazyEval(Context c_ignored, Integer type, Expression e, Token t, final LazyValue v1, final LazyValue v2)
+        public LazyValue lazyEval(Context c_ignored, Integer type, Expression e, Tokenizer.Token t, final LazyValue v1, final LazyValue v2)
         {
             try
             {
@@ -2117,14 +1705,14 @@ public class Expression implements Cloneable
         }
     }
 
-    public abstract static class AbstractUnaryOperator extends AbstractOperator
+    private abstract static class AbstractUnaryOperator extends AbstractOperator
     {
         AbstractUnaryOperator(int precedence, boolean leftAssoc) {
             super(precedence, leftAssoc);
         }
 
         @Override
-        public LazyValue lazyEval(Context cc, Integer type, Expression e, Token t, final LazyValue v1, final LazyValue v2)
+        public LazyValue lazyEval(Context cc, Integer type, Expression e, Tokenizer.Token t, final LazyValue v1, final LazyValue v2)
         {
             try
             {
