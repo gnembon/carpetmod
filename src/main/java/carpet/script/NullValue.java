@@ -1,6 +1,6 @@
 package carpet.script;
 
-public class NullValue extends Value
+public class NullValue extends NumericValue
 {
     @Override
     public String getString()
@@ -19,6 +19,5 @@ public class NullValue extends Value
     {
         return new NullValue();
     }
-    public NullValue()
-    {}
+    public NullValue() {super(0.0D);}
 }

@@ -133,7 +133,6 @@ public class Expression implements Cloneable
     /* The expression evaluators exception class. */
     static class ExpressionException extends RuntimeException
     {
-
         private static TriFunction<Expression, Tokenizer.Token, String, List<String>> errorMaker = (expr, token, errmessage) ->
         {
 
@@ -651,9 +650,38 @@ public class Expression implements Cloneable
             }
             v1.assertAssignable();
             String varname = v1.getVariable();
-            Value boundedLHS = v2.boundTo(varname);
-            c.setVariable(varname, (cc, tt) -> boundedLHS);
-            return (cc, tt) -> boundedLHS;
+            LazyValue boundedLHS = (cc, tt) -> v2.boundTo(varname);
+            c.setVariable(varname, boundedLHS);
+            return boundedLHS;
+        });
+
+        addLazyBinaryOperator("+=", precedence.get("assign=<>"), false, (c, t, lv1, lv2) ->
+        {
+            Value v1 = lv1.evalValue(c);
+            Value v2 = lv2.evalValue(c);
+            if (v1 instanceof ListValue && v2 instanceof ListValue)
+            {
+                List<Value> ll = ((ListValue)v1).getItems();
+                List<Value> rl = ((ListValue)v2).getItems();
+                if (ll.size() < rl.size()) throw new InternalExpressionException("Too many values to unpack");
+                if (ll.size() > rl.size()) throw new InternalExpressionException("Too few values to unpack");
+                for (Value v: ll) v.assertAssignable();
+                Iterator<Value> li = ll.iterator();
+                Iterator<Value> ri = rl.iterator();
+                while(li.hasNext())
+                {
+                    Value lval = li.next();
+                    String lname = lval.getVariable();
+                    Value vval = ri.next();
+                    c.setVariable(lname, (cc, tt) -> lval.add(vval).boundTo(lname));
+                }
+                return (cc, tt) -> Value.TRUE;
+            }
+            v1.assertAssignable();
+            String varname = v1.getVariable();
+            LazyValue boundedLHS = (cc, tt) -> v1.add(v2).boundTo(varname);
+            c.setVariable(varname, boundedLHS);
+            return boundedLHS;
         });
 
         //assigns const procedure to the lhs, returning its previous value
@@ -915,7 +943,7 @@ public class Expression implements Cloneable
         addLazyFunction("loop", -1, (c, t, lv) ->
         {
             long limit = getNumericValue(lv.get(0).evalValue(c)).getLong();
-            Value lastOne = Value.ZERO;
+            Value lastOne = Value.NULL;
             LazyValue expr = lv.get(1);
             LazyValue cond = null;
             if(lv.size() > 2) cond = lv.get(2);
