@@ -109,11 +109,11 @@ public class Expression implements Cloneable
 
     private Map<String, ILazyFunction> functions = new HashMap<>();
 
-    public static Map<String, UserDefinedFunction> global_functions = new HashMap<>();
+    public static final Map<String, UserDefinedFunction> global_functions = new HashMap<>();
 
-    public static Map<String, LazyValue> global_variables = new HashMap<>();
+    public static final Map<String, LazyValue> global_variables = new HashMap<>();
 
-    Map<String, LazyValue> defaultVariables = new HashMap<>();
+    final Map<String, LazyValue> defaultVariables = new HashMap<>();
 
     /* should the evaluator output value of each ;'s statement during execution */
     private Consumer<String> logOutput = null;
@@ -890,9 +890,25 @@ public class Expression implements Cloneable
             String varname = lv.get(0).evalValue(c).getString();
             if (varname.startsWith("_"))
                 throw new InternalExpressionException("Cannot replace local built-in variables, i.e. those that start with '_'");
-            global_functions.remove(varname);
-            global_variables.remove(varname);
-            c.delVariable(varname);
+            if (varname.endsWith("*"))
+            {
+                varname = varname.replaceAll("\\*+$", "");
+                for (String key: global_functions.keySet())
+                {
+                    if (key.startsWith(varname)) global_functions.remove(key);
+                }
+                for (String key: global_variables.keySet())
+                {
+                    if (key.startsWith(varname)) global_variables.remove(key);
+                }
+                c.clearAll(varname);
+            }
+            else
+            {
+                global_functions.remove(varname);
+                global_variables.remove(varname);
+                c.delVariable(varname);
+            }
             return (cc, tt) -> Value.NULL;
         });
 

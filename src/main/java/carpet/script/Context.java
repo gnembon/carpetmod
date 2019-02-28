@@ -69,6 +69,15 @@ public class Context
         }
         variables.remove(variable);
     }
+    void clearAll(String variable)
+    {
+        if (variable.startsWith("global_"))
+        {
+            Expression.global_variables.remove(variable);
+            return;
+        }
+        variables.remove(variable);
+    }
 
     public Context with(String variable, LazyValue lv)
     {
