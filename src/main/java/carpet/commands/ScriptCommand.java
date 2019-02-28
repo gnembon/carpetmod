@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static net.minecraft.command.Commands.argument;
@@ -200,7 +201,28 @@ public class ScriptCommand
         return 1;
     }
 
-
+    private static void handleCall(CommandSource source, Supplier<String> call)
+    {
+        try
+        {
+            CarpetExpression.setChatErrorSnooper(source);
+            long start = System.nanoTime();
+            String result = call.get();
+            int time = (int)((System.nanoTime()-start)/1000);
+            String metric = "\u00B5s";
+            if (time > 2000)
+            {
+                time /= 1000;
+                metric = "ms";
+            }
+            Messenger.m(source, "wi  = ", "wb "+result, "gi  ("+time+metric+")");
+        }
+        catch (CarpetExpression.CarpetExpressionException e)
+        {
+            Messenger.m(source, "r Exception white evaluating expression at "+new BlockPos(source.getPos())+": "+e.getMessage());
+        }
+        CarpetExpression.resetErrorSnooper();
+    }
 
     private static int invoke(CommandSource source, String call, BlockPos pos1, BlockPos pos2,  String args)
     {
@@ -224,36 +246,19 @@ public class ScriptCommand
         }
         if (!(args.trim().isEmpty()))
             arguments.addAll(Arrays.asList(args.trim().split("\\s+")));
-        Messenger.m(source, "w "+CarpetExpression.invokeGlobal(source, call,arguments));
+        handleCall(source, () -> CarpetExpression.invokeGlobal(source, call,arguments));
         return 1;
     }
 
 
     private static int compute(CommandSource source, String expr)
     {
-        BlockPos pos = new BlockPos(source.getPos());
-        try
-        {
-            CarpetExpression.setChatErrorSnooper(source);
+        handleCall(source, () -> {
             CarpetExpression ex = new CarpetExpression(expr, source, new BlockPos(0, 0, 0));
             if (source.getWorld().getGameRules().getBoolean("commandBlockOutput"))
                 ex.setLogOutput(true);
-            long start = System.nanoTime();
-            String result = ex.eval(pos);
-            int time = (int)((System.nanoTime()-start)/1000);
-            String metric = "\u00B5s";
-            if (time > 2000)
-            {
-                time /= 1000;
-                metric = "ms";
-            }
-            Messenger.m(source, "wi "+expr,"wi  = ", "wb "+result, "gi  ("+time+metric+")");
-        }
-        catch (CarpetExpression.CarpetExpressionException e)
-        {
-            Messenger.m(source, "r Exception white evaluating expression at "+pos+": "+e.getMessage());
-        }
-        CarpetExpression.resetErrorSnooper();
+            return ex.eval(new BlockPos(source.getPos()));
+        });
         return 1;
     }
 
