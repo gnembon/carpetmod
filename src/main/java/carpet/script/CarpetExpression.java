@@ -264,6 +264,7 @@ public class CarpetExpression
                 case "motion": htype = Heightmap.Type.MOTION_BLOCKING; break;
                 case "surface": htype = Heightmap.Type.WORLD_SURFACE; break;
                 case "ocean floor": htype = Heightmap.Type.OCEAN_FLOOR; break;
+                case "terrain": htype = Heightmap.Type.MOTION_BLOCKING_NO_LEAVES; break;
                 default: htype = Heightmap.Type.LIGHT_BLOCKING;
             }
             int x;
@@ -531,7 +532,8 @@ public class CarpetExpression
 
         this.expr.addLazyFunction("tick", 0, (c, t, lv) -> {
             CommandSource s = ((CarpetContext)c).s;
-            s.getServer().tick( () -> true);
+            long nanotime = System.nanoTime();
+            s.getServer().tick( () -> System.nanoTime()-nanotime<50000);
             s.getServer().dontPanic();
             Thread.yield();
             return (cc, tt) -> Value.TRUE;

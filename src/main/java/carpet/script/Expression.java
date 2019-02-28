@@ -582,7 +582,7 @@ public class Expression implements Cloneable
 
         addLazyBinaryOperator(";",precedence.get("nextop;"), true, (c, t, lv1, lv2) ->
         {
-            Value v1 = lv1.evalValue(c, Context.VOID);//.withExpected(Context.VOID));
+            Value v1 = lv1.evalValue(c, Context.VOID);
             if (c.getLogger() != null)
                 c.getLogger().accept(v1.getString());
             return lv2;
@@ -917,7 +917,8 @@ public class Expression implements Cloneable
             long limit = getNumericValue(lv.get(0).evalValue(c)).getLong();
             Value lastOne = Value.ZERO;
             LazyValue expr = lv.get(1);
-            LazyValue cond = lv.get(2);
+            LazyValue cond = null;
+            if(lv.size() > 2) cond = lv.get(2);
             //scoping
             LazyValue _val = c.getVariable("_");
             for (long i=0; i < limit; i++)
