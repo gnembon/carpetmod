@@ -553,7 +553,7 @@ public class CarpetExpression
             neighbours.add(new BlockValue(null, world, center.south()));
             neighbours.add(new BlockValue(null, world, center.east()));
             neighbours.add(new BlockValue(null, world, center.west()));
-            return (c_, t_) -> new ListValue(neighbours);
+            return (c_, t_) -> ListValue.wrap(neighbours);
         });
 
         // consider abbrev to convsq

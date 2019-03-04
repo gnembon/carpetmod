@@ -70,6 +70,15 @@ import static java.lang.Math.min;
  * <p><code> 'foo'+3+2 =&gt; 'abc32'  </code></p>
  * <p><code> 3+2+'bar' =&gt; '5bar'  </code></p>
  *
+ *
+ *
+ *
+ * loop(num,expr(_),exit(_)?)->value (last)
+ * map(list,expr(_,_i), exit(_,_i)) -> list
+ * filter(list,expr(_,_i),exit(_,_i)) -> list
+ * first(list,expr(_,_i)) -> value (first)
+ * all(list,expr(_,_i)) -> boolean
+ * for(list,expr(_,_i),exit(_,_i)) -> success_count
  */
 public class Expression implements Cloneable
 {
@@ -836,7 +845,7 @@ public class Expression implements Cloneable
                 toSort = ((ListValue)lv.get(1)).getItems();
             }
             Collections.sort(toSort);
-            return new ListValue(toSort);
+            return ListValue.wrap(toSort);
         });
 
         addUnaryFunction("relu", (v) -> v.compareTo(Value.ZERO) < 0 ? Value.ZERO : v);
@@ -916,7 +925,7 @@ public class Expression implements Cloneable
                         values.add(new StringValue(k));
                 }
             }
-            return (cc, tt) -> new ListValue(values);
+            return (cc, tt) -> ListValue.wrap(values);
         });
 
         // if(cond1, expr1, cond2, expr2, ..., ?default) => value
@@ -942,6 +951,10 @@ public class Expression implements Cloneable
         // expr receives bounded variable '_' indicating iteration
         addLazyFunction("loop", -1, (c, t, lv) ->
         {
+            if (lv.size()<2 || lv.size()>3)
+            {
+                throw new InternalExpressionException("Incorrect number of attributes for loop, should be 2 or 3, not "+lv.size());
+            }
             long limit = getNumericValue(lv.get(0).evalValue(c)).getLong();
             Value lastOne = Value.NULL;
             LazyValue expr = lv.get(1);
@@ -965,7 +978,7 @@ public class Expression implements Cloneable
             return (cc, tt) -> trulyLastOne;
         });
 
-        // map(list or Num, expr, exit_cond) => list_results
+        // map(list or Num, expr) => list_results
         // receives bounded variable '_' with the expression
         addLazyFunction("map", 2, (c, t, lv) ->
         {
@@ -985,7 +998,7 @@ public class Expression implements Cloneable
                 c.setVariable("_i", (cc, tt) -> new NumericValue(doYouReally).boundTo("_i"));
                 result.add(expr.evalValue(c));
             }
-            LazyValue ret = (cc, tt) -> new ListValue(result);
+            LazyValue ret = (cc, tt) -> ListValue.wrap(result);
             //revering scope
             c.setVariable("_", _val);
             c.setVariable("_i", _iter);
@@ -995,12 +1008,12 @@ public class Expression implements Cloneable
         // grep(list or num, expr, exit_expr) => list
         // receives bounded variable '_' with the expression, and "_i" with index
         // produces list of values for which the expression is true
-        addLazyFunction("grep", 2, (c, t, lv) ->
+        addLazyFunction("filter", 2, (c, t, lv) ->
         {
             LazyValue expr = lv.get(0);
             Value rval= lv.get(1).evalValue(c);
             if (!(rval instanceof ListValue))
-                throw new InternalExpressionException("Second argument of grep function should be a list");
+                throw new InternalExpressionException("Second argument of filter function should be a list");
             List<Value> list = ((ListValue) rval).getItems();
             //scoping
             LazyValue _val = c.getVariable("_");
@@ -1014,7 +1027,7 @@ public class Expression implements Cloneable
                 if(expr.evalValue(c).getBoolean())
                     result.add(list.get(i));
             }
-            LazyValue ret = (cc, tt) -> new ListValue(result);
+            LazyValue ret = (cc, tt) -> ListValue.wrap(result);
             //revering scope
             c.setVariable("_", _val);
             c.setVariable("_i", _iter);
@@ -1076,13 +1089,13 @@ public class Expression implements Cloneable
                 {
                     c.setVariable("_", _val);
                     c.setVariable("_i", _iter);
-                    return (cc, tt) -> new NumericValue(0);
+                    return LazyValue.FALSE;
                 }
             }
             //revering scope
             c.setVariable("_", _val);
             c.setVariable("_i", _iter);
-            return (cc, tt) -> new NumericValue(1);
+            return LazyValue.TRUE;
         });
 
 
