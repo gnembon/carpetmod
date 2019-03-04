@@ -11,7 +11,10 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.command.CommandSource;
+import net.minecraft.command.arguments.EntitySelector;
+import net.minecraft.command.arguments.EntitySelectorParser;
 import net.minecraft.command.arguments.ParticleArgument;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.init.Blocks;
 import net.minecraft.particles.IParticleData;
@@ -29,11 +32,7 @@ import net.minecraft.world.WorldServer;
 import net.minecraft.world.gen.Heightmap;
 import net.minecraft.world.storage.SessionLockException;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.BiFunction;
 
 public class CarpetExpression
@@ -231,6 +230,40 @@ public class CarpetExpression
                 }
                 BlockPos pos = locateBlockPos((CarpetContext) c, lv, 0);
                 return (c_, t_) -> new BlockValue(null, cc.s.getWorld(), pos);
+        });
+
+        this.expr.addLazyFunction("pos", 1, (c, t, lv) ->
+        {
+            Value arg = lv.get(0).evalValue(c);
+            if (!(arg instanceof BlockValue ))
+                throw new InternalExpressionException("you can only get position of a block type");
+            BlockPos pos = ((BlockValue)arg).pos;
+            if (pos == null)
+                throw new InternalExpressionException("cannot fetch position of unlocalized block");
+            return (c_, t_) -> new ListValue(Arrays.asList(new NumericValue(pos.getX()),new NumericValue(pos.getY()),new NumericValue(pos.getZ())));
+        });
+
+        this.expr.addLazyFunction("player", -1, (c, t, lv) -> {
+            return LazyValue.NULL;
+        });
+
+        this.expr.addLazyFunction("entity", -1, (c, t, lv) -> {
+            String selector = lv.get(0).evalValue(c).getString();
+            EntitySelector entityselector = new EntitySelectorParser(new StringReader(selector), true).build();
+            try
+            {
+                Collection<? extends Entity > entities = entityselector.select(((CarpetContext)c).s);
+                List<Value> retlist = new ArrayList<>();
+                for (Entity e: entities)
+                {
+                    retlist.add(new StringValue(e.toString()));
+                }
+                return (c_, t_) -> ListValue.wrap(retlist);
+            }
+            catch (CommandSyntaxException e)
+            {
+                throw new InternalExpressionException("Cannot select entities from "+selector);
+            }
         });
 
 
@@ -448,7 +481,7 @@ public class CarpetExpression
         });
 
         // consider changing to scan
-        this.expr.addLazyFunction("area", 7, (c, t, lv) ->
+        this.expr.addLazyFunction("scan", 7, (c, t, lv) ->
         {
             int cx = (int)Expression.getNumericValue(lv.get(0).evalValue(c)).getLong();
             int cy = (int)Expression.getNumericValue(lv.get(1).evalValue(c)).getLong();

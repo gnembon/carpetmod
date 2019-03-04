@@ -787,12 +787,19 @@ public class Expression implements Cloneable
         addMathematicalUnaryFunction("ceil", Math::ceil);
 
         addLazyFunction("rand", 1, (c, t, lv) -> {
+            Value argument = lv.get(0).evalValue(c);
+            if (argument instanceof ListValue)
+            {
+                List<Value> list = ((ListValue) argument).getItems();
+                return (cc, tt) -> list.get(randomizer.nextInt(list.size()));
+            }
             if (t == Context.BOOLEAN)
             {
-                double rv = getNumericValue(lv.get(0).evalValue(c)).getDouble()*randomizer.nextFloat();
+                double rv = getNumericValue(argument).getDouble()*randomizer.nextFloat();
                 return (cc, tt) -> rv<1.0D?Value.FALSE:Value.TRUE;
             }
-            return (cc, tt) -> new NumericValue(getNumericValue(lv.get(0).evalValue(c)).getDouble()*randomizer.nextFloat());
+
+            return (cc, tt) -> new NumericValue(getNumericValue(argument).getDouble()*randomizer.nextFloat());
         });
 
         addLazyFunction("mandelbrot", 3, (c, t, lv) -> {
@@ -962,7 +969,7 @@ public class Expression implements Cloneable
             return (cc, tt) -> new NumericValue(0);
         });
 
-        // loop(Num or list, expr, exit_condition) => last_value
+        // loop(Num, expr, exit_condition) => last_value
         // loop(list, expr,
         // expr receives bounded variable '_' indicating iteration
         addLazyFunction("loop", -1, (c, t, lv) ->
@@ -984,9 +991,7 @@ public class Expression implements Cloneable
                 c.setVariable("_", (cc, tt) -> new NumericValue(whyYouAsk).boundTo("_"));
                 lastOne = expr.evalValue(c);
                 if (cond != null && cond.evalValue(c).getBoolean())
-                {
                     break;
-                }
             }
             //revering scope
             c.setVariable("_", _val);
@@ -996,13 +1001,20 @@ public class Expression implements Cloneable
 
         // map(list or Num, expr) => list_results
         // receives bounded variable '_' with the expression
-        addLazyFunction("map", 2, (c, t, lv) ->
+        addLazyFunction("map", -1, (c, t, lv) ->
         {
-            LazyValue expr = lv.get(0);
-            Value rval= lv.get(1).evalValue(c);
+            if (lv.size()<2 || lv.size()>3)
+            {
+                throw new InternalExpressionException("Incorrect number of attributes for map, should be 2 or 3, not "+lv.size());
+            }
+
+            Value rval= lv.get(0).evalValue(c);
             if (!(rval instanceof ListValue))
-                throw new InternalExpressionException("Second argument of map function should be a list");
+                throw new InternalExpressionException("First argument of map function should be a list");
             List<Value> list = ((ListValue) rval).getItems();
+            LazyValue expr = lv.get(1);
+            LazyValue cond = null;
+            if(lv.size() > 2) cond = lv.get(2);
             //scoping
             LazyValue _val = c.getVariable("_");
             LazyValue _iter = c.getVariable("_i");
@@ -1013,6 +1025,8 @@ public class Expression implements Cloneable
                 c.setVariable("_", (cc, tt) -> list.get(doYouReally).boundTo("_"));
                 c.setVariable("_i", (cc, tt) -> new NumericValue(doYouReally).boundTo("_i"));
                 result.add(expr.evalValue(c));
+                if (cond != null && cond.evalValue(c).getBoolean())
+                    break;
             }
             LazyValue ret = (cc, tt) -> ListValue.wrap(result);
             //revering scope
@@ -1024,13 +1038,20 @@ public class Expression implements Cloneable
         // grep(list or num, expr, exit_expr) => list
         // receives bounded variable '_' with the expression, and "_i" with index
         // produces list of values for which the expression is true
-        addLazyFunction("filter", 2, (c, t, lv) ->
+        addLazyFunction("filter", -1, (c, t, lv) ->
         {
-            LazyValue expr = lv.get(0);
-            Value rval= lv.get(1).evalValue(c);
+            if (lv.size()<2 || lv.size()>3)
+            {
+                throw new InternalExpressionException("Incorrect number of attributes for filter, should be 2 or 3, not "+lv.size());
+            }
+
+            Value rval= lv.get(0).evalValue(c);
             if (!(rval instanceof ListValue))
-                throw new InternalExpressionException("Second argument of filter function should be a list");
+                throw new InternalExpressionException("First argument of filter function should be a list");
             List<Value> list = ((ListValue) rval).getItems();
+            LazyValue expr = lv.get(1);
+            LazyValue cond = null;
+            if(lv.size() > 2) cond = lv.get(2);
             //scoping
             LazyValue _val = c.getVariable("_");
             LazyValue _iter = c.getVariable("_i");
@@ -1042,6 +1063,8 @@ public class Expression implements Cloneable
                 c.setVariable("_i", (cc, tt) -> new NumericValue(seriously).boundTo("_i"));
                 if(expr.evalValue(c).getBoolean())
                     result.add(list.get(i));
+                if (cond != null && cond.evalValue(c).getBoolean())
+                    break;
             }
             LazyValue ret = (cc, tt) -> ListValue.wrap(result);
             //revering scope
@@ -1055,11 +1078,12 @@ public class Expression implements Cloneable
         // returns first element on the list for which the expr is true
         addLazyFunction("first", 2, (c, t, lv) ->
         {
-            LazyValue expr = lv.get(0);
-            Value rval= lv.get(1).evalValue(c);
+
+            Value rval= lv.get(0).evalValue(c);
             if (!(rval instanceof ListValue))
-                throw new InternalExpressionException("Second argument of grep function should be a list");
+                throw new InternalExpressionException("First argument of 'first' function should be a list");
             List<Value> list = ((ListValue) rval).getItems();
+            LazyValue expr = lv.get(1);
             //scoping
             LazyValue _val = c.getVariable("_");
             LazyValue _iter = c.getVariable("_i");
@@ -1088,11 +1112,11 @@ public class Expression implements Cloneable
         // returns true if expr is true for all items
         addLazyFunction("all", 2, (c, t, lv) ->
         {
-            LazyValue expr = lv.get(0);
-            Value rval= lv.get(1).evalValue(c);
+            Value rval= lv.get(0).evalValue(c);
             if (!(rval instanceof ListValue))
-                throw new InternalExpressionException("Second argument of grep function should be a list");
+                throw new InternalExpressionException("First argument of 'all' function should be a list");
             List<Value> list = ((ListValue) rval).getItems();
+            LazyValue expr = lv.get(1);
             //scoping
             LazyValue _val = c.getVariable("_");
             LazyValue _iter = c.getVariable("_i");
@@ -1116,15 +1140,22 @@ public class Expression implements Cloneable
 
 
         // similar to map, but returns total number of successes
-        // for(list or num, expr, exit_expr) => success_count
+        // for(list, expr, exit_expr) => success_count
         // can be substituted for first and all, but first is more efficient and all doesn't require knowing list size
-        addLazyFunction("for", 2, (c, t, lv) ->
+        addLazyFunction("for", -1, (c, t, lv) ->
         {
-            LazyValue expr = lv.get(0);
-            Value rval= lv.get(1).evalValue(c);
+            if (lv.size()<2 || lv.size()>3)
+            {
+                throw new InternalExpressionException("Incorrect number of attributes for 'for', should be 2 or 3, not "+lv.size());
+            }
+            Value rval= lv.get(0).evalValue(c);
             if (!(rval instanceof ListValue))
-                throw new InternalExpressionException("Second argument of for function should be a list");
+                throw new InternalExpressionException("Second argument of 'for' function should be a list");
             List<Value> list = ((ListValue) rval).getItems();
+            LazyValue expr = lv.get(1);
+            LazyValue cond = null;
+            if(lv.size() > 2) cond = lv.get(2);
+
             //scoping
             LazyValue _val = c.getVariable("_");
             LazyValue _iter = c.getVariable("_i");
@@ -1136,6 +1167,8 @@ public class Expression implements Cloneable
                 c.setVariable("_i", (cc, tt) -> new NumericValue(seriously).boundTo("_i"));
                 if(expr.evalValue(c).getBoolean())
                     successCount++;
+                if (cond != null && cond.evalValue(c).getBoolean())
+                    break;
             }
             //revering scope
             c.setVariable("_", _val);
@@ -1182,7 +1215,7 @@ public class Expression implements Cloneable
             Value acc = lv.get(2).evalValue(c);
             Value rval= lv.get(0).evalValue(c);
             if (!(rval instanceof ListValue))
-                throw new InternalExpressionException("Second argument of for function should be a list");
+                throw new InternalExpressionException("First argument of 'reduce' should be a list");
             List<Value> elements= ((ListValue) rval).getItems();
 
             if (elements.isEmpty())
