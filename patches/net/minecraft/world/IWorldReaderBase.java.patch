@@ -1,0 +1,223 @@
+--- a/net/minecraft/world/IWorldReaderBase.java
++++ b/net/minecraft/world/IWorldReaderBase.java
+@@ -6,6 +6,8 @@
+ import java.util.stream.Stream;
+ import java.util.stream.StreamSupport;
+ import javax.annotation.Nullable;
++
++import carpet.CarpetSettings;
+ import net.minecraft.block.state.IBlockState;
+ import net.minecraft.entity.Entity;
+ import net.minecraft.entity.player.EntityPlayer;
+@@ -253,7 +255,9 @@
+ 
+ default boolean isCollisionBoxesEmpty(@Nullable Entity entityIn, AxisAlignedBB aabb, Set<Entity> entitiesToIgnore)
+     {
+-        return this.func_212392_a(entityIn, VoxelShapes.create(aabb), VoxelShapes.empty(), entitiesToIgnore).allMatch(VoxelShape::isEmpty);
++        return !CarpetSettings.b_optimizeVoxelCode ?
++                this.func_212392_a(entityIn, VoxelShapes.create(aabb), VoxelShapes.empty(), entitiesToIgnore).allMatch(VoxelShape::isEmpty) :
++                this.createShapecaster(entityIn, entitiesToIgnore, aabb, null).isEmpty();
+     }
+ 
+ default boolean isCollisionBoxesEmpty(@Nullable Entity entityIn, AxisAlignedBB aabb)
+@@ -417,4 +421,200 @@
+     }
+ 
+     Dimension getDimension();
++
++    // [CM] Added shapecaster methods
++    default ocd.mcoptimizations.shapecast.IShapecaster createShapecaster(@Nullable final Entity entity, final AxisAlignedBB box, final double dx, final double dy, final double dz)
++    {
++        return this.createShapecaster(entity, Collections.emptySet(), box, dx, dy, dz, null);
++    }
++
++    default ocd.mcoptimizations.shapecast.IShapecaster createShapecaster(@Nullable final Entity entity, final Set<Entity> ignoredEntities, final AxisAlignedBB box, double dx, double dy, double dz, @Nullable final Predicate<VoxelShape> filter)
++    {
++        if (Math.abs(dx) < 1E-7D)
++            dx = 0.;
++
++        if (Math.abs(dy) < 1E-7D)
++            dy = 0.;
++
++        if (Math.abs(dz) < 1E-7D)
++            dz = 0.;
++
++        if (dx == 0. && dy == 0. & dz == 0.)
++            return ocd.mcoptimizations.shapecast.EmptyShapecaster.INSTANCE;
++
++        final double xMin = dx < 0. ? box.minX + dx : (dy == 0. && dz == 0. ? box.maxX : box.minX);
++        final double xMax = dx > 0. ? box.maxX + dx : (dy == 0. && dz == 0. ? box.minX : box.maxX);
++        final double yMin = dy < 0. ? box.minY + dy : (dx == 0. && dz == 0. ? box.maxY : box.minY);
++        final double yMax = dy > 0. ? box.maxY + dy : (dx == 0. && dz == 0. ? box.minY : box.maxY);
++        final double zMin = dz < 0. ? box.minZ + dz : (dy == 0. && dx == 0. ? box.maxZ : box.minZ);
++        final double zMax = dz > 0. ? box.maxZ + dz : (dy == 0. && dx == 0. ? box.minZ : box.maxZ);
++
++        return this.createShapecaster(entity, ignoredEntities, new AxisAlignedBB(xMin, yMin, zMin, xMax, yMax, zMax), filter);
++    }
++
++    default ocd.mcoptimizations.shapecast.IShapecaster createShapecaster(@Nullable final Entity entity, final AxisAlignedBB box)
++    {
++        return this.createShapecaster(entity, Collections.emptySet(), box, null);
++    }
++
++    default ocd.mcoptimizations.shapecast.IShapecaster createShapecaster(@Nullable final Entity entity, final Set<Entity> ignoredEntities, final AxisAlignedBB box, @Nullable final Predicate<VoxelShape> filter)
++    {
++        final boolean entityWasOutsideBorder = entity != null && entity.isOutsideBorder();
++        final boolean entityIsInsideBorder = entity != null && this.isInsideWorldBorder(entity);
++
++        if (entity != null && entityWasOutsideBorder == entityIsInsideBorder)
++            entity.setOutsideBorder(!entityIsInsideBorder);
++
++        return new ocd.mcoptimizations.shapecast.LazyShapecaster(entity, ignoredEntities, box, filter)
++        {
++            abstract class Processor
++            {
++                int xMin, xMax, yMin, yMax, zMin, zMax;
++
++                Processor(final AxisAlignedBB box)
++                {
++                    this.setSearchBox(box);
++                }
++
++                abstract boolean process(VoxelShape shape);
++
++                void setSearchBox(final AxisAlignedBB box)
++                {
++                    this.xMin = MathHelper.floor(box.minX) - 1;
++                    this.xMax = MathHelper.ceil(box.maxX) + 1;
++                    this.yMin = MathHelper.floor(box.minY) - 1;
++                    this.yMax = MathHelper.ceil(box.maxY) + 1;
++                    this.zMin = MathHelper.floor(box.minZ) - 1;
++                    this.zMax = MathHelper.ceil(box.maxZ) + 1;
++                }
++            }
++
++            private AxisAlignedBB createSearchBox(final AxisAlignedBB box, final EnumFacing.Axis axis, final double maxDist)
++            {
++                final double xMin = axis == EnumFacing.Axis.X ? maxDist > 0. ? box.maxX : (box.minX + maxDist) : box.minX;
++                final double xMax = axis == EnumFacing.Axis.X ? maxDist > 0. ? (box.maxX + maxDist) : box.minX : box.maxX;
++                final double yMin = axis == EnumFacing.Axis.Y ? maxDist > 0. ? box.maxY : (box.minY + maxDist) : box.minY;
++                final double yMax = axis == EnumFacing.Axis.Y ? maxDist > 0. ? (box.maxY + maxDist) : box.minY : box.maxY;
++                final double zMin = axis == EnumFacing.Axis.Z ? maxDist > 0. ? box.maxZ : (box.minZ + maxDist) : box.minZ;
++                final double zMax = axis == EnumFacing.Axis.Z ? maxDist > 0. ? (box.maxZ + maxDist) : box.minZ : box.maxZ;
++
++                return new AxisAlignedBB(xMin, yMin, zMin, xMax, yMax, zMax);
++            }
++
++            @Override
++            protected double shapecast(@Nullable final Entity entity, final Set<Entity> ignoredEntities, final AxisAlignedBB shape, final EnumFacing.Axis axis, double maxDist, @Nullable final Predicate<VoxelShape> filter)
++            {
++                class ShapecastConsumer extends Processor
++                {
++                    double d = maxDist;
++
++                    ShapecastConsumer(final AxisAlignedBB box)
++                    {
++                        super(box);
++                    }
++
++                    @Override
++                    boolean process(final VoxelShape voxelshape)
++                    {
++                        final double oldD = d;
++                        d = voxelshape.func_212430_a(axis, shape, d);
++
++                        if (d == 0.)
++                            return true;
++
++                        if (d != oldD)
++                            this.setSearchBox(createSearchBox(shape, axis, d));
++
++                        return false;
++                    }
++                }
++
++                final ShapecastConsumer processor = new ShapecastConsumer(createSearchBox(shape, axis, maxDist));
++
++                this.process(entity, filter, axis, maxDist > 0. ? EnumFacing.AxisDirection.POSITIVE : EnumFacing.AxisDirection.NEGATIVE, processor);
++
++                return processor.d;
++            }
++
++            @Override
++            protected boolean isEmpty(@Nullable final Entity entity, final Set<Entity> ignoredEntities, final AxisAlignedBB box, @Nullable final Predicate<VoxelShape> filter)
++            {
++                class TestEmptyConsumer extends Processor
++                {
++                    boolean nonEmpty = false;
++
++                    TestEmptyConsumer(final AxisAlignedBB box)
++                    {
++                        super(box);
++                    }
++
++                    @Override
++                    boolean process(final VoxelShape voxelshape)
++                    {
++                        return nonEmpty = voxelshape.intersects(box);
++                    }
++                }
++
++                final TestEmptyConsumer processor = new TestEmptyConsumer(box);
++
++                this.process(entity, filter, EnumFacing.Axis.Y, EnumFacing.AxisDirection.NEGATIVE, processor);
++
++                return !processor.nonEmpty;
++            }
++
++            private void process(@Nullable final Entity entity, @Nullable final Predicate<VoxelShape> filter, final EnumFacing.Axis axis, final EnumFacing.AxisDirection dir, final Processor processor)
++            {
++                final boolean entityInsideBorder = entity != null && !entity.isOutsideBorder();
++
++                final net.minecraft.util.AxisRotation axisRotation = net.minecraft.util.AxisRotation.from(EnumFacing.Axis.X, axis);
++                final EnumFacing.Axis axis2 = axisRotation.rotate(EnumFacing.Axis.Y);
++                final EnumFacing.Axis axis3 = axisRotation.rotate(EnumFacing.Axis.Z);
++
++                final int min1 = axis.getCoordinate(processor.xMin, processor.yMin, processor.zMin);
++                final int min2 = axis2.getCoordinate(processor.xMin, processor.yMin, processor.zMin);
++                final int min3 = axis3.getCoordinate(processor.xMin, processor.yMin, processor.zMin);
++                final int max1 = axis.getCoordinate(processor.xMax, processor.yMax, processor.zMax);
++                final int max2 = axis2.getCoordinate(processor.xMax, processor.yMax, processor.zMax);
++                final int max3 = axis3.getCoordinate(processor.xMax, processor.yMax, processor.zMax);
++
++                final WorldBorder worldborder = IWorldReaderBase.this.getWorldBorder();
++                final boolean boxInsideBorder = worldborder.minX() < (double) processor.xMin && (double) processor.xMax < worldborder.maxX() && worldborder.minZ() < (double) processor.zMin && (double) processor.zMax < worldborder.maxZ();
++
++                //final BlockPos.PooledMutableBlockPos pos = BlockPos.PooledMutableBlockPos.retain();
++                BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
++
++                for (int coord1 = dir == EnumFacing.AxisDirection.POSITIVE ? min1 : (max1 - 1); dir == EnumFacing.AxisDirection.POSITIVE ? coord1 < axis.getCoordinate(processor.xMax, processor.yMax, processor.zMax) : coord1 >= axis.getCoordinate(processor.xMin, processor.yMin, processor.zMin); coord1 += dir.getOffset())
++                {
++                    for (int coord2 = min2; coord2 < max2; ++coord2)
++                    {
++                        for (int coord3 = min3; coord3 < max3; ++coord3)
++                        {
++                            pos.setPos(axisRotation.getCoordinate(coord1, coord2, coord3, EnumFacing.Axis.X), axisRotation.getCoordinate(coord1, coord2, coord3, EnumFacing.Axis.Y), axisRotation.getCoordinate(coord1, coord2, coord3, EnumFacing.Axis.Z));
++
++                            if (IWorldReaderBase.this.isBlockLoaded(pos))
++                            {
++                                VoxelShape voxelshape;
++
++                                if (entityInsideBorder && !boxInsideBorder && !worldborder.contains(pos))
++                                    voxelshape = VoxelShapes.fullCube();
++                                else
++                                    voxelshape = IWorldReaderBase.this.getBlockState(pos).getCollisionShape(IWorldReaderBase.this, pos);
++
++                                if (!voxelshape.isEmpty())
++                                {
++                                    voxelshape = voxelshape.offset(pos.getX(), pos.getY(), pos.getZ());
++
++                                    if ((filter == null || filter.test(voxelshape)) && processor.process(voxelshape))
++                                    {
++                                        return;
++                                    }
++                                }
++                            }
++                        }
++                    }
++                }
++            }
++        };
++    }
++    // [CM] end
+ }

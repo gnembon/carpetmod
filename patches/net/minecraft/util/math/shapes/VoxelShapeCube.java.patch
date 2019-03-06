@@ -1,0 +1,24 @@
+--- a/net/minecraft/util/math/shapes/VoxelShapeCube.java
++++ b/net/minecraft/util/math/shapes/VoxelShapeCube.java
+@@ -1,5 +1,6 @@
+ package net.minecraft.util.math.shapes;
+ 
++import carpet.CarpetSettings;
+ import it.unimi.dsi.fastutil.doubles.DoubleList;
+ import net.minecraft.util.EnumFacing;
+ 
+@@ -14,4 +15,14 @@
+     {
+         return new DoubleRangeList(this.part.getSize(axis));
+     }
++
++    // [CM] start
++    @Override
++    public int getClosestIndex(final EnumFacing.Axis axis, final double position)
++    {
++        return !CarpetSettings.b_optimizeVoxelCode ?
++                super.getClosestIndex(axis, position) :
++                net.minecraft.util.math.MathHelper.clamp(net.minecraft.util.math.MathHelper.floor(position * this.part.getSize(axis)), -1, this.part.getSize(axis));
++    }
++    // [CM] end
+ }

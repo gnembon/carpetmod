@@ -1,0 +1,62 @@
+--- a/net/minecraft/util/math/shapes/VoxelShapes.java
++++ b/net/minecraft/util/math/shapes/VoxelShapes.java
+@@ -1,5 +1,6 @@
+ package net.minecraft.util.math.shapes;
+ 
++import carpet.CarpetSettings;
+ import com.google.common.annotations.VisibleForTesting;
+ import com.google.common.math.DoubleMath;
+ import com.google.common.math.IntMath;
+@@ -8,6 +9,7 @@
+ import java.util.Iterator;
+ import java.util.Objects;
+ import java.util.stream.Stream;
++
+ import net.minecraft.util.AxisRotation;
+ import net.minecraft.util.EnumFacing;
+ import net.minecraft.util.Util;
+@@ -18,13 +20,32 @@
+ public final class VoxelShapes
+ {
+     private static final VoxelShape EMPTY = new VoxelShapeArray(new VoxelShapePartBitSet(0, 0, 0), (DoubleList)(new DoubleArrayList(new double[] {0.0D})), (DoubleList)(new DoubleArrayList(new double[] {0.0D})), (DoubleList)(new DoubleArrayList(new double[] {0.0D})));
+-    private static final VoxelShape FULL_CUBE = Util.make(() ->
++
++    // [CM] Changed FULL_CUBE from a final variable to a normal variable so it is switchable
++    // to completely turn off the tweak
++    public static final VoxelShape FULL_CUBE_OLD = Util.make(() ->
+     {
+         VoxelShapePart voxelshapepart = new VoxelShapePartBitSet(1, 1, 1);
+         voxelshapepart.setFilled(0, 0, 0, true, true);
+         return new VoxelShapeCube(voxelshapepart);
+     });
++    public static final VoxelShape FULL_CUBE_NEW = new ocd.mcoptimizations.voxel.VoxelShapeAABB(new AxisAlignedBB(0., 0., 0., 1., 1., 1.)) {
++        @Override
++        protected DoubleList getValues(final EnumFacing.Axis axis)
++        {
++            return new DoubleRangeList(1);
++        }
+ 
++        @Override
++        public VoxelShape persistent()
++        {
++            return this;
++        }
++    };
++
++    public static VoxelShape FULL_CUBE = FULL_CUBE_OLD;
++    // [CM] end
++
+     public static VoxelShape empty()
+     {
+         return EMPTY;
+@@ -81,7 +102,9 @@
+         }
+         else
+         {
+-            return new VoxelShapeArray(FULL_CUBE.part, new double[] {aabb.minX, aabb.maxX}, new double[] {aabb.minY, aabb.maxY}, new double[] {aabb.minZ, aabb.maxZ});
++            return !CarpetSettings.b_optimizeVoxelCode ?
++                    new VoxelShapeArray(FULL_CUBE.part, new double[] {aabb.minX, aabb.maxX}, new double[] {aabb.minY, aabb.maxY}, new double[] {aabb.minZ, aabb.maxZ}) :
++                    new ocd.mcoptimizations.voxel.VoxelShapeAABB.Cached(aabb);
+         }
+     }
+ 

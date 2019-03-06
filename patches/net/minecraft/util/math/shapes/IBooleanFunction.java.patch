@@ -1,0 +1,21 @@
+--- a/net/minecraft/util/math/shapes/IBooleanFunction.java
++++ b/net/minecraft/util/math/shapes/IBooleanFunction.java
+@@ -1,5 +1,7 @@
+ package net.minecraft.util.math.shapes;
+ 
++import ocd.mcoptimizations.util.BooleanFunction;
++
+ public interface IBooleanFunction
+ {
+     IBooleanFunction FALSE = (p_lambda$static$0_0_, p_lambda$static$0_1_) ->
+@@ -68,4 +70,10 @@
+     };
+ 
+     boolean apply(boolean p_apply_1_, boolean p_apply_2_);
++
++    // From OverengineeredCodingDuo
++    default IBooleanFunction swapArgs()
++    {
++        return BooleanFunction.getSwappedFunction(this);
++    }
+ }

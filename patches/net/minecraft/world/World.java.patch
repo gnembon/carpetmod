@@ -119,3 +119,21 @@
              {
                  entityIn.addedToChunk = false;
              }
+@@ -3204,4 +3227,17 @@
+     public abstract RecipeManager getRecipeManager();
+ 
+     public abstract NetworkTagManager getTags();
++
++    // [CM] added override for createShapecaster
++    @Override
++    public ocd.mcoptimizations.shapecast.IShapecaster createShapecaster(@Nullable final Entity entity, final Set<Entity> ignoredEntities, final AxisAlignedBB box, @Nullable final Predicate<VoxelShape> filter)
++    {
++        final ocd.mcoptimizations.shapecast.IShapecaster shapecaster = IWorld.super.createShapecaster(entity, ignoredEntities, box, filter);
++
++        if (entity == null)
++            return shapecaster;
++
++        return ocd.mcoptimizations.shapecast.IShapecaster.combine(IEntityReader.super.createShapecaster(entity, ignoredEntities, box, filter), shapecaster);
++    }
++    // [CM] end
+ }

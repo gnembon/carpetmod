@@ -1,0 +1,55 @@
+--- a/net/minecraft/world/IEntityReader.java
++++ b/net/minecraft/world/IEntityReader.java
+@@ -41,4 +41,52 @@
+             });
+         }
+     }
++
++    // [CM] Added shapecaster methods
++    default ocd.mcoptimizations.shapecast.IShapecaster createShapecaster(@Nullable final Entity entity, final Set<Entity> ignoredEntities, final AxisAlignedBB box, @Nullable final Predicate<VoxelShape> filter)
++    {
++        return ocd.mcoptimizations.shapecast.CollectionShapecaster.create(getCollisionBoxes(entity, ignoredEntities, box, filter));
++    }
++
++    default java.util.Collection<VoxelShape> getCollisionBoxes(@Nullable final Entity entityIn, final Set<Entity> ignoredEntities, final AxisAlignedBB box, @Nullable final Predicate<VoxelShape> filter)
++    {
++        final List<Entity> entities = this.getEntitiesWithinAABBExcludingEntity(entityIn, box);
++
++        if (entities.isEmpty())
++            return java.util.Collections.emptyList();
++
++        final java.util.Collection<VoxelShape> coll = new java.util.ArrayList<>();
++
++        for (final Entity entity : entities)
++        {
++            if (!ignoredEntities.contains(entity) && (entityIn == null || !entityIn.isRidingSameEntity(entity)))
++            {
++                AxisAlignedBB bb = entity.getCollisionBoundingBox();
++
++                if (bb != null)
++                {
++                    final VoxelShape shape = new ocd.mcoptimizations.voxel.VoxelShapeAABB(bb);
++
++                    if (!shape.isEmpty() && (filter == null || filter.test(shape)))
++                        coll.add(shape);
++                }
++
++                if (entityIn != null)
++                {
++                    bb = entityIn.getCollisionBox(entity);
++
++                    if (bb != null)
++                    {
++                        final VoxelShape shape = new ocd.mcoptimizations.voxel.VoxelShapeAABB(bb);
++
++                        if (!shape.isEmpty() && (filter == null || filter.test(shape)))
++                            coll.add(shape);
++                    }
++                }
++            }
++        }
++
++        return coll;
++    }
++    // [CM] end
+ }

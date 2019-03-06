@@ -21,6 +21,7 @@ import carpet.helpers.SpawnChunks;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.dedicated.DedicatedServer;
 import net.minecraft.util.math.ChunkPos;
+import net.minecraft.util.math.shapes.VoxelShapes;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.dimension.DimensionType;
 import org.apache.logging.log4j.LogManager;
@@ -63,6 +64,7 @@ public class CarpetSettings
     public static boolean b_fastRedstoneDust = false;
     public static int railPowerLimitAdjusted = 8;
     public static boolean b_disableSpawnChunks = false;
+    public static boolean b_optimizeVoxelCode = false;
 
     /*
     public static boolean extendedConnectivity = false;
@@ -346,6 +348,17 @@ public class CarpetSettings
                                   .choices("25", "0 2 25").setNotStrict(),
   rule("renewableCoral",          "feature", "Coral structures will grow with bonemeal from coral plants"),
   rule("placementRotationFix",    "fix", "fixes block placement rotation issue when player rotates quickly while placing blocks"),
+  rule("optimizeVoxelCode",       "optimization", "optimizes the voxel code which is used by e.g. the entity movement")
+                                  .validate((rule) -> {
+                                      if (!CarpetSettings.getBool(rule))
+                                      {
+                                          VoxelShapes.FULL_CUBE = VoxelShapes.FULL_CUBE_OLD;
+                                      }
+                                      else
+                                      {
+                                          VoxelShapes.FULL_CUBE = VoxelShapes.FULL_CUBE_NEW;
+                                      }
+                                  }).boolAccelerate(),
         };
         for (CarpetSettingEntry rule: RuleList)
         {

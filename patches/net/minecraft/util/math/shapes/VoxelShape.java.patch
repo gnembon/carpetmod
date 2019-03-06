@@ -1,0 +1,203 @@
+--- a/net/minecraft/util/math/shapes/VoxelShape.java
++++ b/net/minecraft/util/math/shapes/VoxelShape.java
+@@ -1,5 +1,6 @@
+ package net.minecraft.util.math.shapes;
+ 
++import carpet.CarpetSettings;
+ import com.google.common.collect.Lists;
+ import com.google.common.math.DoubleMath;
+ import it.unimi.dsi.fastutil.doubles.DoubleList;
+@@ -19,7 +20,8 @@
+ {
+     protected final VoxelShapePart part;
+ 
+-    VoxelShape(VoxelShapePart part)
++    // [CM] Made public so VoxelShapeAABB can derive from it
++    public VoxelShape(VoxelShapePart part)
+     {
+         this.part = part;
+     }
+@@ -60,10 +62,17 @@
+         return this.part.isEmpty();
+     }
+ 
++    // [CM] start
+     public VoxelShape withOffset(double xOffset, double yOffset, double zOffset)
+     {
++        return this.offset(xOffset, yOffset, zOffset).persistent();
++    }
++
++    public VoxelShape offset(double xOffset, double yOffset, double zOffset)
++    {
+         return (VoxelShape)(this.isEmpty() ? VoxelShapes.empty() : new VoxelShapeArray(this.part, (DoubleList)(new OffsetDoubleList(this.getValues(EnumFacing.Axis.X), xOffset)), (DoubleList)(new OffsetDoubleList(this.getValues(EnumFacing.Axis.Y), yOffset)), (DoubleList)(new OffsetDoubleList(this.getValues(EnumFacing.Axis.Z), zOffset))));
+     }
++    // [CM] end
+ 
+     public VoxelShape simplify()
+     {
+@@ -199,7 +208,9 @@
+ 
+     public double func_212430_a(EnumFacing.Axis p_212430_1_, AxisAlignedBB p_212430_2_, double p_212430_3_)
+     {
+-        return this.func_212431_a(AxisRotation.from(p_212430_1_, EnumFacing.Axis.X), p_212430_2_, p_212430_3_);
++        return !CarpetSettings.b_optimizeVoxelCode ?
++                this.func_212431_a(AxisRotation.from(p_212430_1_, EnumFacing.Axis.X), p_212430_2_, p_212430_3_) :
++                this.func_212431_a_new(AxisRotation.from(p_212430_1_, EnumFacing.Axis.X), p_212430_2_, p_212430_3_);
+     }
+ 
+     protected double func_212431_a(AxisRotation p_212431_1_, AxisAlignedBB p_212431_2_, double p_212431_3_)
+@@ -279,8 +290,154 @@
+         }
+     }
+ 
++    protected double func_212431_a_new(AxisRotation p_212431_1_, AxisAlignedBB p_212431_2_, double p_212431_3_)
++    {
++        if (this.isEmpty())
++        {
++            return p_212431_3_;
++        }
++        else if (Math.abs(p_212431_3_) < 1.0E-7D)
++        {
++            return 0.0D;
++        }
++        else
++        {
++            AxisRotation axisrotation = p_212431_1_.reverse();
++            EnumFacing.Axis enumfacing$axis = axisrotation.rotate(EnumFacing.Axis.X);
++            EnumFacing.Axis enumfacing$axis1 = axisrotation.rotate(EnumFacing.Axis.Y);
++            EnumFacing.Axis enumfacing$axis2 = axisrotation.rotate(EnumFacing.Axis.Z);
++            int k = Math.max(0, this.getClosestIndex(enumfacing$axis1, p_212431_2_.getMin(enumfacing$axis1) + 1.0E-7D));
++            int l = Math.min(this.part.getSize(enumfacing$axis1), this.getClosestIndex(enumfacing$axis1, p_212431_2_.getMax(enumfacing$axis1) - 1.0E-7D) + 1);
++            int i1 = Math.max(0, this.getClosestIndex(enumfacing$axis2, p_212431_2_.getMin(enumfacing$axis2) + 1.0E-7D));
++            int j1 = Math.min(this.part.getSize(enumfacing$axis2), this.getClosestIndex(enumfacing$axis2, p_212431_2_.getMax(enumfacing$axis2) - 1.0E-7D) + 1);
++            int k1 = this.part.getSize(enumfacing$axis);
++
++            if (p_212431_3_ > 0.0D)
++            {
++                double d0 = p_212431_2_.getMax(enumfacing$axis);
++                int j = this.getClosestIndex(enumfacing$axis, d0 - 1.0E-7D);
++
++                for (int l1 = j + 1; l1 < k1; ++l1)
++                {
++                    double d2 = this.getValueUnchecked(enumfacing$axis, l1) - d0;
++                    if (d2 > p_212431_3_)
++                        return p_212431_3_;
++
++                    for (int i2 = k; i2 < l; ++i2)
++                    {
++                        for (int j2 = i1; j2 < j1; ++j2)
++                        {
++                            if (this.part.containsWithRotation(axisrotation, l1, i2, j2))
++                            {
++                                if (l1 == j + 1 && l1 > this.part.getStart(enumfacing$axis) && this.part.containsWithRotation(axisrotation, l1 - 1, i2, j2)) // Ignore internal boundary
++                                    continue;
++
++                                if (d2 >= -1.0E-7D)
++                                {
++                                    p_212431_3_ = Math.min(p_212431_3_, d2);
++                                }
++
++                                return p_212431_3_;
++                            }
++                        }
++                    }
++                }
++            }
++            else if (p_212431_3_ < 0.0D)
++            {
++                double d1 = p_212431_2_.getMin(enumfacing$axis);
++                int i = this.getClosestIndex(enumfacing$axis, d1 + 1.0E-7D);
++
++                for (int k2 = i - 1; k2 >= 0; --k2)
++                {
++                    double d3 = this.getValueUnchecked(enumfacing$axis, k2 + 1) - d1;
++                    if (d3 < p_212431_3_)
++                        return p_212431_3_;
++
++                    for (int l2 = k; l2 < l; ++l2)
++                    {
++                        for (int i3 = i1; i3 < j1; ++i3)
++                        {
++                            if (this.part.containsWithRotation(axisrotation, k2, l2, i3))
++                            {
++                                if (k2 == i - 1 && k2 + 1 < this.part.getEnd(enumfacing$axis) && this.part.containsWithRotation(axisrotation, k2 + 1, l2, i3)) // Ignore internal boundary
++                                    continue;
++
++                                if (d3 <= 1.0E-7D)
++                                {
++                                    p_212431_3_ = Math.max(p_212431_3_, d3);
++                                }
++
++                                return p_212431_3_;
++                            }
++                        }
++                    }
++                }
++            }
++
++            return p_212431_3_;
++        }
++    }
++
+     public String toString()
+     {
+         return this.isEmpty() ? "EMPTY" : "VoxelShape[" + this.getBoundingBox() + "]";
+     }
++
++    // [CM] begin
++    public boolean compare(final VoxelShape shape, final IBooleanFunction desc)
++    {
++        return VoxelShapes.compare(this, shape, desc);
++    }
++
++    public boolean compare(final AxisAlignedBB shape, final IBooleanFunction desc)
++    {
++        return this.compare(new ocd.mcoptimizations.voxel.VoxelShapeAABB(shape), desc);
++    }
++
++    public boolean intersects(final VoxelShape shape)
++    {
++        return VoxelShapes.compare(this, shape, ocd.mcoptimizations.util.BooleanFunction.AND);
++    }
++
++    public boolean intersects(final AxisAlignedBB shape)
++    {
++        final int xMin = Math.max(0, this.getClosestIndex(EnumFacing.Axis.X, shape.minX + 1.0E-7D));
++        final int xMax = Math.min(this.part.getSize(EnumFacing.Axis.X), this.getClosestIndex(EnumFacing.Axis.X, shape.maxX - 1.0E-7D) + 1);
++
++        if (xMin >= xMax)
++            return false;
++
++        final int yMin = Math.max(0, this.getClosestIndex(EnumFacing.Axis.Y, shape.minY + 1.0E-7D));
++        final int yMax = Math.min(this.part.getSize(EnumFacing.Axis.Y), this.getClosestIndex(EnumFacing.Axis.Y, shape.maxY - 1.0E-7D) + 1);
++
++        if (yMin >= yMax)
++            return false;
++
++        final int zMin = Math.max(0, this.getClosestIndex(EnumFacing.Axis.Z, shape.minZ + 1.0E-7D));
++        final int zMax = Math.min(this.part.getSize(EnumFacing.Axis.Z), this.getClosestIndex(EnumFacing.Axis.Z, shape.maxZ - 1.0E-7D) + 1);
++
++        if (zMin >= zMax)
++            return false;
++
++        for (int x = xMin; x < xMax; ++x)
++        {
++            for (int y = yMin; y < yMax; ++y)
++            {
++                for (int z = zMin; z < zMax; ++z)
++                {
++                    if (this.part.contains(x, y, z))
++                        return true;
++                }
++            }
++        }
++
++        return false;
++    }
++
++    public VoxelShape persistent()
++    {
++        return this;
++    }
++    // [CM] end
+ }
