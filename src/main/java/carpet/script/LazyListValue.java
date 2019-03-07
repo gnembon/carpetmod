@@ -1,23 +1,25 @@
 package carpet.script;
 
 import java.util.Collections;
+import java.util.Iterator;
 
-public abstract class LazyListValue extends ListValue
+public abstract class LazyListValue extends ListValue implements Iterator<Value>
 {
-    int current_elements;
+    protected boolean called;
 
-    public static LazyListValue range(int range_limit)
+    public static LazyListValue range(long range_limit)
     {
-        return new LazyListValue(0)
+        return new LazyListValue()
         {
             {
                 this.limit = range_limit;
             }
-            private int current;
-            private int limit;
+            private long current;
+            private long limit;
             @Override
-            protected Value nextElement()
+            public Value next()
             {
+                called = true;
                 return new NumericValue(current++);
             }
 
@@ -29,15 +31,10 @@ public abstract class LazyListValue extends ListValue
         };
     }
 
-    public LazyListValue(int precompute)
+    public LazyListValue()
     {
         super(Collections.emptyList());
-        this.current_elements = 0;
-        while (precompute-- > 0)
-        {
-            next();
-        }
-        start();
+        called = false;
     }
 
     @Override
@@ -49,35 +46,12 @@ public abstract class LazyListValue extends ListValue
     @Override
     public boolean getBoolean()
     {
-        return items.isEmpty() && !hasNext();
+        return hasNext();
     }
-    protected abstract Value nextElement();
     public abstract boolean hasNext();
 
-    public Value next()
-    {
-        if (items.size() < current_elements)
-        {
-            return items.get(current_elements++);
-        }
-        Value v = nextElement();
-        items.add(v);
-        current_elements++;
-        return v;
-    }
-
-
-    public void start()
-    {
-        current_elements = 0;
-    }
-
+    public abstract Value next();
 
     @Override
-    public Value clone()
-    {
-        LazyListValue el = (LazyListValue)super.clone();
-        el.current_elements = this.current_elements;
-        return el;
-    }
+    public Iterator<Value> iterator() {return this;}
 }

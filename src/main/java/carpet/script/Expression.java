@@ -880,8 +880,10 @@ public class Expression implements Cloneable
 
         addFunction("l", ListValue::new);
 
+        addUnaryFunction("range", (v) -> LazyListValue.range(getNumericValue(v).getLong()));
+
         addBinaryFunction("element", (v1, v2) -> {
-            if (!(v1 instanceof ListValue))
+            if (!(v1.getClass().equals(ListValue.class)))
             {
                 throw new InternalExpressionException("First argument of element should be a list");
             }
@@ -969,6 +971,33 @@ public class Expression implements Cloneable
             return (cc, tt) -> new NumericValue(0);
         });
 
+        //condition and expression will get a bound 'i'
+        //returns last successful expression or false
+        // while(cond, limit, expr) => ??
+        //replaced with for
+        addLazyFunction("while", 3, (c, t, lv) ->
+        {
+            long limit = getNumericValue(lv.get(1).evalValue(c)).getLong();
+            LazyValue condition = lv.get(0);
+            LazyValue expr = lv.get(2);
+            long i = 0;
+            Value lastOne = Value.ZERO;
+            //scoping
+            LazyValue _val = c.getVariable("_");
+            c.setVariable("_",(cc, tt) -> new NumericValue(0).boundTo("_"));
+            while (i<limit && condition.evalValue(c).getBoolean() )
+            {
+                lastOne = expr.evalValue(c);
+                i++;
+                long seriously = i;
+                c.setVariable("_", (cc, tt) -> new NumericValue(seriously).boundTo("_"));
+            }
+            //revering scope
+            c.setVariable("_", _val);
+            Value lastValueNoKidding = lastOne;
+            return (cc, tt) -> lastValueNoKidding;
+        });
+
         // loop(Num, expr, exit_condition) => last_value
         // loop(list, expr,
         // expr receives bounded variable '_' indicating iteration
@@ -999,6 +1028,8 @@ public class Expression implements Cloneable
             return (cc, tt) -> trulyLastOne;
         });
 
+
+
         // map(list or Num, expr) => list_results
         // receives bounded variable '_' with the expression
         addLazyFunction("map", -1, (c, t, lv) ->
@@ -1009,9 +1040,10 @@ public class Expression implements Cloneable
             }
 
             Value rval= lv.get(0).evalValue(c);
+
             if (!(rval instanceof ListValue))
-                throw new InternalExpressionException("First argument of map function should be a list");
-            List<Value> list = ((ListValue) rval).getItems();
+                throw new InternalExpressionException("First argument of map function should be a list or iterator");
+            Iterator<Value> iterator = ((ListValue) rval).iterator();
             LazyValue expr = lv.get(1);
             LazyValue cond = null;
             if(lv.size() > 2) cond = lv.get(2);
@@ -1019,15 +1051,17 @@ public class Expression implements Cloneable
             LazyValue _val = c.getVariable("_");
             LazyValue _iter = c.getVariable("_i");
             List<Value> result = new ArrayList<>();
-            for (int i=0; i< list.size(); i++)
+            for (int i=0; iterator.hasNext(); i++)
             {
+                Value next = iterator.next();
                 int doYouReally = i;
-                c.setVariable("_", (cc, tt) -> list.get(doYouReally).boundTo("_"));
+                c.setVariable("_", (cc, tt) -> next.boundTo("_"));
                 c.setVariable("_i", (cc, tt) -> new NumericValue(doYouReally).boundTo("_i"));
                 result.add(expr.evalValue(c));
                 if (cond != null && cond.evalValue(c).getBoolean())
                     break;
             }
+            ((ListValue) rval).fatality();
             LazyValue ret = (cc, tt) -> ListValue.wrap(result);
             //revering scope
             c.setVariable("_", _val);
@@ -1047,8 +1081,8 @@ public class Expression implements Cloneable
 
             Value rval= lv.get(0).evalValue(c);
             if (!(rval instanceof ListValue))
-                throw new InternalExpressionException("First argument of filter function should be a list");
-            List<Value> list = ((ListValue) rval).getItems();
+                throw new InternalExpressionException("First argument of filter function should be a list or iterator");
+            Iterator<Value> iterator = ((ListValue) rval).iterator();
             LazyValue expr = lv.get(1);
             LazyValue cond = null;
             if(lv.size() > 2) cond = lv.get(2);
@@ -1056,16 +1090,18 @@ public class Expression implements Cloneable
             LazyValue _val = c.getVariable("_");
             LazyValue _iter = c.getVariable("_i");
             List<Value> result = new ArrayList<>();
-            for (int i=0; i< list.size(); i++)
+            for (int i=0; iterator.hasNext(); i++)
             {
+                Value next = iterator.next();
                 int seriously = i;
-                c.setVariable("_", (cc, tt) -> list.get(seriously).boundTo("_"));
+                c.setVariable("_", (cc, tt) -> next.boundTo("_"));
                 c.setVariable("_i", (cc, tt) -> new NumericValue(seriously).boundTo("_i"));
                 if(expr.evalValue(c).getBoolean())
-                    result.add(list.get(i));
+                    result.add(next);
                 if (cond != null && cond.evalValue(c).getBoolean())
                     break;
             }
+            ((ListValue) rval).fatality();
             LazyValue ret = (cc, tt) -> ListValue.wrap(result);
             //revering scope
             c.setVariable("_", _val);
@@ -1081,29 +1117,31 @@ public class Expression implements Cloneable
 
             Value rval= lv.get(0).evalValue(c);
             if (!(rval instanceof ListValue))
-                throw new InternalExpressionException("First argument of 'first' function should be a list");
-            List<Value> list = ((ListValue) rval).getItems();
+                throw new InternalExpressionException("First argument of 'first' function should be a list or iterator");
+            Iterator<Value> iterator = ((ListValue) rval).iterator();
             LazyValue expr = lv.get(1);
             //scoping
             LazyValue _val = c.getVariable("_");
             LazyValue _iter = c.getVariable("_i");
-            for (int i=0; i< list.size(); i++)
+            Value result = Value.NULL;
+            for (int i=0; iterator.hasNext(); i++)
             {
+                Value next = iterator.next();
                 int seriously = i;
-                c.setVariable("_", (cc, tt) -> list.get(seriously).boundTo("_"));
+                c.setVariable("_", (cc, tt) -> next.boundTo("_"));
                 c.setVariable("_i", (cc, tt) -> new NumericValue(seriously).boundTo("_i"));
                 if(expr.evalValue(c).getBoolean())
                 {
-                    int iFinal = i;
-                    c.setVariable("_", _val);
-                    c.setVariable("_i", _iter);
-                    return (cc, tt) -> list.get(iFinal);
+                    result = next;
+                    break;
                 }
             }
             //revering scope
+            ((ListValue) rval).fatality();
+            Value whyWontYouTrustMeJava = result;
             c.setVariable("_", _val);
             c.setVariable("_i", _iter);
-            return LazyValue.NULL;
+            return (cc, tt) -> whyWontYouTrustMeJava;
         });
 
 
@@ -1114,28 +1152,30 @@ public class Expression implements Cloneable
         {
             Value rval= lv.get(0).evalValue(c);
             if (!(rval instanceof ListValue))
-                throw new InternalExpressionException("First argument of 'all' function should be a list");
-            List<Value> list = ((ListValue) rval).getItems();
+                throw new InternalExpressionException("First argument of 'all' function should be a list or iterator");
+            Iterator<Value> iterator = ((ListValue) rval).iterator();
             LazyValue expr = lv.get(1);
             //scoping
             LazyValue _val = c.getVariable("_");
             LazyValue _iter = c.getVariable("_i");
-            for (int i=0; i< list.size(); i++)
+            LazyValue result = LazyValue.TRUE;
+            for (int i=0; iterator.hasNext(); i++)
             {
+                Value next = iterator.next();
                 int seriously = i;
-                c.setVariable("_", (cc, tt) -> list.get(seriously).boundTo("_"));
+                c.setVariable("_", (cc, tt) -> next.boundTo("_"));
                 c.setVariable("_i", (cc, tt) -> new NumericValue(seriously).boundTo("_i"));
                 if(!expr.evalValue(c).getBoolean())
                 {
-                    c.setVariable("_", _val);
-                    c.setVariable("_i", _iter);
-                    return LazyValue.FALSE;
+                    result = LazyValue.FALSE;
+                    break;
                 }
             }
             //revering scope
+            ((ListValue) rval).fatality();
             c.setVariable("_", _val);
             c.setVariable("_i", _iter);
-            return LazyValue.TRUE;
+            return result;
         });
 
 
@@ -1150,8 +1190,8 @@ public class Expression implements Cloneable
             }
             Value rval= lv.get(0).evalValue(c);
             if (!(rval instanceof ListValue))
-                throw new InternalExpressionException("Second argument of 'for' function should be a list");
-            List<Value> list = ((ListValue) rval).getItems();
+                throw new InternalExpressionException("Second argument of 'for' function should be a list or iterator");
+            Iterator<Value> iterator = ((ListValue) rval).iterator();
             LazyValue expr = lv.get(1);
             LazyValue cond = null;
             if(lv.size() > 2) cond = lv.get(2);
@@ -1160,10 +1200,11 @@ public class Expression implements Cloneable
             LazyValue _val = c.getVariable("_");
             LazyValue _iter = c.getVariable("_i");
             int successCount = 0;
-            for (int i=0; i< list.size(); i++)
+            for (int i=0; iterator.hasNext(); i++)
             {
+                Value next = iterator.next();
                 int seriously = i;
-                c.setVariable("_", (cc, tt) -> list.get(seriously).boundTo("_"));
+                c.setVariable("_", (cc, tt) -> next.boundTo("_"));
                 c.setVariable("_i", (cc, tt) -> new NumericValue(seriously).boundTo("_i"));
                 if(expr.evalValue(c).getBoolean())
                     successCount++;
@@ -1171,38 +1212,13 @@ public class Expression implements Cloneable
                     break;
             }
             //revering scope
+            ((ListValue) rval).fatality();
             c.setVariable("_", _val);
             c.setVariable("_i", _iter);
             long promiseWontChange = successCount;
             return (cc, tt) -> new NumericValue(promiseWontChange);
         });
 
-        //condition and expression will get a bound 'i'
-        //returns last successful expression or false
-        // while(cond, limit, expr) => ??
-        //replaced with for
-        addLazyFunction("while", 3, (c, t, lv) ->
-        {
-            long limit = getNumericValue(lv.get(1).evalValue(c)).getLong();
-            LazyValue condition = lv.get(0);
-            LazyValue expr = lv.get(2);
-            long i = 0;
-            Value lastOne = Value.ZERO;
-            //scoping
-            LazyValue _val = c.getVariable("_");
-            c.setVariable("_",(cc, tt) -> new NumericValue(0).boundTo("_"));
-            while (i<limit && condition.evalValue(c).getBoolean() )
-            {
-                lastOne = expr.evalValue(c);
-                i++;
-                long seriously = i;
-                c.setVariable("_", (cc, tt) -> new NumericValue(seriously).boundTo("_"));
-            }
-            //revering scope
-            c.setVariable("_", _val);
-            Value lastValueNoKidding = lastOne;
-            return (cc, tt) -> lastValueNoKidding;
-        });
 
         // reduce(list, expr, ?acc) => value
         // reduces values in the list with expression that gets accumulator
@@ -1215,10 +1231,10 @@ public class Expression implements Cloneable
             Value acc = lv.get(2).evalValue(c);
             Value rval= lv.get(0).evalValue(c);
             if (!(rval instanceof ListValue))
-                throw new InternalExpressionException("First argument of 'reduce' should be a list");
-            List<Value> elements= ((ListValue) rval).getItems();
+                throw new InternalExpressionException("First argument of 'reduce' should be a list or iterator");
+            Iterator<Value> iterator = ((ListValue) rval).iterator();
 
-            if (elements.isEmpty())
+            if (!iterator.hasNext())
             {
                 Value seriouslyWontChange = acc;
                 return (cc, tt) -> seriouslyWontChange;
@@ -1228,14 +1244,16 @@ public class Expression implements Cloneable
             LazyValue _val = c.getVariable("_");
             LazyValue _acc = c.getVariable("_a");
 
-            for (Value v: elements)
+            while (iterator.hasNext())
             {
+                Value v = iterator.next();
                 Value promiseWontChangeYou = acc;
                 c.setVariable("_a", (cc, tt) -> promiseWontChangeYou.boundTo("_a"));
                 c.setVariable("_", (cc, tt) -> v.boundTo("_"));
                 acc = expr.evalValue(c);
             }
             //reverting scope
+            ((ListValue) rval).fatality();
             c.setVariable("_a", _acc);
             c.setVariable("_", _val);
 

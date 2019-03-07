@@ -2,6 +2,7 @@ package carpet.script;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -100,6 +101,15 @@ public class ListValue extends Value
     {
         return items;
     }
+
+    public Iterator<Value> iterator()
+    {
+        return items.iterator();
+    }
+    public void fatality()
+    {
+    }
+
 
 
 

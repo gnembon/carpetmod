@@ -655,6 +655,194 @@ public class CarpetExpression
             return (c_, t_) -> honestWontChange;
         });
 
+        this.expr.addLazyFunction("rect", -1, (c, t, lv)->
+        {
+            if (lv.size() != 3 && lv.size() != 6 && lv.size() != 9)
+            {
+                throw new InternalExpressionException("rectangular region should be specified with 3, 6, or 9 coordinates");
+            }
+            int cx;
+            int cy;
+            int cz;
+            int sminx;
+            int sminy;
+            int sminz;
+            int smaxx;
+            int smaxy;
+            int smaxz;
+            try
+            {
+                cx = (int)((NumericValue) lv.get(0).evalValue(c)).getLong();
+                cy = (int)((NumericValue) lv.get(1).evalValue(c)).getLong();
+                cz = (int)((NumericValue) lv.get(2).evalValue(c)).getLong();
+                if (lv.size()==3) // only done this way because of stupid Java lambda final reqs
+                {
+                    sminx = 1;
+                    sminy = 1;
+                    sminz = 1;
+                    smaxx = 1;
+                    smaxy = 1;
+                    smaxz = 1;
+                }
+                else if (lv.size()==6)
+                {
+                    sminx = (int) ((NumericValue) lv.get(3).evalValue(c)).getLong();
+                    sminy = (int) ((NumericValue) lv.get(4).evalValue(c)).getLong();
+                    sminz = (int) ((NumericValue) lv.get(5).evalValue(c)).getLong();
+                    smaxx = sminx;
+                    smaxy = sminy;
+                    smaxz = sminz;
+                }
+                else // size == 9
+                {
+                    sminx = (int) ((NumericValue) lv.get(3).evalValue(c)).getLong();
+                    sminy = (int) ((NumericValue) lv.get(4).evalValue(c)).getLong();
+                    sminz = (int) ((NumericValue) lv.get(5).evalValue(c)).getLong();
+                    smaxx = (int)((NumericValue) lv.get(6).evalValue(c)).getLong();
+                    smaxy = (int)((NumericValue) lv.get(7).evalValue(c)).getLong();
+                    smaxz = (int)((NumericValue) lv.get(8).evalValue(c)).getLong();
+                }
+            }
+            catch (ClassCastException exc)
+            {
+                throw new InternalExpressionException("Attempted to pass a non-number to rect");
+            }
+            CarpetContext cc = (CarpetContext)c;
+            return (c_, t_) -> new LazyListValue()
+            {
+                int minx = cx-sminx;
+                int miny = cy-sminy;
+                int minz = cz-sminz;
+                int maxx = cx+smaxx;
+                int maxy = cy+smaxy;
+                int maxz = cz+smaxz;
+                int x;
+                int y;
+                int z;
+                {
+                    x = minx;
+                    y = miny;
+                    z = minz;
+                }
+                @Override
+                public boolean hasNext()
+                {
+                    return y <= maxy;
+                }
+
+                @Override
+                public Value next()
+                {
+                    Value r = blockValueFromCoords(cc, x,y,z);
+                    //possibly reroll context
+                    x++;
+                    if (x > maxx)
+                    {
+                        x = minx;
+                        z++;
+                        if (z > maxz)
+                        {
+                            z = minz;
+                            y++;
+                            // hasNext should fail if we went over
+                        }
+                    }
+
+                    return r;
+                }
+
+                @Override
+                public void fatality()
+                {
+                    // possibly return original x, y, z
+                }
+            };
+        });
+
+        this.expr.addLazyFunction("diamond", -1, (c, t, lv)->
+        {
+            CarpetContext cc = (CarpetContext)c;
+            if (lv.size() != 3 && lv.size() != 4 && lv.size() != 5)
+            {
+                throw new InternalExpressionException("diamond region should be specified with 3 to 5 coordinates");
+            }
+
+            int cx;
+            int cy;
+            int cz;
+            int width;
+            int height;
+            try
+            {
+                cx = (int)((NumericValue) lv.get(0).evalValue(c)).getLong();
+                cy = (int)((NumericValue) lv.get(1).evalValue(c)).getLong();
+                cz = (int)((NumericValue) lv.get(2).evalValue(c)).getLong();
+                if (lv.size()==3)
+                {
+                    return (_c, _t ) -> new ListValue(Arrays.asList(
+                            blockValueFromCoords(cc, cx, cy-1, cz),
+                            blockValueFromCoords(cc, cx, cy, cz),
+                            blockValueFromCoords(cc, cx-1, cy, cz),
+                            blockValueFromCoords(cc, cx, cy, cz-1),
+                            blockValueFromCoords(cc, cx+1, cy, cz),
+                            blockValueFromCoords(cc, cx, cy, cz+1),
+                            blockValueFromCoords(cc, cx, cy+1, cz)
+                    ));
+                }
+                else if (lv.size()==4)
+                {
+                    width = (int) ((NumericValue) lv.get(3).evalValue(c)).getLong();
+                    height = 0;
+                }
+                else // size == 5
+                {
+                    width = (int) ((NumericValue) lv.get(3).evalValue(c)).getLong();
+                    height = (int) ((NumericValue) lv.get(4).evalValue(c)).getLong();
+                }
+            }
+            catch (ClassCastException exc)
+            {
+                throw new InternalExpressionException("Attempted to pass a non-number to diamond");
+            }
+            if (height == 0)
+            {
+                return (c_, t_) -> new LazyListValue()
+                {
+                    @Override
+                    public boolean hasNext()
+                    {
+                        return false;
+                    }
+
+                    @Override
+                    public Value next()
+                    {
+                        return null;
+                    }
+                };
+            }
+            else
+            {
+                return (c_, t_) -> new LazyListValue()
+                {
+                    @Override
+                    public boolean hasNext()
+                    {
+                        return false;
+                    }
+
+                    @Override
+                    public Value next()
+                    {
+                        return null;
+                    }
+                };
+
+            }
+        });
+
+
+
         //conv (x,y,z,(_x, _y, _z, _a) -> expr, ?acc) ->
         this.expr.addLazyFunction("convnb", -1, (c, t, lv)->
         {
@@ -686,12 +874,12 @@ public class CarpetExpression
             LazyValue _z = c.getVariable("_z");
             LazyValue _a = c.getVariable("_a");
             LazyValue __ = c.getVariable("_");
-            for (BlockPos nb: Arrays.asList(pos.down(), pos.north(), pos.south(), pos.east(), pos.west(), pos.up()))
+            for (BlockPos nb: Arrays.asList(pos, pos.down(), pos.north(), pos.south(), pos.east(), pos.west(), pos.up()))
             {
                 c.setVariable( "_", (c_, t_) -> new BlockValue(null, ((CarpetContext)c).s.getWorld(), nb).boundTo("_"));
-                c.setVariable("_x", (c_, t_) -> new NumericValue(nb.getX()).boundTo("_x"));
-                c.setVariable("_y", (c_, t_) -> new NumericValue(nb.getY()).boundTo("_y"));
-                c.setVariable("_z", (c_, t_) -> new NumericValue(nb.getZ()).boundTo("_z"));
+                //c.setVariable("_x", (c_, t_) -> new NumericValue(nb.getX()).boundTo("_x"));
+                //c.setVariable("_y", (c_, t_) -> new NumericValue(nb.getY()).boundTo("_y"));
+                //c.setVariable("_z", (c_, t_) -> new NumericValue(nb.getZ()).boundTo("_z"));
                 c.setVariable("_a", acc);
                 acc = expr.evalValue(c);
             }
