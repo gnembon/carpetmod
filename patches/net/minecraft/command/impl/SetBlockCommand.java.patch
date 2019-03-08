@@ -12,7 +12,7 @@
              }
  
 -            if (flag && !p_198683_2_.place(worldserver, p_198683_1_, 2))
-+            if (flag && !p_198683_2_.place(worldserver, p_198683_1_, 2 | (CarpetSettings.getBool("fillUpdates")?0:128))) // [CM]
++            if (flag && !p_198683_2_.place(worldserver, p_198683_1_, 2 | (CarpetSettings.getBool("fillUpdates")?0:1024))) // [CM]
              {
                  throw field_198689_a.create();
              }
