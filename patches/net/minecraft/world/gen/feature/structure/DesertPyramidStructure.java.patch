@@ -21,10 +21,11 @@
      protected String getStructureName()
      {
          return "Desert_Pyramid";
-@@ -25,6 +31,11 @@
+@@ -25,6 +31,12 @@
          return new DesertPyramidStructure.Start(worldIn, random, x, z, biome);
      }
  
++    @Override
 +    public List<Biome.SpawnListEntry> getSpawnList()
 +    {
 +        return spawnList;
