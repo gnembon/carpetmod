@@ -24,10 +24,11 @@
      protected ChunkPos getStartPositionForPosition(IChunkGenerator<?> chunkGenerator, Random random, int x, int z, int spacingOffsetsX, int spacingOffsetsZ)
      {
          int i = chunkGenerator.getSettings().getEndCityDistance();
-@@ -79,6 +88,11 @@
+@@ -79,6 +88,12 @@
          return 9;
      }
  
++    @Override
 +    public List<Biome.SpawnListEntry> getSpawnList()
 +    {
 +        return spawnList;
@@ -36,7 +37,7 @@
      private static int getYPosForStructure(int chunkX, int chunkY, IChunkGenerator<?> generatorIn)
      {
          Random random = new Random((long)(chunkX + chunkY * 10387313));
-@@ -140,5 +154,28 @@
+@@ -140,5 +155,28 @@
              {
                  return this.isSizeable;
              }
