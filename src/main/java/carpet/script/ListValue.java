@@ -1,6 +1,8 @@
 package carpet.script;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -24,15 +26,21 @@ public class ListValue extends Value
     {
         return new ListValue(items);
     }
-    public ListValue(List<Value> list)
+    public ListValue(Collection<? extends Value> list)
     {
         items = new ArrayList<>();
         items.addAll(list);
     }
-
-    public ListValue()
+    public static ListValue wrap(List<Value> list)
     {
-        items = new ArrayList<>();
+        ListValue created = new ListValue();
+        created.items = list;
+        return created;
+    }
+
+    private ListValue()
+    {
+        items = null;
     }
 
     public ListValue(int to)
@@ -93,6 +101,15 @@ public class ListValue extends Value
     {
         return items;
     }
+
+    public Iterator<Value> iterator()
+    {
+        return items.iterator();
+    }
+    public void fatality()
+    {
+    }
+
 
 
 

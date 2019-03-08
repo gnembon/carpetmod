@@ -37,14 +37,14 @@ public class NumericValue extends Value
     {  // TODO test if definintn add(NumericVlaue) woud solve the casting
         if (v instanceof NumericValue)
         {
-            return new NumericValue(value + ((NumericValue) v).getDouble() );
+            return new NumericValue(getDouble() + ((NumericValue) v).getDouble() );
         }
         return super.add(v);
     }
     public Value subtract(Value v) {  // TODO test if definintn add(NumericVlaue) woud solve the casting
         if (v instanceof NumericValue)
         {
-            return new NumericValue(value - (((NumericValue) v).getDouble()));
+            return new NumericValue(getDouble() - (((NumericValue) v).getDouble()));
         }
         return super.subtract(v);
     }
@@ -52,15 +52,15 @@ public class NumericValue extends Value
     {
         if (v instanceof NumericValue)
         {
-            return new NumericValue(value * ((NumericValue) v).getDouble() );
+            return new NumericValue(getDouble() * ((NumericValue) v).getDouble() );
         }
-        return new StringValue(StringUtils.repeat(v.getString(), value.intValue()));
+        return new StringValue(StringUtils.repeat(v.getString(), (int) getLong()));
     }
     public Value divide(Value v)
     {
         if (v instanceof NumericValue)
         {
-            return new NumericValue(value / ((NumericValue) v).getDouble() );
+            return new NumericValue(getDouble() / ((NumericValue) v).getDouble() );
         }
         return super.divide(v);
     }

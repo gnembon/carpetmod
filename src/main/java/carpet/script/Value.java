@@ -8,7 +8,7 @@ public abstract class Value implements Comparable<Value>, Cloneable
     public static Value FALSE = new NumericValue(0);
     public static Value TRUE = new NumericValue(1);
     public static Value ZERO = FALSE;
-    public static Value NULL = new NullValue();
+    public static Value NULL = NullValue.getInstance();
 
     public String boundVariable;
 
@@ -104,11 +104,10 @@ public abstract class Value implements Comparable<Value>, Cloneable
         {
             if (boundVariable != null)
             {
-                throw new Expression.ExpressionException(boundVariable+ " cannot be assigned a new value");
+                throw new Expression.InternalExpressionException(boundVariable+ " cannot be assigned a new value");
             }
-            throw new Expression.ExpressionException(getString()+ "is not a variable");
+            throw new Expression.InternalExpressionException(getString()+ " is not a variable");
         }
-
     }
 
     public Value in(Value value1)

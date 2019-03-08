@@ -1,7 +1,8 @@
 package carpet.script;
 
-public class NullValue extends Value
+public class NullValue extends NumericValue
 {
+    private static NullValue singleton = new NullValue();
     @Override
     public String getString()
     {
@@ -17,8 +18,9 @@ public class NullValue extends Value
     @Override
     public Value clone()
     {
-        return new NullValue();
+        return singleton;
     }
-    public NullValue()
-    {}
+    private NullValue() {super(0.0D);}
+    public static NullValue getInstance() {return singleton;}
+
 }
