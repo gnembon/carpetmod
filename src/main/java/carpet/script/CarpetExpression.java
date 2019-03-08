@@ -319,10 +319,13 @@ public class CarpetExpression
 
         this.expr.addLazyFunction("entity", -1, (c, t, lv) -> {
             String selector = lv.get(0).evalValue(c).getString();
-            EntitySelector entityselector = new EntitySelectorParser(new StringReader(selector), true).build();
+            CarpetSettings.LOG.error("got selector: "+selector);
+            EntitySelector entityselector = null;
             try
             {
+                entityselector = new EntitySelectorParser(new StringReader(selector), true).parse();
                 Collection<? extends Entity > entities = entityselector.select(((CarpetContext)c).s);
+                CarpetSettings.LOG.error("got number of entities back: "+entities.size());
                 List<Value> retlist = new ArrayList<>();
                 for (Entity e: entities)
                 {
