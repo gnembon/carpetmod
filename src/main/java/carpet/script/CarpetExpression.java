@@ -122,6 +122,34 @@ public class CarpetExpression
 
 
     }
+
+    public static class EntityValue extends Value
+    {
+        private Entity entity;
+
+        public EntityValue(Entity e)
+        {
+            entity = e;
+        }
+        public Entity getEntity()
+        {
+            return entity;
+        }
+
+        @Override
+        public String getString()
+        {
+            return entity.getDisplayName().getString();
+        }
+
+        @Override
+        public boolean getBoolean()
+        {
+            return true;
+        }
+    }
+
+
     private BlockValue blockValueFromCoords(CarpetContext c, int x, int y, int z)
     {
         BlockPos pos = locateBlockPos(c, x,y,z);
@@ -305,12 +333,24 @@ public class CarpetExpression
         this.expr.addLazyFunction("pos", 1, (c, t, lv) ->
         {
             Value arg = lv.get(0).evalValue(c);
-            if (!(arg instanceof BlockValue ))
+            if (arg instanceof BlockValue)
+            {
+                BlockPos pos = ((BlockValue) arg).pos;
+                if (pos == null)
+                    throw new InternalExpressionException("cannot fetch position of unlocalized block");
+                return (c_, t_) -> new ListValue(Arrays.asList(new NumericValue(pos.getX()), new NumericValue(pos.getY()), new NumericValue(pos.getZ())));
+            }
+            else if (arg instanceof EntityValue)
+            {
+                Entity e = ((EntityValue) arg).getEntity();
+                if (e == null)
+                    throw new InternalExpressionException("null entity");
+                return(c_, t_) -> new ListValue(Arrays.asList(new NumericValue(e.posX), new NumericValue(e.posY), new NumericValue(e.posZ)));
+            }
+            else
+            {
                 throw new InternalExpressionException("you can only get position of a block type");
-            BlockPos pos = ((BlockValue)arg).pos;
-            if (pos == null)
-                throw new InternalExpressionException("cannot fetch position of unlocalized block");
-            return (c_, t_) -> new ListValue(Arrays.asList(new NumericValue(pos.getX()),new NumericValue(pos.getY()),new NumericValue(pos.getZ())));
+            }
         });
 
         this.expr.addLazyFunction("player", -1, (c, t, lv) -> {
@@ -319,17 +359,15 @@ public class CarpetExpression
 
         this.expr.addLazyFunction("entity", -1, (c, t, lv) -> {
             String selector = lv.get(0).evalValue(c).getString();
-            CarpetSettings.LOG.error("got selector: "+selector);
             EntitySelector entityselector = null;
             try
             {
                 entityselector = new EntitySelectorParser(new StringReader(selector), true).parse();
                 Collection<? extends Entity > entities = entityselector.select(((CarpetContext)c).s);
-                CarpetSettings.LOG.error("got number of entities back: "+entities.size());
                 List<Value> retlist = new ArrayList<>();
                 for (Entity e: entities)
                 {
-                    retlist.add(new StringValue(e.toString()));
+                    retlist.add(new EntityValue(e));
                 }
                 return (c_, t_) -> ListValue.wrap(retlist);
             }
