@@ -166,7 +166,7 @@ public class CarpetExpression
         }
         Value v0 = params.get(0).evalValue(c);
         if (v0 instanceof BlockValue)
-            return (c_, t_) -> test.apply(((BlockValue) v0).blockState, ((BlockValue) v0).pos) ? Value.TRUE : Value.FALSE;
+            return (c_, t_) -> test.apply(((BlockValue) v0).getBlockState(), ((BlockValue) v0).pos) ? Value.TRUE : Value.FALSE;
         BlockPos pos = locateBlockPos(cc, params, 0);
         return (c_, t_) -> test.apply(cc.s.getWorld().getBlockState(pos), pos) ? Value.TRUE : Value.FALSE;
     }
@@ -186,7 +186,7 @@ public class CarpetExpression
 
         Value v0 = params.get(0).evalValue(c);
         if (v0 instanceof BlockValue)
-            return (c_, t_) -> new StringValue(test.apply( ((BlockValue) v0).blockState, ((BlockValue) v0).pos));
+            return (c_, t_) -> new StringValue(test.apply( ((BlockValue) v0).getBlockState(), ((BlockValue) v0).pos));
         BlockPos pos = locateBlockPos(cc, params, 0);
         return (c_, t_) -> new StringValue(test.apply(cc.s.getWorld().getBlockState(pos), pos));
     }
@@ -269,13 +269,13 @@ public class CarpetExpression
         });
 
 
-        this.expr.addLazyFunction("solid", 2, (c, t, lv) ->
+        this.expr.addLazyFunction("solid", -1, (c, t, lv) ->
                 booleanStateTest(c, "solid", lv, (s, p) -> s.isSolid()));
 
-        this.expr.addLazyFunction("air", 2, (c, t, lv) ->
+        this.expr.addLazyFunction("air", -1, (c, t, lv) ->
                 booleanStateTest(c, "air", lv, (s, p) -> s.isAir()));
 
-        this.expr.addLazyFunction("liquid", 2, (c, t, lv) ->
+        this.expr.addLazyFunction("liquid", -1, (c, t, lv) ->
                 booleanStateTest(c, "liquid", lv, (s, p) -> !s.getFluidState().isEmpty()));
 
         this.expr.addLazyFunction("light", 3, (c, t, lv) ->
@@ -422,7 +422,7 @@ public class CarpetExpression
         {
             if (!(v1 instanceof BlockValue))
                     throw new InternalExpressionException("First Argument of tag should be a block");
-            IBlockState state = ((BlockValue) v1).blockState;
+            IBlockState state = ((BlockValue) v1).getBlockState();
             String tag = v2.getString();
             StateContainer<Block, IBlockState> states = state.getBlock().getStateContainer();
             IProperty<?> property = states.getProperty(tag);
@@ -894,6 +894,7 @@ public class CarpetExpression
 
 
         //conv (x,y,z,(_x, _y, _z, _a) -> expr, ?acc) ->
+        //deprecated, use for(neighbours, instead)
         this.expr.addLazyFunction("convnb", -1, (c, t, lv)->
         {
             Value acc;
