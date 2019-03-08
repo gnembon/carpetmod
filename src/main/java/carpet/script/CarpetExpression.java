@@ -35,6 +35,8 @@ import net.minecraft.world.storage.SessionLockException;
 import java.util.*;
 import java.util.function.BiFunction;
 
+import static java.lang.Math.abs;
+
 public class CarpetExpression
 {
     public static class CarpetExpressionException extends ExpressionException
@@ -808,16 +810,36 @@ public class CarpetExpression
             {
                 return (c_, t_) -> new LazyListValue()
                 {
+                    int curradius = 0;
+                    int curpos = 0;
+                    {
+
+                    }
                     @Override
                     public boolean hasNext()
                     {
-                        return false;
+                        return curradius <= width;
                     }
 
                     @Override
                     public Value next()
                     {
-                        return null;
+                        if (curradius == 0)
+                        {
+                            curradius = 1;
+                            return blockValueFromCoords(cc, cx, cy, cz);
+                        }
+                        // x = 3-|i-6|
+                        // z = |( (i-3)%12-6|-3
+                        Value block = blockValueFromCoords(cc, cx+(curradius-abs(curpos-2*curradius)), cy, cz-curradius+abs( abs(curpos-curradius)%(4*curradius) -2*curradius ));
+                        curpos++;
+                        if (curpos>=curradius*4)
+                        {
+                            curradius++;
+                            curpos = 0;
+                        }
+                        return block;
+
                     }
                 };
             }
@@ -825,16 +847,44 @@ public class CarpetExpression
             {
                 return (c_, t_) -> new LazyListValue()
                 {
+                    int curradius = 0;
+                    int curpos = 0;
+                    int curheight = -height;
                     @Override
                     public boolean hasNext()
                     {
-                        return false;
+                       return curheight <= height;
                     }
 
                     @Override
                     public Value next()
                     {
-                        return null;
+                        if (curheight == -height || curheight == height)
+                        {
+                            return blockValueFromCoords(cc, cx, cy+curheight++, cz);
+                        }
+                        if (curradius == 0)
+                        {
+                            curradius++;
+                            return blockValueFromCoords(cc, cx, cy+curheight, cz);
+                        }
+                        // x = 3-|i-6|
+                        // z = |( (i-3)%12-6|-3
+
+                        Value block = blockValueFromCoords(cc, cx+(curradius-abs(curpos-2*curradius)), cy+curheight, cz-curradius+abs( abs(curpos-curradius)%(4*curradius) -2*curradius ));
+                        curpos++;
+                        if (curpos>=curradius*4)
+                        {
+                            curradius++;
+                            curpos = 0;
+                            if (curradius>width -abs(width*curheight/height))
+                            {
+                                curheight++;
+                                curradius = 0;
+                                curpos = 0;
+                            }
+                        }
+                        return block;
                     }
                 };
 

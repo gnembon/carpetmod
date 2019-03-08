@@ -465,10 +465,10 @@ public class Expression implements Cloneable
                 {
                     throw new ExpressionException(e, t, exc.getMessage());
                 }
-                catch (ArithmeticException exc)
-                {
-                    throw new ExpressionException(e, t, "Your math is wrong, "+exc.getMessage());
-                }
+                //catch (ArithmeticException exc)
+                //{
+                //    throw new ExpressionException(e, t, "Your math is wrong, "+exc.getMessage());
+                //}
             }
         });
     }
