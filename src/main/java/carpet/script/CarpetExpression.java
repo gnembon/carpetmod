@@ -13,10 +13,17 @@ import net.minecraft.block.state.IBlockState;
 import net.minecraft.command.CommandSource;
 import net.minecraft.command.arguments.EntitySelector;
 import net.minecraft.command.arguments.EntitySelectorParser;
+import net.minecraft.command.arguments.NBTPathArgument;
 import net.minecraft.command.arguments.ParticleArgument;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.init.Blocks;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.INBTBase;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.particles.IParticleData;
 import net.minecraft.pathfinding.PathType;
 import net.minecraft.server.MinecraftServer;
@@ -26,19 +33,19 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.registry.IRegistry;
+import net.minecraft.util.text.TextComponentString;
 import net.minecraft.world.EnumLightType;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.gen.Heightmap;
 import net.minecraft.world.storage.SessionLockException;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Locale;
-import java.util.Optional;
+import java.util.*;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static java.lang.Math.abs;
 
@@ -147,6 +154,138 @@ public class CarpetExpression
         {
             return true;
         }
+        public String getSelectedItem()
+        {
+            if (entity instanceof EntityPlayer)
+            {
+                ItemStack itemstack = ((EntityPlayer)entity).inventory.getCurrentItem();
+
+                if (!itemstack.isEmpty())
+                {
+                    return IRegistry.field_212630_s.getKey(itemstack.getItem()).toString();
+                }
+            }
+            Iterator<ItemStack> handstuff = entity.getHeldEquipment().iterator();
+            if (handstuff.hasNext())
+                return IRegistry.field_212630_s.getKey(handstuff.next().getItem()).toString();
+            return null;
+        }
+        public String getFromNBT(String path_string)
+        {
+            NBTTagCompound nbttagcompound = entity.writeWithoutTypeId(new NBTTagCompound());
+            NBTPathArgument.NBTPath path;
+            try
+            {
+                path = NBTPathArgument.nbtPath().parse(new StringReader(path_string));
+            }
+            catch (CommandSyntaxException e)
+            {
+                throw new InternalExpressionException("Incorrect path: "+path_string);
+            }
+            String res = null;
+            try
+            {
+                INBTBase component = path.func_197143_a(nbttagcompound);
+                if (component == null)
+                {
+                    return null;
+                }
+                res = component.toFormattedComponent().getString();
+            }
+            catch (CommandSyntaxException ignored) { }
+            return res;
+        }
+        public Value get(String what)
+        {
+            if (!(featureAccessors.containsKey(what)))
+                throw new InternalExpressionException("unknown feature of entity: "+what);
+            return featureAccessors.get(what).apply(entity);
+        }
+        private Map<String, Function<Entity, Value>> featureAccessors = new HashMap<String, Function<Entity, Value>>() {{
+            put("health", (e) -> (e instanceof EntityLivingBase)?new NumericValue(((EntityLivingBase) e).getHealth()):Value.NULL);
+            put("pos", (e) -> new ListValue(Arrays.asList(new NumericValue(e.posX), new NumericValue(e.posY), new NumericValue(e.posZ))));
+            put("x", (e) -> new NumericValue(e.posX));
+            put("y", (e) -> new NumericValue(e.posY));
+            put("z", (e) -> new NumericValue(e.posZ));
+            put("motion", (e) -> new ListValue(Arrays.asList(new NumericValue(e.motionX), new NumericValue(e.motionY), new NumericValue(e.motionZ))));
+            put("motionx", (e) -> new NumericValue(e.motionX));
+            put("motiony", (e) -> new NumericValue(e.motionY));
+            put("motionz", (e) -> new NumericValue(e.motionZ));
+            put("name", (e) -> new StringValue(e.getName().getString()));
+            put("custom_name", (e) -> new StringValue(e.hasCustomName()?e.getCustomName().getString():""));
+            put("type", (e) -> new StringValue(e.getType().func_212546_e().getString()));
+        }};
+
+        public void set(String what, Value toWhat)
+        {
+            if (!(featureModifiers.containsKey(what)))
+                throw new InternalExpressionException("unknown action on entity: "+what);
+            featureModifiers.get(what).accept(entity, toWhat);
+        }
+
+        private Map<String, BiConsumer<Entity, Value>> featureModifiers = new HashMap<String, BiConsumer<Entity, Value>>() {{
+            put("health", (e, v) -> { if (e instanceof EntityLivingBase) ((EntityLivingBase) e).setHealth((float)Expression.getNumericValue(v).getDouble()); });
+            put("pos", (e, v) ->
+            {
+                if (!(v instanceof ListValue))
+                {
+                    throw new InternalExpressionException("expected a list of 3 parameters as second argument");
+                }
+                List<Value> coords = ((ListValue) v).getItems();
+                e.posX = Expression.getNumericValue(coords.get(0)).getDouble();
+                e.posY = Expression.getNumericValue(coords.get(1)).getDouble();
+                e.posZ = Expression.getNumericValue(coords.get(2)).getDouble();
+            });
+            put("x", (e, v) -> e.posX = Expression.getNumericValue(v).getDouble());
+            put("y", (e, v) -> e.posY = Expression.getNumericValue(v).getDouble());
+            put("z", (e, v) -> e.posZ = Expression.getNumericValue(v).getDouble());
+            put("move", (e, v) ->
+            {
+                if (!(v instanceof ListValue))
+                {
+                    throw new InternalExpressionException("expected a list of 3 parameters as second argument");
+                }
+                List<Value> coords = ((ListValue) v).getItems();
+                e.posX += Expression.getNumericValue(coords.get(0)).getDouble();
+                e.posY += Expression.getNumericValue(coords.get(1)).getDouble();
+                e.posZ += Expression.getNumericValue(coords.get(2)).getDouble();
+            });
+
+
+            put("motion", (e, v) ->
+            {
+                if (!(v instanceof ListValue))
+                {
+                    throw new InternalExpressionException("expected a list of 3 parameters as second argument");
+                }
+                List<Value> coords = ((ListValue) v).getItems();
+                e.motionX = Expression.getNumericValue(coords.get(0)).getDouble();
+                e.motionY = Expression.getNumericValue(coords.get(1)).getDouble();
+                e.motionZ = Expression.getNumericValue(coords.get(2)).getDouble();
+            });
+            put("motionx", (e, v) -> e.motionX = Expression.getNumericValue(v).getDouble());
+            put("motiony", (e, v) -> e.motionY = Expression.getNumericValue(v).getDouble());
+            put("motionz", (e, v) -> e.motionZ = Expression.getNumericValue(v).getDouble());
+
+            put("accelerate", (e, v) ->
+            {
+                if (!(v instanceof ListValue))
+                {
+                    throw new InternalExpressionException("expected a list of 3 parameters as second argument");
+                }
+                List<Value> coords = ((ListValue) v).getItems();
+                e.motionX += Expression.getNumericValue(coords.get(0)).getDouble();
+                e.motionY += Expression.getNumericValue(coords.get(1)).getDouble();
+                e.motionZ += Expression.getNumericValue(coords.get(2)).getDouble();
+            });
+            put("custom_name", (e, v) -> {
+                String name = v.getString();
+                if (name.isEmpty())
+                    e.setCustomName(null);
+                e.setCustomName(new TextComponentString(v.getString()));
+            });
+
+        }};
     }
 
 
@@ -354,15 +493,22 @@ public class CarpetExpression
         });
 
         this.expr.addLazyFunction("player", -1, (c, t, lv) -> {
+            if (lv.size()==0)
+            {
+                return (_c, _t) -> ListValue.wrap(((CarpetContext)_c).s.getServer().getPlayerList().getPlayers().stream().map(EntityValue::new).collect(Collectors.toList()));
+            }
+            EntityPlayerMP player = ((CarpetContext)c).s.getServer().getPlayerList().getPlayerByUsername(lv.get(0).evalValue(c).getString());
+            if (player != null)
+                return (_c, _t) -> new EntityValue(player);
             return LazyValue.NULL;
         });
 
         this.expr.addLazyFunction("entity", -1, (c, t, lv) -> {
             String selector = lv.get(0).evalValue(c).getString();
-            EntitySelector entityselector = null;
+
             try
             {
-                entityselector = new EntitySelectorParser(new StringReader(selector), true).parse();
+                EntitySelector entityselector = new EntitySelectorParser(new StringReader(selector), true).parse();
                 Collection<? extends Entity > entities = entityselector.select(((CarpetContext)c).s);
                 List<Value> retlist = new ArrayList<>();
                 for (Entity e: entities)
@@ -375,6 +521,39 @@ public class CarpetExpression
             {
                 throw new InternalExpressionException("Cannot select entities from "+selector);
             }
+        });
+
+        this.expr.addLazyFunction("getnbt", 2, (c, t, lv) -> {
+            Value v = lv.get(0).evalValue(c);
+            if (!(v instanceof EntityValue))
+                throw new InternalExpressionException("First argument to getnbt should be an entity");
+            String path = lv.get(1).evalValue(c).getString();
+            return (_c, _t) -> new StringValue(((EntityValue) v).getFromNBT(path));
+        });
+
+        this.expr.addLazyFunction("get", 2, (c, t, lv) -> {
+            Value v = lv.get(0).evalValue(c);
+            if (!(v instanceof EntityValue))
+                throw new InternalExpressionException("First argument to get should be an entity");
+            String what = lv.get(1).evalValue(c).getString();
+            return (_c, _t) -> ((EntityValue) v).get(what);
+        });
+
+        this.expr.addLazyFunction("health", 1, (c, t, lv) -> {
+            Value v = lv.get(0).evalValue(c);
+            if (!(v instanceof EntityValue))
+                throw new InternalExpressionException("First argument to health should be an entity");
+            Entity e = ((EntityValue) v).getEntity();
+            if (e instanceof EntityLivingBase)
+                return (c_, t_) -> new NumericValue(((EntityLivingBase) e).getHealth());
+            return LazyValue.NULL;
+        });
+
+        this.expr.addLazyFunction("holds", 1, (c, t, lv) -> {
+            Value v = lv.get(0).evalValue(c);
+            if (!(v instanceof EntityValue))
+                throw new InternalExpressionException("First argument to get should be an entity");
+            return (_c, _t) -> new StringValue(((EntityValue) v).getSelectedItem());
         });
 
 
@@ -477,10 +656,22 @@ public class CarpetExpression
 
         this.expr.addLazyFunction("set", -1, (c, t, lv) ->
         {
+            if (lv.size() == 3)
+            {
+                Value entityValue = lv.get(0).evalValue(c);
+                if (!(entityValue instanceof EntityValue))
+                {
+                    throw new InternalExpressionException("Expecting entity with set call with 3 arguments");
+                }
+                String what = lv.get(1).evalValue(c).getString();
+                Value toWhat = lv.get(2).evalValue(c);
+                ((EntityValue) entityValue).set(what, toWhat);
+                return LazyValue.TRUE;
+            }
             CarpetContext cc = (CarpetContext)c;
             World world = cc.s.getWorld();
             if (lv.size() < 2 || lv.size() % 2 == 1)
-                throw new InternalExpressionException("set block should have at least 2 params and odd attributes");
+                throw new InternalExpressionException("set block should have at least 2 params and odd attributes, or 3 for entity");
             LocatorResult locator = locateBlockValue(cc, lv, 0);
             Value v3 = lv.get(locator.offset).evalValue(cc);
             BlockValue bv = ((v3 instanceof BlockValue)) ? (BlockValue) v3 : blockFromString(v3.getString());
@@ -1011,6 +1202,8 @@ public class CarpetExpression
     public static String invokeGlobal(CommandSource source, String call, List<String> argv)
     {
         Expression.UserDefinedFunction acf = Expression.global_functions.get(call);
+        if (acf == null)
+            return "UNDEFINED";
         List<String> args = acf.getArguments();
         if (argv.size() != args.size())
         {
