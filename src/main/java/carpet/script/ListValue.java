@@ -111,9 +111,11 @@ public class ListValue extends Value
     }
 
 
-
-
-
-
-
+    public static class ListConstructorValue extends ListValue
+    {
+        public ListConstructorValue(Collection<? extends Value> list)
+        {
+            super(list);
+        }
+    }
 }

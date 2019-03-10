@@ -622,7 +622,7 @@ public class Expression implements Cloneable
         {
             Value v1 = lv1.evalValue(c);
             Value v2 = lv2.evalValue(c);
-            if (v1 instanceof ListValue && v2 instanceof ListValue)
+            if (v1 instanceof ListValue.ListConstructorValue && v2 instanceof ListValue)
             {
                  List<Value> ll = ((ListValue)v1).getItems();
                  List<Value> rl = ((ListValue)v2).getItems();
@@ -650,7 +650,7 @@ public class Expression implements Cloneable
         {
             Value v1 = lv1.evalValue(c);
             Value v2 = lv2.evalValue(c);
-            if (v1 instanceof ListValue && v2 instanceof ListValue)
+            if (v1 instanceof ListValue.ListConstructorValue && v2 instanceof ListValue)
             {
                 List<Value> ll = ((ListValue)v1).getItems();
                 List<Value> rl = ((ListValue)v2).getItems();
@@ -860,7 +860,7 @@ public class Expression implements Cloneable
 
         addUnaryFunction("return", (v) -> { throw new ExitStatement(v); });
 
-        addFunction("l", ListValue::new);
+        addFunction("l", ListValue.ListConstructorValue::new);
 
         addUnaryFunction("range", (v) -> LazyListValue.range(getNumericValue(v).getLong()));
 
