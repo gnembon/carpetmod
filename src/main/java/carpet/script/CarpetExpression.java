@@ -8,43 +8,40 @@ import carpet.utils.BlockInfo;
 import carpet.utils.Messenger;
 import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import javafx.util.Pair;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.command.CommandSource;
 import net.minecraft.command.arguments.EntitySelector;
 import net.minecraft.command.arguments.EntitySelectorParser;
-import net.minecraft.command.arguments.NBTPathArgument;
 import net.minecraft.command.arguments.ParticleArgument;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
-import net.minecraft.entity.EntityType;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.init.Blocks;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.INBTBase;
-import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.particles.IParticleData;
 import net.minecraft.pathfinding.PathType;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.state.IProperty;
 import net.minecraft.state.StateContainer;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.EntitySelectors;
+import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.registry.IRegistry;
-import net.minecraft.util.text.TextComponentString;
 import net.minecraft.world.EnumLightType;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.gen.Heightmap;
 import net.minecraft.world.storage.SessionLockException;
 
-import java.util.*;
-import java.util.function.BiConsumer;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
-import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static java.lang.Math.abs;
@@ -58,7 +55,7 @@ public class CarpetExpression
             super(message);
         }
     }
-    private static class CarpetContext extends Context
+    public static class CarpetContext extends Context
     {
         public CommandSource s;
         public BlockPos origin;
@@ -73,319 +70,6 @@ public class CarpetExpression
     private CommandSource source;
     private BlockPos origin;
     private Expression expr;
-
-    public static class BlockValue extends Value
-    {
-        public static final BlockValue AIR = new BlockValue(Blocks.AIR.getDefaultState(), null, BlockPos.ORIGIN);
-        public static final BlockValue NULL = new BlockValue(null, null, null);
-        private IBlockState blockState;
-        private BlockPos pos;
-        private World world;
-
-        public IBlockState getBlockState()
-        {
-            if (blockState != null)
-            {
-                return blockState;
-            }
-            if (world != null && pos != null)
-            {
-                blockState = world.getBlockState(pos);
-                return blockState;
-            }
-            throw new InternalExpressionException("Attemted to fetch blockstate without world or stored blockstate");
-        }
-
-        BlockValue(IBlockState state, World world, BlockPos position)
-        {
-            this.world = world;
-            blockState = state;
-            pos = position;
-        }
-
-
-        @Override
-        public String getString()
-        {
-            return IRegistry.field_212618_g.getKey(getBlockState().getBlock()).getPath();
-        }
-
-        @Override
-        public boolean getBoolean()
-        {
-            return this != NULL && !getBlockState().isAir();
-        }
-
-        @Override
-        public Value clone()
-        {
-            return new BlockValue(blockState, world, pos);
-        }
-
-        public BlockPos getPos()
-        {
-            return pos;
-        }
-
-
-    }
-
-    public static class EntityValue extends Value
-    {
-        private Entity entity;
-
-        public EntityValue(Entity e)
-        {
-            entity = e;
-        }
-        public Entity getEntity()
-        {
-            return entity;
-        }
-
-        @Override
-        public String getString()
-        {
-            return entity.getDisplayName().getString();
-        }
-
-        @Override
-        public boolean getBoolean()
-        {
-            return true;
-        }
-        public String getSelectedItem()
-        {
-            if (entity instanceof EntityPlayer)
-            {
-                ItemStack itemstack = ((EntityPlayer)entity).inventory.getCurrentItem();
-
-                if (!itemstack.isEmpty())
-                {
-                    return IRegistry.field_212630_s.getKey(itemstack.getItem()).toString();
-                }
-            }
-            Iterator<ItemStack> handstuff = entity.getHeldEquipment().iterator();
-            if (handstuff.hasNext())
-                return IRegistry.field_212630_s.getKey(handstuff.next().getItem()).toString();
-            return null;
-        }
-        public String getFromNBT(String path_string)
-        {
-            NBTTagCompound nbttagcompound = entity.writeWithoutTypeId(new NBTTagCompound());
-            NBTPathArgument.NBTPath path;
-            try
-            {
-                path = NBTPathArgument.nbtPath().parse(new StringReader(path_string));
-            }
-            catch (CommandSyntaxException e)
-            {
-                throw new InternalExpressionException("Incorrect path: "+path_string);
-            }
-            String res = null;
-            try
-            {
-                INBTBase component = path.func_197143_a(nbttagcompound);
-                if (component == null)
-                {
-                    return null;
-                }
-                res = component.toFormattedComponent().getString();
-            }
-            catch (CommandSyntaxException ignored) { }
-            return res;
-        }
-        public Value get(String what)
-        {
-            if (!(featureAccessors.containsKey(what)))
-                throw new InternalExpressionException("unknown feature of entity: "+what);
-            return featureAccessors.get(what).apply(entity);
-        }
-        private Map<String, Function<Entity, Value>> featureAccessors = new HashMap<String, Function<Entity, Value>>() {{
-            put("health", (e) -> (e instanceof EntityLivingBase)?new NumericValue(((EntityLivingBase) e).getHealth()):Value.NULL);
-            put("pos", (e) -> new ListValue(Arrays.asList(new NumericValue(e.posX), new NumericValue(e.posY), new NumericValue(e.posZ))));
-            put("x", (e) -> new NumericValue(e.posX));
-            put("y", (e) -> new NumericValue(e.posY));
-            put("z", (e) -> new NumericValue(e.posZ));
-            put("motion", (e) -> new ListValue(Arrays.asList(new NumericValue(e.motionX), new NumericValue(e.motionY), new NumericValue(e.motionZ))));
-            put("motionx", (e) -> new NumericValue(e.motionX));
-            put("motiony", (e) -> new NumericValue(e.motionY));
-            put("motionz", (e) -> new NumericValue(e.motionZ));
-            put("name", (e) -> new StringValue(e.getName().getString()));
-            put("custom_name", (e) -> new StringValue(e.hasCustomName()?e.getCustomName().getString():""));
-            put("type", (e) -> new StringValue(e.getType().func_212546_e().getString()));
-        }};
-
-        public void set(String what, Value toWhat)
-        {
-            if (!(featureModifiers.containsKey(what)))
-                throw new InternalExpressionException("unknown action on entity: "+what);
-            featureModifiers.get(what).accept(entity, toWhat);
-        }
-
-        private Map<String, BiConsumer<Entity, Value>> featureModifiers = new HashMap<String, BiConsumer<Entity, Value>>() {{
-            put("health", (e, v) -> { if (e instanceof EntityLivingBase) ((EntityLivingBase) e).setHealth((float)Expression.getNumericValue(v).getDouble()); });
-            put("pos", (e, v) ->
-            {
-                if (!(v instanceof ListValue))
-                {
-                    throw new InternalExpressionException("expected a list of 3 parameters as second argument");
-                }
-                List<Value> coords = ((ListValue) v).getItems();
-                e.posX = Expression.getNumericValue(coords.get(0)).getDouble();
-                e.posY = Expression.getNumericValue(coords.get(1)).getDouble();
-                e.posZ = Expression.getNumericValue(coords.get(2)).getDouble();
-            });
-            put("x", (e, v) -> e.posX = Expression.getNumericValue(v).getDouble());
-            put("y", (e, v) -> e.posY = Expression.getNumericValue(v).getDouble());
-            put("z", (e, v) -> e.posZ = Expression.getNumericValue(v).getDouble());
-            put("move", (e, v) ->
-            {
-                if (!(v instanceof ListValue))
-                {
-                    throw new InternalExpressionException("expected a list of 3 parameters as second argument");
-                }
-                List<Value> coords = ((ListValue) v).getItems();
-                e.posX += Expression.getNumericValue(coords.get(0)).getDouble();
-                e.posY += Expression.getNumericValue(coords.get(1)).getDouble();
-                e.posZ += Expression.getNumericValue(coords.get(2)).getDouble();
-            });
-
-
-            put("motion", (e, v) ->
-            {
-                if (!(v instanceof ListValue))
-                {
-                    throw new InternalExpressionException("expected a list of 3 parameters as second argument");
-                }
-                List<Value> coords = ((ListValue) v).getItems();
-                e.motionX = Expression.getNumericValue(coords.get(0)).getDouble();
-                e.motionY = Expression.getNumericValue(coords.get(1)).getDouble();
-                e.motionZ = Expression.getNumericValue(coords.get(2)).getDouble();
-            });
-            put("motionx", (e, v) -> e.motionX = Expression.getNumericValue(v).getDouble());
-            put("motiony", (e, v) -> e.motionY = Expression.getNumericValue(v).getDouble());
-            put("motionz", (e, v) -> e.motionZ = Expression.getNumericValue(v).getDouble());
-
-            put("accelerate", (e, v) ->
-            {
-                if (!(v instanceof ListValue))
-                {
-                    throw new InternalExpressionException("expected a list of 3 parameters as second argument");
-                }
-                List<Value> coords = ((ListValue) v).getItems();
-                e.motionX += Expression.getNumericValue(coords.get(0)).getDouble();
-                e.motionY += Expression.getNumericValue(coords.get(1)).getDouble();
-                e.motionZ += Expression.getNumericValue(coords.get(2)).getDouble();
-            });
-            put("custom_name", (e, v) -> {
-                String name = v.getString();
-                if (name.isEmpty())
-                    e.setCustomName(null);
-                e.setCustomName(new TextComponentString(v.getString()));
-            });
-
-        }};
-    }
-
-
-    private BlockValue blockValueFromCoords(CarpetContext c, int x, int y, int z)
-    {
-        BlockPos pos = locateBlockPos(c, x,y,z);
-        return new BlockValue(null, c.s.getWorld(), pos);
-    }
-
-    private BlockValue blockFromString(String str)
-    {
-        try
-        {
-            ResourceLocation blockId = ResourceLocation.read(new StringReader(str));
-            if (IRegistry.field_212618_g.func_212607_c(blockId))
-            {
-
-                Block block = IRegistry.field_212618_g.get(blockId);
-                return new BlockValue(block.getDefaultState(), null, null);
-            }
-        }
-        catch (CommandSyntaxException ignored)
-        {
-        }
-        return BlockValue.NULL;
-    }
-
-    private static class LocatorResult
-    {
-        BlockValue block;
-        int offset;
-        LocatorResult(BlockValue b, int o)
-        {
-            block = b;
-            offset = o;
-        }
-    }
-    private LocatorResult locateBlockValue(CarpetContext c, List<LazyValue> params, int offset)
-    {
-        try
-        {
-            Value v1 = params.get(0 + offset).evalValue(c);
-            if (v1 instanceof BlockValue)
-            {
-                return new LocatorResult(((BlockValue) v1), 1+offset);
-            }
-            int xpos = (int) ((NumericValue) v1).getLong();
-            int ypos = (int) ((NumericValue) params.get(1 + offset).evalValue(c)).getLong();
-            int zpos = (int) ((NumericValue) params.get(2 + offset).evalValue(c)).getLong();
-            return new LocatorResult(
-                    new BlockValue(
-                            null,
-                            c.s.getWorld(),
-                            new BlockPos(c.origin.getX() + xpos, c.origin.getY() + ypos, c.origin.getZ() + zpos)
-                    ),
-                    3+offset
-            );
-        }
-        catch (IndexOutOfBoundsException e)
-        {
-            throw new InternalExpressionException("position should be defined either by three coordinates, or a block value");
-        }
-    }
-
-    private static class VectorLocator
-    {
-        Vec3d vec;
-        int offset;
-        VectorLocator(Vec3d v, int o)
-        {
-            vec = v;
-            offset = o;
-        }
-    }
-    private VectorLocator locateVec(CarpetContext c, List<LazyValue> params, int offset)
-    {
-        try
-        {
-            Value v1 = params.get(0 + offset).evalValue(c);
-            if (v1 instanceof BlockValue)
-            {
-                return new VectorLocator(new Vec3d(((BlockValue) v1).getPos()).add(0.5,0.5,0.5), 1+offset);
-            }
-            return new VectorLocator( new Vec3d(
-                    Expression.getNumericValue(v1).getDouble(),
-                    Expression.getNumericValue(params.get(1 + offset).evalValue(c)).getDouble(),
-                    Expression.getNumericValue(params.get(2 + offset).evalValue(c)).getDouble()),
-                    offset+3
-            );
-        }
-        catch (IndexOutOfBoundsException e)
-        {
-            throw new InternalExpressionException("position should be defined either by three coordinates, or a block value");
-        }
-    }
-
-    private BlockPos locateBlockPos(CarpetContext c, int xpos, int ypos, int zpos)
-    {
-        return new BlockPos(c.origin.getX() + xpos, c.origin.getY() + ypos, c.origin.getZ() + zpos);
-    }
 
 
     private LazyValue booleanStateTest(
@@ -402,8 +86,8 @@ public class CarpetExpression
         }
         Value v0 = params.get(0).evalValue(c);
         if (v0 instanceof BlockValue)
-            return (c_, t_) -> test.apply(((BlockValue) v0).getBlockState(), ((BlockValue) v0).pos) ? Value.TRUE : Value.FALSE;
-        BlockValue block = locateBlockValue(cc, params, 0).block;
+            return (c_, t_) -> test.apply(((BlockValue) v0).getBlockState(), ((BlockValue) v0).getPos()) ? Value.TRUE : Value.FALSE;
+        BlockValue block = BlockValue.fromParams(cc, params, 0).block;
         return (c_, t_) -> test.apply(block.getBlockState(), block.getPos()) ? Value.TRUE : Value.FALSE;
     }
 
@@ -422,8 +106,8 @@ public class CarpetExpression
 
         Value v0 = params.get(0).evalValue(c);
         if (v0 instanceof BlockValue)
-            return (c_, t_) -> new StringValue(test.apply( ((BlockValue) v0).getBlockState(), ((BlockValue) v0).pos));
-        BlockValue block = locateBlockValue(cc, params, 0).block;
+            return (c_, t_) -> new StringValue(test.apply( ((BlockValue) v0).getBlockState(), ((BlockValue) v0).getPos()));
+        BlockValue block = BlockValue.fromParams(cc, params, 0).block;
         return (c_, t_) -> new StringValue(test.apply(block.getBlockState(), block.getPos()));
     }
 
@@ -463,10 +147,10 @@ public class CarpetExpression
                 }
                 if (lv.size() == 1)
                 {
-                    return (c_, t_) -> blockFromString(lv.get(0).evalValue(cc).getString());
+                    return (c_, t_) -> BlockValue.fromString(lv.get(0).evalValue(cc).getString());
                     //return new BlockValue(IRegistry.field_212618_g.get(new ResourceLocation(lv.get(0).getString())).getDefaultState(), origin);
                 }
-                return (c_, t_) -> locateBlockValue(cc, lv, 0).block;
+                return (c_, t_) -> BlockValue.fromParams(cc, lv, 0).block;
         });
 
         this.expr.addLazyFunction("pos", 1, (c, t, lv) ->
@@ -474,7 +158,7 @@ public class CarpetExpression
             Value arg = lv.get(0).evalValue(c);
             if (arg instanceof BlockValue)
             {
-                BlockPos pos = ((BlockValue) arg).pos;
+                BlockPos pos = ((BlockValue) arg).getPos();
                 if (pos == null)
                     throw new InternalExpressionException("cannot fetch position of unlocalized block");
                 return (c_, t_) -> new ListValue(Arrays.asList(new NumericValue(pos.getX()), new NumericValue(pos.getY()), new NumericValue(pos.getZ())));
@@ -493,17 +177,57 @@ public class CarpetExpression
         });
 
         this.expr.addLazyFunction("player", -1, (c, t, lv) -> {
-            if (lv.size()==0)
+            if (lv.size() ==0)
+            {
+                return (_c, _t) ->
+                {
+                    Entity callingEntity = ((CarpetContext)_c).s.getEntity();
+                    if (callingEntity instanceof EntityPlayer)
+                    {
+                        return new EntityValue(callingEntity);
+                    }
+                    Vec3d pos = ((CarpetContext)_c).s.getPos();
+                    EntityPlayer closestPlayer = ((CarpetContext)_c).s.getWorld().getClosestPlayer(pos.x, pos.y, pos.z, -1.0, EntitySelectors.IS_ALIVE);
+                    if (closestPlayer != null)
+                    {
+                        return new EntityValue(closestPlayer);
+                    }
+                    return Value.NULL;
+                };
+            }
+            String playerName = lv.get(0).evalValue(c).getString();
+            if ("*".equalsIgnoreCase(playerName))
             {
                 return (_c, _t) -> ListValue.wrap(((CarpetContext)_c).s.getServer().getPlayerList().getPlayers().stream().map(EntityValue::new).collect(Collectors.toList()));
             }
-            EntityPlayerMP player = ((CarpetContext)c).s.getServer().getPlayerList().getPlayerByUsername(lv.get(0).evalValue(c).getString());
+            EntityPlayerMP player = ((CarpetContext)c).s.getServer().getPlayerList().getPlayerByUsername(playerName);
             if (player != null)
                 return (_c, _t) -> new EntityValue(player);
             return LazyValue.NULL;
         });
 
-        this.expr.addLazyFunction("entity", -1, (c, t, lv) -> {
+        this.expr.addLazyFunction("entities", 7, (c, t, lv) -> {
+            BlockPos center = new BlockPos(
+                    Expression.getNumericValue(lv.get(1).evalValue(c)).getDouble(),
+                    Expression.getNumericValue(lv.get(2).evalValue(c)).getDouble(),
+                    Expression.getNumericValue(lv.get(3).evalValue(c)).getDouble()
+            );
+            AxisAlignedBB area = new AxisAlignedBB(center).grow(
+                    Expression.getNumericValue(lv.get(4).evalValue(c)).getDouble(),
+                    Expression.getNumericValue(lv.get(5).evalValue(c)).getDouble(),
+                    Expression.getNumericValue(lv.get(6).evalValue(c)).getDouble()
+            );
+            String who = lv.get(0).evalValue(c).getString();
+            Pair<Class<? extends Entity>, Predicate<? super Entity>> pair = EntityValue.entityPredicates.get(who);
+            if (pair == null)
+            {
+                throw new InternalExpressionException("Unknown entity selection criterion: "+who);
+            }
+            List<Entity> entityList = ((CarpetContext)c).s.getWorld().getEntitiesWithinAABB(pair.getKey(), area, pair.getValue());
+            return (_c, _t ) -> ListValue.wrap(entityList.stream().map(EntityValue::new).collect(Collectors.toList()));
+        });
+
+        this.expr.addLazyFunction("entity_selector", -1, (c, t, lv) -> {
             String selector = lv.get(0).evalValue(c).getString();
 
             try
@@ -567,16 +291,16 @@ public class CarpetExpression
                 booleanStateTest(c, "liquid", lv, (s, p) -> !s.getFluidState().isEmpty()));
 
         this.expr.addLazyFunction("light", -1, (c, t, lv) ->
-                (c_, t_) -> new NumericValue(((CarpetContext)c).s.getWorld().getLight(locateBlockValue((CarpetContext) c, lv, 0).block.getPos())));
+                (c_, t_) -> new NumericValue(((CarpetContext)c).s.getWorld().getLight(BlockValue.fromParams((CarpetContext) c, lv, 0).block.getPos())));
 
         this.expr.addLazyFunction("blockLight", -1, (c, t, lv) ->
-                (c_, t_) -> new NumericValue(((CarpetContext)c).s.getWorld().getLightFor(EnumLightType.BLOCK, locateBlockValue((CarpetContext) c, lv, 0).block.getPos())));
+                (c_, t_) -> new NumericValue(((CarpetContext)c).s.getWorld().getLightFor(EnumLightType.BLOCK, BlockValue.fromParams((CarpetContext) c, lv, 0).block.getPos())));
 
         this.expr.addLazyFunction("skyLight", -1, (c, t, lv) ->
-                (c_, t_) -> new NumericValue(((CarpetContext)c).s.getWorld().getLightFor(EnumLightType.SKY, locateBlockValue((CarpetContext) c, lv, 0).block.getPos())));
+                (c_, t_) -> new NumericValue(((CarpetContext)c).s.getWorld().getLightFor(EnumLightType.SKY, BlockValue.fromParams((CarpetContext) c, lv, 0).block.getPos())));
 
         this.expr.addLazyFunction("seeSky", -1, (c, t, lv) ->
-                (c_, t_) -> new NumericValue(((CarpetContext)c).s.getWorld().canSeeSky(locateBlockValue((CarpetContext) c, lv, 0).block.getPos())));
+                (c_, t_) -> new NumericValue(((CarpetContext)c).s.getWorld().canSeeSky(BlockValue.fromParams((CarpetContext) c, lv, 0).block.getPos())));
 
         this.expr.addLazyFunction("top", -1, (c, t, lv) -> {
             String type = lv.get(0).evalValue(c).getString().toLowerCase(Locale.ROOT);
@@ -595,7 +319,7 @@ public class CarpetExpression
             Value v1 = lv.get(1).evalValue(c);
             if (v1 instanceof BlockValue)
             {
-                BlockPos inpos = ((BlockValue)v1).pos;
+                BlockPos inpos = ((BlockValue)v1).getPos();
                 x = inpos.getX();
                 z = inpos.getZ();
             }
@@ -611,11 +335,11 @@ public class CarpetExpression
         });
 
         this.expr.addLazyFunction("loaded", -1, (c, t, lv) ->
-                (c_, t_) -> ((CarpetContext)c).s.getWorld().isBlockLoaded(locateBlockValue((CarpetContext) c, lv, 0).block.getPos()) ? Value.TRUE : Value.FALSE);
+                (c_, t_) -> ((CarpetContext)c).s.getWorld().isBlockLoaded(BlockValue.fromParams((CarpetContext) c, lv, 0).block.getPos()) ? Value.TRUE : Value.FALSE);
 
         this.expr.addLazyFunction("loadedEP", -1, (c, t, lv) ->
         {
-            BlockPos pos = locateBlockValue((CarpetContext)c, lv, 0).block.getPos();
+            BlockPos pos = BlockValue.fromParams((CarpetContext)c, lv, 0).block.getPos();
             return (c_, t_) -> ((CarpetContext)c).s.getWorld().isAreaLoaded(pos.getX() - 32, 0, pos.getZ() - 32,
                     pos.getX() + 32, 0, pos.getZ() + 32, true) ? Value.TRUE : Value.FALSE;
         });
@@ -624,7 +348,7 @@ public class CarpetExpression
                 booleanStateTest(c, "suffocates", lv, (s, p) -> s.causesSuffocation()));
 
         this.expr.addLazyFunction("power", -1, (c, t, lv) ->
-                (c_, t_) -> new NumericValue(((CarpetContext)c).s.getWorld().getRedstonePowerFromNeighbors(locateBlockValue((CarpetContext) c, lv, 0).block.getPos())));
+                (c_, t_) -> new NumericValue(((CarpetContext)c).s.getWorld().getRedstonePowerFromNeighbors(BlockValue.fromParams((CarpetContext) c, lv, 0).block.getPos())));
 
         this.expr.addLazyFunction("ticksRandomly", -1, (c, t, lv) ->
                 booleanStateTest(c, "ticksRandomly", lv, (s, p) -> s.needsRandomTick()));
@@ -672,9 +396,9 @@ public class CarpetExpression
             World world = cc.s.getWorld();
             if (lv.size() < 2 || lv.size() % 2 == 1)
                 throw new InternalExpressionException("set block should have at least 2 params and odd attributes, or 3 for entity");
-            LocatorResult locator = locateBlockValue(cc, lv, 0);
+            BlockValue.LocatorResult locator = BlockValue.fromParams(cc, lv, 0);
             Value v3 = lv.get(locator.offset).evalValue(cc);
-            BlockValue bv = ((v3 instanceof BlockValue)) ? (BlockValue) v3 : blockFromString(v3.getString());
+            BlockValue bv = ((v3 instanceof BlockValue)) ? (BlockValue) v3 : BlockValue.fromString(v3.getString());
             if (bv == BlockValue.NULL)
                 throw new InternalExpressionException("block to set to should be a valid block");
             IBlockState bs = bv.getBlockState();
@@ -720,7 +444,7 @@ public class CarpetExpression
 
         this.expr.addLazyFunction("property", -1, (c, t, lv) ->
         {
-            LocatorResult locator = locateBlockValue((CarpetContext) c, lv, 0);
+            BlockValue.LocatorResult locator = BlockValue.fromParams((CarpetContext) c, lv, 0);
             IBlockState state = locator.block.getBlockState();
             String tag = lv.get(locator.offset).evalValue(c).getString();
             StateContainer<Block, IBlockState> states = state.getBlock().getStateContainer();
@@ -736,7 +460,7 @@ public class CarpetExpression
             CarpetContext cc = (CarpetContext)c;
             MinecraftServer ms = cc.s.getServer();
             WorldServer world = cc.s.getWorld();
-            VectorLocator locator = locateVec(cc, lv, 0);
+            BlockValue.VectorLocator locator = BlockValue.locateVec(cc, lv, 0);
             String particleName = lv.get(locator.offset).evalValue(c).getString();
             int count = 10;
             double speed = 0;
@@ -814,7 +538,7 @@ public class CarpetExpression
                     for (int z=cz-zrange; z <= cz+zrange; z++)
                     {
                         int zFinal = z;
-                        c.setVariable( "_", (cc_, t_c) -> blockValueFromCoords(((CarpetContext)c), xFinal,yFinal,zFinal).boundTo("_"));
+                        c.setVariable( "_", (cc_, t_c) -> BlockValue.fromCoords(((CarpetContext)c), xFinal,yFinal,zFinal).boundTo("_"));
                         c.setVariable("_z", (c_, t_) -> new NumericValue(zFinal).boundTo("_z"));
                         if (expr.evalValue(c).getBoolean())
                         {
@@ -840,7 +564,7 @@ public class CarpetExpression
 
 
         this.expr.addLazyFunction("run", 1, (c, t, lv) -> {
-            BlockPos target = locateBlockPos((CarpetContext) c,
+            BlockPos target = BlockValue.locateBlockPos((CarpetContext) c,
                     (int)Expression.getNumericValue(c.getVariable("x").evalValue(c)).getLong(),
                     (int)Expression.getNumericValue(c.getVariable("y").evalValue(c)).getLong(),
                     (int)Expression.getNumericValue(c.getVariable("z").evalValue(c)).getLong()
@@ -899,7 +623,7 @@ public class CarpetExpression
         this.expr.addLazyFunction("neighbours", -1, (c, t, lv)->
         {
 
-            BlockPos center = locateBlockValue((CarpetContext) c, lv,0).block.getPos();
+            BlockPos center = BlockValue.fromParams((CarpetContext) c, lv,0).block.getPos();
             World world = ((CarpetContext) c).s.getWorld();
 
             List<Value> neighbours = new ArrayList<>();
@@ -990,7 +714,7 @@ public class CarpetExpression
                 @Override
                 public Value next()
                 {
-                    Value r = blockValueFromCoords(cc, x,y,z);
+                    Value r = BlockValue.fromCoords(cc, x,y,z);
                     //possibly reroll context
                     x++;
                     if (x > maxx)
@@ -1037,13 +761,13 @@ public class CarpetExpression
                 if (lv.size()==3)
                 {
                     return (_c, _t ) -> new ListValue(Arrays.asList(
-                            blockValueFromCoords(cc, cx, cy-1, cz),
-                            blockValueFromCoords(cc, cx, cy, cz),
-                            blockValueFromCoords(cc, cx-1, cy, cz),
-                            blockValueFromCoords(cc, cx, cy, cz-1),
-                            blockValueFromCoords(cc, cx+1, cy, cz),
-                            blockValueFromCoords(cc, cx, cy, cz+1),
-                            blockValueFromCoords(cc, cx, cy+1, cz)
+                            BlockValue.fromCoords(cc, cx, cy-1, cz),
+                            BlockValue.fromCoords(cc, cx, cy, cz),
+                            BlockValue.fromCoords(cc, cx-1, cy, cz),
+                            BlockValue.fromCoords(cc, cx, cy, cz-1),
+                            BlockValue.fromCoords(cc, cx+1, cy, cz),
+                            BlockValue.fromCoords(cc, cx, cy, cz+1),
+                            BlockValue.fromCoords(cc, cx, cy+1, cz)
                     ));
                 }
                 else if (lv.size()==4)
@@ -1082,11 +806,11 @@ public class CarpetExpression
                         if (curradius == 0)
                         {
                             curradius = 1;
-                            return blockValueFromCoords(cc, cx, cy, cz);
+                            return BlockValue.fromCoords(cc, cx, cy, cz);
                         }
                         // x = 3-|i-6|
                         // z = |( (i-3)%12-6|-3
-                        Value block = blockValueFromCoords(cc, cx+(curradius-abs(curpos-2*curradius)), cy, cz-curradius+abs( abs(curpos-curradius)%(4*curradius) -2*curradius ));
+                        Value block = BlockValue.fromCoords(cc, cx+(curradius-abs(curpos-2*curradius)), cy, cz-curradius+abs( abs(curpos-curradius)%(4*curradius) -2*curradius ));
                         curpos++;
                         if (curpos>=curradius*4)
                         {
@@ -1116,17 +840,17 @@ public class CarpetExpression
                     {
                         if (curheight == -height || curheight == height)
                         {
-                            return blockValueFromCoords(cc, cx, cy+curheight++, cz);
+                            return BlockValue.fromCoords(cc, cx, cy+curheight++, cz);
                         }
                         if (curradius == 0)
                         {
                             curradius++;
-                            return blockValueFromCoords(cc, cx, cy+curheight, cz);
+                            return BlockValue.fromCoords(cc, cx, cy+curheight, cz);
                         }
                         // x = 3-|i-6|
                         // z = |( (i-3)%12-6|-3
 
-                        Value block = blockValueFromCoords(cc, cx+(curradius-abs(curpos-2*curradius)), cy+curheight, cz-curradius+abs( abs(curpos-curradius)%(4*curradius) -2*curradius ));
+                        Value block = BlockValue.fromCoords(cc, cx+(curradius-abs(curpos-2*curradius)), cy+curheight, cz-curradius+abs( abs(curpos-curradius)%(4*curradius) -2*curradius ));
                         curpos++;
                         if (curpos>=curradius*4)
                         {
@@ -1148,7 +872,7 @@ public class CarpetExpression
 
         //not ready yet
         this.expr.addLazyFunction("plop", 4, (c, t, lv) ->{
-            LocatorResult locator = locateBlockValue((CarpetContext)c, lv, 0);
+            BlockValue.LocatorResult locator = BlockValue.fromParams((CarpetContext)c, lv, 0);
             Boolean res = FeatureGenerator.spawn(lv.get(locator.offset).evalValue(c).getString(), ((CarpetContext)c).s.getWorld(), locator.block.getPos());
             if (res == null)
                 return (c_, t_) -> Value.NULL;
