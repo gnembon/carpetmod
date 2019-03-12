@@ -20,7 +20,7 @@ public abstract class Value implements Comparable<Value>, Cloneable
     {
         return boundVariable;
     }
-    public Value boundTo(String var)
+    public Value reboundedTo(String var)
     {
         Value copy = null;
         try
@@ -34,6 +34,12 @@ public abstract class Value implements Comparable<Value>, Cloneable
         }
         copy.boundVariable = var;
         return copy;
+    }
+    public Value bindTo(String var)
+    {
+
+        this.boundVariable = var;
+        return this;
     }
 
     public abstract String getString();
@@ -107,6 +113,7 @@ public abstract class Value implements Comparable<Value>, Cloneable
                 throw new Expression.InternalExpressionException(boundVariable+ " cannot be assigned a new value");
             }
             throw new Expression.InternalExpressionException(getString()+ " is not a variable");
+
         }
     }
 

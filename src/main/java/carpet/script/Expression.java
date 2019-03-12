@@ -83,6 +83,7 @@ public class Expression implements Cloneable
 
     public static final Value euler = new NumericValue(
             "2.71828182845904523536028747135266249775724709369995957496696762772407663");
+    public static boolean stopAll = false;
 
     /** The current infix expression */
     private String expression;
@@ -177,10 +178,10 @@ public class Expression implements Cloneable
         }
     }
     /* Exception thrown to terminate execution mid expression (aka return statement) */
-    private static class ExitStatement extends RuntimeException
+    static class ExitStatement extends RuntimeException
     {
         Value retval;
-        ExitStatement(Value value)
+        public ExitStatement(Value value)
         {
             retval = value;
         }
@@ -454,7 +455,7 @@ public class Expression implements Cloneable
             }
         });
     }
-    private void addContextFunction(String name, Expression expr, Tokenizer.Token token, List<String> arguments, LazyValue code)
+    private void addContextFunction(String name, Expression expr, Tokenizer.Token token, List<String> arguments, List<String> locals, LazyValue code)
     {
         name = name.toLowerCase(Locale.ROOT);
         if (functions.containsKey(name))
@@ -479,18 +480,23 @@ public class Expression implements Cloneable
                 {
                     throw new ExpressionException(e, t,
                             "Incorrect number of arguments for function "+name+
-                            ". Should be "+arguments.size()+", not "+lazyParams.size()
+                            ". Should be "+arguments.size()+", not "+lazyParams.size()+" like "+arguments
                     );
                 }
 
                 Map<String, LazyValue> context = new HashMap<>();
                 //saving context and placing args
+                for (String local : locals)
+                {
+                    context.put(local, c.getVariable(local));
+                    c.delVariable(local);
+                }
                 for (int i=0; i<arguments.size(); i++)
                 {
                     String arg = arguments.get(i);
                     context.put(arg, c.getVariable(arg));
                     Value val = lazyParams.get(i).evalValue(c);
-                    c.setVariable(arg, (cc, tt) -> val);
+                    c.setVariable(arg, (cc, tt) -> val.bindTo(arg));
                     //c.setVariable(arg, lazyParams.get(i) ) overflows stack
                 }
                 Value retVal = code.evalValue(c, type); // todo not sure if we need to propagete type / consider boolean context in defined functions - answer seems ye
@@ -531,9 +537,9 @@ public class Expression implements Cloneable
         defaultVariables.put("false", (c, t) -> Value.FALSE);
 
         //special variables for second order functions so we don't need to check them all the time
-        defaultVariables.put("_", (c, t) -> new NumericValue(0).boundTo("_"));
-        defaultVariables.put("_i", (c, t) -> new NumericValue(0).boundTo("_i"));
-        defaultVariables.put("_a", (c, t) -> new NumericValue(0).boundTo("_a"));
+        defaultVariables.put("_", (c, t) -> new NumericValue(0).bindTo("_"));
+        defaultVariables.put("_i", (c, t) -> new NumericValue(0).bindTo("_i"));
+        defaultVariables.put("_a", (c, t) -> new NumericValue(0).bindTo("_a"));
 
 
 
@@ -547,6 +553,8 @@ public class Expression implements Cloneable
                 {
                     throw new InternalExpressionException("Function "+name+" is not defined yet");
                 }
+                if(Expression.stopAll)
+                    throw new ExitStatement(Value.NULL);
                 List<LazyValue> lvargs = new ArrayList<>(lv.size()-1);
                 for (int i=0; i< lv.size()-1; i++)
                 {
@@ -557,17 +565,30 @@ public class Expression implements Cloneable
             }
 
             // gimme signature
-            List<String> args = new ArrayList<>(lv.size() - 1);
+            List<String> args = new ArrayList<>();
+            List<String> locals = new ArrayList<>();
             for (int i = 0; i < lv.size() - 1; i++)
             {
-                Value v = lv.get(i).evalValue(c);
+                Value v = lv.get(i).evalValue(c, Context.LOCALIZATION);
                 if (!v.isBound())
                 {
                     throw new InternalExpressionException("Only variables can be used in function signature, not  " + v.getString());
                 }
-                args.add(v.boundVariable);
+                if (v instanceof LocalValue)
+                {
+                    locals.add(v.boundVariable);
+                }
+                else
+                {
+                    args.add(v.boundVariable);
+                }
             }
-            return (cc, tt) -> new FunctionSignatureValue(name, args);
+            return (cc, tt) -> new FunctionSignatureValue(name, args, locals);
+        });
+        addLazyFunction("local", 1, (c, t, lv) -> {
+            if (t != Context.LOCALIZATION)
+                throw new InternalExpressionException("local scoping of variables is only possible in function signatures");
+            return (cc, tt) -> new LocalValue(lv.get(0).evalValue(c));
         });
 
         addLazyBinaryOperator(";",precedence.get("nextop;"), true, (c, t, lv1, lv2) ->
@@ -635,13 +656,13 @@ public class Expression implements Cloneable
                  {
                      String lname = li.next().getVariable();
                      Value vval = ri.next();
-                     c.setVariable(lname, (cc, tt) -> vval.boundTo(lname));
+                     c.setVariable(lname, (cc, tt) -> vval.reboundedTo(lname));
                  }
                  return (cc, tt) -> Value.TRUE;
             }
             v1.assertAssignable();
             String varname = v1.getVariable();
-            LazyValue boundedLHS = (cc, tt) -> v2.boundTo(varname);
+            LazyValue boundedLHS = (cc, tt) -> v2.reboundedTo(varname);
             c.setVariable(varname, boundedLHS);
             return boundedLHS;
         });
@@ -664,13 +685,22 @@ public class Expression implements Cloneable
                     Value lval = li.next();
                     String lname = lval.getVariable();
                     Value vval = ri.next();
-                    c.setVariable(lname, (cc, tt) -> lval.add(vval).boundTo(lname));
+                    c.setVariable(lname, (cc, tt) -> lval.add(vval).bindTo(lname));
                 }
                 return (cc, tt) -> Value.TRUE;
             }
             v1.assertAssignable();
             String varname = v1.getVariable();
-            LazyValue boundedLHS = (cc, tt) -> v1.add(v2).boundTo(varname);
+            LazyValue boundedLHS;
+            if (v1 instanceof ListValue)
+            {
+                ((ListValue) v1).append(v2);
+                boundedLHS = (cc, tt)-> v1;
+            }
+            else
+            {
+                boundedLHS = (cc, tt) -> v1.add(v2).bindTo(varname);
+            }
             c.setVariable(varname, boundedLHS);
             return boundedLHS;
         });
@@ -682,7 +712,7 @@ public class Expression implements Cloneable
             if (v1 instanceof FunctionSignatureValue)
             {
                 FunctionSignatureValue sign = (FunctionSignatureValue) v1;
-                addContextFunction(sign.getName(), e, t, sign.getArgs(), lv2);
+                addContextFunction(sign.getName(), e, t, sign.getArgs(), sign.getLocals(), lv2);
             }
             else
             {
@@ -702,8 +732,8 @@ public class Expression implements Cloneable
             String rvalvar = v2.getVariable();
             if (lvalvar.startsWith("_") || rvalvar.startsWith("_"))
                 throw new InternalExpressionException("Cannot swap with local built-in variables, i.e. those that start with '_'");
-            Value lval = v2.boundTo(lvalvar);
-            Value rval = v1.boundTo(rvalvar);
+            Value lval = v2.reboundedTo(lvalvar);
+            Value rval = v1.reboundedTo(rvalvar);
             c.setVariable(lvalvar, (cc, tt) -> lval);
             c.setVariable(rvalvar, (cc, tt) -> rval);
             return (cc, tt) -> lval;
@@ -852,6 +882,8 @@ public class Expression implements Cloneable
                 Thread.yield();
             }
             catch (InterruptedException ignored) { }
+            if(Expression.stopAll)
+                throw new ExitStatement(Value.NULL);
             return v; // pass through for variables
         });
         addLazyFunction("time", 0, (c, t, lv) ->
@@ -881,7 +913,7 @@ public class Expression implements Cloneable
         addLazyFunction("var", 1, (c, t, lv) -> {
             String varname = lv.get(0).evalValue(c).getString();
             if (!c.isAVariable(varname))
-                c.setVariable(varname, Value.ZERO);
+                c.setVariable(varname, (_c, _t ) -> Value.ZERO.reboundedTo(varname));
             return c.getVariable(varname);
         });
 
@@ -966,13 +998,15 @@ public class Expression implements Cloneable
             Value lastOne = Value.ZERO;
             //scoping
             LazyValue _val = c.getVariable("_");
-            c.setVariable("_",(cc, tt) -> new NumericValue(0).boundTo("_"));
-            while (i<limit && condition.evalValue(c).getBoolean() )
+            c.setVariable("_",(cc, tt) -> new NumericValue(0).bindTo("_"));
+            while (i<limit && condition.evalValue(c, Context.BOOLEAN).getBoolean() )
             {
+                if(Expression.stopAll)
+                    throw new ExitStatement(Value.NULL);
                 lastOne = expr.evalValue(c);
                 i++;
                 long seriously = i;
-                c.setVariable("_", (cc, tt) -> new NumericValue(seriously).boundTo("_"));
+                c.setVariable("_", (cc, tt) -> new NumericValue(seriously).bindTo("_"));
             }
             //revering scope
             c.setVariable("_", _val);
@@ -998,8 +1032,10 @@ public class Expression implements Cloneable
             LazyValue _val = c.getVariable("_");
             for (long i=0; i < limit; i++)
             {
+                if(Expression.stopAll)
+                    throw new ExitStatement(Value.NULL);
                 long whyYouAsk = i;
-                c.setVariable("_", (cc, tt) -> new NumericValue(whyYouAsk).boundTo("_"));
+                c.setVariable("_", (cc, tt) -> new NumericValue(whyYouAsk).bindTo("_"));
                 lastOne = expr.evalValue(c);
                 if (cond != null && cond.evalValue(c).getBoolean())
                     break;
@@ -1037,8 +1073,8 @@ public class Expression implements Cloneable
             {
                 Value next = iterator.next();
                 int doYouReally = i;
-                c.setVariable("_", (cc, tt) -> next.boundTo("_"));
-                c.setVariable("_i", (cc, tt) -> new NumericValue(doYouReally).boundTo("_i"));
+                c.setVariable("_", (cc, tt) -> next.reboundedTo("_"));
+                c.setVariable("_i", (cc, tt) -> new NumericValue(doYouReally).bindTo("_i"));
                 result.add(expr.evalValue(c));
                 if (cond != null && cond.evalValue(c).getBoolean())
                     break;
@@ -1076,8 +1112,8 @@ public class Expression implements Cloneable
             {
                 Value next = iterator.next();
                 int seriously = i;
-                c.setVariable("_", (cc, tt) -> next.boundTo("_"));
-                c.setVariable("_i", (cc, tt) -> new NumericValue(seriously).boundTo("_i"));
+                c.setVariable("_", (cc, tt) -> next.reboundedTo("_"));
+                c.setVariable("_i", (cc, tt) -> new NumericValue(seriously).bindTo("_i"));
                 if(expr.evalValue(c).getBoolean())
                     result.add(next);
                 if (cond != null && cond.evalValue(c).getBoolean())
@@ -1110,8 +1146,8 @@ public class Expression implements Cloneable
             {
                 Value next = iterator.next();
                 int seriously = i;
-                c.setVariable("_", (cc, tt) -> next.boundTo("_"));
-                c.setVariable("_i", (cc, tt) -> new NumericValue(seriously).boundTo("_i"));
+                c.setVariable("_", (cc, tt) -> next.reboundedTo("_"));
+                c.setVariable("_i", (cc, tt) -> new NumericValue(seriously).bindTo("_i"));
                 if(expr.evalValue(c).getBoolean())
                 {
                     result = next;
@@ -1145,8 +1181,8 @@ public class Expression implements Cloneable
             {
                 Value next = iterator.next();
                 int seriously = i;
-                c.setVariable("_", (cc, tt) -> next.boundTo("_"));
-                c.setVariable("_i", (cc, tt) -> new NumericValue(seriously).boundTo("_i"));
+                c.setVariable("_", (cc, tt) -> next.reboundedTo("_"));
+                c.setVariable("_i", (cc, tt) -> new NumericValue(seriously).bindTo("_i"));
                 if(!expr.evalValue(c).getBoolean())
                 {
                     result = LazyValue.FALSE;
@@ -1186,8 +1222,8 @@ public class Expression implements Cloneable
             {
                 Value next = iterator.next();
                 int seriously = i;
-                c.setVariable("_", (cc, tt) -> next.boundTo("_"));
-                c.setVariable("_i", (cc, tt) -> new NumericValue(seriously).boundTo("_i"));
+                c.setVariable("_", (cc, tt) -> next.reboundedTo("_"));
+                c.setVariable("_i", (cc, tt) -> new NumericValue(seriously).bindTo("_i"));
                 if(expr.evalValue(c).getBoolean())
                     successCount++;
                 if (cond != null && cond.evalValue(c).getBoolean())
@@ -1230,8 +1266,8 @@ public class Expression implements Cloneable
             {
                 Value v = iterator.next();
                 Value promiseWontChangeYou = acc;
-                c.setVariable("_a", (cc, tt) -> promiseWontChangeYou.boundTo("_a"));
-                c.setVariable("_", (cc, tt) -> v.boundTo("_"));
+                c.setVariable("_a", (cc, tt) -> promiseWontChangeYou.bindTo("_a"));
+                c.setVariable("_", (cc, tt) -> v.reboundedTo("_"));
                 acc = expr.evalValue(c);
             }
             //reverting scope
@@ -1481,7 +1517,7 @@ public class Expression implements Cloneable
                     {
                         if (!c.isAVariable(token.surface)) // new variable
                         {
-                            c.setVariable(token.surface, Value.ZERO);
+                            c.setVariable(token.surface, (cc, tt ) -> Value.ZERO.reboundedTo(token.surface));
                         }
                         LazyValue lazyVariable = c.getVariable(token.surface);
                         return lazyVariable.evalValue(c);

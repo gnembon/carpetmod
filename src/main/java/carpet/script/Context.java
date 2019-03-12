@@ -15,6 +15,7 @@ public class Context
     static final int LIST = 5;
     static final int ITERATOR = 6;
     static final int SIGNATURE = 7;
+    static final int LOCALIZATION = 8;
 
     private Map<String, LazyValue> variables = new HashMap<>();
     private Consumer<String> logOutput;
@@ -47,10 +48,6 @@ public class Context
             return;
         }
         variables.put(name, lv);
-    }
-    void setVariable(String name, Value val)
-    {
-        setVariable(name, (c, t) -> val.boundTo(name));
     }
 
 

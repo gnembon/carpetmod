@@ -43,19 +43,6 @@ public class ListValue extends Value
         items = null;
     }
 
-    public ListValue(int to)
-    {
-        this(1, to);
-    }
-    public ListValue(int from, int to)
-    {
-        items = new ArrayList<>();
-        for (int i = from; i <= to; i++)
-        {
-            items.add(new NumericValue(i));
-        }
-    }
-
     @Override
     public Value add(Value v) {
         if (v instanceof ListValue)
@@ -64,13 +51,12 @@ public class ListValue extends Value
                     .collect(Collectors.toList()));
         }
         ListValue ret = new ListValue(items);
-        ret.addTo(v);
+        ret.append(v);
         return ret;
     }
-    public void addTo(Value v)
+    public void append(Value v)
     {
         items.add(v);
-
     }
     public Value subtract(Value v)
     {

@@ -134,9 +134,9 @@ public class CarpetExpression
         this.source = source;
         this.expr = new Expression(expression);
 
-        this.expr.defaultVariables.put("_x", (c, t) -> new NumericValue(origin.getX()).boundTo("_x"));
-        this.expr.defaultVariables.put("_y", (c, t) -> new NumericValue(origin.getY()).boundTo("_y"));
-        this.expr.defaultVariables.put("_z", (c, t) -> new NumericValue(origin.getZ()).boundTo("_z"));
+        this.expr.defaultVariables.put("_x", (c, t) -> new NumericValue(origin.getX()).bindTo("_x"));
+        this.expr.defaultVariables.put("_y", (c, t) -> new NumericValue(origin.getY()).bindTo("_y"));
+        this.expr.defaultVariables.put("_z", (c, t) -> new NumericValue(origin.getZ()).bindTo("_z"));
 
         this.expr.addLazyFunction("block", -1, (c, t, lv) ->
         {
@@ -529,17 +529,19 @@ public class CarpetExpression
             int sCount = 0;
             for (int y=cy-yrange; y <= cy+yrange; y++)
             {
+                if(Expression.stopAll)
+                    throw new Expression.ExitStatement(Value.NULL);
                 int yFinal = y;
-                c.setVariable("_y", (c_, t_) -> new NumericValue(yFinal).boundTo("_y"));
+                c.setVariable("_y", (c_, t_) -> new NumericValue(yFinal).bindTo("_y"));
                 for (int x=cx-xrange; x <= cx+xrange; x++)
                 {
                     int xFinal = x;
-                    c.setVariable("_x", (c_, t_) -> new NumericValue(xFinal).boundTo("_x"));
+                    c.setVariable("_x", (c_, t_) -> new NumericValue(xFinal).bindTo("_x"));
                     for (int z=cz-zrange; z <= cz+zrange; z++)
                     {
                         int zFinal = z;
-                        c.setVariable( "_", (cc_, t_c) -> BlockValue.fromCoords(((CarpetContext)c), xFinal,yFinal,zFinal).boundTo("_"));
-                        c.setVariable("_z", (c_, t_) -> new NumericValue(zFinal).boundTo("_z"));
+                        c.setVariable( "_", (cc_, t_c) -> BlockValue.fromCoords(((CarpetContext)c), xFinal,yFinal,zFinal).bindTo("_"));
+                        c.setVariable("_z", (c_, t_) -> new NumericValue(zFinal).bindTo("_z"));
                         if (expr.evalValue(c).getBoolean())
                         {
                             sCount += 1;
@@ -558,12 +560,16 @@ public class CarpetExpression
 
         this.expr.addLazyFunction("print", 1, (c, t, lv) ->
         {
+            if(Expression.stopAll)
+                throw new Expression.ExitStatement(Value.NULL);
             Messenger.m(((CarpetContext)c).s, "w " + lv.get(0).evalValue(c).getString());
             return lv.get(0); // pass through for variables
         });
 
 
         this.expr.addLazyFunction("run", 1, (c, t, lv) -> {
+            if(Expression.stopAll)
+                throw new Expression.ExitStatement(Value.NULL);
             BlockPos target = BlockValue.locateBlockPos((CarpetContext) c,
                     (int)Expression.getNumericValue(c.getVariable("x").evalValue(c)).getLong(),
                     (int)Expression.getNumericValue(c.getVariable("y").evalValue(c)).getLong(),
@@ -576,8 +582,9 @@ public class CarpetExpression
         });
 
         this.expr.addLazyFunction("save", 0, (c, t, lv) -> {
+            if(Expression.stopAll)
+                throw new Expression.ExitStatement(Value.NULL);
             CommandSource s = ((CarpetContext)c).s;
-
             s.getServer().getPlayerList().saveAllPlayerData();
             boolean saving = s.getWorld().disableLevelSaving;
             s.getWorld().disableLevelSaving = false;
@@ -615,6 +622,8 @@ public class CarpetExpression
                 }
             }
             Thread.yield();
+            if(Expression.stopAll)
+                throw new Expression.ExitStatement(Value.NULL);
             return (cc, tt) -> Value.TRUE;
         });
 
@@ -725,6 +734,8 @@ public class CarpetExpression
                         {
                             z = minz;
                             y++;
+                            if(Expression.stopAll)
+                                throw new Expression.ExitStatement(Value.NULL);
                             // hasNext should fail if we went over
                         }
                     }
@@ -858,6 +869,8 @@ public class CarpetExpression
                             curpos = 0;
                             if (curradius>width -abs(width*curheight/height))
                             {
+                                if(Expression.stopAll)
+                                    throw new Expression.ExitStatement(Value.NULL);
                                 curheight++;
                                 curradius = 0;
                                 curpos = 0;
@@ -872,6 +885,8 @@ public class CarpetExpression
 
         //not ready yet
         this.expr.addLazyFunction("plop", 4, (c, t, lv) ->{
+            if(Expression.stopAll)
+                throw new Expression.ExitStatement(Value.NULL);
             BlockValue.LocatorResult locator = BlockValue.fromParams((CarpetContext)c, lv, 0);
             Boolean res = FeatureGenerator.spawn(lv.get(locator.offset).evalValue(c).getString(), ((CarpetContext)c).s.getWorld(), locator.block.getPos());
             if (res == null)
@@ -890,9 +905,9 @@ public class CarpetExpression
         try
         {
             Context context = new CarpetContext(this.expr, source, origin).
-                    with("x", (c, t) -> new NumericValue(x - origin.getX()).boundTo("x")).
-                    with("y", (c, t) -> new NumericValue(y - origin.getY()).boundTo("y")).
-                    with("z", (c, t) -> new NumericValue(z - origin.getZ()).boundTo("z"));
+                    with("x", (c, t) -> new NumericValue(x - origin.getX()).bindTo("x")).
+                    with("y", (c, t) -> new NumericValue(y - origin.getY()).bindTo("y")).
+                    with("z", (c, t) -> new NumericValue(z - origin.getZ()).bindTo("z"));
             return this.expr.eval(context).getBoolean();
         }
         catch (ExpressionException e)
@@ -912,9 +927,9 @@ public class CarpetExpression
         try
         {
             Context context = new CarpetContext(this.expr, source, origin).
-                    with("x", (c, t) -> new NumericValue(x - origin.getX()).boundTo("x")).
-                    with("y", (c, t) -> new NumericValue(y - origin.getY()).boundTo("y")).
-                    with("z", (c, t) -> new NumericValue(z - origin.getZ()).boundTo("z"));
+                    with("x", (c, t) -> new NumericValue(x - origin.getX()).bindTo("x")).
+                    with("y", (c, t) -> new NumericValue(y - origin.getY()).bindTo("y")).
+                    with("z", (c, t) -> new NumericValue(z - origin.getZ()).bindTo("z"));
             return this.expr.eval(context).getString();
         }
         catch (ExpressionException e)
@@ -939,9 +954,9 @@ public class CarpetExpression
             Vec3d pos = source.getPos();
             Expression expr = new Expression(call+"("+String.join(" , ",argv)+" ) ");
             Context context = new CarpetContext(expr, source, BlockPos.ORIGIN).
-                    with("x", (c, t) -> new NumericValue(Math.round(pos.x)).boundTo("x")).
-                    with("y", (c, t) -> new NumericValue(Math.round(pos.y)).boundTo("y")).
-                    with("z", (c, t) -> new NumericValue(Math.round(pos.z)).boundTo("z"));
+                    with("x", (c, t) -> new NumericValue(Math.round(pos.x)).bindTo("x")).
+                    with("y", (c, t) -> new NumericValue(Math.round(pos.y)).bindTo("y")).
+                    with("z", (c, t) -> new NumericValue(Math.round(pos.z)).bindTo("z"));
             return expr.eval(context).getString();
         }
         catch (ExpressionException e)
