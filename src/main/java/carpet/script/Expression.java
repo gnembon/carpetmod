@@ -186,6 +186,14 @@ public class Expression implements Cloneable
             retval = value;
         }
     }
+    static class ReturnStatement extends ExitStatement
+    {
+
+        public ReturnStatement(Value value)
+        {
+            super(value);
+        }
+    }
 
 
     public static List<String> getExpressionSnippet(Tokenizer.Token token, String expr)
@@ -499,8 +507,16 @@ public class Expression implements Cloneable
                     c.setVariable(arg, (cc, tt) -> val.bindTo(arg));
                     //c.setVariable(arg, lazyParams.get(i) ) overflows stack
                 }
-                Value retVal = code.evalValue(c, type); // todo not sure if we need to propagete type / consider boolean context in defined functions - answer seems ye
-
+                Value retVal;
+                try
+                {
+                    retVal = code.evalValue(c, type); // todo not sure if we need to propagete type / consider boolean context in defined functions - answer seems ye
+                }
+                catch (ReturnStatement returnStatement)
+                {
+                    retVal = returnStatement.retval;
+                }
+                Value otherRetVal = retVal;
                 //restoring context
                 for (Map.Entry<String, LazyValue> entry : context.entrySet())
                 {
@@ -513,7 +529,7 @@ public class Expression implements Cloneable
                         c.setVariable(entry.getKey(), entry.getValue());
                     }
                 }
-                return (cc, tt) -> retVal;
+                return (cc, tt) -> otherRetVal;
             }
         });
     }
@@ -890,7 +906,8 @@ public class Expression implements Cloneable
                 (cc, tt) -> new NumericValue(1.0*System.nanoTime()/1000));
 
 
-        addUnaryFunction("return", (v) -> { throw new ExitStatement(v); });
+        addUnaryFunction("exit", (v) -> { throw new ExitStatement(v); });
+        addUnaryFunction("return", (v) -> { throw new ReturnStatement(v); });
 
         addFunction("l", ListValue.ListConstructorValue::new);
 

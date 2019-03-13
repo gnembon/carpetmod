@@ -210,12 +210,17 @@ public class ScriptCommand
             CarpetExpression.setChatErrorSnooper(source);
             long start = System.nanoTime();
             String result = call.get();
-            int time = (int)((System.nanoTime()-start)/1000);
+            long time = ((System.nanoTime()-start)/1000);
             String metric = "\u00B5s";
-            if (time > 2000)
+            if (time > 5000)
             {
                 time /= 1000;
                 metric = "ms";
+            }
+            if (time > 10000)
+            {
+                time /= 1000;
+                metric = "s";
             }
             Messenger.m(source, "wi  = ", "wb "+result, "gi  ("+time+metric+")");
         }

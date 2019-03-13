@@ -48,6 +48,11 @@ import static java.lang.Math.abs;
 
 public class CarpetExpression
 {
+    private CommandSource source;
+    private BlockPos origin;
+    private Expression expr;
+    private static long tickStart = 0L;
+
     public static class CarpetExpressionException extends ExpressionException
     {
         CarpetExpressionException(String message)
@@ -67,9 +72,6 @@ public class CarpetExpression
         }
     }
 
-    private CommandSource source;
-    private BlockPos origin;
-    private Expression expr;
 
 
     private LazyValue booleanStateTest(
@@ -558,6 +560,7 @@ public class CarpetExpression
             return (c_, t_) -> new NumericValue(finalSCount);
         });
 
+        //"overriden" native call that prints to stderr
         this.expr.addLazyFunction("print", 1, (c, t, lv) ->
         {
             if(Expression.stopAll)
@@ -602,25 +605,25 @@ public class CarpetExpression
 
         this.expr.addLazyFunction("tick", -1, (c, t, lv) -> {
             CommandSource s = ((CarpetContext)c).s;
-            long start = System.nanoTime();
-            s.getServer().tick( () -> System.nanoTime()-start<50000000);
+            s.getServer().tick( () -> System.nanoTime()-tickStart<50000000L);
             s.getServer().dontPanic(); // optional not to freak out the watchdog
             if (lv.size()>0)
             {
                 long ms_total = Expression.getNumericValue(lv.get(0).evalValue(c)).getLong();
-                long end_expected = start+ms_total*1000000;
+                long end_expected = tickStart+ms_total*1000000L;
                 long wait = end_expected-System.nanoTime();
-                if (wait > 0)
+                if (wait > 0L)
                 {
                     try
                     {
-                        Thread.sleep(wait/1000000);
+                        Thread.sleep(wait/1000000L);
                     }
                     catch (InterruptedException ignored)
                     {
                     }
                 }
             }
+            tickStart = System.nanoTime(); // for the next tick
             Thread.yield();
             if(Expression.stopAll)
                 throw new Expression.ExitStatement(Value.NULL);
