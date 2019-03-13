@@ -260,14 +260,43 @@ public class CarpetExpression
             return (_c, _t) -> new StringValue(((EntityValue) v).getFromNBT(path));
         });
 
-        this.expr.addLazyFunction("get", 2, (c, t, lv) -> {
+        this.expr.addLazyFunction("query", -1, (c, t, lv) -> {
+            if (lv.size()<2)
+            {
+                throw new InternalExpressionException("query_entity takes entity as a first argument, and queried feature as a second");
+            }
+            Value v = lv.get(0).evalValue(c);
+            if (!(v instanceof EntityValue))
+                throw new InternalExpressionException("First argument to query_entity should be an entity");
+            String what = lv.get(1).evalValue(c).getString();
+            if (lv.size()==2)
+                return (_c, _t) -> ((EntityValue) v).get(what, null);
+            if (lv.size()==3)
+                return (_c, _t) -> ((EntityValue) v).get(what, lv.get(2).evalValue(c));
+            return (_c, _t) -> ((EntityValue) v).get(what, ListValue.wrap(lv.subList(2, lv.size()).stream().map((vv) -> vv.evalValue(c)).collect(Collectors.toList())));
+
+        });
+
+        // or update
+        this.expr.addLazyFunction("modify", -1, (c, t, lv) -> {
+            if (lv.size()<2)
+            {
+                throw new InternalExpressionException("modify_entity takes entity as a first argument, and queried feature as a second");
+            }
             Value v = lv.get(0).evalValue(c);
             if (!(v instanceof EntityValue))
                 throw new InternalExpressionException("First argument to get should be an entity");
             String what = lv.get(1).evalValue(c).getString();
-            return (_c, _t) -> ((EntityValue) v).get(what);
+            if (lv.size()==2)
+                ((EntityValue) v).set(what, null);
+            else if (lv.size()==3)
+                ((EntityValue) v).set(what, lv.get(2).evalValue(c));
+            else
+                ((EntityValue) v).set(what, ListValue.wrap(lv.subList(2, lv.size()).stream().map((vv) -> vv.evalValue(c)).collect(Collectors.toList())));
+            return lv.get(0);
         });
 
+        /*
         this.expr.addLazyFunction("health", 1, (c, t, lv) -> {
             Value v = lv.get(0).evalValue(c);
             if (!(v instanceof EntityValue))
@@ -284,6 +313,7 @@ public class CarpetExpression
                 throw new InternalExpressionException("First argument to get should be an entity");
             return (_c, _t) -> new StringValue(((EntityValue) v).getSelectedItem());
         });
+        */
 
 
         this.expr.addLazyFunction("solid", -1, (c, t, lv) ->
