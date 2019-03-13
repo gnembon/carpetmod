@@ -30,8 +30,11 @@ import static java.lang.Math.min;
  * <a href="https://github.com/uklimaschewski/EvalEx">EvalEx GitHub
  * repository</a>
  *
- * There is a bunch of operators you can use inside the expression. Those could be considered
- * gneeric type operators
+ * There is a bunch of operators you can use inside the expressions. Those could be considered
+ * generic type operators. Expression language uses also one type of brackets - the round ones,
+ * <code>( )</code>
+ * and it uses it for everything including control flow (in short - replaces all types of brackets
+ * you would remember from other laguages, like java curly braces etc)
  *
  * <h2>Operator '+'</h2>
  * <p>Allows to add the results of two expressions. If the operands resolve to numbers, the result is
@@ -55,6 +58,8 @@ import static java.lang.Math.min;
  *
  *
  *
+ */
+/*
  * loop(num,expr(_),exit(_)?)->value (last)
  * map(list,expr(_,_i), exit(_,_i)) -> list
  * filter(list,expr(_,_i),exit(_,_i)) -> list
@@ -83,7 +88,6 @@ public class Expression implements Cloneable
 
     public static final Value euler = new NumericValue(
             "2.71828182845904523536028747135266249775724709369995957496696762772407663");
-    public static boolean stopAll = false;
 
     /** The current infix expression */
     private String expression;
@@ -569,8 +573,6 @@ public class Expression implements Cloneable
                 {
                     throw new InternalExpressionException("Function "+name+" is not defined yet");
                 }
-                if(Expression.stopAll)
-                    throw new ExitStatement(Value.NULL);
                 List<LazyValue> lvargs = new ArrayList<>(lv.size()-1);
                 for (int i=0; i< lv.size()-1; i++)
                 {
@@ -898,8 +900,6 @@ public class Expression implements Cloneable
                 Thread.yield();
             }
             catch (InterruptedException ignored) { }
-            if(Expression.stopAll)
-                throw new ExitStatement(Value.NULL);
             return v; // pass through for variables
         });
         addLazyFunction("time", 0, (c, t, lv) ->
@@ -1018,8 +1018,6 @@ public class Expression implements Cloneable
             c.setVariable("_",(cc, tt) -> new NumericValue(0).bindTo("_"));
             while (i<limit && condition.evalValue(c, Context.BOOLEAN).getBoolean() )
             {
-                if(Expression.stopAll)
-                    throw new ExitStatement(Value.NULL);
                 lastOne = expr.evalValue(c);
                 i++;
                 long seriously = i;
@@ -1049,8 +1047,6 @@ public class Expression implements Cloneable
             LazyValue _val = c.getVariable("_");
             for (long i=0; i < limit; i++)
             {
-                if(Expression.stopAll)
-                    throw new ExitStatement(Value.NULL);
                 long whyYouAsk = i;
                 c.setVariable("_", (cc, tt) -> new NumericValue(whyYouAsk).bindTo("_"));
                 lastOne = expr.evalValue(c);
@@ -1676,13 +1672,13 @@ public class Expression implements Cloneable
 
 
     @FunctionalInterface
-    public interface TriFunction<A, B, C, R> { R apply(A a, B b, C c); }
+    interface TriFunction<A, B, C, R> { R apply(A a, B b, C c); }
     @FunctionalInterface
-    public interface QuadFunction<A, B, C, D, R> { R apply(A a, B b, C c, D d);}
+    interface QuadFunction<A, B, C, D, R> { R apply(A a, B b, C c, D d);}
     @FunctionalInterface
-    public interface QuinnFunction<A, B, C, D, E, R> { R apply(A a, B b, C c, D d, E e);}
+    interface QuinnFunction<A, B, C, D, E, R> { R apply(A a, B b, C c, D d, E e);}
     @FunctionalInterface
-    public interface SexFunction<A, B, C, D, E, F, R> { R apply(A a, B b, C c, D d, E e, F f);}
+    interface SexFunction<A, B, C, D, E, F, R> { R apply(A a, B b, C c, D d, E e, F f);}
 
     private interface ILazyFunction
     {

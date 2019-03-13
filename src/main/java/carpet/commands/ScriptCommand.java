@@ -40,8 +40,8 @@ public class ScriptCommand
         LiteralArgumentBuilder<CommandSource> command = literal("script").
                 requires((player) -> CarpetSettings.getBool("commandScript")).
                 then(literal("globals").executes( (c) -> listGlobals(c.getSource()))).
-                then(literal("stop").executes( (c) -> { Expression.stopAll = true; return 1;})).
-                then(literal("resume").executes( (c) -> { Expression.stopAll = false; return 1;})).
+                then(literal("stop").executes( (c) -> { CarpetExpression.stopAll = true; return 1;})).
+                then(literal("resume").executes( (c) -> { CarpetExpression.stopAll = false; return 1;})).
                 then(literal("run").
                         then(argument("expr", StringArgumentType.greedyString()).
                                 executes((c) -> compute(
