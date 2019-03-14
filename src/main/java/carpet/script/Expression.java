@@ -951,16 +951,15 @@ public class Expression implements Cloneable
 
     /**
      * <h1>Lists, loops, and higher order functions</h1>
-     * <p>Section Content</p>
-     * <p>Other Paragraph</p>
-     */
-    /*
-     * loop(num,expr(_),exit(_)?)->value (last)
-     * map(list,expr(_,_i), exit(_,_i)) -> list
-     * filter(list,expr(_,_i),exit(_,_i)) -> list
-     * first(list,expr(_,_i)) -> value (first)
-     * all(list,expr(_,_i)) -> boolean
-     * for(list,expr(_,_i),exit(_,_i)) -> success_count
+     *
+     * <pre>
+     * loop(num,expr(_),exit(_)?)-&gt;value (last)
+     * map(list,expr(_,_i), exit(_,_i)) -&gt; list
+     * filter(list,expr(_,_i),exit(_,_i)) -&gt; list
+     * first(list,expr(_,_i)) -&gt; value (first)
+     * all(list,expr(_,_i)) -&gt; boolean
+     * for(list,expr(_,_i),exit(_,_i)) -&gt; success_count
+     * </pre>
      */
     public void ListsLoopsAndHigherOrderFunctions()
     {
@@ -969,10 +968,33 @@ public class Expression implements Cloneable
             List<Value> toSort = lv;
             if (lv.size()==1 && lv.get(0) instanceof ListValue)
             {
-                toSort = ((ListValue)lv.get(1)).getItems();
+                toSort = new ArrayList<>(((ListValue)lv.get(0)).getItems());
             }
             Collections.sort(toSort);
             return ListValue.wrap(toSort);
+        });
+
+        addLazyFunction("sort_key", 2, (c, t, lv) ->
+        {
+            Value v = lv.get(0).evalValue(c);
+            if (!(v instanceof ListValue))
+                throw new InternalExpressionException("First argument for sort_key should be a List");
+            LazyValue sortKey = lv.get(1);
+            //scoping
+            LazyValue __ = c.getVariable("_");
+
+            List<Value> toSort = new ArrayList<>(((ListValue) v).getItems());
+
+            Collections.sort(toSort,(v1, v2) -> {
+                c.setVariable("_",(cc, tt) -> v1);
+                Value ev1 = sortKey.evalValue(c);
+                c.setVariable("_",(cc, tt) -> v2);
+                Value ev2 = sortKey.evalValue(c);
+                return ev1.compareTo(ev2);
+            });
+            //revering scope
+            c.setVariable("_", __);
+            return (cc, tt) -> ListValue.wrap(toSort);
         });
 
         addFunction("l", ListValue.ListConstructorValue::new);
@@ -1386,10 +1408,19 @@ public class Expression implements Cloneable
     }
 
     /**
-     * Creates a new expression instance from an expression string
+     * <h1>Programs</h1>
+     * <p>
+     * You can think of an program like a mathematical expression, like
+     * <code>"2.4*sin(45)/(2-4)"</code> or  <code>"sin(y)&gt;0 &amp; max(z, 3)&gt;3"</code>
+     * </p>
      *
-     * @param expression The expression. E.g. <code>"2.4*sin(3)/(2-4)"</code> or
-     *                   <code>"sin(y)&gt;0 &amp; max(z, 3)&gt;3"</code>
+     * <p>By writing a program, we write a long expression that the engine needs to compute and give us back the final results</p>
+     *
+     * <p>Programs consist of constants, like <code>2</code>, <code>3,14</code>, <code>pi</code>, or <code>'foo'</code>,
+     * operators like <code>+</code>, <code>/</code>, <code>-&gt;</code>, variables which you can define, like <code>foo</code> or special ones that can
+     * be defined for you, like <code>x</code>, or <code>_</code> </p>
+     *
+     * @param expression .
      */
     public Expression(String expression)
     {
@@ -1685,7 +1716,15 @@ public class Expression implements Cloneable
                     {
                         if (token.surface.equalsIgnoreCase("NULL"))
                             return Value.NULL;
-                        return new NumericValue(token.surface);
+                        try
+                        {
+                            return new NumericValue(token.surface);
+                        }
+                        catch (NumberFormatException exception)
+                        {
+                            throw new ExpressionException(this, token, "Not a number");
+                        }
+
                     });
                     break;
                 case STRINGPARAM:
