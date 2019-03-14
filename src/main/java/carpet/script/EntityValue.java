@@ -8,6 +8,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.inventory.EntityEquipmentSlot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.INBTBase;
 import net.minecraft.nbt.NBTTagCompound;
@@ -90,12 +91,20 @@ public class EntityValue extends Value
             throw new Expression.InternalExpressionException("unknown feature of entity: "+what);
         return featureAccessors.get(what).apply(entity, arg);
     }
+    private static Map<String, EntityEquipmentSlot> inventorySlots = new HashMap<String, EntityEquipmentSlot>(){{
+        put("main", EntityEquipmentSlot.MAINHAND);
+        put("offhand", EntityEquipmentSlot.OFFHAND);
+        put("head", EntityEquipmentSlot.HEAD);
+        put("chest", EntityEquipmentSlot.CHEST);
+        put("legs", EntityEquipmentSlot.LEGS);
+        put("feet", EntityEquipmentSlot.FEET);
+    }};
     private static Map<String, BiFunction<Entity, Value, Value>> featureAccessors = new HashMap<String, BiFunction<Entity, Value, Value>>() {{
-        put("pos", (e, a) -> ListValue.wrap(Arrays.asList(new NumericValue(e.posX), new NumericValue(e.posY), new NumericValue(e.posZ))));
+        put("pos", (e, a) -> ListValue.of(new NumericValue(e.posX), new NumericValue(e.posY), new NumericValue(e.posZ)));
         put("x", (e, a) -> new NumericValue(e.posX));
         put("y", (e, a) -> new NumericValue(e.posY));
         put("z", (e, a) -> new NumericValue(e.posZ));
-        put("motion", (e, a) -> ListValue.wrap(Arrays.asList(new NumericValue(e.motionX), new NumericValue(e.motionY), new NumericValue(e.motionZ))));
+        put("motion", (e, a) -> ListValue.of(new NumericValue(e.motionX), new NumericValue(e.motionY), new NumericValue(e.motionZ)));
         put("motionx", (e, a) -> new NumericValue(e.motionX));
         put("motiony", (e, a) -> new NumericValue(e.motionY));
         put("motionz", (e, a) -> new NumericValue(e.motionZ));
@@ -107,7 +116,7 @@ public class EntityValue extends Value
         put("passengers", (e, a) -> ListValue.wrap(e.getPassengers().stream().map(EntityValue::new).collect(Collectors.toList())));
         put("mount", (e, a) -> (e.getRidingEntity()!=null)?new EntityValue(e.getRidingEntity()):Value.NULL);
         put("tags", (e, a) -> ListValue.wrap(e.getTags().stream().map(StringValue::new).collect(Collectors.toList())));
-        //"has_tag"
+        put("tag", (e, a) -> new NumericValue(e.getTags().contains(a.getString())));
         put("rotation_yaw", (e, a)-> new NumericValue(e.rotationYaw));
         put("rotation_pitch", (e, a)-> new NumericValue(e.rotationPitch));
         put("is_burning", (e, a) -> new NumericValue(e.getFire()>0));
@@ -137,11 +146,11 @@ public class EntityValue extends Value
                 List<Value> effects = new ArrayList<>();
                 for (PotionEffect p : ((EntityLivingBase) e).getActivePotionEffects())
                 {
-                    List<Value> effect = new ArrayList<>(3);
-                    effect.add(new StringValue(p.getEffectName().replaceFirst("^effect\\.minecraft\\.", "")));//getPotion().getDisplayName().getString()));
-                    effect.add(new NumericValue(p.getAmplifier()));
-                    effect.add(new NumericValue(p.getDuration()));
-                    effects.add(ListValue.wrap(effect));
+                    effects.add(ListValue.of(
+                        new StringValue(p.getEffectName().replaceFirst("^effect\\.minecraft\\.", "")),
+                        new NumericValue(p.getAmplifier()),
+                        new NumericValue(p.getDuration())
+                    ));
                 }
                 return ListValue.wrap(effects);
             }
@@ -152,10 +161,7 @@ public class EntityValue extends Value
             if (!((EntityLivingBase) e).isPotionActive(potion))
                 return Value.NULL;
             PotionEffect pe = ((EntityLivingBase) e).getActivePotionEffect(potion);
-            List<Value> effect = new ArrayList<>(2);
-            effect.add(new NumericValue(pe.getAmplifier()));
-            effect.add(new NumericValue(pe.getDuration()));
-            return ListValue.wrap(effect);
+            return ListValue.of( new NumericValue(pe.getAmplifier()), new NumericValue(pe.getDuration()) );
         });
         put("health", (e, a) ->
         {
@@ -170,42 +176,26 @@ public class EntityValue extends Value
             return Value.NULL;
         });
         put("holds", (e, a) -> {
-            if (e instanceof EntityPlayer)
+            EntityEquipmentSlot where = EntityEquipmentSlot.MAINHAND;
+            if (a != null)
+                where = inventorySlots.get(a.getString());
+            if (where == null)
+                throw new Expression.InternalExpressionException("Unknown inventory slot: "+a.getString());
+            if (e instanceof EntityLivingBase)
             {
-                ItemStack itemstack = ((EntityPlayer)e).inventory.getCurrentItem();
-
+                ItemStack itemstack = ((EntityLivingBase)e).getItemStackFromSlot(where);
                 if (!itemstack.isEmpty())
                 {
-                    return new StringValue(IRegistry.field_212630_s.getKey(itemstack.getItem()).toString());
+                    return ListValue.of(
+                            new StringValue(IRegistry.field_212630_s.getKey(itemstack.getItem()).getPath()),
+                            new NumericValue(itemstack.getCount()),
+                            new StringValue(itemstack.write(new NBTTagCompound()).getString())
+                    );
                 }
             }
-            Iterator<ItemStack> handstuff = e.getHeldEquipment().iterator();
-            if (handstuff.hasNext())
-                return new StringValue(IRegistry.field_212630_s.getKey(handstuff.next().getItem()).toString());
             return Value.NULL;
 
         });
-        put("holds_offhand", (e, a) -> {
-            if (e instanceof EntityPlayer)
-            {
-                ItemStack itemstack = ((EntityPlayer)e).inventory.getCurrentItem();
-
-                if (!itemstack.isEmpty())
-                {
-                    return new StringValue(IRegistry.field_212630_s.getKey(itemstack.getItem()).toString());
-                }
-            }
-            Iterator<ItemStack> handstuff = e.getHeldEquipment().iterator();
-            if (handstuff.hasNext())
-                return new StringValue(IRegistry.field_212630_s.getKey(handstuff.next().getItem()).toString());
-            return Value.NULL;
-
-        });
-
-
-        //                                        "undead"
-        //                                                "holds"
-        //                                                "holds_offhand"
     }};
 
     public void set(String what, Value toWhat)

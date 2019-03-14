@@ -37,14 +37,14 @@ public class Context
         {
             return variables.get(name);
         }
-        return Expression.global_variables.get(name);
+        return Expression.globalVariables.get(name);
     }
 
     void setVariable(String name, LazyValue lv)
     {
         if (name.startsWith("global_"))
         {
-            Expression.global_variables.put(name, lv);
+            Expression.globalVariables.put(name, lv);
             return;
         }
         variables.put(name, lv);
@@ -53,7 +53,7 @@ public class Context
 
     boolean isAVariable(String name)
     {
-        return variables.containsKey(name) || Expression.global_variables.containsKey(name);
+        return variables.containsKey(name) || Expression.globalVariables.containsKey(name);
     }
 
 
@@ -61,7 +61,7 @@ public class Context
     {
         if (variable.startsWith("global_"))
         {
-            Expression.global_variables.remove(variable);
+            Expression.globalVariables.remove(variable);
             return;
         }
         variables.remove(variable);
@@ -70,7 +70,7 @@ public class Context
     {
         if (variable.startsWith("global_"))
         {
-            Expression.global_variables.remove(variable);
+            Expression.globalVariables.remove(variable);
             return;
         }
         variables.remove(variable);
