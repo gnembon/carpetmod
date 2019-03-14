@@ -20,10 +20,7 @@ import static java.lang.Math.min;
 
 
 /**
- * This Evaluator is initially (very loosely, as of now) based on the following project:
- *
- * EvalEx - Java Expression Evaluator
- *
+ * This Evaluator is initially (very loosely, as of now) based on the EvalEx project.
  * EvalEx is a handy expression evaluator for Java, that
  * allows to evaluate simple mathematical and boolean expressions.
  * For more information, see:
@@ -539,6 +536,11 @@ public class Expression implements Cloneable
         });
     }
 
+    /**
+     * <h1>Constants</h1>
+     * <p>Section Content</p>
+     * <p>Other Paragraph</p>
+     */
 
     public void Constants() // public just to get the Javadocs right
     {
@@ -553,6 +555,12 @@ public class Expression implements Cloneable
         defaultVariables.put("_i", (c, t) -> new NumericValue(0).bindTo("_i"));
         defaultVariables.put("_a", (c, t) -> new NumericValue(0).bindTo("_a"));
     }
+
+    /**
+     * <h1>User-defined functions and program control flow</h1>
+     * <p>Section Content</p>
+     * <p>Other Paragraph</p>
+     */
 
     public void UserDefinedFunctionsAndControlFlow() // public just to get the javadoc right
     {
@@ -648,6 +656,12 @@ public class Expression implements Cloneable
             return (cc, tt) -> new NumericValue(0);
         });
     }
+
+    /**
+     * <h1>Operators</h1>
+     * <p>Section Content</p>
+     * <p>Other Paragraph</p>
+     */
     public void Operators()
     {
         addBinaryOperator("+", precedence.get("addition+-"), true, Value::add);
@@ -781,7 +795,12 @@ public class Expression implements Cloneable
 
     }
 
-    public void ArythmeticOperations()
+    /**
+     * <h1>Arithmetic operations</h1>
+     * <p>Section Content</p>
+     * <p>Other Paragraph</p>
+     */
+    public void ArithmeticOperations()
     {
         addLazyFunction("not", 1, (c, t, lv) -> lv.get(0).evalValue(c, Context.BOOLEAN).getBoolean() ? ((cc, tt) -> Value.FALSE) : ((cc, tt) -> Value.TRUE));
 
@@ -882,6 +901,11 @@ public class Expression implements Cloneable
 
     }
 
+    /**
+     * <h1>Lists, loops, and higher order functions</h1>
+     * <p>Section Content</p>
+     * <p>Other Paragraph</p>
+     */
     public void ListsLoopsAndHigherOrderFunctions()
     {
         addFunction("sort", (lv) ->
@@ -1205,7 +1229,7 @@ public class Expression implements Cloneable
     }
 
     /**
-     * <h1>System Functions</h1>
+     * <h1>System functions</h1>
      * <p>Section Content</p>
      * <p>Other Paragraph</p>
      */
@@ -1319,7 +1343,7 @@ public class Expression implements Cloneable
         Constants();
         UserDefinedFunctionsAndControlFlow();
         Operators();
-        ArythmeticOperations();
+        ArithmeticOperations();
         SystemFunctions();
         ListsLoopsAndHigherOrderFunctions();
     }

@@ -53,13 +53,18 @@ public class CarpetExpression
     private BlockPos origin;
     private Expression expr;
     private static long tickStart = 0L;
+
+    private static boolean stopAll = false;
+
     /**
+     * <h1>script stop/resume commands</h1>
+     * <p>Section Content</p>
+     * <p>Other Paragraph</p>
      * Stop All allows to stop execution of any scipt currently running that calls the tick() function which
      * allows the gameloop to regain control of the game and process user commands. Typing <code>script stop</code> would make sure
      * that all the scripts will stop their execution. Execution will be halted until <code>script resume</code> is called
+     *
      */
-    private static boolean stopAll = false;
-
     public static void BreakExecutionOfAllScriptsWithCommands(boolean doStop)
     {
         stopAll = doStop;
@@ -134,6 +139,12 @@ public class CarpetExpression
         }
         return bs;
     }
+
+    /**
+     * <h1>Blocks manipulations</h1>
+     * <p>Section Content</p>
+     * <p>Other Paragraph</p>
+     */
 
     public void BlockManipulation()
     {
@@ -348,6 +359,13 @@ public class CarpetExpression
             return (_c, _t ) -> new StringValue(state.get(property).toString());
         });
     }
+
+    /**
+     * <h1>Entity manipulations</h1>
+     * <p>Section Content</p>
+     * <p>Other Paragraph</p>
+     */
+
     public void EntityManipulation()
     {
         this.expr.addLazyFunction("player", -1, (c, t, lv) -> {
@@ -465,6 +483,13 @@ public class CarpetExpression
             return lv.get(0);
         });
     }
+
+    /**
+     * <h1>Iterating over larger areas of blocks</h1>
+     * <p>Section Content</p>
+     * <p>Other Paragraph</p>
+     */
+
     public void IteratingOverAreasOfBlocks()
     {
         this.expr.addLazyFunction("scan", 7, (c, t, lv) ->
@@ -815,7 +840,13 @@ public class CarpetExpression
     }
 
     //TODO sounds
-    public void OtherAspects()
+    /**
+     * <h1>Auxiliary aspects</h1>
+     * <p>Section Content</p>
+     * <p>Other Paragraph</p>
+     */
+
+    public void AuxiliaryAspects()
     {
         //particle(x,y,z,"particle",count?10, duration,bool all)
         this.expr.addLazyFunction("particle", -1, (c, t, lv) ->
@@ -950,9 +981,9 @@ public class CarpetExpression
     /**
      * <h1>Minecraft API</h1>
      * <p>Here is the gist of the Minecraft related functions. Otherwise the CarpetScript could live without Minecraft.</p>
-     * @param expression
-     * @param source
-     * @param origin
+     * @param expression expression
+     * @param source source
+     * @param origin origin
      */
     public CarpetExpression(String expression, CommandSource source, BlockPos origin)
     {
@@ -968,15 +999,13 @@ public class CarpetExpression
         BlockManipulation();
         EntityManipulation();
         IteratingOverAreasOfBlocks();
-        OtherAspects();
+        AuxiliaryAspects();
     }
 
     /**
-     *
-     * @param x
-     * @param y
-     * @param z
-     * @return
+     * <h1>fill and scan commands</h1>
+     * <p>Section Content</p>
+     * <p>Other Paragraph</p>
      */
     public boolean fillAndScanCommand(int x, int y, int z)
     {
@@ -995,9 +1024,9 @@ public class CarpetExpression
     }
 
     /**
-     *
-     * @param pos
-     * @return
+     * <h1>script run command</h1>
+     * <p>Section Content</p>
+     * <p>Other Paragraph</p>
      */
     public String scriptRunCommand(BlockPos pos)
     {
@@ -1016,11 +1045,9 @@ public class CarpetExpression
     }
 
     /**
-     *
-     * @param source
-     * @param call
-     * @param argv
-     * @return
+     * <h1> script invoke / invokepoint / invokearea commands</h1>
+     * <p>Section Content</p>
+     * <p>Other Paragraph</p>
      */
     public static String invokeGlobalFunctionCommand(CommandSource source, String call, List<String> argv)
     {
