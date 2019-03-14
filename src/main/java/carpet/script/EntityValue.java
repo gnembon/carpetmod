@@ -54,31 +54,7 @@ public class EntityValue extends Value
     {
         return true;
     }
-    public String getFromNBT(String path_string)
-    {
-        NBTTagCompound nbttagcompound = entity.writeWithoutTypeId(new NBTTagCompound());
-        NBTPathArgument.NBTPath path;
-        try
-        {
-            path = NBTPathArgument.nbtPath().parse(new StringReader(path_string));
-        }
-        catch (CommandSyntaxException e)
-        {
-            throw new Expression.InternalExpressionException("Incorrect path: "+path_string);
-        }
-        String res = null;
-        try
-        {
-            INBTBase component = path.func_197143_a(nbttagcompound);
-            if (component == null)
-            {
-                return null;
-            }
-            res = component.toFormattedComponent().getString();
-        }
-        catch (CommandSyntaxException ignored) { }
-        return res;
-    }
+
     public static Map<String, Pair<Class<? extends Entity>, Predicate<? super Entity>>> entityPredicates =
             new HashMap<String, Pair<Class<? extends Entity>, Predicate<? super Entity>>>()
     {{
@@ -195,6 +171,28 @@ public class EntityValue extends Value
             }
             return Value.NULL;
 
+        });
+
+        put("nbt",(e, a) -> {
+            NBTTagCompound nbttagcompound = e.writeWithoutTypeId(new NBTTagCompound());
+            if (a==null)
+                return new StringValue(nbttagcompound.getString());
+            NBTPathArgument.NBTPath path;
+            try
+            {
+                path = NBTPathArgument.nbtPath().parse(new StringReader(a.getString()));
+            }
+            catch (CommandSyntaxException exc)
+            {
+                throw new Expression.InternalExpressionException("Incorrect path: "+a.getString());
+            }
+            String res = null;
+            try
+            {
+                res = path.func_197143_a(nbttagcompound).toFormattedComponent().getString();
+            }
+            catch (CommandSyntaxException ignored) { }
+            return new StringValue(res);
         });
     }};
 
@@ -323,5 +321,6 @@ public class EntityValue extends Value
         //"hold"
         //        "hold_offhand"
         //                "jump"
+        //"nbt"
     }};
 }

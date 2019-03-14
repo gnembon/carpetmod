@@ -439,13 +439,6 @@ public class CarpetExpression
             }
         });
 
-        this.expr.addLazyFunction("getnbt", 2, (c, t, lv) -> {
-            Value v = lv.get(0).evalValue(c);
-            if (!(v instanceof EntityValue))
-                throw new InternalExpressionException("First argument to getnbt should be an entity");
-            String path = lv.get(1).evalValue(c).getString();
-            return (_c, _t) -> new StringValue(((EntityValue) v).getFromNBT(path));
-        });
 
         this.expr.addLazyFunction("query", -1, (c, t, lv) -> {
             if (lv.size()<2)

@@ -20,50 +20,76 @@ import static java.lang.Math.min;
 
 
 /**
- * This Evaluator is initially (very loosely, as of now) based on the EvalEx project.
+ * <h1>SCARPET Synopsis</h1>
+ *
+ * <p>Scarpet (a.k.a. Carpet Script, or Script for Carpet) is a programming language designed to provide
+ * the ability to write custom programs to run within Minecraft and
+ * interact with the world.</p>
+ *
+ * <p>The project was initially built based on the EvalEx project,
+ * however it now diverged so far away from the original implementation,
+ * it would be hard to tell it without this mention.
  * EvalEx is a handy expression evaluator for Java, that
  * allows to evaluate simple mathematical and boolean expressions.
  * For more information, see:
  * <a href="https://github.com/uklimaschewski/EvalEx">EvalEx GitHub
- * repository</a>
+ * repository</a></p>
  *
- * There is a bunch of operators you can use inside the expressions. Those could be considered
- * generic type operators. Expression language uses also one type of brackets - the round ones,
- * <code>( )</code>
- * and it uses it for everything including control flow (in short - replaces all types of brackets
- * you would remember from other laguages, like java curly braces etc)
+ * <p>This specification is divided into two sections: this one is agnostic
+ * to any Minecraft related features and could function on its own, and {@see carpet.script.CarpetExpression} for
+ * Minecraft specific routines and world manipulation functions.</p>
  *
- * <h2>Operator '+'</h2>
- * <p>Allows to add the results of two expressions. If the operands resolve to numbers, the result is
- * arithmetic operation</p>
- * <p>Examples:</p>
+ * <h1>Synopsis</h1>
  *
- * <p><code> 2+3 =&gt; 5  </code></p>
- * <p><code> 'foo'+3+2 =&gt; 'abc32'  </code></p>
- * <p><code> 3+2+'bar' =&gt; '5bar'  </code></p>
+ * <pre>
+ * script run print('Hello World!')
+ * </pre>
+ * <p>or an overly complex example:</p>
+ * <pre>
+ * /script run
+ * $    block_check(x1, y1, z1, x2, y2, z2, block_to_check) ->
+ * $    (
+ * $        l(minx, maxx) = sort(l(x1, x2));
+ * $        l(miny, maxy) = sort(l(y1, y2));
+ * $        l(minz, maxz) = sort(l(z1, z2));
+ * $        'Need to compute the size of the area of course';
+ * $        'Cause this language doesn\'t support comments';
+ * $        xsize = maxx - minx + 1;
+ * $        ysize = maxy - miny + 1;
+ * $        zsize = maxz - minz + 1;
+ * $        total_count = 0;
+ * $        loop(xsize,
+ * $            xx = minx + _ ;
+ * $            loop(ysize,
+ * $                yy = miny + _ ;
+ * $                loop(zsize,
+ * $                    zz = minz + _ ;
+ * $                    if ( block(xx,yy,zz) == block_to_check,
+ * $                        total_count += ceil(rand(1))
+ * $                    )
+ * $                )
+ * $            )
+ * $        );
+ * $        total_count
+ * $    );
+ * $    check_area_around_closest_player_for_block(block_to_check) ->
+ * $    (
+ * $        closest_player = player();
+ * $        l(posx, posy, posz) = query(closest_player, 'pos');
+ * $        total_count = block_check( posx-8,1,posz-8, posx+8,17,posz+8, 'diamond_ore');
+ * $        print('There is '+total_count+' diamond ore around you')
+ * $    )
  *
- * <h2>Operator '-'</h2>
- * <p>Allows to add the results of two expressions. If the operands resolve to numbers, the result is
- * arithmetic operation</p>
- *
- * <p>Examples:</p>
- *
- * <p><code> 2+3 =&gt; 5  </code></p>
- * <p><code> 'foo'+3+2 =&gt; 'abc32'  </code></p>
- * <p><code> 3+2+'bar' =&gt; '5bar'  </code></p>
- *
- *
- *
+ * /script invoke check_area_around_closest_player_for_block diamond_ore
+ * </pre>
+ * <p>or simply</p>
+ * <pre>
+ * script run print('There is'+for(rect(x,9,z,8,8,8), _ == 'diamond_ore')+' diamond ore around you')
+ * </pre>
+ * <p>It definitely pays to check what higher level <code>scarpet</code> functions have to offer</p>
  *
  */
-/*
- * loop(num,expr(_),exit(_)?)->value (last)
- * map(list,expr(_,_i), exit(_,_i)) -> list
- * filter(list,expr(_,_i),exit(_,_i)) -> list
- * first(list,expr(_,_i)) -> value (first)
- * all(list,expr(_,_i)) -> boolean
- * for(list,expr(_,_i),exit(_,_i)) -> success_count
- */
+
 public class Expression implements Cloneable
 {
     private static final Map<String, Integer> precedence = new HashMap<String,Integer>() {{
@@ -659,8 +685,30 @@ public class Expression implements Cloneable
 
     /**
      * <h1>Operators</h1>
-     * <p>Section Content</p>
-     * <p>Other Paragraph</p>
+     * There is a bunch of operators you can use inside the expressions. Those could be considered
+     * generic type operators. Expression language uses also one type of brackets - the round ones,
+     * <code>( )</code>
+     * and it uses it for everything including control flow (in short - replaces all types of brackets
+     * you would remember from other laguages, like java curly braces etc)
+     *
+     * <h2>Operator '+'</h2>
+     * <p>Allows to add the results of two expressions. If the operands resolve to numbers, the result is
+     * arithmetic operation</p>
+     * <p>Examples:</p>
+     *
+     * <p><code> 2+3 =&gt; 5  </code></p>
+     * <p><code> 'foo'+3+2 =&gt; 'abc32'  </code></p>
+     * <p><code> 3+2+'bar' =&gt; '5bar'  </code></p>
+     *
+     * <h2>Operator '-'</h2>
+     * <p>Allows to add the results of two expressions. If the operands resolve to numbers, the result is
+     * arithmetic operation</p>
+     *
+     * <p>Examples:</p>
+     *
+     * <p><code> 2+3 =&gt; 5  </code></p>
+     * <p><code> 'foo'+3+2 =&gt; 'abc32'  </code></p>
+     * <p><code> 3+2+'bar' =&gt; '5bar'  </code></p>
      */
     public void Operators()
     {
@@ -905,6 +953,14 @@ public class Expression implements Cloneable
      * <h1>Lists, loops, and higher order functions</h1>
      * <p>Section Content</p>
      * <p>Other Paragraph</p>
+     */
+    /*
+     * loop(num,expr(_),exit(_)?)->value (last)
+     * map(list,expr(_,_i), exit(_,_i)) -> list
+     * filter(list,expr(_,_i),exit(_,_i)) -> list
+     * first(list,expr(_,_i)) -> value (first)
+     * all(list,expr(_,_i)) -> boolean
+     * for(list,expr(_,_i),exit(_,_i)) -> success_count
      */
     public void ListsLoopsAndHigherOrderFunctions()
     {

@@ -111,6 +111,16 @@ public class Tokenizer implements Iterator<Tokenizer.Token>
                 ch = input.charAt(pos);
                 while (ch != '\'')
                 {
+                    if (ch == '\\')
+                    {
+                        pos++;
+                        linepos++;
+                        if (pos == input.length())
+                        {
+                            token.type = Token.TokenType.STRINGPARAM;
+                            throw new Expression.ExpressionException(this.expression, token, "Program truncated");
+                        }
+                    }
                     token.append(input.charAt(pos++));
                     linepos++;
                     ch = pos == input.length() ? 0 : input.charAt(pos);
