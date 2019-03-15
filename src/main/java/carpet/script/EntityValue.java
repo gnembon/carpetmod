@@ -93,8 +93,8 @@ public class EntityValue extends Value
         put("mount", (e, a) -> (e.getRidingEntity()!=null)?new EntityValue(e.getRidingEntity()):Value.NULL);
         put("tags", (e, a) -> ListValue.wrap(e.getTags().stream().map(StringValue::new).collect(Collectors.toList())));
         put("tag", (e, a) -> new NumericValue(e.getTags().contains(a.getString())));
-        put("rotation_yaw", (e, a)-> new NumericValue(e.rotationYaw));
-        put("rotation_pitch", (e, a)-> new NumericValue(e.rotationPitch));
+        put("yaw", (e, a)-> new NumericValue(e.rotationYaw));
+        put("pitch", (e, a)-> new NumericValue(e.rotationPitch));
         put("is_burning", (e, a) -> new NumericValue(e.getFire()>0));
         put("fire", (e, a) -> new NumericValue(e.getFire()));
         put("silent", (e, a)-> new NumericValue(e.isSilent()));

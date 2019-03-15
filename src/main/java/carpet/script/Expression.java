@@ -1414,11 +1414,79 @@ public class Expression implements Cloneable
      * <code>"2.4*sin(45)/(2-4)"</code> or  <code>"sin(y)&gt;0 &amp; max(z, 3)&gt;3"</code>
      * Writing a program, is like writing a <code>2+3</code>, just a bit longer</p>
      *
+     * <h2>Basic language components</h2>
      * <p>Programs consist of constants, like <code>2</code>, <code>3,14</code>, <code>pi</code>, or <code>'foo'</code>,
      * operators like <code>+</code>, <code>/</code>, <code>-&gt;</code>, variables which you can define, like <code>foo</code>
-     * or special ones that will be defined for you, like <code>x</code>, or <code>_</code> </p>, which I specific to
+     * or special ones that will be defined for you, like <code>x</code>, or <code>_</code> , which I specific to
      * a each built in function, and functions with name, and arguments in the form of <code>f(a,b,c)</code>, where
-     * <code>f</code> is the function name, and <code>a, b, c</code> are the arguments which can be any expression
+     * <code>f</code> is the function name, and <code>a, b, c</code> are the arguments which can be any other expression.
+     * And that's all the parts of the language, so all in all - sounds quite simple.</p>
+     *
+     * <h2>Code flow</h2>
+     * <p>
+     *     Like any other proper programming language, <code>scarpet</code> needs brackets, basically to identify
+     *     where stuff begins and where it ends. In the languages that uses much more complicated constructs, like Java,
+     *     they tend to use all sort of them, round ones to indicate function calls, curly to indicate section of code,
+     *     square to access lists, pointy for generic types etc... I mean - there is no etc, cause they have exhausted
+     *     all the bracket options...
+     * </p>
+     * <p><code>Scarpet</code> is different, since it runs everything based on functions (although its not per se a functional language like lisp)
+     * only needs the round brackets for everything, and it is up to the programmer to organize its code so its readable,
+     * as adding more brackets does not have any effect on the performance of the programs as they are compiled before they are executed.
+     * Look at the following example usage of <code>if()</code> function:
+     * </p>
+     * <pre>
+     * if(x&lt;y+6,set(x,8+y,z,'air');plop(x,top('surface',x,z),z,'birch'),sin(query(player(),'yaw'))&gt;0.5,plop(0,0,0,'boulder'),particle(x,y,z,'fire'))
+     * </pre>
+     * <p>Would you prefer to read</p>
+     * <pre>
+     * if(   x&lt;y+6,
+     *            set(x,8+y,z,'air');
+     *            plop(x,top('surface',x,z),z,'birch'),
+     *       sin(query(player(),'yaw'))&gt;0.5,
+     *            plop(0,0,0,'boulder'),
+     *       particle(x,y,z,'fire')
+     * )
+     * </pre>
+     * <p>Or rather:</p>
+     * <pre>
+     * if
+     * (
+     *     x&lt;y+6,
+     *     (
+     *         set(x,8+y,z,'air');
+     *         plop(x,top('surface',x,z),z,'birch')
+     *     ),
+     *
+     *     sin(query(player(),'yaw'))&gt;0.5,
+     *     (
+     *         plop(0,0,0,'boulder')
+     *     ),
+     *
+     *     particle(x,y,z,'fire')
+     * )
+     * </pre>
+     * <p>Whichever style you prefer it doesn't matter. It typically depends on the situation and the complexity of the
+     * subcomponents. No matter how many whitespaces and extra brackets you add - the code will evaluate to exactly the
+     * same expression, and will run exactly the same, so make sure your programs are nice and clean so others don't
+     * have problems with them</p>
+     *
+     * <h2>Line indicators</h2>
+     * <p>Since the maximum command that can be input to the chat is limited in length, you will be probably inserting your
+     * programs by pasting them to command blocks, however pasting to command blocks will remove some whitespaces and squish
+     * your newlines making the code not readable. If you are pasting a program that is perfect and will never cause an error,
+     * I salute you, but for the most part it is quite likely that your program might break, either at compile time, when
+     * its initially analyzed, or at execute time, when you suddenly attempt to divide something by zero. In these cases
+     * you would want to get a meaningful error message, but for that you would need to indicate for the compiler where
+     * did you put these new lines, since command block would squish them. For that, place  at the beginning
+     * of the line to let the copiler know where are you. This makes so that <code>$</code> is the only character that is
+     * illegal in programs, since it will be replaced with new lines. As far as I know <code>$</code> is not used
+     * anywhere inside Minecraft identifiers, so this shoudn't hinder the abilities of your programs.</p>
+     * <p>Consider these two programs executed as command block command:</p>
+     * <pre>
+     *
+     * </pre>
+     *
      *
      * @param expression .
      */
