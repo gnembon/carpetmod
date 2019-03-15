@@ -20,7 +20,7 @@ import static java.lang.Math.min;
 
 
 /**
- * <h1>SCARPET Synopsis</h1>
+ * <h1>Scarpet programming language</h1>
  *
  * <p>Scarpet (a.k.a. Carpet Script, or Script for Carpet) is a programming language designed to provide
  * the ability to write custom programs to run within Minecraft and
@@ -1436,14 +1436,6 @@ public class Expression implements Cloneable
     }
 
 
-    /**
-     * Implementation of the <i>Shunting Yard</i> algorithm to transform an
-     * infix expression to a RPN expression.
-     *
-     * @param expression The input expression in infx.
-     * @return A RPN representation of the expression, with each token as a list
-     * member.
-     */
     private List<Tokenizer.Token> shuntingYard(String expression)
     {
         List<Tokenizer.Token> outputQueue = new ArrayList<>();
@@ -1612,15 +1604,6 @@ public class Expression implements Cloneable
         }
     }
 
-
-
-
-    /**
-     * Evaluates the expression.
-     *
-     * @return The result of the expression.
-     * @param c - Context with pre-initialized variables
-     */
     Value eval(Context c)
     {
         return eval(c, Context.NONE);
@@ -1740,11 +1723,6 @@ public class Expression implements Cloneable
         return stack.pop();
     }
 
-    /**
-     * Check that the expression has enough numbers and variables to fit the
-     * requirements of the operators and functions, also check for only 1 result
-     * stored at the end of the evaluation.
-     */
     private void validate(List<Tokenizer.Token> rpn)
     {
         /*-
@@ -1817,9 +1795,6 @@ public class Expression implements Cloneable
             throw new ExpressionException("Empty expression");
         }
     }
-
-
-
 
     @FunctionalInterface
     interface TriFunction<A, B, C, R> { R apply(A a, B b, C c); }
