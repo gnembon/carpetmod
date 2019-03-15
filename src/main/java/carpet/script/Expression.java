@@ -1412,13 +1412,13 @@ public class Expression implements Cloneable
      * <p>
      * You can think of an program like a mathematical expression, like
      * <code>"2.4*sin(45)/(2-4)"</code> or  <code>"sin(y)&gt;0 &amp; max(z, 3)&gt;3"</code>
-     * </p>
-     *
-     * <p>By writing a program, we write a long expression that the engine needs to compute and give us back the final results</p>
+     * Writing a program, is like writing a <code>2+3</code>, just a bit longer</p>
      *
      * <p>Programs consist of constants, like <code>2</code>, <code>3,14</code>, <code>pi</code>, or <code>'foo'</code>,
-     * operators like <code>+</code>, <code>/</code>, <code>-&gt;</code>, variables which you can define, like <code>foo</code> or special ones that can
-     * be defined for you, like <code>x</code>, or <code>_</code> </p>
+     * operators like <code>+</code>, <code>/</code>, <code>-&gt;</code>, variables which you can define, like <code>foo</code>
+     * or special ones that will be defined for you, like <code>x</code>, or <code>_</code> </p>, which I specific to
+     * a each built in function, and functions with name, and arguments in the form of <code>f(a,b,c)</code>, where
+     * <code>f</code> is the function name, and <code>a, b, c</code> are the arguments which can be any expression
      *
      * @param expression .
      */
