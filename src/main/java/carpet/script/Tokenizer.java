@@ -111,6 +111,16 @@ public class Tokenizer implements Iterator<Tokenizer.Token>
                 ch = input.charAt(pos);
                 while (ch != '\'')
                 {
+                    if (ch == '\\')
+                    {
+                        pos++;
+                        linepos++;
+                        if (pos == input.length())
+                        {
+                            token.type = Token.TokenType.STRINGPARAM;
+                            throw new Expression.ExpressionException(this.expression, token, "Program truncated");
+                        }
+                    }
                     token.append(input.charAt(pos++));
                     linepos++;
                     ch = pos == input.length() ? 0 : input.charAt(pos);
@@ -178,6 +188,14 @@ public class Tokenizer implements Iterator<Tokenizer.Token>
             token.append(ch);
             pos++;
             linepos++;
+            if (previousToken != null && previousToken.type == Token.TokenType.OPERATOR && (ch == ')' || ch == ',')  )
+            {
+                if (previousToken.surface.equalsIgnoreCase(";"))
+                    throw new Expression.ExpressionException(this.expression, previousToken,
+                            "Cannot have semicolon at the end of the expression");
+                throw new Expression.ExpressionException(this.expression, previousToken,
+                        "Can't have operator "+previousToken.surface+" at the end of a subexpression");
+            }
         }
         else
         {

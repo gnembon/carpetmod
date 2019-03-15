@@ -20,48 +20,76 @@ import static java.lang.Math.min;
 
 
 /**
- * This Evaluator is initially (very loosely, as of now) based on the following project:
+ * <h1>Scarpet programming language</h1>
  *
- * EvalEx - Java Expression Evaluator
+ * <p>Scarpet (a.k.a. Carpet Script, or Script for Carpet) is a programming language designed to provide
+ * the ability to write custom programs to run within Minecraft and
+ * interact with the world.</p>
  *
+ * <p>The project was initially built based on the EvalEx project,
+ * however it now diverged so far away from the original implementation,
+ * it would be hard to tell it without this mention.
  * EvalEx is a handy expression evaluator for Java, that
  * allows to evaluate simple mathematical and boolean expressions.
  * For more information, see:
  * <a href="https://github.com/uklimaschewski/EvalEx">EvalEx GitHub
- * repository</a>
+ * repository</a></p>
  *
- * There is a bunch of operators you can use inside the expression. Those could be considered
- * gneeric type operators
+ * <p>This specification is divided into two sections: this one is agnostic
+ * to any Minecraft related features and could function on its own, and {@see carpet.script.CarpetExpression} for
+ * Minecraft specific routines and world manipulation functions.</p>
  *
- * <h2>Operator '+'</h2>
- * <p>Allows to add the results of two expressions. If the operands resolve to numbers, the result is
- * arithmetic operation</p>
- * <p>Examples:</p>
+ * <h1>Synopsis</h1>
  *
- * <p><code> 2+3 =&gt; 5  </code></p>
- * <p><code> 'foo'+3+2 =&gt; 'abc32'  </code></p>
- * <p><code> 3+2+'bar' =&gt; '5bar'  </code></p>
+ * <pre>
+ * script run print('Hello World!')
+ * </pre>
+ * <p>or an overly complex example:</p>
+ * <pre>
+ * /script run
+ * $    block_check(x1, y1, z1, x2, y2, z2, block_to_check) ->
+ * $    (
+ * $        l(minx, maxx) = sort(l(x1, x2));
+ * $        l(miny, maxy) = sort(l(y1, y2));
+ * $        l(minz, maxz) = sort(l(z1, z2));
+ * $        'Need to compute the size of the area of course';
+ * $        'Cause this language doesn\'t support comments';
+ * $        xsize = maxx - minx + 1;
+ * $        ysize = maxy - miny + 1;
+ * $        zsize = maxz - minz + 1;
+ * $        total_count = 0;
+ * $        loop(xsize,
+ * $            xx = minx + _ ;
+ * $            loop(ysize,
+ * $                yy = miny + _ ;
+ * $                loop(zsize,
+ * $                    zz = minz + _ ;
+ * $                    if ( block(xx,yy,zz) == block_to_check,
+ * $                        total_count += ceil(rand(1))
+ * $                    )
+ * $                )
+ * $            )
+ * $        );
+ * $        total_count
+ * $    );
+ * $    check_area_around_closest_player_for_block(block_to_check) ->
+ * $    (
+ * $        closest_player = player();
+ * $        l(posx, posy, posz) = query(closest_player, 'pos');
+ * $        total_count = block_check( posx-8,1,posz-8, posx+8,17,posz+8, 'diamond_ore');
+ * $        print('There is '+total_count+' diamond ore around you')
+ * $    )
  *
- * <h2>Operator '-'</h2>
- * <p>Allows to add the results of two expressions. If the operands resolve to numbers, the result is
- * arithmetic operation</p>
+ * /script invoke check_area_around_closest_player_for_block diamond_ore
+ * </pre>
+ * <p>or simply</p>
+ * <pre>
+ * script run print('There is'+for(rect(x,9,z,8,8,8), _ == 'diamond_ore')+' diamond ore around you')
+ * </pre>
+ * <p>It definitely pays to check what higher level <code>scarpet</code> functions have to offer</p>
  *
- * <p>Examples:</p>
- *
- * <p><code> 2+3 =&gt; 5  </code></p>
- * <p><code> 'foo'+3+2 =&gt; 'abc32'  </code></p>
- * <p><code> 3+2+'bar' =&gt; '5bar'  </code></p>
- *
- *
- *
- *
- * loop(num,expr(_),exit(_)?)->value (last)
- * map(list,expr(_,_i), exit(_,_i)) -> list
- * filter(list,expr(_,_i),exit(_,_i)) -> list
- * first(list,expr(_,_i)) -> value (first)
- * all(list,expr(_,_i)) -> boolean
- * for(list,expr(_,_i),exit(_,_i)) -> success_count
  */
+
 public class Expression implements Cloneable
 {
     private static final Map<String, Integer> precedence = new HashMap<String,Integer>() {{
@@ -78,18 +106,18 @@ public class Expression implements Cloneable
     }};
     private static final Random randomizer = new Random();
 
-    public static final Value PI = new NumericValue(
+    private static final Value PI = new NumericValue(
             "3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679");
 
-    public static final Value euler = new NumericValue(
+    private static final Value euler = new NumericValue(
             "2.71828182845904523536028747135266249775724709369995957496696762772407663");
 
     /** The current infix expression */
     private String expression;
-    public String getCodeString() {return expression;}
+    String getCodeString() {return expression;}
 
     private String name;
-    public String getName() {return name;}
+    String getName() {return name;}
 
     /** Cached AST (Abstract Syntax Tree) (root) of the expression */
     private LazyValue ast = null;
@@ -100,15 +128,15 @@ public class Expression implements Cloneable
 
     private Map<String, ILazyFunction> functions = new HashMap<>();
 
-    public static final Map<String, UserDefinedFunction> global_functions = new HashMap<>();
+    static final Map<String, UserDefinedFunction> globalFunctions = new HashMap<>();
 
-    public static final Map<String, LazyValue> global_variables = new HashMap<>();
+    static final Map<String, LazyValue> globalVariables = new HashMap<>();
 
     final Map<String, LazyValue> defaultVariables = new HashMap<>();
 
     /* should the evaluator output value of each ;'s statement during execution */
     private Consumer<String> logOutput = null;
-    public Consumer<String> getLogger() {return logOutput;}
+    Consumer<String> getLogger() {return logOutput;}
     void setLogOutput(Consumer<String> to) { logOutput = to; }
 
     @Override
@@ -124,6 +152,11 @@ public class Expression implements Cloneable
     /* The expression evaluators exception class. */
     static class ExpressionException extends RuntimeException
     {
+        ExpressionException(String message)
+        {
+            super(message);
+        }
+
         private static TriFunction<Expression, Tokenizer.Token, String, List<String>> errorMaker = (expr, token, errmessage) ->
         {
 
@@ -144,13 +177,9 @@ public class Expression implements Cloneable
             errMsg.add(errmessage);
             return errMsg;
         };
-        public static TriFunction<Expression, Tokenizer.Token, String, List<String>> errorSnooper = null;
+        static TriFunction<Expression, Tokenizer.Token, String, List<String>> errorSnooper = null;
 
-        ExpressionException(String message)
-        {
-            super(message);
-        }
-        public static String makeMessage(Expression e, Tokenizer.Token t, String message) throws ExpressionException
+        static String makeMessage(Expression e, Tokenizer.Token t, String message) throws ExpressionException
         {
             if (errorSnooper != null)
             {
@@ -177,7 +206,7 @@ public class Expression implements Cloneable
         }
     }
     /* Exception thrown to terminate execution mid expression (aka return statement) */
-    private static class ExitStatement extends RuntimeException
+    static class ExitStatement extends RuntimeException
     {
         Value retval;
         ExitStatement(Value value)
@@ -185,9 +214,17 @@ public class Expression implements Cloneable
             retval = value;
         }
     }
+    static class ReturnStatement extends ExitStatement
+    {
+
+        ReturnStatement(Value value)
+        {
+            super(value);
+        }
+    }
 
 
-    public static List<String> getExpressionSnippet(Tokenizer.Token token, String expr)
+    static List<String> getExpressionSnippet(Tokenizer.Token token, String expr)
     {
 
         List<String> output = new ArrayList<>();
@@ -204,7 +241,7 @@ public class Expression implements Cloneable
         return output;
     }
 
-    public static List<String> getExpressionSnippetLeftContext(Tokenizer.Token token, String expr, int contextsize)
+    private static List<String> getExpressionSnippetLeftContext(Tokenizer.Token token, String expr, int contextsize)
     {
         List<String> output = new ArrayList<>();
         String[] lines = expr.split("\n");
@@ -217,7 +254,7 @@ public class Expression implements Cloneable
         return output;
     }
 
-    public static List<String> getExpressionSnippetContext(Tokenizer.Token token, String expr)
+    private static List<String> getExpressionSnippetContext(Tokenizer.Token token, String expr)
     {
         List<String> output = new ArrayList<>();
         String[] lines = expr.split("\n");
@@ -234,7 +271,7 @@ public class Expression implements Cloneable
         return output;
     }
 
-    public static List<String> getExpressionSnippetRightContext(Tokenizer.Token token, String expr, int contextsize)
+    private static List<String> getExpressionSnippetRightContext(Tokenizer.Token token, String expr, int contextsize)
     {
         List<String> output = new ArrayList<>();
         String[] lines = expr.split("\n");
@@ -454,7 +491,7 @@ public class Expression implements Cloneable
             }
         });
     }
-    private void addContextFunction(String name, Expression expr, Tokenizer.Token token, List<String> arguments, LazyValue code)
+    private void addContextFunction(String name, Expression expr, Tokenizer.Token token, List<String> arguments, List<String> locals, LazyValue code)
     {
         name = name.toLowerCase(Locale.ROOT);
         if (functions.containsKey(name))
@@ -470,7 +507,7 @@ public class Expression implements Cloneable
             throw new ExpressionException(expr, token, "Problems in allocating global function "+name);
         }
 
-        global_functions.put(name, new UserDefinedFunction(arguments, function_context, token)
+        globalFunctions.put(name, new UserDefinedFunction(arguments, function_context, token)
         {
             @Override
             public LazyValue lazyEval(Context c, Integer type, Expression e, Tokenizer.Token t, List<LazyValue> lazyParams)
@@ -479,22 +516,35 @@ public class Expression implements Cloneable
                 {
                     throw new ExpressionException(e, t,
                             "Incorrect number of arguments for function "+name+
-                            ". Should be "+arguments.size()+", not "+lazyParams.size()
+                            ". Should be "+arguments.size()+", not "+lazyParams.size()+" like "+arguments
                     );
                 }
 
                 Map<String, LazyValue> context = new HashMap<>();
                 //saving context and placing args
+                for (String local : locals)
+                {
+                    context.put(local, c.getVariable(local));
+                    c.delVariable(local);
+                }
                 for (int i=0; i<arguments.size(); i++)
                 {
                     String arg = arguments.get(i);
                     context.put(arg, c.getVariable(arg));
                     Value val = lazyParams.get(i).evalValue(c);
-                    c.setVariable(arg, (cc, tt) -> val);
+                    c.setVariable(arg, (cc, tt) -> val.bindTo(arg));
                     //c.setVariable(arg, lazyParams.get(i) ) overflows stack
                 }
-                Value retVal = code.evalValue(c, type); // todo not sure if we need to propagete type / consider boolean context in defined functions - answer seems ye
-
+                Value retVal;
+                try
+                {
+                    retVal = code.evalValue(c, type); // todo not sure if we need to propagete type / consider boolean context in defined functions - answer seems ye
+                }
+                catch (ReturnStatement returnStatement)
+                {
+                    retVal = returnStatement.retval;
+                }
+                Value otherRetVal = retVal;
                 //restoring context
                 for (Map.Entry<String, LazyValue> entry : context.entrySet())
                 {
@@ -507,23 +557,19 @@ public class Expression implements Cloneable
                         c.setVariable(entry.getKey(), entry.getValue());
                     }
                 }
-                return (cc, tt) -> retVal;
+                return (cc, tt) -> otherRetVal;
             }
         });
     }
 
-
     /**
-     * Creates a new expression instance from an expression string
-     *
-     * @param expression The expression. E.g. <code>"2.4*sin(3)/(2-4)"</code> or
-     *                   <code>"sin(y)&gt;0 &amp; max(z, 3)&gt;3"</code>
+     * <h1>Constants</h1>
+     * <p>Section Content</p>
+     * <p>Other Paragraph</p>
      */
-    public Expression(String expression)
+
+    public void Constants() // public just to get the Javadocs right
     {
-        this.name = null;
-        expression = expression.trim().replaceAll(";+$", "");
-        this.expression = expression.replaceAll("\\$", "\n");
         defaultVariables.put("euler", (c, t) -> euler);
         defaultVariables.put("pi", (c, t) -> PI);
         defaultVariables.put("null", (c, t) -> Value.NULL);
@@ -531,19 +577,26 @@ public class Expression implements Cloneable
         defaultVariables.put("false", (c, t) -> Value.FALSE);
 
         //special variables for second order functions so we don't need to check them all the time
-        defaultVariables.put("_", (c, t) -> new NumericValue(0).boundTo("_"));
-        defaultVariables.put("_i", (c, t) -> new NumericValue(0).boundTo("_i"));
-        defaultVariables.put("_a", (c, t) -> new NumericValue(0).boundTo("_a"));
+        defaultVariables.put("_", (c, t) -> new NumericValue(0).bindTo("_"));
+        defaultVariables.put("_i", (c, t) -> new NumericValue(0).bindTo("_i"));
+        defaultVariables.put("_a", (c, t) -> new NumericValue(0).bindTo("_a"));
+    }
 
+    /**
+     * <h1>User-defined functions and program control flow</h1>
+     * <p>Section Content</p>
+     * <p>Other Paragraph</p>
+     */
 
-
+    public void UserDefinedFunctionsAndControlFlow() // public just to get the javadoc right
+    {
         // artificial construct to handle user defined functions and function definitions
         addLazyFunction(".",-1, (c, t, lv) -> { // adjust based on c
             String name = lv.get(lv.size()-1).evalValue(c).getString();
             //lv.remove(lv.size()-1); // aint gonna cut it
             if (t != Context.SIGNATURE) // just call the function
             {
-                if (!global_functions.containsKey(name))
+                if (!globalFunctions.containsKey(name))
                 {
                     throw new InternalExpressionException("Function "+name+" is not defined yet");
                 }
@@ -552,22 +605,35 @@ public class Expression implements Cloneable
                 {
                     lvargs.add(lv.get(i));
                 }
-                UserDefinedFunction acf = global_functions.get(name);
+                UserDefinedFunction acf = globalFunctions.get(name);
                 return (cc, tt) -> acf.lazyEval(c, t, acf.expression, acf.token, lvargs).evalValue(c); ///!!!! dono might need to store expr and token in statics? (e? t?)
             }
 
             // gimme signature
-            List<String> args = new ArrayList<>(lv.size() - 1);
+            List<String> args = new ArrayList<>();
+            List<String> locals = new ArrayList<>();
             for (int i = 0; i < lv.size() - 1; i++)
             {
-                Value v = lv.get(i).evalValue(c);
+                Value v = lv.get(i).evalValue(c, Context.LOCALIZATION);
                 if (!v.isBound())
                 {
                     throw new InternalExpressionException("Only variables can be used in function signature, not  " + v.getString());
                 }
-                args.add(v.boundVariable);
+                if (v instanceof LocalValue)
+                {
+                    locals.add(v.boundVariable);
+                }
+                else
+                {
+                    args.add(v.boundVariable);
+                }
             }
-            return (cc, tt) -> new FunctionSignatureValue(name, args);
+            return (cc, tt) -> new FunctionSignatureValue(name, args, locals);
+        });
+        addLazyFunction("local", 1, (c, t, lv) -> {
+            if (t != Context.LOCALIZATION)
+                throw new InternalExpressionException("local scoping of variables is only possible in function signatures");
+            return (cc, tt) -> new LocalValue(lv.get(0).evalValue(c));
         });
 
         addLazyBinaryOperator(";",precedence.get("nextop;"), true, (c, t, lv1, lv2) ->
@@ -578,6 +644,74 @@ public class Expression implements Cloneable
             return lv2;
         });
 
+        //assigns const procedure to the lhs, returning its previous value
+        addLazyBinaryOperatorWithDelegation("->", precedence.get("assign=<>"), false, (c, type, e, t, lv1, lv2) ->
+        {
+            Value v1 = lv1.evalValue(c, Context.SIGNATURE);
+            if (v1 instanceof FunctionSignatureValue)
+            {
+                FunctionSignatureValue sign = (FunctionSignatureValue) v1;
+                addContextFunction(sign.getName(), e, t, sign.getArgs(), sign.getLocals(), lv2);
+            }
+            else
+            {
+                v1.assertAssignable();
+                c.setVariable(v1.getVariable(), lv2);
+            }
+            return (cc, tt) -> new StringValue("OK");
+        });
+
+        addUnaryFunction("exit", (v) -> { throw new ExitStatement(v); });
+        addUnaryFunction("return", (v) -> { throw new ReturnStatement(v); });
+
+        // if(cond1, expr1, cond2, expr2, ..., ?default) => value
+        addLazyFunction("if", -1, (c, t, lv) ->
+        {
+            if ( lv.size() < 2 )
+                throw new InternalExpressionException("if statement needs to have at least one condition and one case");
+            for (int i=0; i<lv.size()-1; i+=2)
+            {
+                if (lv.get(i).evalValue(c, Context.BOOLEAN).getBoolean())
+                {
+                    int iFinal = i;
+                    return (cc, tt) -> lv.get(iFinal+1).evalValue(c);
+                }
+            }
+            if (lv.size()%2 == 1)
+                return (cc, tt) -> lv.get(lv.size() - 1).evalValue(c);
+            return (cc, tt) -> new NumericValue(0);
+        });
+    }
+
+    /**
+     * <h1>Operators</h1>
+     * There is a bunch of operators you can use inside the expressions. Those could be considered
+     * generic type operators. Expression language uses also one type of brackets - the round ones,
+     * <code>( )</code>
+     * and it uses it for everything including control flow (in short - replaces all types of brackets
+     * you would remember from other laguages, like java curly braces etc)
+     *
+     * <h2>Operator '+'</h2>
+     * <p>Allows to add the results of two expressions. If the operands resolve to numbers, the result is
+     * arithmetic operation</p>
+     * <p>Examples:</p>
+     *
+     * <p><code> 2+3 =&gt; 5  </code></p>
+     * <p><code> 'foo'+3+2 =&gt; 'abc32'  </code></p>
+     * <p><code> 3+2+'bar' =&gt; '5bar'  </code></p>
+     *
+     * <h2>Operator '-'</h2>
+     * <p>Allows to add the results of two expressions. If the operands resolve to numbers, the result is
+     * arithmetic operation</p>
+     *
+     * <p>Examples:</p>
+     *
+     * <p><code> 2+3 =&gt; 5  </code></p>
+     * <p><code> 'foo'+3+2 =&gt; 'abc32'  </code></p>
+     * <p><code> 3+2+'bar' =&gt; '5bar'  </code></p>
+     */
+    public void Operators()
+    {
         addBinaryOperator("+", precedence.get("addition+-"), true, Value::add);
         addBinaryOperator("-", precedence.get("addition+-"), true, Value::subtract);
         addBinaryOperator("*", precedence.get("multiplication*/%"), true, Value::multiply);
@@ -622,26 +756,26 @@ public class Expression implements Cloneable
         {
             Value v1 = lv1.evalValue(c);
             Value v2 = lv2.evalValue(c);
-            if (v1 instanceof ListValue && v2 instanceof ListValue)
+            if (v1 instanceof ListValue.ListConstructorValue && v2 instanceof ListValue)
             {
-                 List<Value> ll = ((ListValue)v1).getItems();
-                 List<Value> rl = ((ListValue)v2).getItems();
-                 if (ll.size() < rl.size()) throw new InternalExpressionException("Too many values to unpack");
-                 if (ll.size() > rl.size()) throw new InternalExpressionException("Too few values to unpack");
-                 for (Value v: ll) v.assertAssignable();
-                 Iterator<Value> li = ll.iterator();
-                 Iterator<Value> ri = rl.iterator();
-                 while(li.hasNext())
-                 {
-                     String lname = li.next().getVariable();
-                     Value vval = ri.next();
-                     c.setVariable(lname, (cc, tt) -> vval.boundTo(lname));
-                 }
-                 return (cc, tt) -> Value.TRUE;
+                List<Value> ll = ((ListValue)v1).getItems();
+                List<Value> rl = ((ListValue)v2).getItems();
+                if (ll.size() < rl.size()) throw new InternalExpressionException("Too many values to unpack");
+                if (ll.size() > rl.size()) throw new InternalExpressionException("Too few values to unpack");
+                for (Value v: ll) v.assertAssignable();
+                Iterator<Value> li = ll.iterator();
+                Iterator<Value> ri = rl.iterator();
+                while(li.hasNext())
+                {
+                    String lname = li.next().getVariable();
+                    Value vval = ri.next();
+                    c.setVariable(lname, (cc, tt) -> vval.reboundedTo(lname));
+                }
+                return (cc, tt) -> Value.TRUE;
             }
             v1.assertAssignable();
             String varname = v1.getVariable();
-            LazyValue boundedLHS = (cc, tt) -> v2.boundTo(varname);
+            LazyValue boundedLHS = (cc, tt) -> v2.reboundedTo(varname);
             c.setVariable(varname, boundedLHS);
             return boundedLHS;
         });
@@ -650,7 +784,7 @@ public class Expression implements Cloneable
         {
             Value v1 = lv1.evalValue(c);
             Value v2 = lv2.evalValue(c);
-            if (v1 instanceof ListValue && v2 instanceof ListValue)
+            if (v1 instanceof ListValue.ListConstructorValue && v2 instanceof ListValue)
             {
                 List<Value> ll = ((ListValue)v1).getItems();
                 List<Value> rl = ((ListValue)v2).getItems();
@@ -664,32 +798,24 @@ public class Expression implements Cloneable
                     Value lval = li.next();
                     String lname = lval.getVariable();
                     Value vval = ri.next();
-                    c.setVariable(lname, (cc, tt) -> lval.add(vval).boundTo(lname));
+                    c.setVariable(lname, (cc, tt) -> lval.add(vval).bindTo(lname));
                 }
                 return (cc, tt) -> Value.TRUE;
             }
             v1.assertAssignable();
             String varname = v1.getVariable();
-            LazyValue boundedLHS = (cc, tt) -> v1.add(v2).boundTo(varname);
-            c.setVariable(varname, boundedLHS);
-            return boundedLHS;
-        });
-
-        //assigns const procedure to the lhs, returning its previous value
-        addLazyBinaryOperatorWithDelegation("->", precedence.get("assign=<>"), false, (c, type, e, t, lv1, lv2) ->
-        {
-            Value v1 = lv1.evalValue(c, Context.SIGNATURE);
-            if (v1 instanceof FunctionSignatureValue)
+            LazyValue boundedLHS;
+            if (v1 instanceof ListValue)
             {
-                FunctionSignatureValue sign = (FunctionSignatureValue) v1;
-                addContextFunction(sign.getName(), e, t, sign.getArgs(), lv2);
+                ((ListValue) v1).append(v2);
+                boundedLHS = (cc, tt)-> v1;
             }
             else
             {
-                v1.assertAssignable();
-                c.setVariable(v1.getVariable(), lv2);
+                boundedLHS = (cc, tt) -> v1.add(v2).bindTo(varname);
             }
-            return (cc, tt) -> new StringValue("OK");
+            c.setVariable(varname, boundedLHS);
+            return boundedLHS;
         });
 
         addLazyBinaryOperator("<>", precedence.get("assign=<>"), false, (c, t, lv1, lv2) ->
@@ -702,8 +828,8 @@ public class Expression implements Cloneable
             String rvalvar = v2.getVariable();
             if (lvalvar.startsWith("_") || rvalvar.startsWith("_"))
                 throw new InternalExpressionException("Cannot swap with local built-in variables, i.e. those that start with '_'");
-            Value lval = v2.boundTo(lvalvar);
-            Value rval = v1.boundTo(rvalvar);
+            Value lval = v2.reboundedTo(lvalvar);
+            Value rval = v1.reboundedTo(rvalvar);
             c.setVariable(lvalvar, (cc, tt) -> lval);
             c.setVariable(rvalvar, (cc, tt) -> rval);
             return (cc, tt) -> lval;
@@ -715,6 +841,15 @@ public class Expression implements Cloneable
 
         addLazyUnaryOperator("!", precedence.get("unary+-!"), false, (c, t, lv)-> lv.evalValue(c, Context.BOOLEAN).getBoolean() ? (cc, tt)-> Value.FALSE : (cc, tt) -> Value.TRUE); // might need context boolean
 
+    }
+
+    /**
+     * <h1>Arithmetic operations</h1>
+     * <p>Section Content</p>
+     * <p>Other Paragraph</p>
+     */
+    public void ArithmeticOperations()
+    {
         addLazyFunction("not", 1, (c, t, lv) -> lv.get(0).evalValue(c, Context.BOOLEAN).getBoolean() ? ((cc, tt) -> Value.FALSE) : ((cc, tt) -> Value.TRUE));
 
         addUnaryFunction("fact", (v) ->
@@ -768,22 +903,6 @@ public class Expression implements Cloneable
         addMathematicalUnaryFunction("floor", Math::floor);
         addMathematicalUnaryFunction("ceil", Math::ceil);
 
-        addLazyFunction("rand", 1, (c, t, lv) -> {
-            Value argument = lv.get(0).evalValue(c);
-            if (argument instanceof ListValue)
-            {
-                List<Value> list = ((ListValue) argument).getItems();
-                return (cc, tt) -> list.get(randomizer.nextInt(list.size()));
-            }
-            if (t == Context.BOOLEAN)
-            {
-                double rv = getNumericValue(argument).getDouble()*randomizer.nextFloat();
-                return (cc, tt) -> rv<1.0D?Value.FALSE:Value.TRUE;
-            }
-
-            return (cc, tt) -> new NumericValue(getNumericValue(argument).getDouble()*randomizer.nextFloat());
-        });
-
         addLazyFunction("mandelbrot", 3, (c, t, lv) -> {
             double a0 = getNumericValue(lv.get(0).evalValue(c)).getDouble();
             double b0 = getNumericValue(lv.get(1).evalValue(c)).getDouble();
@@ -826,41 +945,59 @@ public class Expression implements Cloneable
             return min;
         });
 
+        addUnaryFunction("relu", (v) -> v.compareTo(Value.ZERO) < 0 ? Value.ZERO : v);
+
+    }
+
+    /**
+     * <h1>Lists, loops, and higher order functions</h1>
+     *
+     * <pre>
+     * loop(num,expr(_),exit(_)?)-&gt;value (last)
+     * map(list,expr(_,_i), exit(_,_i)) -&gt; list
+     * filter(list,expr(_,_i),exit(_,_i)) -&gt; list
+     * first(list,expr(_,_i)) -&gt; value (first)
+     * all(list,expr(_,_i)) -&gt; boolean
+     * for(list,expr(_,_i),exit(_,_i)) -&gt; success_count
+     * </pre>
+     */
+    public void ListsLoopsAndHigherOrderFunctions()
+    {
         addFunction("sort", (lv) ->
         {
             List<Value> toSort = lv;
             if (lv.size()==1 && lv.get(0) instanceof ListValue)
             {
-                toSort = ((ListValue)lv.get(1)).getItems();
+                toSort = new ArrayList<>(((ListValue)lv.get(0)).getItems());
             }
             Collections.sort(toSort);
             return ListValue.wrap(toSort);
         });
 
-        addUnaryFunction("relu", (v) -> v.compareTo(Value.ZERO) < 0 ? Value.ZERO : v);
-        addUnaryFunction("print", (v) ->
+        addLazyFunction("sort_key", 2, (c, t, lv) ->
         {
-            System.out.println(v.getString());
-            return v; // pass through for variables
+            Value v = lv.get(0).evalValue(c);
+            if (!(v instanceof ListValue))
+                throw new InternalExpressionException("First argument for sort_key should be a List");
+            LazyValue sortKey = lv.get(1);
+            //scoping
+            LazyValue __ = c.getVariable("_");
+
+            List<Value> toSort = new ArrayList<>(((ListValue) v).getItems());
+
+            Collections.sort(toSort,(v1, v2) -> {
+                c.setVariable("_",(cc, tt) -> v1);
+                Value ev1 = sortKey.evalValue(c);
+                c.setVariable("_",(cc, tt) -> v2);
+                Value ev2 = sortKey.evalValue(c);
+                return ev1.compareTo(ev2);
+            });
+            //revering scope
+            c.setVariable("_", __);
+            return (cc, tt) -> ListValue.wrap(toSort);
         });
-        addUnaryFunction("sleep", (v) ->
-        {
-            long time = getNumericValue(v).getLong();
-            try
-            {
-                Thread.sleep(time);
-                Thread.yield();
-            }
-            catch (InterruptedException ignored) { }
-            return v; // pass through for variables
-        });
-        addLazyFunction("time", 0, (c, t, lv) ->
-                (cc, tt) -> new NumericValue(1.0*System.nanoTime()/1000));
 
-
-        addUnaryFunction("return", (v) -> { throw new ExitStatement(v); });
-
-        addFunction("l", ListValue::new);
+        addFunction("l", ListValue.ListConstructorValue::new);
 
         addUnaryFunction("range", (v) -> LazyListValue.range(getNumericValue(v).getLong()));
 
@@ -878,81 +1015,6 @@ public class Expression implements Cloneable
             return items.get((int)index);
         });
 
-        addLazyFunction("var", 1, (c, t, lv) -> {
-            String varname = lv.get(0).evalValue(c).getString();
-            if (!c.isAVariable(varname))
-                c.setVariable(varname, Value.ZERO);
-            return c.getVariable(varname);
-        });
-
-        addLazyFunction("undef", 1, (c, t, lv) ->
-        {
-            String varname = lv.get(0).evalValue(c).getString();
-            if (varname.startsWith("_"))
-                throw new InternalExpressionException("Cannot replace local built-in variables, i.e. those that start with '_'");
-            if (varname.endsWith("*"))
-            {
-                varname = varname.replaceAll("\\*+$", "");
-                for (String key: global_functions.keySet())
-                {
-                    if (key.startsWith(varname)) global_functions.remove(key);
-                }
-                for (String key: global_variables.keySet())
-                {
-                    if (key.startsWith(varname)) global_variables.remove(key);
-                }
-                c.clearAll(varname);
-            }
-            else
-            {
-                global_functions.remove(varname);
-                global_variables.remove(varname);
-                c.delVariable(varname);
-            }
-            return (cc, tt) -> Value.NULL;
-        });
-
-
-        addLazyFunction("vars", 1, (c, t, lv) -> {
-            String prefix = lv.get(0).evalValue(c).getString();
-            List<Value> values = new ArrayList<>();
-            if (prefix.startsWith("global"))
-            {
-                for (String k: global_variables.keySet())
-                {
-                    if (k.startsWith(prefix))
-                        values.add(new StringValue(k));
-                }
-            }
-            else
-            {
-                for (String k: c.getAllVariableNames())
-                {
-                    if (k.startsWith(prefix))
-                        values.add(new StringValue(k));
-                }
-            }
-            return (cc, tt) -> ListValue.wrap(values);
-        });
-
-        // if(cond1, expr1, cond2, expr2, ..., ?default) => value
-        addLazyFunction("if", -1, (c, t, lv) ->
-        {
-            if ( lv.size() < 2 )
-                throw new InternalExpressionException("if statement needs to have at least one condition and one case");
-            for (int i=0; i<lv.size()-1; i+=2)
-            {
-                if (lv.get(i).evalValue(c, Context.BOOLEAN).getBoolean())
-                {
-                    int iFinal = i;
-                    return (cc, tt) -> lv.get(iFinal+1).evalValue(c);
-                }
-            }
-            if (lv.size()%2 == 1)
-                return (cc, tt) -> lv.get(lv.size() - 1).evalValue(c);
-            return (cc, tt) -> new NumericValue(0);
-        });
-
         //condition and expression will get a bound 'i'
         //returns last successful expression or false
         // while(cond, limit, expr) => ??
@@ -966,13 +1028,13 @@ public class Expression implements Cloneable
             Value lastOne = Value.ZERO;
             //scoping
             LazyValue _val = c.getVariable("_");
-            c.setVariable("_",(cc, tt) -> new NumericValue(0).boundTo("_"));
-            while (i<limit && condition.evalValue(c).getBoolean() )
+            c.setVariable("_",(cc, tt) -> new NumericValue(0).bindTo("_"));
+            while (i<limit && condition.evalValue(c, Context.BOOLEAN).getBoolean() )
             {
                 lastOne = expr.evalValue(c);
                 i++;
                 long seriously = i;
-                c.setVariable("_", (cc, tt) -> new NumericValue(seriously).boundTo("_"));
+                c.setVariable("_", (cc, tt) -> new NumericValue(seriously).bindTo("_"));
             }
             //revering scope
             c.setVariable("_", _val);
@@ -999,7 +1061,7 @@ public class Expression implements Cloneable
             for (long i=0; i < limit; i++)
             {
                 long whyYouAsk = i;
-                c.setVariable("_", (cc, tt) -> new NumericValue(whyYouAsk).boundTo("_"));
+                c.setVariable("_", (cc, tt) -> new NumericValue(whyYouAsk).bindTo("_"));
                 lastOne = expr.evalValue(c);
                 if (cond != null && cond.evalValue(c).getBoolean())
                     break;
@@ -1037,8 +1099,8 @@ public class Expression implements Cloneable
             {
                 Value next = iterator.next();
                 int doYouReally = i;
-                c.setVariable("_", (cc, tt) -> next.boundTo("_"));
-                c.setVariable("_i", (cc, tt) -> new NumericValue(doYouReally).boundTo("_i"));
+                c.setVariable("_", (cc, tt) -> next.reboundedTo("_"));
+                c.setVariable("_i", (cc, tt) -> new NumericValue(doYouReally).bindTo("_i"));
                 result.add(expr.evalValue(c));
                 if (cond != null && cond.evalValue(c).getBoolean())
                     break;
@@ -1076,8 +1138,8 @@ public class Expression implements Cloneable
             {
                 Value next = iterator.next();
                 int seriously = i;
-                c.setVariable("_", (cc, tt) -> next.boundTo("_"));
-                c.setVariable("_i", (cc, tt) -> new NumericValue(seriously).boundTo("_i"));
+                c.setVariable("_", (cc, tt) -> next.reboundedTo("_"));
+                c.setVariable("_i", (cc, tt) -> new NumericValue(seriously).bindTo("_i"));
                 if(expr.evalValue(c).getBoolean())
                     result.add(next);
                 if (cond != null && cond.evalValue(c).getBoolean())
@@ -1110,8 +1172,8 @@ public class Expression implements Cloneable
             {
                 Value next = iterator.next();
                 int seriously = i;
-                c.setVariable("_", (cc, tt) -> next.boundTo("_"));
-                c.setVariable("_i", (cc, tt) -> new NumericValue(seriously).boundTo("_i"));
+                c.setVariable("_", (cc, tt) -> next.reboundedTo("_"));
+                c.setVariable("_i", (cc, tt) -> new NumericValue(seriously).bindTo("_i"));
                 if(expr.evalValue(c).getBoolean())
                 {
                     result = next;
@@ -1145,8 +1207,8 @@ public class Expression implements Cloneable
             {
                 Value next = iterator.next();
                 int seriously = i;
-                c.setVariable("_", (cc, tt) -> next.boundTo("_"));
-                c.setVariable("_i", (cc, tt) -> new NumericValue(seriously).boundTo("_i"));
+                c.setVariable("_", (cc, tt) -> next.reboundedTo("_"));
+                c.setVariable("_i", (cc, tt) -> new NumericValue(seriously).bindTo("_i"));
                 if(!expr.evalValue(c).getBoolean())
                 {
                     result = LazyValue.FALSE;
@@ -1186,8 +1248,8 @@ public class Expression implements Cloneable
             {
                 Value next = iterator.next();
                 int seriously = i;
-                c.setVariable("_", (cc, tt) -> next.boundTo("_"));
-                c.setVariable("_i", (cc, tt) -> new NumericValue(seriously).boundTo("_i"));
+                c.setVariable("_", (cc, tt) -> next.reboundedTo("_"));
+                c.setVariable("_i", (cc, tt) -> new NumericValue(seriously).bindTo("_i"));
                 if(expr.evalValue(c).getBoolean())
                     successCount++;
                 if (cond != null && cond.evalValue(c).getBoolean())
@@ -1230,8 +1292,8 @@ public class Expression implements Cloneable
             {
                 Value v = iterator.next();
                 Value promiseWontChangeYou = acc;
-                c.setVariable("_a", (cc, tt) -> promiseWontChangeYou.boundTo("_a"));
-                c.setVariable("_", (cc, tt) -> v.boundTo("_"));
+                c.setVariable("_a", (cc, tt) -> promiseWontChangeYou.bindTo("_a"));
+                c.setVariable("_", (cc, tt) -> v.reboundedTo("_"));
                 acc = expr.evalValue(c);
             }
             //reverting scope
@@ -1244,15 +1306,136 @@ public class Expression implements Cloneable
         });
     }
 
+    /**
+     * <h1>System functions</h1>
+     * <p>Section Content</p>
+     * <p>Other Paragraph</p>
+     */
+    public void SystemFunctions()
+    {
+        addLazyFunction("rand", 1, (c, t, lv) -> {
+            Value argument = lv.get(0).evalValue(c);
+            if (argument instanceof ListValue)
+            {
+                List<Value> list = ((ListValue) argument).getItems();
+                return (cc, tt) -> list.get(randomizer.nextInt(list.size()));
+            }
+            if (t == Context.BOOLEAN)
+            {
+                double rv = getNumericValue(argument).getDouble()*randomizer.nextFloat();
+                return (cc, tt) -> rv<1.0D?Value.FALSE:Value.TRUE;
+            }
+
+            return (cc, tt) -> new NumericValue(getNumericValue(argument).getDouble()*randomizer.nextFloat());
+        });
+
+        addUnaryFunction("print", (v) ->
+        {
+            System.out.println(v.getString());
+            return v; // pass through for variables
+        });
+        addUnaryFunction("sleep", (v) ->
+        {
+            long time = getNumericValue(v).getLong();
+            try
+            {
+                Thread.sleep(time);
+                Thread.yield();
+            }
+            catch (InterruptedException ignored) { }
+            return v; // pass through for variables
+        });
+        addLazyFunction("time", 0, (c, t, lv) ->
+                (cc, tt) -> new NumericValue(1.0*System.nanoTime()/1000));
+
+        addLazyFunction("var", 1, (c, t, lv) -> {
+            String varname = lv.get(0).evalValue(c).getString();
+            if (!c.isAVariable(varname))
+                c.setVariable(varname, (_c, _t ) -> Value.ZERO.reboundedTo(varname));
+            return c.getVariable(varname);
+        });
+
+        addLazyFunction("undef", 1, (c, t, lv) ->
+        {
+            String varname = lv.get(0).evalValue(c).getString();
+            if (varname.startsWith("_"))
+                throw new InternalExpressionException("Cannot replace local built-in variables, i.e. those that start with '_'");
+            if (varname.endsWith("*"))
+            {
+                varname = varname.replaceAll("\\*+$", "");
+                for (String key: globalFunctions.keySet())
+                {
+                    if (key.startsWith(varname)) globalFunctions.remove(key);
+                }
+                for (String key: globalVariables.keySet())
+                {
+                    if (key.startsWith(varname)) globalVariables.remove(key);
+                }
+                c.clearAll(varname);
+            }
+            else
+            {
+                globalFunctions.remove(varname);
+                globalVariables.remove(varname);
+                c.delVariable(varname);
+            }
+            return (cc, tt) -> Value.NULL;
+        });
+
+
+        addLazyFunction("vars", 1, (c, t, lv) -> {
+            String prefix = lv.get(0).evalValue(c).getString();
+            List<Value> values = new ArrayList<>();
+            if (prefix.startsWith("global"))
+            {
+                for (String k: globalVariables.keySet())
+                {
+                    if (k.startsWith(prefix))
+                        values.add(new StringValue(k));
+                }
+            }
+            else
+            {
+                for (String k: c.getAllVariableNames())
+                {
+                    if (k.startsWith(prefix))
+                        values.add(new StringValue(k));
+                }
+            }
+            return (cc, tt) -> ListValue.wrap(values);
+        });
+
+    }
 
     /**
-     * Implementation of the <i>Shunting Yard</i> algorithm to transform an
-     * infix expression to a RPN expression.
+     * <h1>Programs</h1>
+     * <p>
+     * You can think of an program like a mathematical expression, like
+     * <code>"2.4*sin(45)/(2-4)"</code> or  <code>"sin(y)&gt;0 &amp; max(z, 3)&gt;3"</code>
+     * </p>
      *
-     * @param expression The input expression in infx.
-     * @return A RPN representation of the expression, with each token as a list
-     * member.
+     * <p>By writing a program, we write a long expression that the engine needs to compute and give us back the final results</p>
+     *
+     * <p>Programs consist of constants, like <code>2</code>, <code>3,14</code>, <code>pi</code>, or <code>'foo'</code>,
+     * operators like <code>+</code>, <code>/</code>, <code>-&gt;</code>, variables which you can define, like <code>foo</code> or special ones that can
+     * be defined for you, like <code>x</code>, or <code>_</code> </p>
+     *
+     * @param expression .
      */
+    public Expression(String expression)
+    {
+        this.name = null;
+        expression = expression.trim().replaceAll(";+$", "");
+        this.expression = expression.replaceAll("\\$", "\n");
+        Constants();
+        UserDefinedFunctionsAndControlFlow();
+        Operators();
+        ArithmeticOperations();
+        SystemFunctions();
+        ListsLoopsAndHigherOrderFunctions();
+    }
+
+
     private List<Tokenizer.Token> shuntingYard(String expression)
     {
         List<Tokenizer.Token> outputQueue = new ArrayList<>();
@@ -1421,20 +1604,11 @@ public class Expression implements Cloneable
         }
     }
 
-
-
-
-    /**
-     * Evaluates the expression.
-     *
-     * @return The result of the expression.
-     * @param c - Context with pre-initialized variables
-     */
-    public Value eval(Context c)
+    Value eval(Context c)
     {
         return eval(c, Context.NONE);
     }
-    public Value eval(Context c, Integer expectedType)
+    private Value eval(Context c, Integer expectedType)
     {
         if (ast == null)
         {
@@ -1481,7 +1655,7 @@ public class Expression implements Cloneable
                     {
                         if (!c.isAVariable(token.surface)) // new variable
                         {
-                            c.setVariable(token.surface, Value.ZERO);
+                            c.setVariable(token.surface, (cc, tt ) -> Value.ZERO.reboundedTo(token.surface));
                         }
                         LazyValue lazyVariable = c.getVariable(token.surface);
                         return lazyVariable.evalValue(c);
@@ -1525,7 +1699,15 @@ public class Expression implements Cloneable
                     {
                         if (token.surface.equalsIgnoreCase("NULL"))
                             return Value.NULL;
-                        return new NumericValue(token.surface);
+                        try
+                        {
+                            return new NumericValue(token.surface);
+                        }
+                        catch (NumberFormatException exception)
+                        {
+                            throw new ExpressionException(this, token, "Not a number");
+                        }
+
                     });
                     break;
                 case STRINGPARAM:
@@ -1541,11 +1723,6 @@ public class Expression implements Cloneable
         return stack.pop();
     }
 
-    /**
-     * Check that the expression has enough numbers and variables to fit the
-     * requirements of the operators and functions, also check for only 1 result
-     * stored at the end of the evaluation.
-     */
     private void validate(List<Tokenizer.Token> rpn)
     {
         /*-
@@ -1619,17 +1796,14 @@ public class Expression implements Cloneable
         }
     }
 
-
-
-
     @FunctionalInterface
-    public interface TriFunction<A, B, C, R> { R apply(A a, B b, C c); }
+    interface TriFunction<A, B, C, R> { R apply(A a, B b, C c); }
     @FunctionalInterface
-    public interface QuadFunction<A, B, C, D, R> { R apply(A a, B b, C c, D d);}
+    interface QuadFunction<A, B, C, D, R> { R apply(A a, B b, C c, D d);}
     @FunctionalInterface
-    public interface QuinnFunction<A, B, C, D, E, R> { R apply(A a, B b, C c, D d, E e);}
+    interface QuinnFunction<A, B, C, D, E, R> { R apply(A a, B b, C c, D d, E e);}
     @FunctionalInterface
-    public interface SexFunction<A, B, C, D, E, F, R> { R apply(A a, B b, C c, D d, E e, F f);}
+    interface SexFunction<A, B, C, D, E, F, R> { R apply(A a, B b, C c, D d, E e, F f);}
 
     private interface ILazyFunction
     {
@@ -1660,7 +1834,7 @@ public class Expression implements Cloneable
         Value eval(Value v1, Value v2);
     }
 
-    public abstract static class UserDefinedFunction extends AbstractLazyFunction implements ILazyFunction
+    abstract static class UserDefinedFunction extends AbstractLazyFunction implements ILazyFunction
     {
         protected List<String> arguments;
         protected Expression expression;
@@ -1684,9 +1858,6 @@ public class Expression implements Cloneable
         {
             return token;
         }
-
-
-
     }
 
     private abstract static class AbstractLazyFunction implements ILazyFunction

@@ -15,6 +15,7 @@ public class Context
     static final int LIST = 5;
     static final int ITERATOR = 6;
     static final int SIGNATURE = 7;
+    static final int LOCALIZATION = 8;
 
     private Map<String, LazyValue> variables = new HashMap<>();
     private Consumer<String> logOutput;
@@ -36,27 +37,23 @@ public class Context
         {
             return variables.get(name);
         }
-        return Expression.global_variables.get(name);
+        return Expression.globalVariables.get(name);
     }
 
     void setVariable(String name, LazyValue lv)
     {
         if (name.startsWith("global_"))
         {
-            Expression.global_variables.put(name, lv);
+            Expression.globalVariables.put(name, lv);
             return;
         }
         variables.put(name, lv);
-    }
-    void setVariable(String name, Value val)
-    {
-        setVariable(name, (c, t) -> val.boundTo(name));
     }
 
 
     boolean isAVariable(String name)
     {
-        return variables.containsKey(name) || Expression.global_variables.containsKey(name);
+        return variables.containsKey(name) || Expression.globalVariables.containsKey(name);
     }
 
 
@@ -64,7 +61,7 @@ public class Context
     {
         if (variable.startsWith("global_"))
         {
-            Expression.global_variables.remove(variable);
+            Expression.globalVariables.remove(variable);
             return;
         }
         variables.remove(variable);
@@ -73,7 +70,7 @@ public class Context
     {
         if (variable.startsWith("global_"))
         {
-            Expression.global_variables.remove(variable);
+            Expression.globalVariables.remove(variable);
             return;
         }
         variables.remove(variable);

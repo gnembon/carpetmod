@@ -2,7 +2,7 @@ package carpet.commands;
 
 import carpet.CarpetSettings;
 import carpet.script.CarpetExpression;
-import carpet.script.Expression;
+import carpet.script.ExpressionInspector;
 import carpet.script.Tokenizer;
 import carpet.utils.Messenger;
 import com.mojang.brigadier.CommandDispatcher;
@@ -40,6 +40,8 @@ public class ScriptCommand
         LiteralArgumentBuilder<CommandSource> command = literal("script").
                 requires((player) -> CarpetSettings.getBool("commandScript")).
                 then(literal("globals").executes( (c) -> listGlobals(c.getSource()))).
+                then(literal("stop").executes( (c) -> { CarpetExpression.BreakExecutionOfAllScriptsWithCommands(true); return 1;})).
+                then(literal("resume").executes( (c) -> { CarpetExpression.BreakExecutionOfAllScriptsWithCommands(false); return 1;})).
                 then(literal("run").
                         then(argument("expr", StringArgumentType.greedyString()).
                                 executes((c) -> compute(
@@ -172,18 +174,16 @@ public class ScriptCommand
     }
     private static Set<String> getGlobalCalls()
     {
-        return Expression.global_functions.keySet().stream().filter((s) -> !s.startsWith("_")).collect(Collectors.toSet());
+        return ExpressionInspector.Expression_globalFunctions().keySet().stream().filter((s) -> !s.startsWith("_")).collect(Collectors.toSet());
     }
     private static int listGlobals(CommandSource source)
     {
         Messenger.m(source, "w Global functions:");
         for (String fname : getGlobalCalls())
         {
-            Expression.UserDefinedFunction acf = Expression.global_functions.get(fname);
-
-            String expr = acf.getExpression().getCodeString();
-            Tokenizer.Token tok = acf.getToken();
-            List<String> snippet = Expression.getExpressionSnippet(tok, expr);
+            String expr = ExpressionInspector.Expression_getCodeString(ExpressionInspector.Expression_globalFunctions_get_getExpression(fname));
+            Tokenizer.Token tok = ExpressionInspector.Expression_globalFunctions_get_getToken(fname);
+            List<String> snippet = ExpressionInspector.Expression_getExpressionSnippet(tok, expr);
             Messenger.m(source, "w Function "+fname+" defined at: line "+(tok.lineno+1)+" pos "+(tok.linepos+1));
             for (String snippetLine: snippet)
             {
@@ -194,9 +194,9 @@ public class ScriptCommand
         //Messenger.m(source, "w "+code);
         Messenger.m(source, "w Global Variables:");
 
-        for (String vname : Expression.global_variables.keySet())
+        for (String vname : ExpressionInspector.Expression_globalVariables().keySet())
         {
-            Messenger.m(source, "w Variable "+vname+": ", "wb "+Expression.global_variables.get(vname).evalValue(null).getString());
+            Messenger.m(source, "w Variable "+vname+": ", "wb "+ExpressionInspector.Expression_globalVariables().get(vname).evalValue(null).getString());
         }
         return 1;
     }
@@ -205,23 +205,28 @@ public class ScriptCommand
     {
         try
         {
-            CarpetExpression.setChatErrorSnooper(source);
+            ExpressionInspector.CarpetExpression_setChatErrorSnooper(source);
             long start = System.nanoTime();
             String result = call.get();
-            int time = (int)((System.nanoTime()-start)/1000);
+            long time = ((System.nanoTime()-start)/1000);
             String metric = "\u00B5s";
-            if (time > 2000)
+            if (time > 5000)
             {
                 time /= 1000;
                 metric = "ms";
             }
+            if (time > 10000)
+            {
+                time /= 1000;
+                metric = "s";
+            }
             Messenger.m(source, "wi  = ", "wb "+result, "gi  ("+time+metric+")");
         }
-        catch (CarpetExpression.CarpetExpressionException e)
+        catch (ExpressionInspector.CarpetExpressionException e)
         {
             Messenger.m(source, "r Exception white evaluating expression at "+new BlockPos(source.getPos())+": "+e.getMessage());
         }
-        CarpetExpression.resetErrorSnooper();
+        ExpressionInspector.CarpetExpression_resetErrorSnooper();
     }
 
     private static int invoke(CommandSource source, String call, BlockPos pos1, BlockPos pos2,  String args)
@@ -246,7 +251,7 @@ public class ScriptCommand
         }
         if (!(args.trim().isEmpty()))
             arguments.addAll(Arrays.asList(args.trim().split("\\s+")));
-        handleCall(source, () -> CarpetExpression.invokeGlobal(source, call,arguments));
+        handleCall(source, () -> CarpetExpression.invokeGlobalFunctionCommand(source, call,arguments));
         return 1;
     }
 
@@ -256,8 +261,8 @@ public class ScriptCommand
         handleCall(source, () -> {
             CarpetExpression ex = new CarpetExpression(expr, source, new BlockPos(0, 0, 0));
             if (source.getWorld().getGameRules().getBoolean("commandBlockOutput"))
-                ex.setLogOutput(true);
-            return ex.eval(new BlockPos(source.getPos()));
+                ExpressionInspector.CarpetExpression_setLogOutput(ex, true);
+            return ex.scriptRunCommand(new BlockPos(source.getPos()));
         });
         return 1;
     }
@@ -282,7 +287,7 @@ public class ScriptCommand
                     {
                         try
                         {
-                            if (cexpr.test(x, y, z)) successCount++;
+                            if (cexpr.fillAndScanCommand(x, y, z)) successCount++;
                         }
                         catch (ArithmeticException ignored)
                         {
@@ -291,7 +296,7 @@ public class ScriptCommand
                 }
             }
         }
-        catch (CarpetExpression.CarpetExpressionException exc)
+        catch (ExpressionInspector.CarpetExpressionException exc)
         {
             Messenger.m(source, "r Error while processing command: "+exc);
             return 0;
@@ -327,12 +332,12 @@ public class ScriptCommand
                 {
                     try
                     {
-                        if (cexpr.test(x, y, z))
+                        if (cexpr.fillAndScanCommand(x, y, z))
                         {
                             volume[x-area.minX][y-area.minY][z-area.minZ]=true;
                         }
                     }
-                    catch (CarpetExpression.CarpetExpressionException e)
+                    catch (ExpressionInspector.CarpetExpressionException e)
                     {
                         CarpetSettings.LOG.error("Exception: "+e);
                         return 0;
