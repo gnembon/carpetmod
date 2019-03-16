@@ -249,8 +249,8 @@ public class CarpetSettings
                                     railPowerLimitAdjusted = CarpetSettings.getInt("railPowerLimit") - 1),
   rule("fillLimit",             "creative","Customizable fill/clone volume limit")
                                 .choices("32768","32768 250000 1000000").setNotStrict(),
-  //!rule("maxEntityCollisions",   "optimizations", "Customizable maximal entity collision limits, 0 for no limits")
-  //                              .choices("0","0 1 20").setNotStrict(),
+  rule("maxEntityCollisions",   "optimizations", "Customizable maximal entity collision limits, 0 for no limits")
+                                .choices("0","0 1 20").setNotStrict(),
   //???rule("pistonGhostBlocksFix",  "fix", "Fix for piston ghost blocks")
   //                              .extraInfo("true(serverOnly) option works with all clients, including vanilla",
   //                              "clientAndServer option requires compatible carpet clients and messes up flying machines")
