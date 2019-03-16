@@ -1,0 +1,69 @@
+--- a/net/minecraft/block/BlockDragonEgg.java
++++ b/net/minecraft/block/BlockDragonEgg.java
+@@ -1,9 +1,14 @@
+ package net.minecraft.block;
+ 
++import carpet.CarpetSettings;
+ import net.minecraft.block.state.BlockFaceShape;
+ import net.minecraft.block.state.IBlockState;
+ import net.minecraft.entity.player.EntityPlayer;
++import net.minecraft.init.Items;
+ import net.minecraft.init.Particles;
++import net.minecraft.item.Item;
++import net.minecraft.item.ItemFood;
++import net.minecraft.item.ItemStack;
+ import net.minecraft.pathfinding.PathType;
+ import net.minecraft.util.EnumFacing;
+ import net.minecraft.util.EnumHand;
+@@ -29,9 +34,51 @@
+ 
+     public boolean onBlockActivated(IBlockState state, World worldIn, BlockPos pos, EntityPlayer player, EnumHand hand, EnumFacing side, float hitX, float hitY, float hitZ)
+     {
++        // [CM] Added funtions for renewable dragon eggs. Feed them meet.
++        if(CarpetSettings.getBool("renewableDragonEggs"))
++        {
++            ItemStack itemstack = player.getHeldItem(hand);
++            if (isMeat(itemstack.getItem()))
++            {
++                int saturation = (int) (((ItemFood) itemstack.getItem()).getSaturationModifier(itemstack) * 10);
++                if (!player.abilities.isCreativeMode)
++                {
++                    itemstack.shrink(1);
++                }
++                for (int i = 0; i < saturation; i++)
++                {
++                    this.teleport(state, worldIn, pos);
++                    worldIn.setBlockState(pos, this.getDefaultState(), 2);
++                }
++                return true;
++            }
++        }
++        // [CM] End
+         this.teleport(state, worldIn, pos);
+         return true;
+     }
++    
++    // [CM] Helper method for renewable dragon eggs
++    private boolean isMeat(Item food)
++    {
++        if(food == Items.ROTTEN_FLESH){ return true; }
++        if(food == Items.BEEF){ return true; }
++        if(food == Items.COOKED_BEEF){ return true; }
++        if(food == Items.CHICKEN){ return true; }
++        if(food == Items.COOKED_CHICKEN){ return true; }
++        if(food == Items.COD){ return true; }
++        if(food == Items.COOKED_COD){ return true; }
++        if(food == Items.SALMON){return true;}
++        if(food == Items.COOKED_SALMON){return true;}
++        if(food == Items.PORKCHOP){ return true; }
++        if(food == Items.COOKED_PORKCHOP){ return true; }
++        if(food == Items.RABBIT){ return true; }
++        if(food == Items.COOKED_RABBIT){ return true; }
++        if(food == Items.MUTTON){ return true; }
++        if(food == Items.COOKED_MUTTON){ return true; }
++        if(food == Items.SPIDER_EYE){ return true; }
++        return false;
++    }
+ 
+     public void onBlockClicked(IBlockState state, World worldIn, BlockPos pos, EntityPlayer player)
+     {
