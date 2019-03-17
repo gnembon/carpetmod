@@ -165,7 +165,7 @@ public class CarpetSettings
                                            "Counters are global and shared between players, 16 channels available",
                                            "Items counted are destroyed, count up to one stack per tick per hopper")
                                 .isACommand().boolAccelerate().defaultFalse(),
-  //! rename rule("renewableElderGuardians", "experimental feature", "Guardians turn into Elder Guardian when struck by lightning"),
+  rule("renewableElderGuardians", "experimental feature", "Guardians turn into Elder Guardian when struck by lightning"),
   //rule("optimizedDespawnRange", "optimizations", "Spawned mobs that would otherwise despawn immediately, won't be placed in world"), // use 1.14 spawning instead
   //???rule("redstoneMultimeter",    "creative survival", "Enables integration with redstone multimeter mod")
   //                              .extraInfo("Required clients with RSMM Mod by Narcoleptic Frog. Enables multiplayer experience with RSMM Mod"),

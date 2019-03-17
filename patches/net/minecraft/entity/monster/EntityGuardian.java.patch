@@ -1,0 +1,66 @@
+--- a/net/minecraft/entity/monster/EntityGuardian.java
++++ b/net/minecraft/entity/monster/EntityGuardian.java
+@@ -2,12 +2,9 @@
+ 
+ import java.util.function.Predicate;
+ import javax.annotation.Nullable;
+-import net.minecraft.entity.CreatureAttribute;
+-import net.minecraft.entity.Entity;
+-import net.minecraft.entity.EntityLivingBase;
+-import net.minecraft.entity.EntityType;
+-import net.minecraft.entity.MoverType;
+-import net.minecraft.entity.SharedMonsterAttributes;
++
++import carpet.CarpetSettings;
++import net.minecraft.entity.*;
+ import net.minecraft.entity.ai.EntityAIBase;
+ import net.minecraft.entity.ai.EntityAILookIdle;
+ import net.minecraft.entity.ai.EntityAIMoveTowardsRestriction;
+@@ -16,10 +13,12 @@
+ import net.minecraft.entity.ai.EntityAIWatchClosest;
+ import net.minecraft.entity.ai.EntityLookHelper;
+ import net.minecraft.entity.ai.EntityMoveHelper;
++import net.minecraft.entity.effect.EntityLightningBolt;
+ import net.minecraft.entity.passive.EntitySquid;
+ import net.minecraft.entity.player.EntityPlayer;
+ import net.minecraft.init.Particles;
+ import net.minecraft.init.SoundEvents;
++import net.minecraft.nbt.NBTTagCompound;
+ import net.minecraft.network.datasync.DataParameter;
+ import net.minecraft.network.datasync.DataSerializers;
+ import net.minecraft.network.datasync.EntityDataManager;
+@@ -421,6 +420,34 @@
+             super.travel(strafe, vertical, forward);
+         }
+     }
++    
++    /**
++     * Called when a lightning bolt hits the entity.
++     */
++    // [CM] Renewable Elder Guardians - added code for guardians struck by lightning
++    public void onStruckByLightning(EntityLightningBolt lightningBolt)
++    {
++        if (!this.world.isRemote && !this.removed && CarpetSettings.getBool("renewableElderGuardians"))
++        {
++            EntityElderGuardian entityguardian = new EntityElderGuardian(this.world);
++            entityguardian.setLocationAndAngles(this.posX, this.posY, this.posZ, this.rotationYaw, this.rotationPitch);
++            entityguardian.onInitialSpawn(this.world.getDifficultyForLocation(new BlockPos(entityguardian)), (IEntityLivingData)null, (NBTTagCompound)null);
++            entityguardian.setNoAI(this.isAIDisabled());
++            
++            if (this.hasCustomName())
++            {
++                entityguardian.setCustomName(this.getCustomName());
++                entityguardian.setCustomNameVisible(this.isCustomNameVisible());
++            }
++            
++            this.world.spawnEntity(entityguardian);
++            this.remove();
++        }
++        else
++        {
++            super.onStruckByLightning(lightningBolt);
++        }
++    }
+ 
+     static class AIGuardianAttack extends EntityAIBase
+         {
