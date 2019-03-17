@@ -1,7 +1,11 @@
 --- a/net/minecraft/init/Bootstrap.java
 +++ b/net/minecraft/init/Bootstrap.java
-@@ -3,6 +3,9 @@
+@@ -1,8 +1,13 @@
+ package net.minecraft.init;
+ 
  import java.io.PrintStream;
++import java.util.Iterator;
++import java.util.List;
  import java.util.Random;
  import java.util.function.Function;
 +
@@ -10,7 +14,23 @@
  import net.minecraft.block.Block;
  import net.minecraft.block.BlockCarvedPumpkin;
  import net.minecraft.block.BlockDispenser;
-@@ -476,6 +479,27 @@
+@@ -29,6 +34,7 @@
+ import net.minecraft.entity.item.EntityFireworkRocket;
+ import net.minecraft.entity.item.EntityTNTPrimed;
+ import net.minecraft.entity.item.PaintingType;
++import net.minecraft.entity.passive.EntitySheep;
+ import net.minecraft.entity.player.EntityPlayer;
+ import net.minecraft.entity.player.EntityPlayerMP;
+ import net.minecraft.entity.projectile.EntityArrow;
+@@ -67,6 +73,7 @@
+ import net.minecraft.util.SharedConstants;
+ import net.minecraft.util.SoundCategory;
+ import net.minecraft.util.SoundEvent;
++import net.minecraft.util.math.AxisAlignedBB;
+ import net.minecraft.util.math.BlockPos;
+ import net.minecraft.util.math.RayTraceResult;
+ import net.minecraft.util.registry.IRegistry;
+@@ -476,6 +483,69 @@
          });
          BlockDispenser.registerDispenseBehavior(Blocks.SHULKER_BOX.asItem(), new Bootstrap.BehaviorDispenseShulkerBox());
  
@@ -31,6 +51,48 @@
 +                else
 +                {
 +                    return this.dispenseBehavior.dispense(source, stack);
++                }
++            }
++        });
++        
++        // [CM] Dispensers can shear sheep
++        BlockDispenser.registerDispenseBehavior(Items.SHEARS, new Bootstrap.BehaviorDispenseOptional()
++        {
++            private final BehaviorDefaultDispenseItem dispenseBehavior = new BehaviorDefaultDispenseItem();
++            
++            protected ItemStack dispenseStack(IBlockSource blockSource, ItemStack itemStack)
++            {
++                if (CarpetSettings.getBool("dispensersShearSheep"))
++                {
++                    World world = blockSource.getWorld();
++                    if (!world.isRemote())
++                    {
++                        this.successful = false;
++                        BlockPos blockPos = blockSource.getBlockPos().offset((EnumFacing) blockSource.getBlockState().get(BlockDispenser.FACING));
++                        List<EntitySheep> sheepList = world.getEntitiesWithinAABB(EntitySheep.class, new AxisAlignedBB(blockPos));
++                        Iterator iterator = sheepList.iterator();
++        
++                        while (iterator.hasNext())
++                        {
++                            EntitySheep entitySheep = (EntitySheep) iterator.next();
++                            if (entitySheep.isAlive() && !entitySheep.getSheared() && !entitySheep.isChild())
++                            {
++                                entitySheep.dropItems();
++                                if (itemStack.attemptDamageItem(1, world.rand, (EntityPlayerMP) null))
++                                {
++                                    itemStack.setCount(0);
++                                }
++                
++                                this.successful = true;
++                                break;
++                            }
++                        }
++                    }
++                    return itemStack;
++                }
++                else
++                {
++                    return this.dispenseBehavior.dispense(blockSource, itemStack);
 +                }
 +            }
 +        });

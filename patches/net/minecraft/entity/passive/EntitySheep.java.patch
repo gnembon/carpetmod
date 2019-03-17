@@ -1,0 +1,51 @@
+--- a/net/minecraft/entity/passive/EntitySheep.java
++++ b/net/minecraft/entity/passive/EntitySheep.java
+@@ -253,6 +253,9 @@
+ 
+         if (itemstack.getItem() == Items.SHEARS && !this.getSheared() && !this.isChild())
+         {
++            this.dropItems(); // [CM] Call to original code
++            
++            /* [CM] Refactored some code for dispenser sheep shearing
+             if (!this.world.isRemote)
+             {
+                 this.setSheared(true);
+@@ -270,13 +273,37 @@
+                     }
+                 }
+             }
++            */
+ 
+             itemstack.damageItem(1, player);
+-            this.playSound(SoundEvents.ENTITY_SHEEP_SHEAR, 1.0F, 1.0F);
++            // this.playSound(SoundEvents.ENTITY_SHEEP_SHEAR, 1.0F, 1.0F); // [CM] Refactored for dispenser sheep shearing
+         }
+ 
+         return super.processInteract(player, hand);
+     }
++    
++    // [CM] Moved code from processInteract
++    public void dropItems()
++    {
++        if (!this.world.isRemote)
++        {
++            this.setSheared(true);
++            int i = 1 + this.rand.nextInt(3);
++        
++            for (int j = 0; j < i; ++j)
++            {
++                EntityItem entityitem = this.entityDropItem(WOOL_BY_COLOR.get(this.getFleeceColor()), 1);
++            
++                if (entityitem != null)
++                {
++                    entityitem.motionY += (double)(this.rand.nextFloat() * 0.05F);
++                    entityitem.motionX += (double)((this.rand.nextFloat() - this.rand.nextFloat()) * 0.1F);
++                    entityitem.motionZ += (double)((this.rand.nextFloat() - this.rand.nextFloat()) * 0.1F);
++                }
++            }
++        }
++        this.playSound(SoundEvents.ENTITY_SHEEP_SHEAR, 1.0F, 1.0F);
++    }
+ 
+     public void writeAdditional(NBTTagCompound compound)
+     {
