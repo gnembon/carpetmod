@@ -40,7 +40,7 @@
 +    // [CM] Renewable Elder Guardians - added code for guardians struck by lightning
 +    public void onStruckByLightning(EntityLightningBolt lightningBolt)
 +    {
-+        if (!this.world.isRemote && !this.removed && CarpetSettings.getBool("renewableElderGuardians"))
++        if (!this.world.isRemote && !this.removed && CarpetSettings.getBool("renewableSponges"))
 +        {
 +            EntityElderGuardian entityguardian = new EntityElderGuardian(this.world);
 +            entityguardian.setLocationAndAngles(this.posX, this.posY, this.posZ, this.rotationYaw, this.rotationPitch);
