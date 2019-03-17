@@ -346,6 +346,8 @@ public class CarpetSettings
                                   .choices("25", "0 2 25").setNotStrict(),
   rule("renewableCoral",          "feature", "Coral structures will grow with bonemeal from coral plants"),
   rule("placementRotationFix",    "fix", "fixes block placement rotation issue when player rotates quickly while placing blocks"),
+  rule("leadFix",                 "fix", "Fixes leads breaking/becoming invisible in unloaded chunks")
+                                  .extraInfo("You may still get visibly broken leash links on the client side, but server side the link is still there.")
         };
         for (CarpetSettingEntry rule: RuleList)
         {
