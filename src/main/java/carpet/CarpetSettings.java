@@ -108,8 +108,8 @@ public class CarpetSettings
   //!rule("extendedConnectivity",  "experimental", "Quasi Connectivity doesn't require block updates.")
   //                              .extraInfo("All redstone components will send extra updates downwards",
   //                                         "Affects hoppers, droppers and dispensers"),
-  //!rule("portalSuffocationFix",  "fix", "Nether portals correctly place entities going through")
-  //                              .extraInfo("Entities shouldn't suffocate in obsidian"),
+  rule("portalSuffocationFix",  "fix", "Nether portals correctly place entities going through")
+                                .extraInfo("Entities shouldn't suffocate in obsidian"),
   //!rule("superSecretSetting",    "experimental","Gbhs sgnf sadsgras fhskdpri!"),
   /////rule("portalTeleportationFix", "fix", "Nether portals won't teleport you on occasion to 8x coordinates")
   //                              .extraInfo("It also prevents from taking random fire damage when going through portals"),
