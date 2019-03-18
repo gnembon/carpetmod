@@ -1471,6 +1471,19 @@ public class Expression implements Cloneable
      * same expression, and will run exactly the same, so make sure your programs are nice and clean so others don't
      * have problems with them</p>
      *
+     * <h2>Functions and scoping</h2>
+     * Users can define functions in the form <code>fun(args....) -> expression </code> and they are compiled and saved
+     * for further execution in this but also subsequent calls of /script command. This means that once defined functions
+     * are saved with the world for futher use. The variables are all global, so any variable in ay function that has
+     * the same name refers to the same variable everywhere in the code. What doesn't have global access are function
+     * arguments, which are localized for each function call. In case the function may want to use some other variables
+     * with local scope that should mask the global variable of the same name, they can be added to the function signature
+     * wrapped around the <code>local</code> function, which would make them local for the function call, but not be
+     * expected as an argument.
+     * The details of functions and scoping will be
+     * explained in the 'User Defined Functions and Control Flow' Section, but now we are briefly mentioning it for the
+     * sake of the following example.
+     *
      * <h2>Line indicators</h2>
      * <p>Since the maximum command that can be input to the chat is limited in length, you will be probably inserting your
      * programs by pasting them to command blocks, however pasting to command blocks will remove some whitespaces and squish
@@ -1480,12 +1493,31 @@ public class Expression implements Cloneable
      * you would want to get a meaningful error message, but for that you would need to indicate for the compiler where
      * did you put these new lines, since command block would squish them. For that, place  at the beginning
      * of the line to let the copiler know where are you. This makes so that <code>$</code> is the only character that is
-     * illegal in programs, since it will be replaced with new lines. As far as I know <code>$</code> is not used
+     * illegal in programs, since it will be replaced with new lines. As far as I know, <code>$</code> is not used
      * anywhere inside Minecraft identifiers, so this shoudn't hinder the abilities of your programs.</p>
-     * <p>Consider these two programs executed as command block command:</p>
+     * <p>Consider the following program executed as command block command:</p>
      * <pre>
+     * /script run
+     * run_program() -> (
+     *   foo = 10;
+     *   bar = 10;
+     *   loop( range(10),
+     *     bar_up(bar);
+     *     print('bar: '+bar+', foo inv: '+ _/(foo) );
+     *   )
+     * );
      *
+     * bar_up(bar) -> (
+     *   foo = floor(rand(9));
+     *   if (foo, bar += 1)
+     * )
      * </pre>
+     * <p>Lets say the intention was to pass bar and increase its value in a random fashion. Since arguments are passed as copies
+     * this won't actually change the <code>bar</code> value, just modify a local copy which would be lost once the function
+     * <code>bar_up</code> returns. What does happen is that foo uses the same name as the other function (<code>run_program</code>)
+     * and refers to the same variable, so it is possible that foo would assume the value of 0
+     *
+     * </p>
      *
      *
      * @param expression .
