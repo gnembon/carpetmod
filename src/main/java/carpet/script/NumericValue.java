@@ -15,7 +15,14 @@ public class NumericValue extends Value
     @Override
     public String getString()
     {
-        return new BigDecimal(value).stripTrailingZeros().toPlainString();
+        try
+        {
+            return new BigDecimal(value).stripTrailingZeros().toPlainString();
+        }
+        catch (NumberFormatException exc)
+        {
+            throw new ArithmeticException("Incorrect number format for "+value+": "+exc.getMessage());
+        }
     }
 
     @Override

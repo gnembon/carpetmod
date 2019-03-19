@@ -484,10 +484,10 @@ public class Expression implements Cloneable
                 {
                     throw new ExpressionException(e, t, exc.getMessage());
                 }
-                //catch (ArithmeticException exc)
-                //{
-                //    throw new ExpressionException(e, t, "Your math is wrong, "+exc.getMessage());
-                //}
+                catch (ArithmeticException exc)
+                {
+                    throw new ExpressionException(e, t, "Your math is wrong, "+exc.getMessage());
+                }
             }
         });
     }
@@ -544,6 +544,15 @@ public class Expression implements Cloneable
                 {
                     retVal = returnStatement.retval;
                 }
+                catch (InternalExpressionException exc)
+                {
+                    throw new ExpressionException(e, t, exc.getMessage());
+                }
+                catch (ArithmeticException exc)
+                {
+                    throw new ExpressionException(e, t, "Your math is wrong, "+exc.getMessage());
+                }
+
                 Value otherRetVal = retVal;
                 //restoring context
                 for (Map.Entry<String, LazyValue> entry : context.entrySet())
@@ -1501,9 +1510,9 @@ public class Expression implements Cloneable
      * run_program() -> (
      *   foo = 10;
      *   bar = 10;
-     *   loop( range(10),
+     *   loop( 10,
      *     bar_up(bar);
-     *     print('bar: '+bar+', foo inv: '+ _/(foo) );
+     *     print('bar: '+bar+', foo inv: '+ _/(foo) )
      *   )
      * );
      *
@@ -1513,11 +1522,15 @@ public class Expression implements Cloneable
      * )
      * </pre>
      * <p>Lets say the intention was to pass bar and increase its value in a random fashion. Since arguments are passed as copies
-     * this won't actually change the <code>bar</code> value, just modify a local copy which would be lost once the function
-     * <code>bar_up</code> returns. What does happen is that foo uses the same name as the other function (<code>run_program</code>)
-     * and refers to the same variable, so it is possible that foo would assume the value of 0
-     *
+     * this won't actually change the <code>bar</code> value, just modify a local copy in <code>bar_up</code>, which would be lost once the function
+     * returns, and original <code>bar</code> would remain unchanged. What does happen is that <code>foo</code>
+     * appears in both functions and refer to the same global variable, so it is possible that <code>foo</code> could be changed to 0 in <code>bar_up</code>
+     * and break division in <code>run_program</code>. When this happens the following method is displayed to the player:
      * </p>
+     *
+     * <pre>
+     *
+     * </pre>
      *
      *
      * @param expression .
@@ -1725,6 +1738,14 @@ public class Expression implements Cloneable
         catch (StackOverflowError ignored)
         {
             throw new ExpressionException("Your thoughts are too deep");
+        }
+        catch (InternalExpressionException exc)
+        {
+            throw new ExpressionException("Your expression result is incorrect:"+exc.getMessage());
+        }
+        catch (ArithmeticException exc)
+        {
+            throw new ExpressionException("The final result is incorrect, "+exc.getMessage());
         }
     }
 
