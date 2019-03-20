@@ -17,7 +17,7 @@ public class NumericValue extends Value
     {
         try
         {
-            return new BigDecimal(value).stripTrailingZeros().toPlainString();
+            return BigDecimal.valueOf(value).stripTrailingZeros().toPlainString();
         }
         catch (NumberFormatException exc)
         {

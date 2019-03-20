@@ -1481,7 +1481,7 @@ public class Expression implements Cloneable
      * have problems with them</p>
      *
      * <h2>Functions and scoping</h2>
-     * Users can define functions in the form <code>fun(args....) -> expression </code> and they are compiled and saved
+     * Users can define functions in the form <code>fun(args....) -&gt; expression </code> and they are compiled and saved
      * for further execution in this but also subsequent calls of /script command. This means that once defined functions
      * are saved with the world for futher use. The variables are all global, so any variable in ay function that has
      * the same name refers to the same variable everywhere in the code. What doesn't have global access are function
@@ -1507,7 +1507,7 @@ public class Expression implements Cloneable
      * <p>Consider the following program executed as command block command:</p>
      * <pre>
      * /script run
-     * run_program() -> (
+     * run_program() -&gt; (
      *   foo = 10;
      *   bar = 10;
      *   loop( 10,
@@ -1516,7 +1516,7 @@ public class Expression implements Cloneable
      *   )
      * );
      *
-     * bar_up(bar) -> (
+     * bar_up(bar) -&gt; (
      *   foo = floor(rand(9));
      *   if (foo, bar += 1)
      * )
@@ -1529,9 +1529,92 @@ public class Expression implements Cloneable
      * </p>
      *
      * <pre>
+     * Your math is wrong, Incorrect number format for NaN: Infinite or NaN at pos 72
+     * run_program() -&gt; (  foo = 10;  bar = 10;  loop( 10,    bar_up(bar);     HERE&gt;&gt; print('bar: '+bar+', foo inv: '+ _/(foo) )  ));bar_up(bar) -&gt; (  foo = floor(rand(9));  if (foo, bar += 1))
+     * = (705µs)
+     * </pre>
+     *
+     * As we can see, we got our problem where the result of the mathematical operation was not a number (<code>NaN</code>, not a number), however since putting our program
+     * into the command made it squish the newlines so while it is clear where the error happened, the position of the error (72) is not really helpful.
+     * To combat this issue we can start every line of the script with dollar signs <code>$</code>:
+     * <pre>
+     * /script run
+     * $run_program() -&gt; (
+     * $  foo = 10;
+     * $  bar = 10;
+     * $  loop( 10,
+     * $    bar_up(bar);
+     * $    print('bar: '+bar+', foo inv: '+ _/(foo) )
+     * $  )
+     * $);
+     * $
+     * $bar_up(bar) -&gt; (
+     * $  foo = floor(rand(9));
+     * $  if (foo, bar += 1)
+     * $)
+     * </pre>
+     *
+     * <p>Then we get the following error message</p>
+     *
+     * <pre>
+     * Your math is wrong, Incorrect number format for Infinity: Infinite or NaN at line 7, pos 5
+     *     bar_up(bar);
+     *      HERE&gt;&gt; print('bar: '+bar+', foo inv: '+ _/(foo) )
+     *   )
      *
      * </pre>
      *
+     * <p>As we can note not only we get much more concise snippet, but also information about the line
+     * number and position, so its way easier to locate the problem</p>
+     *
+     * <p>Obviously that's not the way we intended this program to work. Obviously the temporary variable foo is not needed
+     * in the other function we don't get any effect on bar, and to get it modified via global variable is very easy via
+     * <code>bar_up() -&gt; bar += 1</code>, but if you would really insist in changing it by passing a parameter,
+     * and have to reuse the <code>foo</code> variable, you can use <code>local</code> function which can only be used in
+     * function signatures to indicate variables that are not arguments, but still you would want to use locally without affecting
+     * other uses of foo in your program.
+     * </p>
+     *
+     * <pre>
+     * /script run
+     * $run_program() -&gt; (
+     * $  foo = 10;
+     * $  bar = 10;
+     * $  loop( 10,
+     * $    bar = increase(bar);
+     * $    print('bar: '+bar+', foo inv: '+ _/(foo) )
+     * $  )
+     * $);
+     * $increase(bar, local(foo)) -&gt; (
+     * $  foo = floor(rand(9));
+     * $  if (foo, bar += 1);
+     * $  bar
+     * $)
+     * </pre>
+     *
+     * <p>In this case both <code>bar</code> and <code>foo</code> in <code>increase</code> refer to local copy
+     * inside the function, so they don't affect the variables in <code>run_program</code>, giving the intended result:</p>
+     *
+     * <pre>
+     * bar: 11, foo inv: 0
+     * bar: 12, foo inv: 0.1
+     * bar: 13, foo inv: 0.2
+     * bar: 14, foo inv: 0.3
+     * bar: 15, foo inv: 0.4
+     * bar: 15, foo inv: 0.5
+     * bar: 16, foo inv: 0.6
+     * bar: 17, foo inv: 0.7
+     * bar: 17, foo inv: 0.8
+     * bar: 18, foo inv: 0.9
+     * = bar: 18, foo inv: 0.9 (1319µs)
+     * </pre>
+     *
+     * <p>Variable scoping is little different than in other programming languages like python that use
+     * local scoping for all variables, and can reuse variables from global scope with keyword <code>global</code>.
+     * In <code>Scarpet</code>,
+     * because its usecase would rather be to do with simpler scripts, default scope for all variables is global, unless variable
+     * is declared with <code>local</code> built-in function.
+     * </p>
      *
      * @param expression .
      */
