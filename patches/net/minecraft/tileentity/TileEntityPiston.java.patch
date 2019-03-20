@@ -48,12 +48,15 @@
                          }
                      }
                  }
-@@ -319,9 +336,23 @@
+@@ -318,10 +335,26 @@
+                 {
                      iblockstate = Block.getValidBlockForPosition(this.pistonState, this.world, this.pos);
                  }
- 
+-
 -                this.world.setBlockState(this.pos, iblockstate, 3);
 -                this.world.neighborChanged(this.pos, iblockstate.getBlock(), this.pos);
++    
++                // [CM] Movable TE's CARPET-DeadlyMC
 +                if (!CarpetSettings.b_movableTileEntities)
 +                {
 +                    this.world.setBlockState(this.pos, iblockstate, 3);
@@ -64,6 +67,7 @@
 +                    this.placeBlock();
 +                }
              }
++            // [CM] Movable TE's CARPET-DeadlyMC
 +            else if (CarpetSettings.b_movableTileEntities)
 +            {
 +                if (this.carriedTileEntity != null && this.world.getBlockState(this.pos).getBlock() == Blocks.AIR) {
@@ -74,7 +78,7 @@
          }
      }
  
-@@ -351,8 +382,15 @@
+@@ -351,8 +384,15 @@
                          iblockstate = iblockstate.with(BlockStateProperties.WATERLOGGED, Boolean.valueOf(false));
                      }
  
@@ -92,26 +96,28 @@
                  }
              }
          }
-@@ -378,6 +416,14 @@
+@@ -378,6 +418,15 @@
          this.lastProgress = this.progress;
          this.extending = compound.getBoolean("extending");
          this.shouldHeadBeRendered = compound.getBoolean("source");
 +    
++        // [CM] Movable TE's CARPET-DeadlyMC
 +        if(CarpetSettings.b_movableTileEntities && compound.contains("carriedTileEntity", 10))
 +        {
 +            if(this.pistonState.getBlock() instanceof ITileEntityProvider)
 +                this.carriedTileEntity = ((ITileEntityProvider)(this.pistonState.getBlock())).createNewTileEntity(this.world);
-+            if(carriedTileEntity != null) //Can actually be null, as BlockPistonMoving.createNewTileEntity(...) returns null
++            if(carriedTileEntity != null) // Can actually be null, as BlockPistonMoving.createNewTileEntity(...) returns null
 +                this.carriedTileEntity.read(compound.getCompound("carriedTileEntity"));
 +        }
      }
  
      public NBTTagCompound write(NBTTagCompound compound)
-@@ -388,6 +434,12 @@
+@@ -388,6 +437,13 @@
          compound.setFloat("progress", this.lastProgress);
          compound.setBoolean("extending", this.extending);
          compound.setBoolean("source", this.shouldHeadBeRendered);
 +    
++        // [CM] Movable TE's CARPET-DeadlyMC
 +        if(CarpetSettings.b_movableTileEntities && this.carriedTileEntity != null)
 +        {
 +            compound.setTag("carriedTileEntity", this.carriedTileEntity.write(new NBTTagCompound()));
@@ -120,22 +126,26 @@
          return compound;
      }
  
-@@ -435,4 +487,33 @@
+@@ -435,4 +491,37 @@
      {
          return this.lastTicked;
      }
 +    
++    // [CM] Movable TE's - helper method
 +    public void setCarriedTileEntity(TileEntity tileEntity)
 +    {
 +        this.carriedTileEntity = tileEntity;
 +    }
 +    
-+    private void placeBlock() {
++    // [CM] Movable TE's - helper method
++    private void placeBlock()
++    {
 +        this.world.setBlockState(this.pos, this.pistonState, 18); //Flag 18 => No block updates, TileEntity has to be placed first
 +        
 +        if(!this.world.isRemote)
 +        {
-+            if(carriedTileEntity != null) {
++            if(carriedTileEntity != null)
++            {
 +                this.world.removeTileEntity(this.pos);
 +                carriedTileEntity.validate();
 +                this.world.setTileEntity(this.pos, carriedTileEntity);

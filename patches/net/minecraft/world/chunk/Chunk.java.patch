@@ -24,7 +24,7 @@
          int i = pos.getX() & 15;
          int j = pos.getY();
          int k = pos.getZ() & 15;
-@@ -568,14 +576,24 @@
+@@ -568,14 +576,26 @@
                      }
                  }
  
@@ -38,8 +38,10 @@
                  if (block instanceof ITileEntityProvider)
                  {
 -                    TileEntity tileentity1 = this.getTileEntity(pos, Chunk.EnumCreateEntityType.CHECK);
++                    // [CM] Movable TE's CARPET-DeadlyMC
 +                    TileEntity tileentity1; // = this.getTileEntity(pos, Chunk.EnumCreateEntityType.CHECK);
 +    
++                    // [CM] Movable TE's CARPET-DeadlyMC
 +                    if(CarpetSettings.b_movableTileEntities)
 +                    {  //this.getTileEntity(...) doesn't check pending TileEntities
 +                        tileentity1 = this.world.getTileEntity(pos);

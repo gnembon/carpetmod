@@ -21,13 +21,14 @@
              BlockPos blockpos = pos.up();
  
              for (EnumFacing enumfacing1 : EnumFacing.values())
-@@ -316,8 +324,13 @@
+@@ -316,8 +324,14 @@
                  {
                      return false;
                  }
 -
 -                return !block.hasTileEntity();
 +    
++                // [CM] Movable TE's CARPET-DeadlyMC
 +                if(!block.hasTileEntity())
 +                    return true;
 +                else if(CarpetSettings.b_movableTileEntities)
@@ -37,26 +38,28 @@
              }
              else
              {
-@@ -329,6 +342,13 @@
+@@ -329,6 +343,14 @@
              return false;
          }
      }
 +    
++    // [CM] Movable TE's CARPET-DeadlyMC
 +    private static boolean isPushableTileEntityBlock(Block block)
 +    {
-+        //Making MOVING_PISTON (BlockPistonMoving) pushable would not work as its createNewTileEntity()-method returns null
++        // Making MOVING_PISTON (BlockPistonMoving) pushable would not work as its createNewTileEntity()-method returns null
 +        return block != Blocks.ENDER_CHEST && block != Blocks.ENCHANTING_TABLE && block != Blocks.END_GATEWAY
 +                       && block != Blocks.END_PORTAL && block != Blocks.SPAWNER && block != Blocks.MOVING_PISTON;
 +    }
  
      private boolean doMove(World worldIn, BlockPos pos, EnumFacing direction, boolean extending)
      {
-@@ -371,6 +391,23 @@
+@@ -371,6 +393,24 @@
                  --k;
                  aiblockstate[k] = iblockstate;
              }
 +    
 +            List<TileEntity> list1_TileEntities = Lists.<TileEntity>newArrayList();
++            // [CM] Movable TE's CARPET-DeadlyMC
 +            if(CarpetSettings.b_movableTileEntities)
 +            {
 +                for (int i = 0; i < list.size(); ++i)
@@ -75,12 +78,13 @@
  
              for (int l = list.size() - 1; l >= 0; --l)
              {
-@@ -379,7 +416,18 @@
+@@ -379,7 +419,19 @@
                  blockpos3 = blockpos3.offset(enumfacing);
                  set.remove(blockpos3);
                  worldIn.setBlockState(blockpos3, Blocks.MOVING_PISTON.getDefaultState().with(FACING, direction), 68);
 -                worldIn.setTileEntity(blockpos3, BlockPistonMoving.createTilePiston(list1.get(l), direction, extending, false));
-+                
++    
++                // [CM] Movable TE's CARPET-DeadlyMC
 +                if (!CarpetSettings.b_movableTileEntities)
 +                {
 +                    worldIn.setTileEntity(blockpos3, BlockPistonMoving.createTilePiston(list1.get(l), direction, extending, false));
