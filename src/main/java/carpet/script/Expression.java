@@ -623,9 +623,9 @@ public class Expression implements Cloneable
             }
             return (cc, tt) -> new FunctionSignatureValue(name, args, globals);
         });
-        addLazyFunction("global", 1, (c, t, lv) -> {
+        addLazyFunction("outer", 1, (c, t, lv) -> {
             if (t != Context.LOCALIZATION)
-                throw new InternalExpressionException("global scoping of variables is only possible in function signatures");
+                throw new InternalExpressionException("outer scoping of variables is only possible in function signatures");
             return (cc, tt) -> new GlobalValue(lv.get(0).evalValue(c));
         });
 
