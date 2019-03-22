@@ -118,6 +118,11 @@ public class Expression implements Cloneable
 
     private String name;
     String getName() {return name;}
+    Expression withName(String alias)
+    {
+        name = alias;
+        return this;
+    }
 
     /** Cached AST (Abstract Syntax Tree) (root) of the expression */
     private LazyValue ast = null;
@@ -532,7 +537,15 @@ public class Expression implements Cloneable
 
                 for (String global : globals)
                 {
-                    newFrame.setVariable(global, c.getVariable(global));
+                    LazyValue  lv = c.getVariable(global);
+                    if (lv == null)
+                    {
+                        newFrame.setVariable(global, (cc, tt) -> Value.ZERO.reboundedTo(global));
+                    }
+                    else
+                    {
+                        newFrame.setVariable(global, lv);
+                    }
                 }
                 for (int i=0; i<arguments.size(); i++)
                 {
@@ -556,6 +569,14 @@ public class Expression implements Cloneable
                 catch (ArithmeticException exc)
                 {
                     throw new ExpressionException(e, t, "Your math is wrong, "+exc.getMessage());
+                }
+                for (String global: globals)
+                {
+                    LazyValue lv = newFrame.getVariable(global);
+                    if (lv != null)
+                    {
+                        c.setVariable(global, lv);
+                    }
                 }
 
                 Value otherRetVal = retVal;
@@ -1306,6 +1327,7 @@ public class Expression implements Cloneable
      */
     public void SystemFunctions()
     {
+        addUnaryFunction("length", v -> new NumericValue(v.length()));
         addLazyFunction("rand", 1, (c, t, lv) -> {
             Value argument = lv.get(0).evalValue(c);
             if (argument instanceof ListValue)
@@ -1465,17 +1487,28 @@ public class Expression implements Cloneable
      * have problems with them</p>
      *
      * <h2>Functions and scoping</h2>
+     * <p>
      * Users can define functions in the form <code>fun(args....) -&gt; expression </code> and they are compiled and saved
      * for further execution in this but also subsequent calls of /script command. This means that once defined functions
-     * are saved with the world for futher use. The variables are all global, so any variable in ay function that has
-     * the same name refers to the same variable everywhere in the code. What doesn't have global access are function
-     * arguments, which are localized for each function call. In case the function may want to use some other variables
-     * with local scope that should mask the global variable of the same name, they can be added to the function signature
-     * wrapped around the <code>local</code> function, which would make them local for the function call, but not be
-     * expected as an argument.
-     * The details of functions and scoping will be
-     * explained in the 'User Defined Functions and Control Flow' Section, but now we are briefly mentioning it for the
-     * sake of the following example.
+     * are saved with the world for further use. There are two types of variables,
+     * global - which are shared anywhere in the code, and those are all which name starts with 'global_', and
+     * local variables which is everything else and those are only visible inside each function.
+     * This also means that all the parameters in functions are passed 'by value', not 'by reference'.
+     * </p>
+     * <pre>
+     *
+     * </pre>
+     *
+     * <h2>Outer variables</h2>
+     * <p>Functions can still 'borrow' variables from the outer scope,
+     * by adding them to the function signature wrapped around built-in function <code>outer</code>. What this does is
+     * it borrows the reference to that variable from the outer scope to be used inside the function and any modifications to that outer
+     * variable would result in changes of that value in the outer scope as well. Its like passing the parameters by reference,
+     * except the calling function itself decides what variables its borrowing and what its name. This can be used to
+     * return more than one result from a function call, although its a very ugly way of doing it -
+     * I would still recommend returning a list of values instead.
+     * It has a similar role to play as <code>nonlocal</code> variables in python for example. </p>
+     *
      *
      * <h2>Line indicators</h2>
      * <p>Since the maximum command that can be input to the chat is limited in length, you will be probably inserting your
@@ -1492,20 +1525,27 @@ public class Expression implements Cloneable
      * <pre>
      * /script run
      * run_program() -&gt; (
-     *   foo = 10;
-     *   bar = 10;
      *   loop( 10,
-     *     bar_up(bar);
-     *     print('bar: '+bar+', foo inv: '+ _/(foo) )
+     *     foo = floor(rand(10));
+     *     check_not_zero(foo);
+     *     print(_+' - foo: '+foo);
+     *     print('  reciprocal: '+  _/foo )
      *   )
      * );
      *
-     * bar_up(bar) -&gt; (
-     *   foo = floor(rand(9));
-     *   if (foo, bar += 1)
+     * check_not_zero(foo) -&gt; (
+     *   if (foo==0, foo = 1)
      * )
+     *
+     * /script run run_program() -> ( loop( 10, foo = floor(rand(10)); check_not_zero(foo); print(_+' - foo: '+foo);    print('  reciprocal: '+  _/foo )  ) ); check_not_zero(foo) -> (  if (foo==0, foo = 1) )
+     *
+     *
      * </pre>
-     * <p>Lets say the intention was to pass bar and increase its value in a random fashion. Since arguments are passed as copies
+     * <p>Lets say that the intention was to check if the bar is zero and prevent division by zero in print,
+     * but because the <code>foo</code> is passed as a variable, it never changes the original foo value.
+     * The error message that is displayed when that happens is
+     *
+     *     Lets say the intention was to pass bar and increase its value in a random fashion. Since arguments are passed as copies
      * this won't actually change the <code>bar</code> value, just modify a local copy in <code>bar_up</code>, which would be lost once the function
      * returns, and original <code>bar</code> would remain unchanged. What does happen is that <code>foo</code>
      * appears in both functions and refer to the same global variable, so it is possible that <code>foo</code> could be changed to 0 in <code>bar_up</code>
@@ -1604,7 +1644,7 @@ public class Expression implements Cloneable
      */
     public Expression(String expression)
     {
-        this.name = null;
+        this.name = "main";
         expression = expression.trim().replaceAll(";+$", "");
         this.expression = expression.replaceAll("\\$", "\n");
         Constants();

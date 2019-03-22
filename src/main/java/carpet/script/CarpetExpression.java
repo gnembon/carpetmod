@@ -1064,7 +1064,7 @@ public class CarpetExpression
         try
         {
             Vec3d pos = source.getPos();
-            Expression expr = new Expression(call+"("+String.join(" , ",argv)+" ) ");
+            Expression expr = new Expression(call+"("+String.join(" , ",argv)+" ) ").withName(call);
             Context context = new CarpetContext(expr, source, BlockPos.ORIGIN).
                     with("x", (c, t) -> new NumericValue(Math.round(pos.x)).bindTo("x")).
                     with("y", (c, t) -> new NumericValue(Math.round(pos.y)).bindTo("y")).
