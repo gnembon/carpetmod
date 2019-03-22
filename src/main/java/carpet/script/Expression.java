@@ -130,9 +130,18 @@ public class Expression implements Cloneable
 
     static final Map<String, UserDefinedFunction> globalFunctions = new HashMap<>();
 
-    static final Map<String, LazyValue> globalVariables = new HashMap<>();
+    static final Map<String, LazyValue> globalVariables = new HashMap<String, LazyValue>() {{
+        put("euler", (c, t) -> euler);
+        put("pi", (c, t) -> PI);
+        put("null", (c, t) -> Value.NULL);
+        put("true", (c, t) -> Value.TRUE);
+        put("false", (c, t) -> Value.FALSE);
 
-    final Map<String, LazyValue> defaultVariables = new HashMap<>();
+        //special variables for second order functions so we don't need to check them all the time
+        put("_", (c, t) -> new NumericValue(0).bindTo("_"));
+        put("_i", (c, t) -> new NumericValue(0).bindTo("_i"));
+        put("_a", (c, t) -> new NumericValue(0).bindTo("_a"));
+    }};
 
     /* should the evaluator output value of each ;'s statement during execution */
     private Consumer<String> logOutput = null;
@@ -491,7 +500,7 @@ public class Expression implements Cloneable
             }
         });
     }
-    private void addContextFunction(String name, Expression expr, Tokenizer.Token token, List<String> arguments, List<String> locals, LazyValue code)
+    private void addContextFunction(String name, Expression expr, Tokenizer.Token token, List<String> arguments, List<String> globals, LazyValue code)
     {
         name = name.toLowerCase(Locale.ROOT);
         if (functions.containsKey(name))
@@ -519,26 +528,22 @@ public class Expression implements Cloneable
                             ". Should be "+arguments.size()+", not "+lazyParams.size()+" like "+arguments
                     );
                 }
+                Context newFrame = c.recreateFor(e);
 
-                Map<String, LazyValue> context = new HashMap<>();
-                //saving context and placing args
-                for (String local : locals)
+                for (String global : globals)
                 {
-                    context.put(local, c.getVariable(local));
-                    c.delVariable(local);
+                    newFrame.setVariable(global, c.getVariable(global));
                 }
                 for (int i=0; i<arguments.size(); i++)
                 {
                     String arg = arguments.get(i);
-                    context.put(arg, c.getVariable(arg));
                     Value val = lazyParams.get(i).evalValue(c);
-                    c.setVariable(arg, (cc, tt) -> val.bindTo(arg));
-                    //c.setVariable(arg, lazyParams.get(i) ) overflows stack
+                    newFrame.setVariable(arg, (cc, tt) -> val.reboundedTo(arg)); // bindTo or reboundTo
                 }
                 Value retVal;
                 try
                 {
-                    retVal = code.evalValue(c, type); // todo not sure if we need to propagete type / consider boolean context in defined functions - answer seems ye
+                    retVal = code.evalValue(newFrame, type); // todo not sure if we need to propagete type / consider boolean context in defined functions - answer seems ye
                 }
                 catch (ReturnStatement returnStatement)
                 {
@@ -554,18 +559,6 @@ public class Expression implements Cloneable
                 }
 
                 Value otherRetVal = retVal;
-                //restoring context
-                for (Map.Entry<String, LazyValue> entry : context.entrySet())
-                {
-                    if (entry.getValue() == null)
-                    {
-                        c.delVariable(entry.getKey());
-                    }
-                    else
-                    {
-                        c.setVariable(entry.getKey(), entry.getValue());
-                    }
-                }
                 return (cc, tt) -> otherRetVal;
             }
         });
@@ -579,16 +572,7 @@ public class Expression implements Cloneable
 
     public void Constants() // public just to get the Javadocs right
     {
-        defaultVariables.put("euler", (c, t) -> euler);
-        defaultVariables.put("pi", (c, t) -> PI);
-        defaultVariables.put("null", (c, t) -> Value.NULL);
-        defaultVariables.put("true", (c, t) -> Value.TRUE);
-        defaultVariables.put("false", (c, t) -> Value.FALSE);
-
-        //special variables for second order functions so we don't need to check them all the time
-        defaultVariables.put("_", (c, t) -> new NumericValue(0).bindTo("_"));
-        defaultVariables.put("_i", (c, t) -> new NumericValue(0).bindTo("_i"));
-        defaultVariables.put("_a", (c, t) -> new NumericValue(0).bindTo("_a"));
+        // all declared as global variables to save on switching scope cost
     }
 
     /**
@@ -620,7 +604,7 @@ public class Expression implements Cloneable
 
             // gimme signature
             List<String> args = new ArrayList<>();
-            List<String> locals = new ArrayList<>();
+            List<String> globals = new ArrayList<>();
             for (int i = 0; i < lv.size() - 1; i++)
             {
                 Value v = lv.get(i).evalValue(c, Context.LOCALIZATION);
@@ -628,21 +612,21 @@ public class Expression implements Cloneable
                 {
                     throw new InternalExpressionException("Only variables can be used in function signature, not  " + v.getString());
                 }
-                if (v instanceof LocalValue)
+                if (v instanceof GlobalValue)
                 {
-                    locals.add(v.boundVariable);
+                    globals.add(v.boundVariable);
                 }
                 else
                 {
                     args.add(v.boundVariable);
                 }
             }
-            return (cc, tt) -> new FunctionSignatureValue(name, args, locals);
+            return (cc, tt) -> new FunctionSignatureValue(name, args, globals);
         });
-        addLazyFunction("local", 1, (c, t, lv) -> {
+        addLazyFunction("outer", 1, (c, t, lv) -> {
             if (t != Context.LOCALIZATION)
-                throw new InternalExpressionException("local scoping of variables is only possible in function signatures");
-            return (cc, tt) -> new LocalValue(lv.get(0).evalValue(c));
+                throw new InternalExpressionException("outer scoping of variables is only possible in function signatures");
+            return (cc, tt) -> new GlobalValue(lv.get(0).evalValue(c));
         });
 
         addLazyBinaryOperator(";",precedence.get("nextop;"), true, (c, t, lv1, lv2) ->
@@ -660,7 +644,7 @@ public class Expression implements Cloneable
             if (v1 instanceof FunctionSignatureValue)
             {
                 FunctionSignatureValue sign = (FunctionSignatureValue) v1;
-                addContextFunction(sign.getName(), e, t, sign.getArgs(), sign.getLocals(), lv2);
+                addContextFunction(sign.getName(), e, t, sign.getArgs(), sign.getGlobals(), lv2);
             }
             else
             {
@@ -1610,10 +1594,10 @@ public class Expression implements Cloneable
      * </pre>
      *
      * <p>Variable scoping is little different than in other programming languages like python that use
-     * local scoping for all variables, and can reuse variables from global scope with keyword <code>global</code>.
-     * In <code>Scarpet</code>,
-     * because its usecase would rather be to do with simpler scripts, default scope for all variables is global, unless variable
-     * is declared with <code>local</code> built-in function.
+     * local scoping for all variables declared in a subroutine, and can reuse variables from global scope
+     * with keyword <code>global</code>.
+     * The main usecase of <code>Scarpet</code> would rather be simpler scripts, default scope for all variables is global, unless variable
+     * is declared with <code>local</code> scope explicitly.
      * </p>
      *
      * @param expression .

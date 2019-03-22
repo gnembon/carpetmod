@@ -80,6 +80,13 @@ public class CarpetExpression
             s = source;
             this.origin = origin;
         }
+
+        @Override
+        public Context recreateFor(Expression e)
+        {
+            return new CarpetContext(e, this.s, this.origin);
+        }
+
     }
 
 
@@ -978,16 +985,17 @@ public class CarpetExpression
      * @param source source
      * @param origin origin
      */
+    static
+    {
+        Expression.globalVariables.put("_x", (c, t) -> new NumericValue(0).bindTo("_x"));
+        Expression.globalVariables.put("_y", (c, t) -> new NumericValue(0).bindTo("_y"));
+        Expression.globalVariables.put("_z", (c, t) -> new NumericValue(0).bindTo("_z"));
+    }
     public CarpetExpression(String expression, CommandSource source, BlockPos origin)
     {
         this.origin = origin;
         this.source = source;
         this.expr = new Expression(expression);
-
-        // just so we don't need to check later for existence of these vars on any execution level
-        this.expr.defaultVariables.put("_x", (c, t) -> new NumericValue(origin.getX()).bindTo("_x"));
-        this.expr.defaultVariables.put("_y", (c, t) -> new NumericValue(origin.getY()).bindTo("_y"));
-        this.expr.defaultVariables.put("_z", (c, t) -> new NumericValue(origin.getZ()).bindTo("_z"));
 
         BlockManipulation();
         EntityManipulation();
