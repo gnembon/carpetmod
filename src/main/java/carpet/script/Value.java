@@ -124,4 +124,8 @@ public abstract class Value implements Comparable<Value>, Cloneable
         boolean matches = m.find();
         return matches?Value.TRUE:Value.FALSE;
     }
+    public int length()
+    {
+        return getString().length();
+    }
 }

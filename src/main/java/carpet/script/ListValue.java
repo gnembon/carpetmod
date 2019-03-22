@@ -105,4 +105,8 @@ public class ListValue extends Value
             super(list);
         }
     }
+    public int length()
+    {
+        return items.size();
+    }
 }

@@ -116,6 +116,12 @@ public class NumericValue extends Value
         this(boolval?1.0D:0.0D);
     }
 
+    @Override
+    public int length()
+    {
+        return Integer.toString(value.intValue()).length();
+    }
+
     //public BigDecimal getNumber()
     //{
     //    return value;

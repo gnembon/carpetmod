@@ -22,5 +22,4 @@ public class NullValue extends NumericValue
     }
     private NullValue() {super(0.0D);}
     public static NullValue getInstance() {return singleton;}
-
 }
