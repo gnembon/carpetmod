@@ -21,7 +21,7 @@ public class NumericValue extends Value
         }
         catch (NumberFormatException exc)
         {
-            throw new ArithmeticException("Incorrect number format for "+value+": "+exc.getMessage());
+            throw new ArithmeticException("Incorrect number format for "+value);
         }
     }
 
@@ -122,6 +122,17 @@ public class NumericValue extends Value
         return Integer.toString(value.intValue()).length();
     }
 
+    @Override
+    public double readNumber()
+    {
+        return value;
+    }
+
+    @Override
+    public long readInteger()
+    {
+        return getLong();
+    }
     //public BigDecimal getNumber()
     //{
     //    return value;

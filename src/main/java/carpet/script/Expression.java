@@ -2,8 +2,10 @@ package carpet.script;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.IllegalFormatException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
@@ -13,6 +15,9 @@ import java.util.Stack;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static java.lang.Math.abs;
 import static java.lang.Math.max;
@@ -111,6 +116,9 @@ public class Expression implements Cloneable
 
     private static final Value euler = new NumericValue(
             "2.71828182845904523536028747135266249775724709369995957496696762772407663");
+
+    // %[argument_index$][flags][width][.precision][t]conversion
+    private static Pattern formatPattern = Pattern.compile("%(\\d+\\$)?([-#+ 0,(\\<]*)?(\\d+)?(\\.\\d+)?([tT])?([a-zA-Z%])");
 
     /** The current infix expression */
     private String expression;
@@ -564,11 +572,11 @@ public class Expression implements Cloneable
                 }
                 catch (InternalExpressionException exc)
                 {
-                    throw new ExpressionException(e, t, exc.getMessage());
+                    throw new ExpressionException(function_context, t, exc.getMessage());
                 }
                 catch (ArithmeticException exc)
                 {
-                    throw new ExpressionException(e, t, "Your math is wrong, "+exc.getMessage());
+                    throw new ExpressionException(function_context, t, "Your math is wrong, "+exc.getMessage());
                 }
                 for (String global: globals)
                 {
@@ -977,6 +985,13 @@ public class Expression implements Cloneable
      */
     public void ListsLoopsAndHigherOrderFunctions()
     {
+        addFunction("l", lv ->
+        {
+            if (lv.size() == 1 && lv.get(0) instanceof LazyListValue)
+                return ListValue.wrap(((LazyListValue) lv.get(0)).unroll());
+            return new ListValue.ListConstructorValue(lv);
+        });
+
         addFunction("sort", (lv) ->
         {
             List<Value> toSort = lv;
@@ -987,6 +1002,45 @@ public class Expression implements Cloneable
             Collections.sort(toSort);
             return ListValue.wrap(toSort);
         });
+
+        addFunction("join", (lv) ->
+        {
+            if (lv.size() < 2)
+                throw new InternalExpressionException("join takes at least 2 arguments");
+            String delimiter = lv.get(0).getString();
+            List<Value> toJoin;
+            if (lv.size()==2 && lv.get(1) instanceof LazyListValue)
+            {
+                toJoin = ((LazyListValue) lv.get(1)).unroll();
+
+            }
+            else if (lv.size() == 2 && lv.get(1) instanceof ListValue)
+            {
+                toJoin = new ArrayList<>(((ListValue)lv.get(1)).getItems());
+            }
+            else
+            {
+                toJoin = lv.subList(1,lv.size());
+            }
+            return new StringValue(toJoin.stream().map(Value::getString).collect(Collectors.joining(delimiter)));
+        });
+        addBinaryFunction("split", (d, v) -> {
+            String delimiter = d.getString();
+            String hwat = v.getString();
+            return ListValue.wrap(Arrays.stream(hwat.split(delimiter)).map(StringValue::new).collect(Collectors.toList()));
+        });
+        addFunction("slice", (lv) -> {
+
+            if (lv.size() != 2 && lv.size() != 3)
+                throw new InternalExpressionException("sub takes 2 or 3 arguments");
+            Value hwat = lv.get(0);
+            long from = getNumericValue(lv.get(1)).getLong();
+            long to = -1;
+            if (lv.size()== 3)
+                to = getNumericValue(lv.get(2)).getLong();
+            return hwat.slice(from, to);
+        });
+
 
         addLazyFunction("sort_key", 2, (c, t, lv) ->
         {
@@ -1011,7 +1065,7 @@ public class Expression implements Cloneable
             return (cc, tt) -> ListValue.wrap(toSort);
         });
 
-        addFunction("l", ListValue.ListConstructorValue::new);
+
 
         addUnaryFunction("range", (v) -> LazyListValue.range(getNumericValue(v).getLong()));
 
@@ -1327,6 +1381,86 @@ public class Expression implements Cloneable
      */
     public void SystemFunctions()
     {
+        addUnaryFunction("bool", v -> new NumericValue(v.getBoolean()));
+        addUnaryFunction("number", v -> {
+            if (v instanceof NumericValue)
+                return v;
+            return new NumericValue(v.readNumber());
+        });
+        addFunction("str", lv ->
+        {
+            if (lv.size() == 0)
+                throw new InternalExpressionException("str requires at least one argument");
+            String format = lv.get(0).getString();
+            if (lv.size() == 1)
+                return new StringValue(format);
+            List<Object> args = new ArrayList<>();
+            Matcher m = formatPattern.matcher(format);
+            int argIndex = 1;
+            for (int i = 0, len = format.length(); i < len; ) {
+                if (m.find(i)) {
+                    // Anything between the start of the string and the beginning
+                    // of the format specifier is either fixed text or contains
+                    // an invalid format string.
+                    // [[scarpet]] but we skip it and let the String.format fail
+                    char fmt = m.group(6).toLowerCase().charAt(0);
+                    if (fmt == 's')
+                    {
+                        if (argIndex >= lv.size())
+                            throw new InternalExpressionException("Not enough arguments for "+m.group(0));
+                        args.add(lv.get(argIndex).getString());
+                        argIndex++;
+                    }
+                    else if (fmt == 'd' || fmt == 'o' || fmt == 'x')
+                    {
+                        if (argIndex >= lv.size())
+                            throw new InternalExpressionException("Not enough arguments for "+m.group(0));
+                        args.add(lv.get(argIndex).readInteger());
+                        argIndex++;
+                    }
+                    else if (fmt == 'a' || fmt == 'e' || fmt == 'f' || fmt == 'g')
+                    {
+                        if (argIndex >= lv.size())
+                            throw new InternalExpressionException("Not enough arguments for "+m.group(0));
+                        args.add(lv.get(argIndex).readNumber());
+                        argIndex++;
+                    }
+                    else if (fmt == 'b')
+                    {
+                        if (argIndex >= lv.size())
+                            throw new InternalExpressionException("Not enough arguments for "+m.group(0));
+                        args.add(lv.get(argIndex).getBoolean());
+                        argIndex++;
+                    }
+                    else if (fmt == '%')
+                    {
+                        //skip /%%
+                        ;
+                    }
+                    else
+                    {
+                        throw new InternalExpressionException("format not supported: "+m.group(6));
+                    }
+
+                    i = m.end();
+                } else {
+                    // No more valid format specifiers.  Check for possible invalid
+                    // format specifiers.
+                    // [[scarpet]] but we skip it and let the String.format fail
+                    break;
+                }
+            }
+            try
+            {
+                return new StringValue(String.format(format, args.toArray()));
+            }
+            catch (IllegalFormatException ife)
+            {
+                throw new InternalExpressionException("Illegal string format: "+ife.getMessage());
+            }
+        });
+
+
         addUnaryFunction("length", v -> new NumericValue(v.length()));
         addLazyFunction("rand", 1, (c, t, lv) -> {
             Value argument = lv.get(0).evalValue(c);
@@ -1430,12 +1564,14 @@ public class Expression implements Cloneable
      * Writing a program, is like writing a <code>2+3</code>, just a bit longer</p>
      *
      * <h2>Basic language components</h2>
-     * <p>Programs consist of constants, like <code>2</code>, <code>3,14</code>, <code>pi</code>, or <code>'foo'</code>,
+     * <p>Programs consist of constants, like <code>2</code>, <code>3.14</code>, <code>pi</code>, or <code>'foo'</code>,
      * operators like <code>+</code>, <code>/</code>, <code>-&gt;</code>, variables which you can define, like <code>foo</code>
-     * or special ones that will be defined for you, like <code>x</code>, or <code>_</code> , which I specific to
+     * or special ones that will be defined for you, like <code>_x</code>, or <code>_</code> , which I specific to
      * a each built in function, and functions with name, and arguments in the form of <code>f(a,b,c)</code>, where
      * <code>f</code> is the function name, and <code>a, b, c</code> are the arguments which can be any other expression.
      * And that's all the parts of the language, so all in all - sounds quite simple.</p>
+     *
+     * <h2>Strings</h2>
      *
      * <h2>Code flow</h2>
      * <p>
@@ -1507,7 +1643,7 @@ public class Expression implements Cloneable
      * except the calling function itself decides what variables its borrowing and what its name. This can be used to
      * return more than one result from a function call, although its a very ugly way of doing it -
      * I would still recommend returning a list of values instead.
-     * It has a similar role to play as <code>nonlocal</code> variables in python for example. </p>
+     * Variables from outer scopes have a similar behaviour to, for example, <code>nonlocal</code> variables from python. </p>
      *
      *
      * <h2>Line indicators</h2>
@@ -1532,110 +1668,85 @@ public class Expression implements Cloneable
      *     print('  reciprocal: '+  _/foo )
      *   )
      * );
-     *
      * check_not_zero(foo) -&gt; (
      *   if (foo==0, foo = 1)
      * )
-     *
-     * /script run run_program() -> ( loop( 10, foo = floor(rand(10)); check_not_zero(foo); print(_+' - foo: '+foo);    print('  reciprocal: '+  _/foo )  ) ); check_not_zero(foo) -> (  if (foo==0, foo = 1) )
-     *
-     *
      * </pre>
      * <p>Lets say that the intention was to check if the bar is zero and prevent division by zero in print,
      * but because the <code>foo</code> is passed as a variable, it never changes the original foo value.
-     * The error message that is displayed when that happens is
-     *
-     *     Lets say the intention was to pass bar and increase its value in a random fashion. Since arguments are passed as copies
-     * this won't actually change the <code>bar</code> value, just modify a local copy in <code>bar_up</code>, which would be lost once the function
-     * returns, and original <code>bar</code> would remain unchanged. What does happen is that <code>foo</code>
-     * appears in both functions and refer to the same global variable, so it is possible that <code>foo</code> could be changed to 0 in <code>bar_up</code>
-     * and break division in <code>run_program</code>. When this happens the following method is displayed to the player:
+     * Because of the inevitable division by zero, we get the following message:
      * </p>
-     *
      * <pre>
-     * Your math is wrong, Incorrect number format for NaN: Infinite or NaN at pos 72
-     * run_program() -&gt; (  foo = 10;  bar = 10;  loop( 10,    bar_up(bar);     HERE&gt;&gt; print('bar: '+bar+', foo inv: '+ _/(foo) )  ));bar_up(bar) -&gt; (  foo = floor(rand(9));  if (foo, bar += 1))
-     * = (705µs)
+     * Your math is wrong, Incorrect number format for Infinity at pos 112
+     * run_program() -&gt; (  loop( 10,    foo = floor(rand(10));    check_not_zero(foo);
+     * print(_+' - foo: '+foo);     HERE&gt;&gt; print('  reciprocal: '+  _/foo )  ));
+     * check_not_zero(foo) -&gt; (  if (foo==0, foo = 1))
      * </pre>
      *
-     * As we can see, we got our problem where the result of the mathematical operation was not a number (<code>NaN</code>, not a number), however since putting our program
-     * into the command made it squish the newlines so while it is clear where the error happened, the position of the error (72) is not really helpful.
-     * To combat this issue we can start every line of the script with dollar signs <code>$</code>:
+     * As we can see, we got our problem where the result of the mathematical operation was not a number (<code>Infinity</code>, so not a number),
+     * however by pasting our program
+     * into the command made it squish the newlines so while it is clear where the error happened and we still can track the error down,
+     * the position of the error (112) is not very helpful and wouldn't be useful if the program gets significantly longer.
+     * To combat this issue we can precede every line of the script with dollar signs <code>$</code>:
      * <pre>
      * /script run
      * $run_program() -&gt; (
-     * $  foo = 10;
-     * $  bar = 10;
      * $  loop( 10,
-     * $    bar_up(bar);
-     * $    print('bar: '+bar+', foo inv: '+ _/(foo) )
+     * $    foo = floor(rand(10));
+     * $    check_not_zero(foo);
+     * $    print(_+' - foo: '+foo);
+     * $    print('  reciprocal: '+  _/foo )
      * $  )
      * $);
-     * $
-     * $bar_up(bar) -&gt; (
-     * $  foo = floor(rand(9));
-     * $  if (foo, bar += 1)
+     * $check_not_zero(foo) -&gt; (
+     * $  if (foo==0, foo = 1)
      * $)
      * </pre>
      *
      * <p>Then we get the following error message</p>
      *
      * <pre>
-     * Your math is wrong, Incorrect number format for Infinity: Infinite or NaN at line 7, pos 5
-     *     bar_up(bar);
-     *      HERE&gt;&gt; print('bar: '+bar+', foo inv: '+ _/(foo) )
+     * Your math is wrong, Incorrect number format for Infinity at line 7, pos 5
+     *     print(_+' - foo: '+foo);
+     *      HERE>> print('  reciprocal: '+  _/foo )
      *   )
-     *
      * </pre>
+     *
      *
      * <p>As we can note not only we get much more concise snippet, but also information about the line
-     * number and position, so its way easier to locate the problem</p>
+     * number and position, so means its way easier to locate the potential problems problem</p>
      *
-     * <p>Obviously that's not the way we intended this program to work. Obviously the temporary variable foo is not needed
-     * in the other function we don't get any effect on bar, and to get it modified via global variable is very easy via
-     * <code>bar_up() -&gt; bar += 1</code>, but if you would really insist in changing it by passing a parameter,
-     * and have to reuse the <code>foo</code> variable, you can use <code>local</code> function which can only be used in
-     * function signatures to indicate variables that are not arguments, but still you would want to use locally without affecting
-     * other uses of foo in your program.
+     * <p>Obviously that's not the way we intended this program to work. To get it <code>foo</code> modified via
+     * a function call, we would either return it as a result and assign it to the new variable:
+     * </p>
+     * <pre>
+     *     foo = check_not_zero(foo);
+     *     ...
+     *     check_not_zero(foo) -> if(foo == 0, 1, foo)
+     * </pre>
+     * <p>.. or convert it to a global variable, which in this case passing as an argument is not required</p>
+     * <pre>
+     *     global_foo = floor(rand(10));
+     *     check_foo_not_zero();
+     *     ...
+     *     check_foo_not_zero() -> if(global_foo == 0, global_foo = 1)
+     * </pre>
+     * <p>.. or scope foo from the outer function - in this case the inner function has to determine what it is accessing</p>
+     * <pre>
+     *     foo = floor(rand(10));
+     *     check_foo_not_zero();
+     *     ...
+     *     check_foo_not_zero(outer(foo)) -> if(foo == 0, foo = 1)
+     * </pre>
+     *
+     *<p><code>outer</code> scope can only be used in
+     * function signatures to indicate outer variables. They are not arguments, but still you would want to use
+     * locally without affecting other uses of foo in your program.
      * </p>
      *
-     * <pre>
-     * /script run
-     * $run_program() -&gt; (
-     * $  foo = 10;
-     * $  bar = 10;
-     * $  loop( 10,
-     * $    bar = increase(bar);
-     * $    print('bar: '+bar+', foo inv: '+ _/(foo) )
-     * $  )
-     * $);
-     * $increase(bar, local(foo)) -&gt; (
-     * $  foo = floor(rand(9));
-     * $  if (foo, bar += 1);
-     * $  bar
-     * $)
-     * </pre>
      *
-     * <p>In this case both <code>bar</code> and <code>foo</code> in <code>increase</code> refer to local copy
-     * inside the function, so they don't affect the variables in <code>run_program</code>, giving the intended result:</p>
      *
-     * <pre>
-     * bar: 11, foo inv: 0
-     * bar: 12, foo inv: 0.1
-     * bar: 13, foo inv: 0.2
-     * bar: 14, foo inv: 0.3
-     * bar: 15, foo inv: 0.4
-     * bar: 15, foo inv: 0.5
-     * bar: 16, foo inv: 0.6
-     * bar: 17, foo inv: 0.7
-     * bar: 17, foo inv: 0.8
-     * bar: 18, foo inv: 0.9
-     * = bar: 18, foo inv: 0.9 (1319µs)
-     * </pre>
-     *
-     * <p>Variable scoping is little different than in other programming languages like python that use
-     * local scoping for all variables declared in a subroutine, and can reuse variables from global scope
-     * with keyword <code>global</code>.
+     * <p>For the most part - passing arguments as values, and using returned values   .
      * The main usecase of <code>Scarpet</code> would rather be simpler scripts, default scope for all variables is global, unless variable
      * is declared with <code>local</code> scope explicitly.
      * </p>
@@ -1644,7 +1755,6 @@ public class Expression implements Cloneable
      */
     public Expression(String expression)
     {
-        this.name = "main";
         expression = expression.trim().replaceAll(";+$", "");
         this.expression = expression.replaceAll("\\$", "\n");
         Constants();

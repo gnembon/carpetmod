@@ -22,4 +22,15 @@ public class NullValue extends NumericValue
     }
     private NullValue() {super(0.0D);}
     public static NullValue getInstance() {return singleton;}
+    @Override
+    public boolean equals(final Value o)
+    {
+        return this == o;
+    }
+
+    @Override
+    public int compareTo(Value o)
+    {
+        return this == o ? 0 : -1;
+    }
 }

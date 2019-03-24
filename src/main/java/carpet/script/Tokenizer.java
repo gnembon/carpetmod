@@ -201,6 +201,7 @@ public class Tokenizer implements Iterator<Tokenizer.Token>
         {
             String greedyMatch = "";
             int initialPos = pos;
+            int initialLinePos = linepos;
             ch = input.charAt(pos);
             int validOperatorSeenUntil = -1;
             while (!Character.isLetter(ch) && !Character.isDigit(ch) && "_".indexOf(ch) < 0
@@ -220,6 +221,7 @@ public class Tokenizer implements Iterator<Tokenizer.Token>
             {
                 token.append(input.substring(initialPos, validOperatorSeenUntil));
                 pos = validOperatorSeenUntil;
+                linepos = initialLinePos+validOperatorSeenUntil-initialPos;
             }
             else
             {

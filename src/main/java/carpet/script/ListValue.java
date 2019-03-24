@@ -109,4 +109,39 @@ public class ListValue extends Value
     {
         return items.size();
     }
+
+    @Override
+    public Value in(Value value1)
+    {
+        for (int i = 0; i < items.size(); i++)
+        {
+            Value v = items.get(i);
+            if (v.equals(value1))
+            {
+                return new NumericValue(i);
+            }
+        }
+        return Value.NULL;
+    }
+
+    @Override
+    public Value slice(long from, long to)
+    {
+        List<Value> items = getItems();
+        int size = items.size();
+        if (to < 0 || to > size) to = size;
+        if (from < 0 || from > size) from = size;
+        if (from > to)
+            return ListValue.of();
+        return new ListValue(getItems().subList((int)from, (int) to));
+    }
+
+    @Override
+    public double readNumber()
+    {
+        return (double)items.size();
+    }
+
+
+
 }

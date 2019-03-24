@@ -121,11 +121,33 @@ public abstract class Value implements Comparable<Value>, Cloneable
     {
         final Pattern p = Pattern.compile(value1.getString());
         final Matcher m = p.matcher(this.getString());
-        boolean matches = m.find();
-        return matches?Value.TRUE:Value.FALSE;
+        return m.find()?new StringValue(m.group()):Value.NULL;
     }
     public int length()
     {
         return getString().length();
+    }
+
+    public Value slice(long from, long to)
+    {
+        String value = this.getString();
+        int size = value.length();
+        if (to > size) to = -1;
+        if (from < 0) from = 0;
+        if (from > size) from = size;
+        if (to>=0)
+            return new StringValue(value.substring((int)from, (int)to));
+        return new StringValue(value.substring((int)from));
+    }
+    public double readNumber()
+    {
+        String s = getString();
+        return Double.valueOf(s);
+    }
+
+
+    public long readInteger()
+    {
+        return (long)readNumber();
     }
 }
