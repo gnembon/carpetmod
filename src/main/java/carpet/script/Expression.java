@@ -1375,16 +1375,159 @@ public class Expression implements Cloneable
     }
 
     /**
+     * <div><div style="padding-left: 20px; border:1px solid black;">
+     * <hr>
      * <h1>System functions</h1>
-     * <p>Section Content</p>
-     * <p>Other Paragraph</p>
+     * <h2>Type conversion functions</h2>
+     * <h3><code>bool(expr)</code></h3>
+     * <p>Returns a boolean context of the expression. Note that there are no true/false values in
+     * scarpet. <code>true</code> is alias of 1, and <code>false</code> is 0</p>
+     * <pre>
+     * bool(pi) =&gt; 1
+     * bool(false) =&gt; 0
+     * bool('') =&gt; 0
+     * bool(l()) =&gt; 0
+     * bool(l('')) =&gt; 1
+     * bool('foo') =&gt; 1
+     * </pre>
+     *
+     * <h3><code>number(expr)</code></h3>
+     * <p>Returns a numeric context of the expression.
+     * Can be used to read numbers from strings</p>
+     * <pre>
+     * number(null) =&gt; null
+     * number(false) =&gt; 0
+     * number('') =&gt; null
+     * number('3.14') =&gt; 3.14
+     * number(l()) =&gt; 0
+     * number(l('')) =&gt; 1
+     * number('foo') =&gt; null
+     * number('3bar') =&gt; null
+     * number('2')+number('2') =&gt; 4
+     * </pre>
+     *
+     * <h3><code>str(expr, params? ... )</code></h3>
+     *
+     * <p>Returns a formatted string representing expression.
+     * Accepts formatting style accepted by <code>String.format</code>.
+     * Supported types (with <code>"%?"</code> syntax):</p>
+     * <ul>
+     *     <li>d, o, x: integers</li>
+     *     <li>a, e, f, g: floats</li>
+     *     <li>b: booleans</li>
+     *     <li>s: strings</li>
+     * </ul>
+     *
+     * <pre>
+     * str(null) =&gt; null
+     * str(false) =&gt; 0
+     * str('') =&gt; null
+     * str('3.14') =&gt; 3.14
+     * str(l()) =&gt; 0
+     * str(l('')) =&gt; 1
+     * str('foo') =&gt; null
+     * str('3bar') =&gt; null
+     * str(2)+str(2) =&gt; 22
+     * str('pi: %.2f',pi) =&gt; 3.14
+     * </pre>
+     *
+     * <h3><code>length(expr)</code></h3>
+     * <p>Returns length of the expression, the length of the string,
+     * the length of the integer part of the number, or length of the list</p>
+     * <pre>
+     * length(pi) =&gt; 1
+     * length(pi*pi) =&gt; 1
+     * length(pi^pi) =&gt; 2
+     * length(l()) =&gt; 0
+     * length(l(1,2,3)) =&gt; 3
+     * length('') =&gt; 0
+     * length('foo') =&gt; 3
+     * </pre>
+     *
+     * <h3><code>rand(expr)</code></h3>
+     * <p>returns a random number from <code>0.0</code>
+     * (inclusive) to <code>expr</code> (exclusive).
+     * In boolean context (in conditions, boolean functions, or <code>bool</code>), returns
+     * false if the randomly selected value is less than 0</p>
+     * <pre>
+     * map(range(10), floor(rand(10))) =&gt; [5, 8, 0, 6, 9, 3, 9, 9, 1, 8]
+     * map(range(10), bool(rand(2))) =&gt; [1, 1, 1, 0, 0, 1, 1, 0, 0, 0]
+     * map(range(10), str('%.1f',rand(_))) =&gt; [0.0, 0.4, 0.6, 1.9, 2.8, 3.8, 5.3, 2.2, 1.6, 5.6]
+     * </pre>
+     *
+     * <h3><code>print(expr)</code></h3>
+     * <p>prints the value of the expression to chat.
+     * Passes the result of the argument to the output unchanged, so <code>print</code>statements can
+     * be weaved in code to debug programming issues</p>
+     * <pre>
+     *     print('foo') =&gt; results in foo, prints: foo
+     *     a = 1; print(a = 5) =&gt; results in 5, prints: 5
+     *     a = 1; print(a) = 5 =&gt; results in 5, prints: 1
+     *     print('pi = '+pi) =&gt; prints: pi = 3.141592653589793
+     *     print(str('pi = %.2f',pi)) =&gt; prints: pi = 3.14
+     * </pre>
+     *
+     * <h3><code>sleep(expr)</code></h3>
+     * <p>Halts the execution of the program (and the game itself) for <code>expr</code> milliseconds.
+     * All in all, its better to use <code>tick(expr)</code> to let the game do its job while the program waits</p>
+     * <pre>sleep(50)</pre>
+     * <h3><code>time()</code></h3>
+     * <p>Returns the number of milliseconds since 'some point',
+     * like Java's <code>System.nanoTime()</code>. It returns a float, which has 1 microsecond precision
+     * (0.001 ms)</p>
+     * <pre>
+     *     start_time = time();
+     *     flip_my_world_upside_down();
+     *     print(str('this took %d milliseconds',time()-start_time))
+     * </pre>
+     * <h3><code>var(expr)</code></h3>
+     * <p>Returns the variable under the name of the string value of the expression. Allows to
+     * manipulate variables in more programmatic manner, which allows to use local variable set with a
+     * hash map type key-value access, can also be used with global variables</p>
+     * <pre>
+     *     a = 1; var('a') = 'foo'; a =&gt; a == 'foo'
+     * </pre>
+     *
+     * <h3><code>undef(expr)</code></h3>
+     * <p>Removes all bindings of a variable with a name of <code>expr</code>.
+     * Removes also all function definitions with that name</p>
+     * <pre>
+     *     inc(i) -&gt; i+1; foo = 5; inc(foo) =&gt; 6
+     *     inc(i) -&gt; i+1; foo = 5; undef('foo'); inc(foo) =&gt; 1
+     *     inc(i) -&gt; i+1; foo = 5; undef('inc'); undef('foo'); inc(foo) =&gt; Error: Function inc is not defined yet at pos 53
+     * </pre>
+     * <h3><code>vars(prefix)</code></h3>
+     * <p>It returns all names of variables from local scope (if prefix does not start with 'global')
+     * or global variables (otherwise).Here is a larger example that uses combination of <code>vars</code> and <code>var</code> functions to
+     * be used for object counting</p>
+     * <pre>
+     * /script run
+     * $ count_blocks(ent) -&gt; (
+     * $   l(cx, cy, cz) = query(ent, 'pos');
+     * $   scan(cx, cy, cz, 16, 16, 16, var('count_'+_) += 1);
+     * $   for ( sort_key( vars('count_'), -var(_)),
+     * $     print(str( '%s: %d', slice(_,6), var(_) ))
+     * $   )
+     * $ )
+     *
+     * /script run count_blocks(player())
+     * </pre>
+     *
+     *
+     * <hr>
+     * </div></div>
      */
     public void SystemFunctions()
     {
-        addUnaryFunction("bool", v -> new NumericValue(v.getBoolean()));
+        addLazyFunction("bool", 1, (c, t, lv) -> {
+            return (cc, tt) -> new NumericValue(lv.get(0).evalValue(c, Context.BOOLEAN).getBoolean());
+        });
         addUnaryFunction("number", v -> {
             if (v instanceof NumericValue)
                 return v;
+            double res = v.readNumber();
+            if (Double.isNaN(res))
+                return Value.NULL;
             return new NumericValue(v.readNumber());
         });
         addFunction("str", lv ->
@@ -1495,7 +1638,7 @@ public class Expression implements Cloneable
             return v; // pass through for variables
         });
         addLazyFunction("time", 0, (c, t, lv) ->
-                (cc, tt) -> new NumericValue(1.0*System.nanoTime()/1000));
+                (cc, tt) -> new NumericValue((System.nanoTime()/1000)/1000.0));
 
         addLazyFunction("var", 1, (c, t, lv) -> {
             String varname = lv.get(0).evalValue(c).getString();
@@ -1708,7 +1851,7 @@ public class Expression implements Cloneable
      * <pre>
      * Your math is wrong, Incorrect number format for Infinity at line 7, pos 5
      *     print(_+' - foo: '+foo);
-     *      HERE>> print('  reciprocal: '+  _/foo )
+     *      HERE&gt;&gt; print('  reciprocal: '+  _/foo )
      *   )
      * </pre>
      *
@@ -1722,21 +1865,21 @@ public class Expression implements Cloneable
      * <pre>
      *     foo = check_not_zero(foo);
      *     ...
-     *     check_not_zero(foo) -> if(foo == 0, 1, foo)
+     *     check_not_zero(foo) -&gt; if(foo == 0, 1, foo)
      * </pre>
      * <p>.. or convert it to a global variable, which in this case passing as an argument is not required</p>
      * <pre>
      *     global_foo = floor(rand(10));
      *     check_foo_not_zero();
      *     ...
-     *     check_foo_not_zero() -> if(global_foo == 0, global_foo = 1)
+     *     check_foo_not_zero() -&gt; if(global_foo == 0, global_foo = 1)
      * </pre>
      * <p>.. or scope foo from the outer function - in this case the inner function has to determine what it is accessing</p>
      * <pre>
      *     foo = floor(rand(10));
      *     check_foo_not_zero();
      *     ...
-     *     check_foo_not_zero(outer(foo)) -> if(foo == 0, foo = 1)
+     *     check_foo_not_zero(outer(foo)) -&gt; if(foo == 0, foo = 1)
      * </pre>
      *
      *<p><code>outer</code> scope can only be used in

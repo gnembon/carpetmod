@@ -142,7 +142,14 @@ public abstract class Value implements Comparable<Value>, Cloneable
     public double readNumber()
     {
         String s = getString();
-        return Double.valueOf(s);
+        try
+        {
+            return Double.valueOf(s);
+        }
+        catch (NumberFormatException e)
+        {
+            return Double.NaN;
+        }
     }
 
 

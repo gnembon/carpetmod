@@ -133,9 +133,5 @@ public class NumericValue extends Value
     {
         return getLong();
     }
-    //public BigDecimal getNumber()
-    //{
-    //    return value;
-    //}
 
 }
