@@ -1490,7 +1490,8 @@ public class Expression implements Cloneable
      *
      * <h3><code>undef(expr)</code></h3>
      * <p>Removes all bindings of a variable with a name of <code>expr</code>.
-     * Removes also all function definitions with that name</p>
+     * Removes also all function definitions with that name. It can affect global variable pool, and local variable set
+     * for a particular function which will become invalid ........, </p>
      * <pre>
      *     inc(i) -&gt; i+1; foo = 5; inc(foo) =&gt; 6
      *     inc(i) -&gt; i+1; foo = 5; undef('foo'); inc(foo) =&gt; 1
@@ -1498,7 +1499,8 @@ public class Expression implements Cloneable
      * </pre>
      * <h3><code>vars(prefix)</code></h3>
      * <p>It returns all names of variables from local scope (if prefix does not start with 'global')
-     * or global variables (otherwise).Here is a larger example that uses combination of <code>vars</code> and <code>var</code> functions to
+     * or global variables (otherwise).
+     * Here is a larger example that uses combination of <code>vars</code> and <code>var</code> functions to
      * be used for object counting</p>
      * <pre>
      * /script run
