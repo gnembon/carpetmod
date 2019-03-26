@@ -971,8 +971,82 @@ public class Expression implements Cloneable
 
     }
 
+
+
     /**
+     * <div style="padding-left: 20px; border-radius: 5px 45px; border:1px solid grey;">
+     *
      * <h1>Lists, loops, and higher order functions</h1>
+     * <p>Efficient use of these functions cangreatly simplify your programs and speed them up, as these functions
+     * will internalize  most of the operations that need to be applied on multiple values at the same time</p>
+     * <h2>Basic list operations</h2>
+     * <h3><code>l(values ...), l(iterator) </code></h3>
+     * <p>Creates a list of values of the expressions passed as parameters. It can be used as an L-value and if all
+     * elements are variables, you coujld use it to return multiple results from one function call, if that function returns
+     * a list of results with the same size as the <code>l</code> call uses. In case there is only one argument and it is
+     * an iterator (vanilla expression specification has <code>range</code>, but Minecraft API implements
+     * a bunch of them, like <code>diamond</code>), it will convert it to a proper list. Iterators can only be used in
+     * high order functions, and are treated as empty lists, unless unrolled with <code>l</code></p>
+     * <pre>
+     * l(1,2,'foo') =&gt; [1, 2, foo]
+     * l() =&gt; [] (empty list)
+     * l(range(10)) =&gt; [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+     * l(1, 2) = l(3, 4) =&gt; Error: l is not a variable
+     * l(foo, bar) = l(3,4); foo==3 && bar==4 =&gt; 1
+     * l(foo, bar, baz) = l(2, 4, 6); l(min(foo, bar), baz) = l(3, 5); l(foo, bar, baz)  =&gt; [3, 4, 5]
+     * </pre>
+     * <p>In the last example <code>l(min(foo, bar), baz)</code> creates a valid L-value, as min(foo, bar) finds the
+     * lower of the variables (in this case <code>foo</code>) creating a valid assignable L-list of [foo, baz], and these
+     * values will be assigned new values</p>
+     *
+     * <h3><code>join(delim, list), join(delim, values ...) </code></h3>
+     * <p>Returns a string that contains joined elements of the list, iterator, or all values, concatenated with <code>delim</code> delimiter</p>
+     * <pre>
+     *     join('-',range(10))  =&gt; 0-1-2-3-4-5-6-7-8-9
+     *     join('-','foo')  =&gt; foo
+     *     join('-', 'foo', 'bar')  =&gt; foo-bar
+     * </pre>
+     *
+     * <h3><code>split(delim, expr)</code></h3>
+     * <p>Splits a string undr <code>expr</code> by <code>delim</code> which can be a regular expression</p>
+     * <pre>
+     *     split('',foo)  =&gt; [f, o, o]
+     *     split('.','foo.bar')  =&gt; []
+     *     split('\\.','foo.bar')  =&gt; [foo, bar]
+     * </pre>
+     *
+     * <h3><code>slice(expr, from, to?)</code></h3>
+     * <p>extracts a substring, or sublist (based on the type of the result of the expression under expr with starting index
+     * of <code>from</code>, and ending at <code>to</code> if provided, or the end, if omitted</p>
+     * <pre>
+     *     split('',foo)  =&gt; [f, o, o]
+     *     split('.','foo.bar')  =&gt; []
+     *     split('\\.','foo.bar')  =&gt; [foo, bar]
+     * </pre>
+     *
+     *
+     *
+     * <h3><code>sort(list), sort(values ...) </code></h3>
+     * <p>Sorts in the default sortographical order either arguments, or a list if its the only argument. It returns a new
+     * sorted list, not </p>
+     * <pre></pre>
+     *
+     * <h3><code>sort_key(list, key_expr)</code></h3>
+     * <p></p>
+     * <pre></pre>
+     *
+     * <h3><code></code></h3>
+     * <p></p>
+     * <pre></pre>
+     *
+     *
+     * <h3><code></code></h3>
+     * <p></p>
+     * <pre></pre>
+     *
+     *
+    /**
+     * <h1></h1>
      *
      * <pre>
      * loop(num,expr(_),exit(_)?)-&gt;value (last)
@@ -992,16 +1066,7 @@ public class Expression implements Cloneable
             return new ListValue.ListConstructorValue(lv);
         });
 
-        addFunction("sort", (lv) ->
-        {
-            List<Value> toSort = lv;
-            if (lv.size()==1 && lv.get(0) instanceof ListValue)
-            {
-                toSort = new ArrayList<>(((ListValue)lv.get(0)).getItems());
-            }
-            Collections.sort(toSort);
-            return ListValue.wrap(toSort);
-        });
+
 
         addFunction("join", (lv) ->
         {
@@ -1041,8 +1106,18 @@ public class Expression implements Cloneable
             return hwat.slice(from, to);
         });
 
+        addFunction("sort", (lv) ->
+        {
+            List<Value> toSort = lv;
+            if (lv.size()==1 && lv.get(0) instanceof ListValue)
+            {
+                toSort = new ArrayList<>(((ListValue)lv.get(0)).getItems());
+            }
+            Collections.sort(toSort);
+            return ListValue.wrap(toSort);
+        });
 
-        addLazyFunction("sort_key", 2, (c, t, lv) ->
+        addLazyFunction("sort_key", 2, (c, t, lv) ->  //get working with iterators
         {
             Value v = lv.get(0).evalValue(c);
             if (!(v instanceof ListValue))
@@ -1375,8 +1450,8 @@ public class Expression implements Cloneable
     }
 
     /**
-     * <div><div style="padding-left: 20px; border:1px solid black;">
-     * <hr>
+     * <div style="padding-left: 20px; border-radius: 5px 45px; border:1px solid grey;">
+     *
      * <h1>System functions</h1>
      * <h2>Type conversion functions</h2>
      * <h3><code>bool(expr)</code></h3>
@@ -1431,6 +1506,9 @@ public class Expression implements Cloneable
      * str('pi: %.2f',pi) =&gt; 3.14
      * </pre>
      *
+     * <hr>
+     * <h2>Auxiliary functions</h2>
+     *
      * <h3><code>length(expr)</code></h3>
      * <p>Returns length of the expression, the length of the string,
      * the length of the integer part of the number, or length of the list</p>
@@ -1480,6 +1558,10 @@ public class Expression implements Cloneable
      *     flip_my_world_upside_down();
      *     print(str('this took %d milliseconds',time()-start_time))
      * </pre>
+     *
+     * <hr>
+     * <h2>Access to variables and stored functions</h2>
+     *
      * <h3><code>var(expr)</code></h3>
      * <p>Returns the variable under the name of the string value of the expression. Allows to
      * manipulate variables in more programmatic manner, which allows to use local variable set with a
@@ -1496,6 +1578,8 @@ public class Expression implements Cloneable
      *     inc(i) -&gt; i+1; foo = 5; inc(foo) =&gt; 6
      *     inc(i) -&gt; i+1; foo = 5; undef('foo'); inc(foo) =&gt; 1
      *     inc(i) -&gt; i+1; foo = 5; undef('inc'); undef('foo'); inc(foo) =&gt; Error: Function inc is not defined yet at pos 53
+     *     undef('pi')  =&gt; bad idea - removes hidden variable holding the pi value
+     *     undef('true')  =&gt; even worse idea, unbinds global true value, all references to true would now refer to the default 0
      * </pre>
      * <h3><code>vars(prefix)</code></h3>
      * <p>It returns all names of variables from local scope (if prefix does not start with 'global')
@@ -1515,9 +1599,7 @@ public class Expression implements Cloneable
      * /script run count_blocks(player())
      * </pre>
      *
-     *
-     * <hr>
-     * </div></div>
+     * </div>
      */
     public void SystemFunctions()
     {
