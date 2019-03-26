@@ -60,6 +60,8 @@ public class EntityValue extends Value
     {{
         put("all", new Pair<>(Entity.class, EntitySelectors.IS_ALIVE));
         put("items", new Pair<>(EntityItem.class, EntitySelectors.IS_ALIVE));
+        put("players", new Pair<>(Entity.class, (e) -> e instanceof EntityPlayer));
+        put("!players", new Pair<>(Entity.class, (e) -> !(e instanceof EntityPlayer) ));
     }};
     public Value get(String what, Value arg)
     {
