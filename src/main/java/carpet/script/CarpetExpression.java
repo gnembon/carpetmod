@@ -18,15 +18,19 @@ import net.minecraft.command.arguments.ParticleArgument;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.network.play.server.SPacketCustomSound;
 import net.minecraft.particles.IParticleData;
 import net.minecraft.pathfinding.PathType;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.state.IProperty;
 import net.minecraft.state.StateContainer;
 import net.minecraft.util.EntitySelectors;
+import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.SoundCategory;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.registry.IRegistry;
 import net.minecraft.world.EnumLightType;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
@@ -848,6 +852,33 @@ public class CarpetExpression
 
     public void AuxiliaryAspects()
     {
+        this.expr.addLazyFunction("sound", -1, (c, t, lv) -> {
+            CarpetContext cc = (CarpetContext)c;
+            BlockValue.VectorLocator locator = BlockValue.locateVec(cc, lv, 0);
+            ResourceLocation soundName = new ResourceLocation(lv.get(locator.offset).evalValue(c).getString());
+            if (!(IRegistry.field_212633_v.func_212607_c(soundName)))
+                throw new InternalExpressionException("No such sound: "+soundName.getPath());
+            float volume = 1.0F;
+            float pitch = 1.0F;
+            if (lv.size() > 1+locator.offset)
+            {
+                volume = (float)Expression.getNumericValue(lv.get(1+locator.offset).evalValue(c)).getDouble();
+                if (lv.size() > 2+locator.offset)
+                {
+                    pitch = (float)Expression.getNumericValue(lv.get(2+locator.offset).evalValue(c)).getDouble();
+                }
+            }
+            Vec3d vec = locator.vec;
+            double d0 = Math.pow(volume > 1.0F ? (double)(volume * 16.0F) : 16.0D, 2.0D);
+            int count = 0;
+            for (EntityPlayerMP player : cc.s.getWorld().getPlayers(EntityPlayerMP.class, (p) -> p.getDistanceSq(vec) < d0))
+            {
+                count++;
+                player.connection.sendPacket(new SPacketCustomSound(soundName, SoundCategory.PLAYERS, vec, volume, pitch));
+            }
+            int totalPlayed = count;
+            return (_c, _t) -> new NumericValue(totalPlayed);
+        });
         //particle(x,y,z,"particle",count?10, duration,bool all)
         this.expr.addLazyFunction("particle", -1, (c, t, lv) ->
         {
@@ -883,7 +914,7 @@ public class CarpetExpression
             }
             catch (CommandSyntaxException e)
             {
-                return (c_, t_) -> Value.NULL;
+                throw new InternalExpressionException("No such particle: "+particleName);
             }
             Vec3d vec = locator.vec;
             if (player == null)
