@@ -1137,7 +1137,7 @@ public class Expression implements Cloneable
      *     loop(5, tick())  =&gt; repeat tick 5 times
      *     list = l(); loop(5, x = _; loop(5, list += l(x, _) ) ); list
      *       // double loop, produces: [[0, 0], [0, 1], [0, 2], [0, 3], [0, 4], [1, 0], [1, 1], ... , [4, 2], [4, 3], [4, 4]]
-     *
+     *     check_prime(n) -> ( loop(floor(n/2), if(n % (_+2) == 0, return(false) ) ); true )
      *     loop(10000
      * </pre>
      *
