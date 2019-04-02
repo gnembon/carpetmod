@@ -244,6 +244,13 @@ public class Expression implements Cloneable
             super(value);
         }
     }
+    static class ThrowStatement extends ExitStatement
+    {
+        ThrowStatement(Value value)
+        {
+            super(value);
+        }
+    }
 
 
     static List<String> getExpressionSnippet(Tokenizer.Token token, String expr)
@@ -562,6 +569,7 @@ public class Expression implements Cloneable
                     newFrame.setVariable(arg, (cc, tt) -> val.reboundedTo(arg)); // bindTo or reboundTo
                 }
                 Value retVal;
+                boolean rethrow = false;
                 try
                 {
                     retVal = code.evalValue(newFrame, type); // todo not sure if we need to propagete type / consider boolean context in defined functions - answer seems ye
@@ -569,6 +577,11 @@ public class Expression implements Cloneable
                 catch (ReturnStatement returnStatement)
                 {
                     retVal = returnStatement.retval;
+                }
+                catch (ThrowStatement throwStatement)
+                {
+                    retVal = throwStatement.retval;
+                    rethrow = true;
                 }
                 catch (InternalExpressionException exc)
                 {
@@ -586,7 +599,10 @@ public class Expression implements Cloneable
                         c.setVariable(global, lv);
                     }
                 }
-
+                if (rethrow)
+                {
+                    throw new ThrowStatement(retVal);
+                }
                 Value otherRetVal = retVal;
                 return (cc, tt) -> otherRetVal;
             }
@@ -685,6 +701,42 @@ public class Expression implements Cloneable
 
         addUnaryFunction("exit", (v) -> { throw new ExitStatement(v); });
         addUnaryFunction("return", (v) -> { throw new ReturnStatement(v); });
+        addUnaryFunction("throw", (v)-> {throw new ThrowStatement(v); });
+
+        addLazyFunction("try", 2, (c, t, lv) -> (c_, t_) ->
+        {
+            try
+            {
+                return lv.get(0).evalValue(c_, t_);
+            }
+            catch (ThrowStatement ret)
+            {
+                LazyValue __ = c_.getVariable("_");
+                c_.setVariable("_", (__c, __t) -> ret.retval.bindTo("_"));
+                Value val = lv.get(1).evalValue(c_, t_);
+                c_.setVariable("_",__);
+                return val;
+            }
+        });
+
+        // give it a thought why this doesn't work
+        // script run g(outer(a)) -> ( if(a>2,throw(a),a+5) ); f(a) -> ( try2(a+=1; g(); a+= 1, a+=10*a); a ); print(f(1)); print(f(2)); print(f(3))
+        // and it works with 'try'
+        addLazyFunction("try2", 2, (c, t, lv) ->
+        {
+            try
+            {
+                return (c_, t_) -> lv.get(0).evalValue(c, t);
+            }
+            catch (ThrowStatement ret)
+            {
+                LazyValue __ = c.getVariable("_");
+                c.setVariable("_", (__c, __t) -> ret.retval.bindTo("_"));
+                Value val = lv.get(1).evalValue(c, t);
+                c.setVariable("_",__);
+                return (c_, t_) -> val;
+            }
+        });
 
         // if(cond1, expr1, cond2, expr2, ..., ?default) => value
         addLazyFunction("if", -1, (c, t, lv) ->
@@ -992,7 +1044,7 @@ public class Expression implements Cloneable
      * l() =&gt; [] (empty list)
      * l(range(10)) =&gt; [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
      * l(1, 2) = l(3, 4) =&gt; Error: l is not a variable
-     * l(foo, bar) = l(3,4); foo==3 && bar==4 =&gt; 1
+     * l(foo, bar) = l(3,4); foo==3 &amp;&amp; bar==4 =&gt; 1
      * l(foo, bar, baz) = l(2, 4, 6); l(min(foo, bar), baz) = l(3, 5); l(foo, bar, baz)  =&gt; [3, 4, 5]
      * </pre>
      * <p>In the last example <code>l(min(foo, bar), baz)</code> creates a valid L-value, as min(foo, bar) finds the
@@ -1027,22 +1079,94 @@ public class Expression implements Cloneable
      *
      *
      * <h3><code>sort(list), sort(values ...) </code></h3>
-     * <p>Sorts in the default sortographical order either arguments, or a list if its the only argument. It returns a new
-     * sorted list, not </p>
-     * <pre></pre>
+     * <p>Sorts in the default sortographical order either all arguments, or a list if its the only argument. It returns a new
+     * sorted list, not affecting the list passed to the argument</p>
+     * <pre>
+     * sort(3,2,1)  =&gt; [1, 2, 3]
+     * sort('a',3,11,1)  =&gt; [1, 3, 11, 'a']
+     * list = l(4,3,2,1); sort(list)  =&gt; [1, 2, 3, 4]
+     * </pre>
      *
      * <h3><code>sort_key(list, key_expr)</code></h3>
+     * <p>Sorts a copy of the list in the order or keys as defined by the <code>key_expr</code> for each element</p>
+     * <pre>
+     *     sort_key([1,3,2],_)  =&gt; [1, 2, 3]
+     *     sort_key([1,3,2],-_)  =&gt; [3, 2, 1]
+     *     sort_key(l(range(10)),rand(1))  =&gt; [1, 0, 9, 6, 8, 2, 4, 5, 7, 3]
+     *     sort_key(l(range(20)),str(_))  =&gt; [0, 1, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 2, 3, 4, 5, 6, 7, 8, 9]
+     * </pre>
+     *
+     * <h3><code>range(limit)</code></h3>
+     * <p>Creates a range of numbers from 0, no greater than <code>limit</code>. The returned valus is not a proper list, just the iterator
+     * but if for whatever reason you need a proper list with all items evaluated, use <code>l(range(limit))</code>.
+     * Primarily to be used in higher order functions</p>
+     * <pre>
+     *     range(10)  =&gt; []
+     *     l(range(10))  =&gt; [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+     *     map(range(10),_*_)  =&gt; [0, 1, 4, 9, 16, 25, 36, 49, 64, 81]
+     *     reduce(range(10),_a+_, 0)  =&gt; 45
+     * </pre>
+     *
+     * <h3><code>element(list, index)</code></h3>
+     * <p>Returns the value at <code>index</code> element from the <code>list</code>.
+     * use negative numbers to reach elements from the end of the list. <code>element</code>
+     * call will always be able to find the index. In case there is few items, it will loop over </p>
+     * <pre>
+     *     element(l(range(10)), 5)  =&gt; 5
+     *     element(l(range(10)), -1)  =&gt; 9
+     *     element(l(range(10)), 10)  =&gt; 0
+     *     element(l(range(10)), 93)  =&gt; 3
+     * </pre>
+     *
+     * <h3><code>while(cond, limit, expr)</code></h3>
+     * <p>Evaluates expression <code>expr</code> repeatedly until condition <code>cond</code> becomes false,
+     * but not more than <code>limit</code> times. Returns the result of the last <code>expr</code> evaluation,
+     * or <code>null</code> if nothing was successful. both <code>expr</code> and <code>cond</code> will recveived a
+     * bound variable <code>_</code> indicating current iteration, so its a number</p>
+     * <pre>
+     *  while(a&lt;100,10,a=_*_)  =&gt; 81 // loop exhausted via limit
+     *  while(a&lt;100,20,a=_*_)  =&gt; 100 // loop stopped at condition, but a has already been assigned
+     *  while(_*_&lt;100,20,a=_*_)  =&gt; 81 // loop stopped at condition, before a was assigned a value
+     * </pre>
+     *
+     * <h3><code>loop(num,expr(_),exit(_)?)</code></h3>
+     * <p>Evaluates expression <code>expr</code>, <code>num</code> number of times. Optionally,
+     * if <code>cond</code> condition is present, stops the execution if the condition becomes true.
+     * Both <code>expr</code> and <code>cond</code> receive <code>_</code> system variable indicating the iteration</p>
+     * <pre>
+     *     loop(5, tick())  =&gt; repeat tick 5 times
+     *     list = l(); loop(5, x = _; loop(5, list += l(x, _) ) ); list
+     *       // double loop, produces: [[0, 0], [0, 1], [0, 2], [0, 3], [0, 4], [1, 0], [1, 1], ... , [4, 2], [4, 3], [4, 4]]
+     *
+     *     loop(10000
+     * </pre>
+     *
+     * <h3><code>map(list,expr(_,_i), exit(_,_i))</code></h3>
      * <p></p>
      * <pre></pre>
      *
-     * <h3><code></code></h3>
+     * <h3><code>filter(list,expr(_,_i),exit(_,_i))</code></h3>
+     * <p></p>
+     * <pre></pre>
+     *
+     * <h3><code>first(list,expr(_,_i))</code></h3>
      * <p></p>
      * <pre></pre>
      *
      *
-     * <h3><code></code></h3>
+     * <h3><code>all(list,expr(_,_i))</code></h3>
      * <p></p>
      * <pre></pre>
+     *
+     *
+     * <h3><code>for(list,expr(_,_i),exit(_,_i))</code></h3>
+     * <p></p>
+     * <pre></pre>
+     *
+     * <h3><code>reduce(list,expr(_,_i), initial?)</code></h3>
+     * <p></p>
+     * <pre></pre>
+     *
      *
      *
     /**
@@ -1056,6 +1180,8 @@ public class Expression implements Cloneable
      * all(list,expr(_,_i)) -&gt; boolean
      * for(list,expr(_,_i),exit(_,_i)) -&gt; success_count
      * </pre>
+     *
+     * </div>
      */
     public void ListsLoopsAndHigherOrderFunctions()
     {
@@ -1145,7 +1271,7 @@ public class Expression implements Cloneable
         addUnaryFunction("range", (v) -> LazyListValue.range(getNumericValue(v).getLong()));
 
         addBinaryFunction("element", (v1, v2) -> {
-            if (!(v1.getClass().equals(ListValue.class)))
+            if (!(v1.getClass().equals(ListValue.class))) // with more list classes, do instanceof ListValue, not instanceof LazyListValue
             {
                 throw new InternalExpressionException("First argument of element should be a list");
             }
@@ -1168,7 +1294,7 @@ public class Expression implements Cloneable
             LazyValue condition = lv.get(0);
             LazyValue expr = lv.get(2);
             long i = 0;
-            Value lastOne = Value.ZERO;
+            Value lastOne = Value.NULL;
             //scoping
             LazyValue _val = c.getVariable("_");
             c.setVariable("_",(cc, tt) -> new NumericValue(0).bindTo("_"));
@@ -2262,7 +2388,7 @@ public class Expression implements Cloneable
                 case LITERAL:
                     stack.push((c, t) ->
                     {
-                        if (token.surface.equalsIgnoreCase("NULL"))
+                        if (token.surface.equalsIgnoreCase("NULL")) // TODO possibly not neded if works with euler and pi
                             return Value.NULL;
                         try
                         {

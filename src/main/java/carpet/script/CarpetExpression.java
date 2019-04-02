@@ -37,12 +37,7 @@ import net.minecraft.world.WorldServer;
 import net.minecraft.world.gen.Heightmap;
 import net.minecraft.world.storage.SessionLockException;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Locale;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -276,8 +271,8 @@ public class CarpetExpression
                     return true;
                 }));
 
-        this.expr.addLazyFunction("forcetick", -1, (c, t, lv) ->
-                booleanStateTest(c, "forcetick", lv, (s, p) ->
+        this.expr.addLazyFunction("blocktick", -1, (c, t, lv) ->
+                booleanStateTest(c, "blocktick", lv, (s, p) ->
                 {
                     World w = ((CarpetContext)c).s.getWorld();
                     s.randomTick(w, p, w.rand);
@@ -379,7 +374,7 @@ public class CarpetExpression
 
     public void EntityManipulation()
     {
-        this.expr.addLazyFunction("player", -1, (c, t, lv) -> {
+        this.expr.addLazyFunction("players", -1, (c, t, lv) -> {
             if (lv.size() ==0)
             {
                 return (_c, _t) ->
@@ -409,7 +404,29 @@ public class CarpetExpression
             return LazyValue.NULL;
         });
 
-        this.expr.addLazyFunction("entities", 7, (c, t, lv) -> {
+        this.expr.addLazyFunction("entity_id", 1, (c, t, lv) ->
+        {
+            String who = lv.get(0).evalValue(c).getString();
+            Entity e = ((CarpetContext)c).s.getWorld().getEntityFromUuid(UUID.fromString(who));
+            if (e==null)
+            {
+                return LazyValue.NULL;
+            }
+            return (cc, tt) -> new EntityValue(e);
+        });
+
+        this.expr.addLazyFunction("entities_list", 1, (c, t, lv) -> {
+            String who = lv.get(0).evalValue(c).getString();
+            Pair<Class<? extends Entity>, Predicate<? super Entity>> pair = EntityValue.entityPredicates.get(who);
+            if (pair == null)
+            {
+                throw new InternalExpressionException("Unknown entity selection criterion: "+who);
+            }
+            List<Entity> entityList = ((CarpetContext)c).s.getWorld().getEntities(pair.getKey(), pair.getValue());
+            return (_c, _t ) -> ListValue.wrap(entityList.stream().map(EntityValue::new).collect(Collectors.toList()));
+        });
+
+        this.expr.addLazyFunction("entities_area", 7, (c, t, lv) -> {
             BlockPos center = new BlockPos(
                     Expression.getNumericValue(lv.get(1).evalValue(c)).getDouble(),
                     Expression.getNumericValue(lv.get(2).evalValue(c)).getDouble(),
@@ -430,7 +447,7 @@ public class CarpetExpression
             return (_c, _t ) -> ListValue.wrap(entityList.stream().map(EntityValue::new).collect(Collectors.toList()));
         });
 
-        this.expr.addLazyFunction("entity_selector", -1, (c, t, lv) -> {
+        this.expr.addLazyFunction("entities_selector", -1, (c, t, lv) -> {
             String selector = lv.get(0).evalValue(c).getString();
 
             try
@@ -972,7 +989,16 @@ public class CarpetExpression
             return (cc, tt) -> Value.TRUE;
         });
 
-        this.expr.addLazyFunction("tick", -1, (c, t, lv) -> {
+        this.expr.addLazyFunction("ticktime", 0, (c, t, lv) -> (cc, tt) -> new NumericValue(((CarpetContext)cc).s.getServer().getTickCounter()));
+        this.expr.addLazyFunction("ticktime2", 0, (c, t, lv) -> (cc, tt) -> new NumericValue(((CarpetContext)cc).s.getServer().getTickCounter()));
+
+        this.expr.addLazyFunction("ticktime3", 0, (c, t, lv) ->
+        {
+            Value time = new NumericValue(((CarpetContext) c).s.getServer().getTickCounter());
+            return (cc, tt) -> time;
+        });
+
+        this.expr.addLazyFunction("gametick", -1, (c, t, lv) -> {
             CommandSource s = ((CarpetContext)c).s;
             s.getServer().tick( () -> System.nanoTime()-tickStart<50000000L);
             s.getServer().dontPanic(); // optional not to freak out the watchdog
@@ -1044,9 +1070,18 @@ public class CarpetExpression
         try
         {
             Context context = new CarpetContext(this.expr, source, origin).
-                    with("x", (c, t) -> new NumericValue(x - origin.getX()).bindTo("x")).
-                    with("y", (c, t) -> new NumericValue(y - origin.getY()).bindTo("y")).
-                    with("z", (c, t) -> new NumericValue(z - origin.getZ()).bindTo("z"));
+                    with("x", (c, t) -> new NumericValue(x - origin.getX())).
+                    with("y", (c, t) -> new NumericValue(y - origin.getY())).
+                    with("z", (c, t) -> new NumericValue(z - origin.getZ()));
+            Entity e = source.getEntity();
+            if (e==null)
+            {
+                context.with("p", LazyValue.NULL );
+            }
+            else
+            {
+                context.with("p", (cc, tt) -> new EntityValue(e));
+            }
             return this.expr.eval(context).getBoolean();
         }
         catch (ExpressionException e)
@@ -1068,6 +1103,15 @@ public class CarpetExpression
                     with("x", (c, t) -> new NumericValue(pos.getX() - origin.getX()).bindTo("x")).
                     with("y", (c, t) -> new NumericValue(pos.getY() - origin.getY()).bindTo("y")).
                     with("z", (c, t) -> new NumericValue(pos.getZ() - origin.getZ()).bindTo("z"));
+            Entity e = source.getEntity();
+            if (e==null)
+            {
+                context.with("p", (cc, tt) -> Value.NULL.reboundedTo("p") );
+            }
+            else
+            {
+                context.with("p", (cc, tt) -> new EntityValue(e).bindTo("p"));
+            }
             return this.expr.eval(context).getString();
         }
         catch (ExpressionException e)
@@ -1097,9 +1141,18 @@ public class CarpetExpression
             Vec3d pos = source.getPos();
             Expression expr = new Expression(call+"("+String.join(" , ",argv)+" ) ").withName(call);
             Context context = new CarpetContext(expr, source, BlockPos.ORIGIN).
-                    with("x", (c, t) -> new NumericValue(Math.round(pos.x)).bindTo("x")).
-                    with("y", (c, t) -> new NumericValue(Math.round(pos.y)).bindTo("y")).
-                    with("z", (c, t) -> new NumericValue(Math.round(pos.z)).bindTo("z"));
+                    with("x", (c, t) -> new NumericValue(Math.round(pos.x))).
+                    with("y", (c, t) -> new NumericValue(Math.round(pos.y))).
+                    with("z", (c, t) -> new NumericValue(Math.round(pos.z)));
+            Entity e = source.getEntity();
+            if (e==null)
+            {
+                context.with("p", LazyValue.NULL );
+            }
+            else
+            {
+                context.with("p", (cc, tt) -> new EntityValue(e));
+            }
             return expr.eval(context).getString();
         }
         catch (ExpressionException e)

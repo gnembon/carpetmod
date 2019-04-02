@@ -1,5 +1,7 @@
 package carpet.script;
 
+import org.apache.commons.lang3.ObjectUtils;
+
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -8,7 +10,7 @@ public abstract class Value implements Comparable<Value>, Cloneable
     public static Value FALSE = new NumericValue(0);
     public static Value TRUE = new NumericValue(1);
     public static Value ZERO = FALSE;
-    public static Value NULL = NullValue.getInstance();
+    public static Value NULL = new NullValue();
 
     public String boundVariable;
 

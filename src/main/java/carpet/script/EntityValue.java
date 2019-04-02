@@ -3,6 +3,7 @@ package carpet.script;
 import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import javafx.util.Pair;
+import net.minecraft.command.arguments.EntitySelector;
 import net.minecraft.command.arguments.NBTPathArgument;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
@@ -55,12 +56,23 @@ public class EntityValue extends Value
         return true;
     }
 
+    @Override
+    public boolean equals(Value v)
+    {
+        if (v instanceof EntityValue)
+        {
+            return entity.getEntityId()==((EntityValue) v).entity.getEntityId();
+        }
+        return super.equals(v);
+    }
+
     public static Map<String, Pair<Class<? extends Entity>, Predicate<? super Entity>>> entityPredicates =
             new HashMap<String, Pair<Class<? extends Entity>, Predicate<? super Entity>>>()
     {{
         put("all", new Pair<>(Entity.class, EntitySelectors.IS_ALIVE));
+        put("living", new Pair<>(EntityLivingBase.class, EntitySelectors.IS_ALIVE));
         put("items", new Pair<>(EntityItem.class, EntitySelectors.IS_ALIVE));
-        put("players", new Pair<>(Entity.class, (e) -> e instanceof EntityPlayer));
+        put("players", new Pair<>(EntityPlayer.class, EntitySelectors.IS_ALIVE));
         put("!players", new Pair<>(Entity.class, (e) -> !(e instanceof EntityPlayer) ));
     }};
     public Value get(String what, Value arg)
@@ -102,7 +114,7 @@ public class EntityValue extends Value
         put("silent", (e, a)-> new NumericValue(e.isSilent()));
         put("gravity", (e, a) -> new NumericValue(!e.hasNoGravity()));
         put("immune_to_fire", (e, a) -> new NumericValue(e.isImmuneToFire()));
-        put("UUID",(e, a) -> new StringValue(e.getCachedUniqueIdString()));
+        put("id",(e, a) -> new StringValue(e.getCachedUniqueIdString()));
         put("invulnerable", (e, a) -> new NumericValue(e.isInvulnerable()));
         put("dimension", (e, a) -> new StringValue(e.dimension.getSuffix()));
         put("height", (e, a) -> new NumericValue(e.height));
