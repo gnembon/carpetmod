@@ -92,7 +92,196 @@ import static java.lang.Math.min;
  * script run print('There is'+for(rect(x,9,z,8,8,8), _ == 'diamond_ore')+' diamond ore around you')
  * </pre>
  * <p>It definitely pays to check what higher level <code>scarpet</code> functions have to offer</p>
+ * <h1>Programs</h1>
+ * <p>
+ * You can think of an program like a mathematical expression, like
+ * <code>"2.4*sin(45)/(2-4)"</code> or  <code>"sin(y)&gt;0 &amp; max(z, 3)&gt;3"</code>
+ * Writing a program, is like writing a <code>2+3</code>, just a bit longer</p>
  *
+ * <h2>Basic language components</h2>
+ * <p>Programs consist of constants, like <code>2</code>, <code>3.14</code>, <code>pi</code>, or <code>'foo'</code>,
+ * operators like <code>+</code>, <code>/</code>, <code>-&gt;</code>, variables which you can define, like <code>foo</code>
+ * or special ones that will be defined for you, like <code>_x</code>, or <code>_</code> , which I specific to
+ * a each built in function, and functions with name, and arguments in the form of <code>f(a,b,c)</code>, where
+ * <code>f</code> is the function name, and <code>a, b, c</code> are the arguments which can be any other expression.
+ * And that's all the parts of the language, so all in all - sounds quite simple.</p>
+ *
+ * <h2>Strings</h2>
+ *
+ * <h2>Code flow</h2>
+ * <p>
+ *     Like any other proper programming language, <code>scarpet</code> needs brackets, basically to identify
+ *     where stuff begins and where it ends. In the languages that uses much more complicated constructs, like Java,
+ *     they tend to use all sort of them, round ones to indicate function calls, curly to indicate section of code,
+ *     square to access lists, pointy for generic types etc... I mean - there is no etc, cause they have exhausted
+ *     all the bracket options...
+ * </p>
+ * <p><code>Scarpet</code> is different, since it runs everything based on functions (although its not per se a functional language like lisp)
+ * only needs the round brackets for everything, and it is up to the programmer to organize its code so its readable,
+ * as adding more brackets does not have any effect on the performance of the programs as they are compiled before they are executed.
+ * Look at the following example usage of <code>if()</code> function:
+ * </p>
+ * <pre>
+ * if(x&lt;y+6,set(x,8+y,z,'air');plop(x,top('surface',x,z),z,'birch'),sin(query(player(),'yaw'))&gt;0.5,plop(0,0,0,'boulder'),particle(x,y,z,'fire'))
+ * </pre>
+ * <p>Would you prefer to read</p>
+ * <pre>
+ * if(   x&lt;y+6,
+ *            set(x,8+y,z,'air');
+ *            plop(x,top('surface',x,z),z,'birch'),
+ *       sin(query(player(),'yaw'))&gt;0.5,
+ *            plop(0,0,0,'boulder'),
+ *       particle(x,y,z,'fire')
+ * )
+ * </pre>
+ * <p>Or rather:</p>
+ * <pre>
+ * if
+ * (
+ *     x&lt;y+6,
+ *     (
+ *         set(x,8+y,z,'air');
+ *         plop(x,top('surface',x,z),z,'birch')
+ *     ),
+ *
+ *     sin(query(player(),'yaw'))&gt;0.5,
+ *     (
+ *         plop(0,0,0,'boulder')
+ *     ),
+ *
+ *     particle(x,y,z,'fire')
+ * )
+ * </pre>
+ * <p>Whichever style you prefer it doesn't matter. It typically depends on the situation and the complexity of the
+ * subcomponents. No matter how many whitespaces and extra brackets you add - the code will evaluate to exactly the
+ * same expression, and will run exactly the same, so make sure your programs are nice and clean so others don't
+ * have problems with them</p>
+ *
+ * <h2>Functions and scoping</h2>
+ * <p>
+ * Users can define functions in the form <code>fun(args....) -&gt; expression </code> and they are compiled and saved
+ * for further execution in this but also subsequent calls of /script command. This means that once defined functions
+ * are saved with the world for further use. There are two types of variables,
+ * global - which are shared anywhere in the code, and those are all which name starts with 'global_', and
+ * local variables which is everything else and those are only visible inside each function.
+ * This also means that all the parameters in functions are passed 'by value', not 'by reference'.
+ * </p>
+ *
+ * <h2>Outer variables</h2>
+ * <p>Functions can still 'borrow' variables from the outer scope,
+ * by adding them to the function signature wrapped around built-in function <code>outer</code>. What this does is
+ * it borrows the reference to that variable from the outer scope to be used inside the function and any modifications to that outer
+ * variable would result in changes of that value in the outer scope as well. Its like passing the parameters by reference,
+ * except the calling function itself decides what variables its borrowing and what its name. This can be used to
+ * return more than one result from a function call, although its a very ugly way of doing it -
+ * I would still recommend returning a list of values instead.
+ * Variables from outer scopes have a similar behaviour to, for example, <code>nonlocal</code> variables from python. </p>
+ *
+ *
+ * <h2>Line indicators</h2>
+ * <p>Since the maximum command that can be input to the chat is limited in length, you will be probably inserting your
+ * programs by pasting them to command blocks, however pasting to command blocks will remove some whitespaces and squish
+ * your newlines making the code not readable. If you are pasting a program that is perfect and will never cause an error,
+ * I salute you, but for the most part it is quite likely that your program might break, either at compile time, when
+ * its initially analyzed, or at execute time, when you suddenly attempt to divide something by zero. In these cases
+ * you would want to get a meaningful error message, but for that you would need to indicate for the compiler where
+ * did you put these new lines, since command block would squish them. For that, place  at the beginning
+ * of the line to let the copiler know where are you. This makes so that <code>$</code> is the only character that is
+ * illegal in programs, since it will be replaced with new lines. As far as I know, <code>$</code> is not used
+ * anywhere inside Minecraft identifiers, so this shoudn't hinder the abilities of your programs.</p>
+ * <p>Consider the following program executed as command block command:</p>
+ * <pre>
+ * /script run
+ * run_program() -&gt; (
+ *   loop( 10,
+ *     foo = floor(rand(10));
+ *     check_not_zero(foo);
+ *     print(_+' - foo: '+foo);
+ *     print('  reciprocal: '+  _/foo )
+ *   )
+ * );
+ * check_not_zero(foo) -&gt; (
+ *   if (foo==0, foo = 1)
+ * )
+ * </pre>
+ * <p>Lets say that the intention was to check if the bar is zero and prevent division by zero in print,
+ * but because the <code>foo</code> is passed as a variable, it never changes the original foo value.
+ * Because of the inevitable division by zero, we get the following message:
+ * </p>
+ * <pre>
+ * Your math is wrong, Incorrect number format for Infinity at pos 112
+ * run_program() -&gt; (  loop( 10,    foo = floor(rand(10));    check_not_zero(foo);
+ * print(_+' - foo: '+foo);     HERE&gt;&gt; print('  reciprocal: '+  _/foo )  ));
+ * check_not_zero(foo) -&gt; (  if (foo==0, foo = 1))
+ * </pre>
+ *
+ * As we can see, we got our problem where the result of the mathematical operation was not a number (<code>Infinity</code>, so not a number),
+ * however by pasting our program
+ * into the command made it squish the newlines so while it is clear where the error happened and we still can track the error down,
+ * the position of the error (112) is not very helpful and wouldn't be useful if the program gets significantly longer.
+ * To combat this issue we can precede every line of the script with dollar signs <code>$</code>:
+ * <pre>
+ * /script run
+ * $run_program() -&gt; (
+ * $  loop( 10,
+ * $    foo = floor(rand(10));
+ * $    check_not_zero(foo);
+ * $    print(_+' - foo: '+foo);
+ * $    print('  reciprocal: '+  _/foo )
+ * $  )
+ * $);
+ * $check_not_zero(foo) -&gt; (
+ * $  if (foo==0, foo = 1)
+ * $)
+ * </pre>
+ *
+ * <p>Then we get the following error message</p>
+ *
+ * <pre>
+ * Your math is wrong, Incorrect number format for Infinity at line 7, pos 5
+ *     print(_+' - foo: '+foo);
+ *      HERE&gt;&gt; print('  reciprocal: '+  _/foo )
+ *   )
+ * </pre>
+ *
+ *
+ * <p>As we can note not only we get much more concise snippet, but also information about the line
+ * number and position, so means its way easier to locate the potential problems problem</p>
+ *
+ * <p>Obviously that's not the way we intended this program to work. To get it <code>foo</code> modified via
+ * a function call, we would either return it as a result and assign it to the new variable:
+ * </p>
+ * <pre>
+ *     foo = check_not_zero(foo);
+ *     ...
+ *     check_not_zero(foo) -&gt; if(foo == 0, 1, foo)
+ * </pre>
+ * <p>.. or convert it to a global variable, which in this case passing as an argument is not required</p>
+ * <pre>
+ *     global_foo = floor(rand(10));
+ *     check_foo_not_zero();
+ *     ...
+ *     check_foo_not_zero() -&gt; if(global_foo == 0, global_foo = 1)
+ * </pre>
+ * <p>.. or scope foo from the outer function - in this case the inner function has to determine what it is accessing</p>
+ * <pre>
+ *     foo = floor(rand(10));
+ *     check_foo_not_zero();
+ *     ...
+ *     check_foo_not_zero(outer(foo)) -&gt; if(foo == 0, foo = 1)
+ * </pre>
+ *
+ *<p><code>outer</code> scope can only be used in
+ * function signatures to indicate outer variables. They are not arguments, but still you would want to use
+ * locally without affecting other uses of foo in your program.
+ * </p>
+ *
+ *
+ *
+ * <p>For the most part - passing arguments as values, and using returned values   .
+ * The main usecase of <code>Scarpet</code> would rather be simpler scripts, default scope for all variables is global, unless variable
+ * is declared with <code>local</code> scope explicitly.
+ * </p>
  */
 
 public class Expression implements Cloneable
@@ -611,8 +800,10 @@ public class Expression implements Cloneable
 
     /**
      * <h1>Constants</h1>
-     * <p>Section Content</p>
+     * <div style="padding-left: 20px; border-radius: 5px 45px; border:1px solid grey;">
+     * <p>Scarpet </p>
      * <p>Other Paragraph</p>
+     * </div>
      */
 
     public void Constants() // public just to get the Javadocs right
@@ -622,8 +813,10 @@ public class Expression implements Cloneable
 
     /**
      * <h1>User-defined functions and program control flow</h1>
+     * <div style="padding-left: 20px; border-radius: 5px 45px; border:1px solid grey;">
      * <p>Section Content</p>
      * <p>Other Paragraph</p>
+     * </div>
      */
 
     public void UserDefinedFunctionsAndControlFlow() // public just to get the javadoc right
@@ -759,11 +952,11 @@ public class Expression implements Cloneable
 
     /**
      * <h1>Operators</h1>
-     * There is a bunch of operators you can use inside the expressions. Those could be considered
-     * generic type operators. Expression language uses also one type of brackets - the round ones,
-     * <code>( )</code>
-     * and it uses it for everything including control flow (in short - replaces all types of brackets
-     * you would remember from other laguages, like java curly braces etc)
+     * <div style="padding-left: 20px; border-radius: 5px 45px; border:1px solid grey;">
+     * There is a number of operators you can use inside the expressions. Those could be considered
+     * generic type operators that apply to most data types.
+     *
+
      *
      * <h2>Operator '+'</h2>
      * <p>Allows to add the results of two expressions. If the operands resolve to numbers, the result is
@@ -783,6 +976,7 @@ public class Expression implements Cloneable
      * <p><code> 2+3 =&gt; 5  </code></p>
      * <p><code> 'foo'+3+2 =&gt; 'abc32'  </code></p>
      * <p><code> 3+2+'bar' =&gt; '5bar'  </code></p>
+     * </div>
      */
     public void Operators()
     {
@@ -919,8 +1113,10 @@ public class Expression implements Cloneable
 
     /**
      * <h1>Arithmetic operations</h1>
+     * <div style="padding-left: 20px; border-radius: 5px 45px; border:1px solid grey;">
      * <p>Section Content</p>
      * <p>Other Paragraph</p>
+     * </div>
      */
     public void ArithmeticOperations()
     {
@@ -1026,9 +1222,8 @@ public class Expression implements Cloneable
 
 
     /**
-     * <div style="padding-left: 20px; border-radius: 5px 45px; border:1px solid grey;">
-     *
      * <h1>Lists, loops, and higher order functions</h1>
+     * <div style="padding-left: 20px; border-radius: 5px 45px; border:1px solid grey;">
      * <p>Efficient use of these functions cangreatly simplify your programs and speed them up, as these functions
      * will internalize  most of the operations that need to be applied on multiple values at the same time</p>
      * <h2>Basic list operations</h2>
@@ -1096,15 +1291,19 @@ public class Expression implements Cloneable
      *     sort_key(l(range(20)),str(_))  =&gt; [0, 1, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 2, 3, 4, 5, 6, 7, 8, 9]
      * </pre>
      *
-     * <h3><code>range(limit)</code></h3>
-     * <p>Creates a range of numbers from 0, no greater than <code>limit</code>. The returned valus is not a proper list, just the iterator
+     * <h3><code>range(to), range(from, to), range(from, to, step)</code></h3>
+     * <p>Creates a range of numbers from <code>from</code>, no greater/larger than <code>limit</code>.
+     * The <code>step</code> parameter dictates not only the increment size, but also direction (can be negative).
+     * The returned value is not a proper list, just the iterator
      * but if for whatever reason you need a proper list with all items evaluated, use <code>l(range(limit))</code>.
      * Primarily to be used in higher order functions</p>
      * <pre>
-     *     range(10)  =&gt; []
+     *     range(10)  =&gt; [...]
      *     l(range(10))  =&gt; [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
      *     map(range(10),_*_)  =&gt; [0, 1, 4, 9, 16, 25, 36, 49, 64, 81]
      *     reduce(range(10),_a+_, 0)  =&gt; 45
+     *     range(5,10)  =&gt; [5, 6, 7, 8, 9]
+     *     range(20, 10, -2)  =&gt; [20, 18, 16, 14, 12]
      * </pre>
      *
      * <h3><code>element(list, index)</code></h3>
@@ -1137,50 +1336,79 @@ public class Expression implements Cloneable
      *     loop(5, tick())  =&gt; repeat tick 5 times
      *     list = l(); loop(5, x = _; loop(5, list += l(x, _) ) ); list
      *       // double loop, produces: [[0, 0], [0, 1], [0, 2], [0, 3], [0, 4], [1, 0], [1, 1], ... , [4, 2], [4, 3], [4, 4]]
-     *     check_prime(n) -> ( loop(floor(n/2), if(n % (_+2) == 0, return(false) ) ); true )
-     *     loop(10000
+     * </pre>
+     * <p>In this small example we will search for first 10 primes, apparently including 0:</p>
+     * <pre>
+     *     check_prime(n) -&gt; !first( range(2, sqrt(n)+1), !(n % _) );
+     *     primes = l();
+     *     loop(10000, if(check_prime(_), primes += _), length(primes) &gt;= 10 );
+     *     primes
+     *
+     *     // outputs: [0, 1, 2, 3, 5, 7, 11, 13, 17, 19]
+     * </pre>
+     * <h3><code>map(list,expr(_,_i), exit(_,_i)?)</code></h3>
+     * <p>Converts a <code>list</code> of values, to another list where each value is result of an expression
+     * <code>v = expr(_, _i)</code> where <code>_</code> is passed as each element of the list, and <code>_i</code> is
+     * the index of such element, optional <code>exit</code> condition is evaluated after each mapping and if it is false,
+     * the map is terminated and returned whatever got collected so far</p>
+     * <pre>
+     *     map(range(10), _*_)  =&gt; [0, 1, 4, 9, 16, 25, 36, 49, 64, 81]
+     *     map(players('*'), _+' is stupid') [gnembon is stupid, herobrine is stupid]
      * </pre>
      *
-     * <h3><code>map(list,expr(_,_i), exit(_,_i))</code></h3>
-     * <p></p>
-     * <pre></pre>
-     *
      * <h3><code>filter(list,expr(_,_i),exit(_,_i))</code></h3>
-     * <p></p>
-     * <pre></pre>
+     * <p>filters <code>list</code> elements returning only these that return positive result of the <code>expr</code>.
+     * Like with <code>map</code> if the optional condition <code>exit</code> gets true, the list is returned up to this point</p>
+     * <pre>
+     *     filter(range(100), !(_%5), _*_&gt;1000)  =&gt; [0, 5, 10, 15, 20, 25, 30]
+     *     map(filter(entities_list('all'),_=='Witch'), query(_,'pos') )  =&gt; [[1082.5, 57, 1243.5]]
+     * </pre>
      *
      * <h3><code>first(list,expr(_,_i))</code></h3>
-     * <p></p>
-     * <pre></pre>
+     * <p>Finds and returns the first item in the list that satisfies <code>expr</code>. If sets <code>_</code> for current element value,
+     * and <code>_i</code> for index of that element</p>
+     * <pre>
+     *     first(range(1000,10000), n=_; !first( range(2, sqrt(n)+1), !(n % _) ) )  =&gt; 1009 // first prime after 1000
+     * </pre>
+     * <p>Notice in the example above, that we needed to rename the outer <code>_</code> to be albe to use in in the inner
+     * <code>first</code> call</p>
      *
      *
      * <h3><code>all(list,expr(_,_i))</code></h3>
-     * <p></p>
-     * <pre></pre>
-     *
-     *
-     * <h3><code>for(list,expr(_,_i),exit(_,_i))</code></h3>
-     * <p></p>
-     * <pre></pre>
-     *
-     * <h3><code>reduce(list,expr(_,_i), initial?)</code></h3>
-     * <p></p>
-     * <pre></pre>
-     *
-     *
-     *
-    /**
-     * <h1></h1>
-     *
+     * <p>Returns <code>true</code> if all elements on the list satisfy the condition. Its roughly equivalent to
+     * <code>all(list,expr) &lt;=&gt; for(list,expr)==length(list)</code>, but works with generators. <code>expr</code>
+     * also receives bound <code>_</code> and <code>_i</code> variables</p>
      * <pre>
-     * loop(num,expr(_),exit(_)?)-&gt;value (last)
-     * map(list,expr(_,_i), exit(_,_i)) -&gt; list
-     * filter(list,expr(_,_i),exit(_,_i)) -&gt; list
-     * first(list,expr(_,_i)) -&gt; value (first)
-     * all(list,expr(_,_i)) -&gt; boolean
-     * for(list,expr(_,_i),exit(_,_i)) -&gt; success_count
+     *     all([1,2,3], check_prime(_))  =&gt; 1
+     *     all(neighbours(x,y,z), _=='stone')  =&gt; 1 // if all neighbours of [x, y, z] are stone
+     *     map(filter(rect(0,4,0,1000,0,1000), l(x,y,z)=pos(_); all(rect(x,y,z,1,0,1),_=='bedrock') ), pos(_) )
+     *       =&gt; [[-298, 4, -703], [-287, 4, -156], [-269, 4, 104], [242, 4, 250], [-159, 4, 335], [-208, 4, 416], [-510, 4, 546], [376, 4, 806]]
+     *         // find all 3x3 bedrock structures in the top bedrock layer
+     *     map( filter( rect(0,4,0,1000,1,1000,1000,0,1000), l(x,y,z)=pos(_);
+     *             all(rect(x,y,z,1,0,1),_=='bedrock') &amp;&amp; for(rect(x,y-1,z,1,1,1,1,0,1),_=='bedrock')&lt;8),
+     *        pos(_) )  =&gt; [[343, 3, -642], [153, 3, -285], [674, 3, 167], [-710, 3, 398]]
+     *         // ditto, but requiring at most 7 bedrock block in the 18 blocks below them
      * </pre>
      *
+     *
+     * <h3><code>for(list,expr(_,_i),exit(_,_i)?)</code></h3>
+     * <p>Evaluates expression over list of items from the <code>list</code>, and can optionally stop early if
+     * <code>exit</code> expression is specified and evaluates <code>true</code> for a given iteration. Supplies
+     * <code>_</code>(value) and <code>_i</code>(iteration number) to both <code>expr</code> and <code>exit</code>.
+     * Returns the number of times <code>expr</code> was successful</p>
+     * <pre>
+     *     check_prime(n) -&gt; !first( range(2, sqrt(n)+1), !(n % _) );
+     *        for(range(1000000,1100000),check_prime(_))  =&gt; 7216
+     * </pre>
+     * <p>From which we can learn that there is 7216 primes between 1M and 1.1M</p>
+     * <h3><code>reduce(list,expr(_a,_,_i), initial)</code></h3>
+     * <p>Applies <code>expr</code> for each element of the list and saves the result in <code>_a</code> accumulator.
+     * Consecutive calls to <code>expr</code> can access that value to apply more values. You also need to specify
+     * the initial value to apply for the accumulator</p>
+     * <pre>
+     *     reduce([1,2,3,4],_+_,0)  =&gt; 10
+     *     reduce([1,2,3,4],_*_,1)  =&gt; 24
+     * </pre>
      * </div>
      */
     public void ListsLoopsAndHigherOrderFunctions()
@@ -1268,7 +1496,26 @@ public class Expression implements Cloneable
 
 
 
-        addUnaryFunction("range", (v) -> LazyListValue.range(getNumericValue(v).getLong()));
+        addFunction("range", (lv) ->
+        {
+            long from = 0;
+            long to = 0;
+            long step = 1;
+            int argsize = lv.size();
+            if (argsize == 0 || argsize > 3)
+                throw new InternalExpressionException("range accepts from 1 to 3 arguments, not "+argsize);
+            to = getNumericValue(lv.get(0)).getLong();
+            if (lv.size() > 1)
+            {
+                from = to;
+                to = getNumericValue(lv.get(1)).getLong();
+                if (lv.size() > 2)
+                {
+                    step = getNumericValue(lv.get(2)).getLong();
+                }
+            }
+            return LazyListValue.range(from, to, step);
+        });
 
         addBinaryFunction("element", (v1, v2) -> {
             if (!(v1.getClass().equals(ListValue.class))) // with more list classes, do instanceof ListValue, not instanceof LazyListValue
@@ -1576,9 +1823,10 @@ public class Expression implements Cloneable
     }
 
     /**
-     * <div style="padding-left: 20px; border-radius: 5px 45px; border:1px solid grey;">
+     *
      *
      * <h1>System functions</h1>
+     * <div style="padding-left: 20px; border-radius: 5px 45px; border:1px solid grey;">
      * <h2>Type conversion functions</h2>
      * <h3><code>bool(expr)</code></h3>
      * <p>Returns a boolean context of the expression. Note that there are no true/false values in
@@ -1910,200 +2158,6 @@ public class Expression implements Cloneable
     }
 
     /**
-     * <h1>Programs</h1>
-     * <p>
-     * You can think of an program like a mathematical expression, like
-     * <code>"2.4*sin(45)/(2-4)"</code> or  <code>"sin(y)&gt;0 &amp; max(z, 3)&gt;3"</code>
-     * Writing a program, is like writing a <code>2+3</code>, just a bit longer</p>
-     *
-     * <h2>Basic language components</h2>
-     * <p>Programs consist of constants, like <code>2</code>, <code>3.14</code>, <code>pi</code>, or <code>'foo'</code>,
-     * operators like <code>+</code>, <code>/</code>, <code>-&gt;</code>, variables which you can define, like <code>foo</code>
-     * or special ones that will be defined for you, like <code>_x</code>, or <code>_</code> , which I specific to
-     * a each built in function, and functions with name, and arguments in the form of <code>f(a,b,c)</code>, where
-     * <code>f</code> is the function name, and <code>a, b, c</code> are the arguments which can be any other expression.
-     * And that's all the parts of the language, so all in all - sounds quite simple.</p>
-     *
-     * <h2>Strings</h2>
-     *
-     * <h2>Code flow</h2>
-     * <p>
-     *     Like any other proper programming language, <code>scarpet</code> needs brackets, basically to identify
-     *     where stuff begins and where it ends. In the languages that uses much more complicated constructs, like Java,
-     *     they tend to use all sort of them, round ones to indicate function calls, curly to indicate section of code,
-     *     square to access lists, pointy for generic types etc... I mean - there is no etc, cause they have exhausted
-     *     all the bracket options...
-     * </p>
-     * <p><code>Scarpet</code> is different, since it runs everything based on functions (although its not per se a functional language like lisp)
-     * only needs the round brackets for everything, and it is up to the programmer to organize its code so its readable,
-     * as adding more brackets does not have any effect on the performance of the programs as they are compiled before they are executed.
-     * Look at the following example usage of <code>if()</code> function:
-     * </p>
-     * <pre>
-     * if(x&lt;y+6,set(x,8+y,z,'air');plop(x,top('surface',x,z),z,'birch'),sin(query(player(),'yaw'))&gt;0.5,plop(0,0,0,'boulder'),particle(x,y,z,'fire'))
-     * </pre>
-     * <p>Would you prefer to read</p>
-     * <pre>
-     * if(   x&lt;y+6,
-     *            set(x,8+y,z,'air');
-     *            plop(x,top('surface',x,z),z,'birch'),
-     *       sin(query(player(),'yaw'))&gt;0.5,
-     *            plop(0,0,0,'boulder'),
-     *       particle(x,y,z,'fire')
-     * )
-     * </pre>
-     * <p>Or rather:</p>
-     * <pre>
-     * if
-     * (
-     *     x&lt;y+6,
-     *     (
-     *         set(x,8+y,z,'air');
-     *         plop(x,top('surface',x,z),z,'birch')
-     *     ),
-     *
-     *     sin(query(player(),'yaw'))&gt;0.5,
-     *     (
-     *         plop(0,0,0,'boulder')
-     *     ),
-     *
-     *     particle(x,y,z,'fire')
-     * )
-     * </pre>
-     * <p>Whichever style you prefer it doesn't matter. It typically depends on the situation and the complexity of the
-     * subcomponents. No matter how many whitespaces and extra brackets you add - the code will evaluate to exactly the
-     * same expression, and will run exactly the same, so make sure your programs are nice and clean so others don't
-     * have problems with them</p>
-     *
-     * <h2>Functions and scoping</h2>
-     * <p>
-     * Users can define functions in the form <code>fun(args....) -&gt; expression </code> and they are compiled and saved
-     * for further execution in this but also subsequent calls of /script command. This means that once defined functions
-     * are saved with the world for further use. There are two types of variables,
-     * global - which are shared anywhere in the code, and those are all which name starts with 'global_', and
-     * local variables which is everything else and those are only visible inside each function.
-     * This also means that all the parameters in functions are passed 'by value', not 'by reference'.
-     * </p>
-     * <pre>
-     *
-     * </pre>
-     *
-     * <h2>Outer variables</h2>
-     * <p>Functions can still 'borrow' variables from the outer scope,
-     * by adding them to the function signature wrapped around built-in function <code>outer</code>. What this does is
-     * it borrows the reference to that variable from the outer scope to be used inside the function and any modifications to that outer
-     * variable would result in changes of that value in the outer scope as well. Its like passing the parameters by reference,
-     * except the calling function itself decides what variables its borrowing and what its name. This can be used to
-     * return more than one result from a function call, although its a very ugly way of doing it -
-     * I would still recommend returning a list of values instead.
-     * Variables from outer scopes have a similar behaviour to, for example, <code>nonlocal</code> variables from python. </p>
-     *
-     *
-     * <h2>Line indicators</h2>
-     * <p>Since the maximum command that can be input to the chat is limited in length, you will be probably inserting your
-     * programs by pasting them to command blocks, however pasting to command blocks will remove some whitespaces and squish
-     * your newlines making the code not readable. If you are pasting a program that is perfect and will never cause an error,
-     * I salute you, but for the most part it is quite likely that your program might break, either at compile time, when
-     * its initially analyzed, or at execute time, when you suddenly attempt to divide something by zero. In these cases
-     * you would want to get a meaningful error message, but for that you would need to indicate for the compiler where
-     * did you put these new lines, since command block would squish them. For that, place  at the beginning
-     * of the line to let the copiler know where are you. This makes so that <code>$</code> is the only character that is
-     * illegal in programs, since it will be replaced with new lines. As far as I know, <code>$</code> is not used
-     * anywhere inside Minecraft identifiers, so this shoudn't hinder the abilities of your programs.</p>
-     * <p>Consider the following program executed as command block command:</p>
-     * <pre>
-     * /script run
-     * run_program() -&gt; (
-     *   loop( 10,
-     *     foo = floor(rand(10));
-     *     check_not_zero(foo);
-     *     print(_+' - foo: '+foo);
-     *     print('  reciprocal: '+  _/foo )
-     *   )
-     * );
-     * check_not_zero(foo) -&gt; (
-     *   if (foo==0, foo = 1)
-     * )
-     * </pre>
-     * <p>Lets say that the intention was to check if the bar is zero and prevent division by zero in print,
-     * but because the <code>foo</code> is passed as a variable, it never changes the original foo value.
-     * Because of the inevitable division by zero, we get the following message:
-     * </p>
-     * <pre>
-     * Your math is wrong, Incorrect number format for Infinity at pos 112
-     * run_program() -&gt; (  loop( 10,    foo = floor(rand(10));    check_not_zero(foo);
-     * print(_+' - foo: '+foo);     HERE&gt;&gt; print('  reciprocal: '+  _/foo )  ));
-     * check_not_zero(foo) -&gt; (  if (foo==0, foo = 1))
-     * </pre>
-     *
-     * As we can see, we got our problem where the result of the mathematical operation was not a number (<code>Infinity</code>, so not a number),
-     * however by pasting our program
-     * into the command made it squish the newlines so while it is clear where the error happened and we still can track the error down,
-     * the position of the error (112) is not very helpful and wouldn't be useful if the program gets significantly longer.
-     * To combat this issue we can precede every line of the script with dollar signs <code>$</code>:
-     * <pre>
-     * /script run
-     * $run_program() -&gt; (
-     * $  loop( 10,
-     * $    foo = floor(rand(10));
-     * $    check_not_zero(foo);
-     * $    print(_+' - foo: '+foo);
-     * $    print('  reciprocal: '+  _/foo )
-     * $  )
-     * $);
-     * $check_not_zero(foo) -&gt; (
-     * $  if (foo==0, foo = 1)
-     * $)
-     * </pre>
-     *
-     * <p>Then we get the following error message</p>
-     *
-     * <pre>
-     * Your math is wrong, Incorrect number format for Infinity at line 7, pos 5
-     *     print(_+' - foo: '+foo);
-     *      HERE&gt;&gt; print('  reciprocal: '+  _/foo )
-     *   )
-     * </pre>
-     *
-     *
-     * <p>As we can note not only we get much more concise snippet, but also information about the line
-     * number and position, so means its way easier to locate the potential problems problem</p>
-     *
-     * <p>Obviously that's not the way we intended this program to work. To get it <code>foo</code> modified via
-     * a function call, we would either return it as a result and assign it to the new variable:
-     * </p>
-     * <pre>
-     *     foo = check_not_zero(foo);
-     *     ...
-     *     check_not_zero(foo) -&gt; if(foo == 0, 1, foo)
-     * </pre>
-     * <p>.. or convert it to a global variable, which in this case passing as an argument is not required</p>
-     * <pre>
-     *     global_foo = floor(rand(10));
-     *     check_foo_not_zero();
-     *     ...
-     *     check_foo_not_zero() -&gt; if(global_foo == 0, global_foo = 1)
-     * </pre>
-     * <p>.. or scope foo from the outer function - in this case the inner function has to determine what it is accessing</p>
-     * <pre>
-     *     foo = floor(rand(10));
-     *     check_foo_not_zero();
-     *     ...
-     *     check_foo_not_zero(outer(foo)) -&gt; if(foo == 0, foo = 1)
-     * </pre>
-     *
-     *<p><code>outer</code> scope can only be used in
-     * function signatures to indicate outer variables. They are not arguments, but still you would want to use
-     * locally without affecting other uses of foo in your program.
-     * </p>
-     *
-     *
-     *
-     * <p>For the most part - passing arguments as values, and using returned values   .
-     * The main usecase of <code>Scarpet</code> would rather be simpler scripts, default scope for all variables is global, unless variable
-     * is declared with <code>local</code> scope explicitly.
-     * </p>
-     *
      * @param expression .
      */
     public Expression(String expression)

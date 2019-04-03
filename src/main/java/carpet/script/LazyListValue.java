@@ -7,28 +7,32 @@ import java.util.List;
 
 public abstract class LazyListValue extends ListValue implements Iterator<Value>
 {
-    protected boolean called;
-
-    public static LazyListValue range(long range_limit)
+    public static LazyListValue range(long from, long to, long step)
     {
         return new LazyListValue()
         {
             {
-                this.limit = range_limit;
+                if (step == 0)
+                    throw new Expression.InternalExpressionException("range will never end with zero step");
+                this.current = from;
+                this.limit = to;
+                this.stepp = step;
             }
             private long current;
             private long limit;
+            private long stepp;
             @Override
             public Value next()
             {
-                called = true;
-                return new NumericValue(current++);
+                Value val = new NumericValue(current);
+                current += stepp;
+                return val;
             }
 
             @Override
             public boolean hasNext()
             {
-                return current < limit;
+                return stepp > 0?(current < limit):(current > limit);
             }
         };
     }
@@ -36,13 +40,12 @@ public abstract class LazyListValue extends ListValue implements Iterator<Value>
     public LazyListValue()
     {
         super(Collections.emptyList());
-        called = false;
     }
 
     @Override
     public String getString()
     {
-        return null;
+        return "[...]";
     }
 
     @Override

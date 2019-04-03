@@ -63,6 +63,7 @@ public class CarpetExpression
      * allows the gameloop to regain control of the game and process user commands. Typing <code>script stop</code> would make sure
      * that all the scripts will stop their execution. Execution will be halted until <code>script resume</code> is called
      *
+     * @param doStop .
      */
     public static void BreakExecutionOfAllScriptsWithCommands(boolean doStop)
     {
@@ -1064,6 +1065,10 @@ public class CarpetExpression
      * <h1>fill and scan commands</h1>
      * <p>Section Content</p>
      * <p>Other Paragraph</p>
+     * @param x .
+     * @param y .
+     * @param z .
+     * @return .
      */
     public boolean fillAndScanCommand(int x, int y, int z)
     {
@@ -1094,6 +1099,8 @@ public class CarpetExpression
      * <h1>script run command</h1>
      * <p>Section Content</p>
      * <p>Other Paragraph</p>
+     * @param pos .
+     * @return .
      */
     public String scriptRunCommand(BlockPos pos)
     {
@@ -1124,6 +1131,10 @@ public class CarpetExpression
      * <h1> script invoke / invokepoint / invokearea commands</h1>
      * <p>Section Content</p>
      * <p>Other Paragraph</p>
+     * @param source .
+     * @param call .
+     * @param argv .
+     * @return .
      */
     public static String invokeGlobalFunctionCommand(CommandSource source, String call, List<String> argv)
     {
