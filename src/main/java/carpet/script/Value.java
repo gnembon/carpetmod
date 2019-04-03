@@ -48,11 +48,11 @@ public abstract class Value implements Comparable<Value>, Cloneable
 
     public abstract boolean getBoolean();
 
-    public Value add(Value v) {
+    public Value add(Value o) {
         String lstr = this.getString();
-        if (lstr == null) // null should not happen
-            return new StringValue(v.getString());
-        String rstr = v.getString();
+        if (lstr == null) // null
+            return new StringValue(o.getString());
+        String rstr = o.getString();
         if (rstr == null)
         {
             return new StringValue(lstr);
@@ -65,6 +65,10 @@ public abstract class Value implements Comparable<Value>, Cloneable
     }
     public Value multiply(Value v)
     {
+        if (v instanceof NumericValue)
+        {
+            return v.multiply(this);
+        }
         return new StringValue(this.getString()+"."+v.getString());
     }
     public Value divide(Value v)
@@ -77,10 +81,6 @@ public abstract class Value implements Comparable<Value>, Cloneable
         return new StringValue(getString()+"/"+v.getString());
     }
 
-    public Value(Value other)
-    {
-        this();
-    }
     public Value()
     {
         this.boundVariable = null;
@@ -89,17 +89,11 @@ public abstract class Value implements Comparable<Value>, Cloneable
     @Override
     public int compareTo(final Value o)
     {
-        String lstr = getString();
-        String rstr = o.getString();
-        if (lstr == null)
+        if (o instanceof NumericValue || o instanceof ListValue)
         {
-            if (rstr == null)
-                return 0;
-            return 1;
+            return -o.compareTo(this);
         }
-        if (rstr == null)
-            return -1;
-        return lstr.compareTo(rstr);
+        return getString().compareTo(o.getString());
     }
     public boolean equals(final Value o)
     {

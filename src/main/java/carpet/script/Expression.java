@@ -801,7 +801,10 @@ public class Expression implements Cloneable
     /**
      * <h1>Constants</h1>
      * <div style="padding-left: 20px; border-radius: 5px 45px; border:1px solid grey;">
-     * <p>Scarpet </p>
+     * <p>Scarpet provides a number of constants that can be used literally in scripts</p>
+     * <ul>
+     *     <li><code>null</code>: nothing, zilch</li>
+     * </ul>
      * <p>Other Paragraph</p>
      * </div>
      */

@@ -5,7 +5,7 @@ public class NullValue extends NumericValue // TODO check nonsingleton code
     @Override
     public String getString()
     {
-        return "";
+        return "null";
     }
 
     @Override
