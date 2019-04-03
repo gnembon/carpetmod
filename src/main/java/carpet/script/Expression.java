@@ -293,9 +293,10 @@ public class Expression implements Cloneable
         put("addition+-", 20);
         put("compare>=><=<", 10);
         put("equal==!=", 7);
-        put("and&&", 4);
-        put("or||", 3);
-        put("assign=<>", 2);
+        put("and&&", 5);
+        put("or||", 4);
+        put("assign=<>", 3);
+        put("def->", 2);
         put("nextop;", 1);
     }};
     private static final Random randomizer = new Random();
@@ -879,7 +880,7 @@ public class Expression implements Cloneable
         });
 
         //assigns const procedure to the lhs, returning its previous value
-        addLazyBinaryOperatorWithDelegation("->", precedence.get("assign=<>"), false, (c, type, e, t, lv1, lv2) ->
+        addLazyBinaryOperatorWithDelegation("->", precedence.get("def->"), false, (c, type, e, t, lv1, lv2) ->
         {
             Value v1 = lv1.evalValue(c, Context.SIGNATURE);
             if (v1 instanceof FunctionSignatureValue)
@@ -956,29 +957,103 @@ public class Expression implements Cloneable
     /**
      * <h1>Operators</h1>
      * <div style="padding-left: 20px; border-radius: 5px 45px; border:1px solid grey;">
-     * There is a number of operators you can use inside the expressions. Those could be considered
-     * generic type operators that apply to most data types.
      *
-
+     * <p>There is a number of operators you can use inside the expressions. Those could be considered
+     * generic type operators that apply to most data types. They also follow standard operator
+     * precedence, i.e. <code>2+2*2</code> is understood as <code>2+(2*2)</code>,
+     * not <code>(2+2)*2</code>, otherwise they are applied from left to right, i.e.
+     * <code>2+4-3</code> is interpreted as <code>(2+4)-3</code>, which in case of numbers
+     * doesn't matter, but since <code>Scarpet</code> allows for mixing all value types
+     * the associativity would matter, and may lead to unintended effects: </p>
+     * <pre>
+     * '123'+4-2 =&gt; ('123'+4)-2 =&gt; '1234'-2 =&gt; '134'
+     * '123'+(4-2) =&gt; '123'+2 =&gt; '1232'
+     * 3*'foo' =&gt; 'foofoofoo'
+     * 1357-5 =&gt; 1352
+     * 1357-'5' =&gt; 137
+     * 3*'foo'-'o' =&gt; 'fff'
+     * l(1,3,5)+7 =&gt; l(8,10,12)
+     * </pre>
+     * <p>As you can see, values can behave differently when mixed with other types
+     * in the same expression. in case values are of the same types, the result
+     * tends to be obvious, but <code>Scarpet</code> tries to make sense of whatever it
+     * has to deal with</p>
+     * <h2>Operator Precedence</h2>
+     * <p>
+     *     Here is the complete list of operators in <code>scarpet</code> including control flow operators.
+     *     note, that commas and brackets are not operators, but behave like them:
+     *     </p>
+     *     <ul>
+     *         <li>Unary <code>+ - !</code></li>
+     *         <li>Exponent <code>^</code></li>
+     *         <li>Multipication <code>* / %</code></li>
+     *         <li>Addition <code>+ -</code></li>
+     *         <li>Comparison <code>== != &gt; &gt;= &lt;= &lt; ~</code></li>
+     *         <li>Logical And<code>&amp;&amp;</code></li>
+     *         <li>Logical Or <code>||</code></li>
+     *         <li>Assignment <code>= =+ &lt;&gt;</code></li>
+     *         <li>Definition <code>-&gt;</code></li>
+     *         <li>Next statement<code>;</code></li>
+     *         <li>Comma <code>,</code></li>
+     *         <li>Bracket <code>( )</code></li>
+     *     </ul>
      *
-     * <h2>Operator '+'</h2>
+     * <h3>Operator '+', '-', '*', '/'</h3>
      * <p>Allows to add the results of two expressions. If the operands resolve to numbers, the result is
-     * arithmetic operation</p>
+     * arithmetic operation.
+     * In case of strings, adding or subtracting from a string results in string concatenation and
+     * removal os substrings from that string. Multiplication of strings and numbers results in repeating the
+     * string N times and division results in taking the first k'th part of the string, so that <code>str*n/n ~ str</code>
+     * In case first operand is a list, either it results in a new list
+     * with all elements modified one by one with the other operand, or if the operand is a list with the same number of
+     * items - elementwise addition/subtraction</p>
      * <p>Examples:</p>
+     * <pre>
+     * 2+3 =&gt; 5
+     * 'foo'+3+2 =&gt; 'foo32'
+     * 'foo'+(3+2) =&gt; 'foo5'
+     * 3+2+'bar' =&gt; '5bar'
+     * 'foo'*3 =&gt; 'foofoofoo'
+     * 'foofoofoo' / 3 =&gt; 'foo'
+     * 'foofoofoo'-'o' =&gt; 'fff'
+     * l(1,2,3)+1  =&gt; l(2,3,4)
+     * b = l(100,63,100); b+l(10,0,10)  =&gt; l(110,63,110)
+     * </pre>
      *
-     * <p><code> 2+3 =&gt; 5  </code></p>
-     * <p><code> 'foo'+3+2 =&gt; 'abc32'  </code></p>
-     * <p><code> 3+2+'bar' =&gt; '5bar'  </code></p>
+     * <h3>Operator '%', '^'</h3>
+     * <p>The modulo and exponent (power) operators work only if both operands are numbers</p>
+     * <pre>
+     * pi^pi%euler  =&gt; 1.124....
+     * -9 % 4  =&gt; -1
+     * 9 % -4  =&gt; 0 ¯\_(ツ)_/¯ Java
+     * -3 ^ 2  =&gt; 9
+     * -3 ^ pi =&gt; // Error
+     * </pre>
      *
-     * <h2>Operator '-'</h2>
-     * <p>Allows to add the results of two expressions. If the operands resolve to numbers, the result is
-     * arithmetic operation</p>
+     * <h3>Operator '==', '!=', '&lt;', '&gt;', '&lt;=', '&gt;=' </h3>
+     * <p>Allows to compare the results of two expressions.
+     * For numbers it is considers arithmetic order of numbers, for strings - lexicographical,
+     * nulls are always 'less' than everything else, and lists check their elements - if the sizes
+     * are different, the size matters, otherwise, pairwise comparisons for each elements are performed
+     * </p>
+     * <pre>
      *
-     * <p>Examples:</p>
+     * </pre>
      *
-     * <p><code> 2+3 =&gt; 5  </code></p>
-     * <p><code> 'foo'+3+2 =&gt; 'abc32'  </code></p>
-     * <p><code> 3+2+'bar' =&gt; '5bar'  </code></p>
+     * <h3>Operator '&amp;&amp;', '||'</h3>
+     * <p></p>
+     * <pre>
+     * </pre>
+     *
+     * <h3>Operator ~ </h3>
+     *
+     * <h3>Operator =, &lt;&gt;, =+</h3>
+     *
+     * <h3>Unary Operator -, +</h3>
+     *
+     * <h3>Operator !</h3>
+     *
+     *
      * </div>
      */
     public void Operators()

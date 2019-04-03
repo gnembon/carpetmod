@@ -1093,6 +1093,10 @@ public class CarpetExpression
         {
             throw new ExpressionInspector.CarpetExpressionException(e.getMessage());
         }
+        catch (ArithmeticException ae)
+        {
+            throw new ExpressionInspector.CarpetExpressionException("math doesn't compute... "+ae.getMessage());
+        }
     }
 
     /**
@@ -1124,6 +1128,10 @@ public class CarpetExpression
         catch (ExpressionException e)
         {
             throw new ExpressionInspector.CarpetExpressionException(e.getMessage());
+        }
+        catch (ArithmeticException ae)
+        {
+            throw new ExpressionInspector.CarpetExpressionException("math doesn't compute... "+ae.getMessage());
         }
     }
 
@@ -1169,6 +1177,10 @@ public class CarpetExpression
         catch (ExpressionException e)
         {
              return e.getMessage();
+        }
+        catch (ArithmeticException ae)
+        {
+            throw new ExpressionInspector.CarpetExpressionException("math doesn't compute... "+ae.getMessage());
         }
 
     }

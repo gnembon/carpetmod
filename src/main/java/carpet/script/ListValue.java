@@ -45,43 +45,151 @@ public class ListValue extends Value
     }
 
     @Override
-    public Value add(Value v) {
-        if (v instanceof ListValue)
+    public Value add(Value other) {
+        ListValue output = new ListValue();
+        if (other instanceof ListValue)
         {
-            return new ListValue(Stream.concat(items.stream(), ((ListValue) v).items.stream())
-                    .collect(Collectors.toList()));
+            List<Value> other_list = ((ListValue) other).items;
+            if (other_list.size() == items.size())
+            {
+                for(int i = 0, size = items.size(); i < size; i++)
+                {
+                    output.items.add(items.get(i).add(other_list.get(i)));
+                }
+            }
+            else
+            {
+                throw new Expression.InternalExpressionException("Cannot subtract two lists of uneven sizes");
+            }
         }
-        ListValue ret = new ListValue(items);
-        ret.append(v);
-        return ret;
+        else
+        {
+            for (Value v : items)
+            {
+                output.items.add(v.add(other));
+            }
+        }
+        return output;
     }
     public void append(Value v)
     {
         items.add(v);
     }
-    public Value subtract(Value v)
+    public Value subtract(Value other)
     {
-        throw new UnsupportedOperationException(); // TODO
+        ListValue output = new ListValue();
+        if (other instanceof ListValue)
+        {
+            List<Value> other_list = ((ListValue) other).items;
+            if (other_list.size() == items.size())
+            {
+                for(int i = 0, size = items.size(); i < size; i++)
+                {
+                    output.items.add(items.get(i).subtract(other_list.get(i)));
+                }
+            }
+            else
+            {
+                throw new Expression.InternalExpressionException("Cannot subtract two lists of uneven sizes");
+            }
+        }
+        else
+        {
+            for (Value v : items)
+            {
+                output.items.add(v.subtract(other));
+            }
+        }
+        return output;
     }
-    public void subtractFrom(Value v)
+    public void subtractFrom(Value v) // if I ever do -= then it wouod remove items
     {
         throw new UnsupportedOperationException(); // TODO
     }
 
 
-    public Value multiply(Value v)
+    public Value multiply(Value other)
     {
-        throw new UnsupportedOperationException(); // TODO
+        ListValue output = new ListValue();
+        if (other instanceof ListValue)
+        {
+            List<Value> other_list = ((ListValue) other).items;
+            if (other_list.size() == items.size())
+            {
+                for(int i = 0, size = items.size(); i < size; i++)
+                {
+                    output.items.add(items.get(i).multiply(other_list.get(i)));
+                }
+            }
+            else
+            {
+                throw new Expression.InternalExpressionException("Cannot subtract two lists of uneven sizes");
+            }
+        }
+        else
+        {
+            for (Value v : items)
+            {
+                output.items.add(v.multiply(other));
+            }
+        }
+        return output;
     }
-    public Value divide(Value v)
+    public Value divide(Value other)
     {
-        throw new UnsupportedOperationException(); // TODO
+        ListValue output = new ListValue();
+        if (other instanceof ListValue)
+        {
+            List<Value> other_list = ((ListValue) other).items;
+            if (other_list.size() == items.size())
+            {
+                for(int i = 0, size = items.size(); i < size; i++)
+                {
+                    output.items.add(items.get(i).divide(other_list.get(i)));
+                }
+            }
+            else
+            {
+                throw new Expression.InternalExpressionException("Cannot subtract two lists of uneven sizes");
+            }
+        }
+        else
+        {
+            for (Value v : items)
+            {
+                output.items.add(v.divide(other));
+            }
+        }
+        return output;
     }
 
     @Override
     public int compareTo(Value o)
     {
-        throw new UnsupportedOperationException(); // TODO
+        if (o instanceof ListValue)
+        {
+            ListValue ol = (ListValue)o;
+            int this_size = this.getItems().size();
+            int o_size = ol.getItems().size();
+            if (this_size != o_size)
+            {
+                return this_size - o_size;
+            }
+            if (this_size == 0)
+            {
+                return 0;
+            }
+            for (int i = 0; i < this_size; i++)
+            {
+                int res = this.items.get(i).compareTo(ol.items.get(i));
+                if (res != 0)
+                {
+                    return res;
+                }
+            }
+            return 0;
+        }
+        return super.compareTo(o);
     }
 
     public List<Value> getItems()

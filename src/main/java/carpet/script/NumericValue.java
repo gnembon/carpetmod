@@ -83,6 +83,10 @@ public class NumericValue extends Value
     @Override
     public int compareTo(Value o)
     {
+        if (o instanceof NullValue)
+        {
+            return -o.compareTo(this);
+        }
         if (o instanceof NumericValue)
         {
             return value.compareTo(((NumericValue) o).getDouble());
@@ -92,6 +96,10 @@ public class NumericValue extends Value
     @Override
     public boolean equals(Value o)
     {
+        if (o instanceof NullValue)
+        {
+            return o.equals(this);
+        }
         if (o instanceof NumericValue)
         {
             return !this.subtract(o).getBoolean();
