@@ -371,6 +371,10 @@ public class CarpetExpression
      * <h1>Entity manipulations</h1>
      * <p>Section Content</p>
      * <p>Other Paragraph</p>
+     *
+     *
+     *
+     * map(entities_area('all',x,y,z,30,30,30),run('kill '+query(_,'id'))) // doesn't kill the player
      */
 
     public void EntityManipulation()
