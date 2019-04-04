@@ -819,7 +819,7 @@ public class Expression implements Cloneable
      * <h1>User-defined functions and program control flow</h1>
      * <div style="padding-left: 20px; border-radius: 5px 45px; border:1px solid grey;">
      * <h2>Writing programs with more than 1 line</h2>
-     * <h3>Operator <code>;</code></h3>
+     * <h3><code>Operator ;</code></h3>
      * <p>To effectively write programs that have more than one line, a programmer needs way to specify a sequence of
      * commands that execute one after another. In <code>scarpet</code> this can be achieved with <code>;</code>. Its an operator,
      * and by separating statements with semicolons. And since whitespaces and <code>$</code> signs are all treats as
@@ -854,7 +854,7 @@ public class Expression implements Cloneable
      * <pre>
      * a() -&gt; global_list+=1; global_list = l(1,2,3); a(); a(); global_list  // =&gt; [1,2,3,1,1]
      * </pre>
-     * <h3>Operator <code>-&gt;</code></h3>
+     * <h3><code>Operator -&gt;</code></h3>
      * <p>To organize code better than a flat sequence of operations, one can define functions. Definition is correct if
      * has the following form</p>
      * <pre>
@@ -871,7 +871,7 @@ public class Expression implements Cloneable
      * </pre>
      * <p>In case the inner function wants to operate and modify larger objects, lists from the outer
      * scope, but not global, it needs to use <code>outer</code> function in function signature</p>
-     * <h3><code>outer(arg)</code> function</h3>
+     * <h3><code>outer(arg)</code></h3>
      * <p><code>outer</code> function can only be used in the function signature, and it will
      * cause an error everywhere else. It borrows the reference to that variable from the outer scope and allows
      * its modification in the inner scope. Any modification of outer variable will result in change of them in
@@ -911,7 +911,7 @@ public class Expression implements Cloneable
      * call stack and continue program execution. There is only one level of exceptions currently in carpet, so if the inner
      * function also defines the <code>try</code> catchment area, it will received the exception first, but it can technically
      * rethrow the value its getting for the outer scope. Unhandled throw acts like an exit statement.</p>
-     * <h3>if(cond, expr, cond?, expr?, ..., default?) </h3>
+     * <h3><code>if(cond, expr, cond?, expr?, ..., default?)</code></h3>
      * <p>If statement is a function that takes a number of conditions that are evaluated one after another and if
      * any of them turns out true, its <code>expr</code> gets returned, otherwise, if all conditions fail, the return value is
      * <code>default</code> expression, or <code>null</code> if default is skipped</p>
