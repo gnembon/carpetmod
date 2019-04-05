@@ -800,17 +800,26 @@ public class Expression implements Cloneable
     }
 
     /**
-     * <h1>Constants</h1>
+     * <h1>Variables and Constants</h1>
      * <div style="padding-left: 20px; border-radius: 5px 45px; border:1px solid grey;">
-     * <p>Scarpet provides a number of constants that can be used literally in scripts</p>
+     * <p><code>scarpet</code> provides a number of constants that can be used literally in scripts</p>
      * <ul>
-     *     <li><code>null</code>: nothing, zilch</li>
+     *     <li><code>null</code>: nothing, zilch, not even false</li>
+     *     <li><code>true</code>: pure true, or just 1 (one)</li>
+     *     <li><code>false</code>: false truth, or true falsth, 0 (zero) actually</li>
+     *     <li><code>pi</code>: for the fans of perimeters, its a perimeter of an apple pi of diameter 1. About 3.14</li>
+     *     <li><code>euler</code>: clever guy. Derivative of its exponent is goto 1. About 2.72</li>
      * </ul>
-     * <p>Other Paragraph</p>
+     * <p>Apart from that, there is a bunch of system variables, that start with <code>_</code> that are set by
+     * <code>scarpet</code> built-ins, like <code>_</code>, typically each consecutive value in loops,
+     * <code>_i</code> indicating iteration, or <code>_a</code> like an accumulator for <code>reduce</code>
+     * function. Certain calls to Minecraft specific calls would also set <code>_x</code>,
+     * <code>_y</code>, <code>_z</code>, indicating block positions. All variables starting with
+     * <code>_</code> are read-only, and cannot be declared and modified in client code.</p>
      * </div>
      */
 
-    public void Constants() // public just to get the Javadocs right
+    public void VariablesAndConstants() // public just to get the Javadocs right
     {
         // all declared as global variables to save on switching scope cost
     }
@@ -1097,7 +1106,7 @@ public class Expression implements Cloneable
      *         <li>Bracket <code>( )</code></li>
      *     </ul>
      *
-     * <h3>Operator '+', '-', '*', '/'</h3>
+     * <h3><code>Basic Arithmetic Operators  +  -  *  /</code></h3>
      * <p>Allows to add the results of two expressions. If the operands resolve to numbers, the result is
      * arithmetic operation.
      * In case of strings, adding or subtracting from a string results in string concatenation and
@@ -1119,7 +1128,7 @@ public class Expression implements Cloneable
      * b = l(100,63,100); b+l(10,0,10)  =&gt; l(110,63,110)
      * </pre>
      *
-     * <h3>Operator '%', '^'</h3>
+     * <h3><code>Just Operators  %  ^</code></h3>
      * <p>The modulo and exponent (power) operators work only if both operands are numbers</p>
      * <pre>
      * pi^pi%euler  =&gt; 1.124....
@@ -1129,7 +1138,7 @@ public class Expression implements Cloneable
      * -3 ^ pi =&gt; // Error
      * </pre>
      *
-     * <h3>Operator '==', '!=', '&lt;', '&gt;', '&lt;=', '&gt;=' </h3>
+     * <h3><code>Comparison Operators  ==  !=  &lt;  &gt;  &lt;=  &gt;=</code></h3>
      * <p>Allows to compare the results of two expressions.
      * For numbers it is considers arithmetic order of numbers, for strings - lexicographical,
      * nulls are always 'less' than everything else, and lists check their elements - if the sizes
@@ -1149,7 +1158,7 @@ public class Expression implements Cloneable
      * 3 == 3.0
      * </pre>
      *
-     * <h3>Operator '&amp;&amp;', '||'</h3>
+     * <h3><code>Logical Operators  &amp;&amp;   ||</code></h3>
      * <p>These operator compute respective boolean operation on the operands. What it important is that if calculating
      * of the second operand is not necessary, it won't be evaluated, which means one can use them as conditional
      * statements</p>
@@ -1161,7 +1170,7 @@ public class Expression implements Cloneable
      * null != false &amp;&amp; run('kill gnembon')  =&gt; 1 // gnembon dies, cheats allowed
      * </pre>
      *
-     * <h3>Operator ~ </h3>
+     * <h3><code>Matching Operator  ~</code></h3>
      * <p>This operator should be understood as 'matches', or 'in'. For strings it matches the right operand as a regular
      * expression to the left one, returning the first match. This can be used to extract information from unparsed nbt's
      * in a more efficient way. For lists it checks if an element is in the list, and returns the index of that element,
@@ -1198,7 +1207,7 @@ public class Expression implements Cloneable
      * $);
      * /script run global_get_enchantment(players(), 'sharpness')
      * </pre>
-     * <h3>Operator =, &lt;&gt;, +=</h3>
+     * <h3><code>Assignment Operators  =  &lt;&gt;  +=</code></h3>
      * <p>A set of assignment operators. All require bounded variable on the LHS, <code>&lt;&gt;</code> requires
      * bounded arguments on the right hand side as well (bounded, meaning being variables). Additionally they can also
      * handle list constructors with all bounded variables, and work then as list assignment operators.
@@ -1214,7 +1223,7 @@ public class Expression implements Cloneable
      * a = l(1,2,3); a += 4  =&gt; [1,2,3,4]
      * a = l(1,2,3,4); a = filter(a,_!=2)  =&gt; [1,3,4]
      * </pre>
-     * <h3>Unary Operator -, +</h3>
+     * <h3><code>Unary Operators  -  +</code></h3>
      * <p>Require a number, flips the sign. One way to assert its a number by crashing the script. gg.</p>
      * <pre>
      * -4  =&gt; -4
@@ -1222,7 +1231,7 @@ public class Expression implements Cloneable
      * +'4'  // Error message
      * </pre>
      *
-     * <h3>Operator !</h3>
+     * <h3><code>Negation Operator  !</code></h3>
      * <p>flops boolean condition of the expression. Equivalent of <code>bool(expr)==false</code></p>
      * <pre>
      * !true  =&gt; 0
@@ -1389,10 +1398,82 @@ public class Expression implements Cloneable
     /**
      * <h1>Arithmetic operations</h1>
      * <div style="padding-left: 20px; border-radius: 5px 45px; border:1px solid grey;">
-     * <p>Section Content</p>
-     * <p>Other Paragraph</p>
+     * <h2>Basic Arithmetic Functions</h2>
+     * <p>There is bunch of them - they require a number and spit out a number,
+     * doing what you would expect them to do.</p>
+     * <h3><code>fact(n)</code></h3>
+     * <p>Factorial of a number, a.k.a <code>n!</code>, just not in <code>scarpet</code>. Gets big... quick...</p>
+     * <h3><code>sqrt(n)</code></h3>
+     * <p>Square root. For other fancy roots, use <code>^</code>, math and yo noggin. Imagine square roots on a tree...</p>
+     * <h3><code>abs(n)</code></h3>
+     * <p>Absolut value.</p>
+     * <h3><code>round(n)</code></h3>
+     * <p>Closest integer value. Did you know the earth is also round?</p>
+     * <h3><code>floor(n)</code></h3>
+     * <p>Highest integer that is still no larger then <code>n</code>. Insert a floor pun here.</p>
+     * <h3><code>ceil(n)</code></h3>
+     * <p>First lucky integer that is not smalller than <code>n</code>. As you would expect, ceiling is typically
+     * right above the floor.</p>
+     * <h3><code>ln(n)</code></h3>
+     * <p>Natural logarithm of <code>n</code>. Naturally.</p>
+     * <h3><code>ln1p(n)</code></h3>
+     * <p>Natural logarithm of <code>n+1</code>. Very optimistic.</p>
+     * <h3><code>log10(n)</code></h3>
+     * <p>Decimal logarithm of <code>n</code>. Its ceiling is the length of its floor.</p>
+     * <h3><code>log(n)</code></h3>
+     * <p>Binary logarithm of <code>n</code>. Finally, a proper one, not like the other 100.</p>
+     * <h3><code>log1p(n)</code></h3>
+     * <p>Binary logarithm of <code>n+1</code>. Also always positive.</p>
+     * <h3><code>mandelbrot(a, b, limit)</code></h3>
+     * <p>Computes the value of the mandelbrot set, for set <code>a</code> and <code>b</code> spot.
+     * Spot the beetle. Why not.</p>
+     * <h3><code>min(arg, ...), min(list), max(arg, ...), max(list)</code></h3>
+     * <p>Compute minimum or maximum of supplied arguments assuming default sortraphical order. In case you are
+     * missing <code>argmax</code>, just use <code>a ~ max(a)</code>, little less efficient, but still fun.
+     * </p>
+     * <p>
+     * Interesting bit - <code>min</code> and <code>max</code> don't remove variable associations from arguments, which
+     * means can be used as LHS of assignments (obvious case), or argument spec in function definitions (far less obvious).
+     * </p>
+     * <pre>
+     * a = 1; b = 2; min(a,b) = 3; l(a,b)  =&gt; [3, 2]
+     * a = 1; b = 2; fun(x, min(a,b)) -&gt; l(a,b); fun(3,5)  =&gt; [5, 0]
+     * </pre>
+     * <p>Absolutely no idea, how the latter might be useful in practice. But since it compiles, can ship it.</p>
+     *
+     * <h3><code>relu(n)</code></h3>
+     * <p>Rectilinear function of <code>n</code>. 0 below 0, n above. Why not.</p>
+     * <h2>Trigonometric / Geometric Functions</h2>
+     * <h3><code>sin(x)</code></h3>
+     * <h3><code>cos(x)</code></h3>
+     * <h3><code>tan(x)</code></h3>
+     * <h3><code>asin(x)</code></h3>
+     * <h3><code>acos(x)</code></h3>
+     * <h3><code>atan(x)</code></h3>
+     * <h3><code>atan2(x,y)</code></h3>
+     * <h3><code>sinh(x)</code></h3>
+     * <h3><code>cosh(x)</code></h3>
+     * <h3><code>tanh(x)</code></h3>
+     * <h3><code>sec(x)</code></h3>
+     * <h3><code>csc(x)</code></h3>
+     * <h3><code>sech(x)</code></h3>
+     * <h3><code>csch(x)</code></h3>
+     * <h3><code>cot(x)</code></h3>
+     * <h3><code>acot(x)</code></h3>
+     * <h3><code>coth(x)</code></h3>
+     * <h3><code>asinh(x)</code></h3>
+     * <h3><code>acosh(x)</code></h3>
+     * <h3><code>atanh(x)</code></h3>
+     * <h3><code>rad(deg)</code></h3>
+     * <h3><code>deg(rad)</code></h3>
+     * <p>Use as you wish</p>
+     *
      * </div>
+     *
      */
+
+
+
     public void ArithmeticOperations()
     {
         addLazyFunction("not", 1, (c, t, lv) -> lv.get(0).evalValue(c, Context.BOOLEAN).getBoolean() ? ((cc, tt) -> Value.FALSE) : ((cc, tt) -> Value.TRUE));
@@ -1471,6 +1552,8 @@ public class Expression implements Cloneable
             if (lv.size() == 0)
                 throw new InternalExpressionException("MAX requires at least one parameter");
             Value max = null;
+            if (lv.size()==1 && lv.get(0) instanceof ListValue)
+                lv = ((ListValue) lv.get(0)).getItems();
             for (Value parameter : lv)
             {
                 if (max == null || parameter.compareTo(max) > 0) max = parameter;
@@ -1483,6 +1566,8 @@ public class Expression implements Cloneable
             if (lv.size() == 0)
                 throw new InternalExpressionException("MIN requires at least one parameter");
             Value min = null;
+            if (lv.size()==1 && lv.get(0) instanceof ListValue)
+                lv = ((ListValue) lv.get(0)).getItems();
             for (Value parameter : lv)
             {
                 if (min == null || parameter.compareTo(min) < 0) min = parameter;
@@ -2439,7 +2524,7 @@ public class Expression implements Cloneable
     {
         expression = expression.trim().replaceAll(";+$", "");
         this.expression = expression.replaceAll("\\$", "\n");
-        Constants();
+        VariablesAndConstants();
         UserDefinedFunctionsAndControlFlow();
         Operators();
         ArithmeticOperations();
