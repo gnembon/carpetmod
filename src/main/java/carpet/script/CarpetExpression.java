@@ -37,7 +37,13 @@ import net.minecraft.world.WorldServer;
 import net.minecraft.world.gen.Heightmap;
 import net.minecraft.world.storage.SessionLockException;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -46,6 +52,10 @@ import static java.lang.Math.abs;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 
+/**
+ * <h1>Minecraft specific API and <code>scarpet</code> language add-ons</h1>
+ * <p>Yeah...</p>
+ */
 public class CarpetExpression
 {
     private CommandSource source;
@@ -57,12 +67,13 @@ public class CarpetExpression
 
     /**
      * <h1>script stop/resume commands</h1>
+     * <div style="padding-left: 20px; border-radius: 5px 45px; border:1px solid grey;">
      * <p>Section Content</p>
      * <p>Other Paragraph</p>
      * Stop All allows to stop execution of any scipt currently running that calls the tick() function which
      * allows the gameloop to regain control of the game and process user commands. Typing <code>script stop</code> would make sure
      * that all the scripts will stop their execution. Execution will be halted until <code>script resume</code> is called
-     *
+     * </div>
      * @param doStop .
      */
     public static void BreakExecutionOfAllScriptsWithCommands(boolean doStop)
@@ -149,8 +160,10 @@ public class CarpetExpression
 
     /**
      * <h1>Blocks manipulations</h1>
+     * <div style="padding-left: 20px; border-radius: 5px 45px; border:1px solid grey;">
      * <p>Section Content</p>
      * <p>Other Paragraph</p>
+     * </div>
      */
 
     public void BlockManipulation()
@@ -369,12 +382,14 @@ public class CarpetExpression
 
     /**
      * <h1>Entity manipulations</h1>
+     * <div style="padding-left: 20px; border-radius: 5px 45px; border:1px solid grey;">
      * <p>Section Content</p>
      * <p>Other Paragraph</p>
      *
      *
      *
-     * map(entities_area('all',x,y,z,30,30,30),run('kill '+query(_,'id'))) // doesn't kill the player
+     * <pre>map(entities_area('all',x,y,z,30,30,30),run('kill '+query(_,'id'))) // doesn't kill the player</pre>
+     * </div>
      */
 
     public void EntityManipulation()
@@ -512,8 +527,10 @@ public class CarpetExpression
 
     /**
      * <h1>Iterating over larger areas of blocks</h1>
+     * <div style="padding-left: 20px; border-radius: 5px 45px; border:1px solid grey;">
      * <p>Section Content</p>
      * <p>Other Paragraph</p>
+     * </div>
      */
 
     public void IteratingOverAreasOfBlocks()
@@ -868,8 +885,10 @@ public class CarpetExpression
     //TODO sounds
     /**
      * <h1>Auxiliary aspects</h1>
+     * <div style="padding-left: 20px; border-radius: 5px 45px; border:1px solid grey;">
      * <p>Section Content</p>
      * <p>Other Paragraph</p>
+     * </div>
      */
 
     public void AuxiliaryAspects()
@@ -1067,8 +1086,10 @@ public class CarpetExpression
 
     /**
      * <h1>fill and scan commands</h1>
+     * <div style="padding-left: 20px; border-radius: 5px 45px; border:1px solid grey;">
      * <p>Section Content</p>
      * <p>Other Paragraph</p>
+     * </div>
      * @param x .
      * @param y .
      * @param z .
@@ -1105,8 +1126,10 @@ public class CarpetExpression
 
     /**
      * <h1>script run command</h1>
+     * <div style="padding-left: 20px; border-radius: 5px 45px; border:1px solid grey;">
      * <p>Section Content</p>
      * <p>Other Paragraph</p>
+     * </div>
      * @param pos .
      * @return .
      */
@@ -1141,8 +1164,10 @@ public class CarpetExpression
 
     /**
      * <h1> script invoke / invokepoint / invokearea commands</h1>
+     * <div style="padding-left: 20px; border-radius: 5px 45px; border:1px solid grey;">
      * <p>Section Content</p>
      * <p>Other Paragraph</p>
+     * </div>
      * @param source .
      * @param call .
      * @param argv .
