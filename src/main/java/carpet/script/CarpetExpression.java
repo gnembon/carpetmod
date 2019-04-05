@@ -54,7 +54,7 @@ import static java.lang.Math.min;
 
 /**
  * <h1>Minecraft specific API and <code>scarpet</code> language add-ons</h1>
- * <p>Yeah...</p>
+ *
  */
 public class CarpetExpression
 {
@@ -68,11 +68,31 @@ public class CarpetExpression
     /**
      * <h1>script stop/resume commands</h1>
      * <div style="padding-left: 20px; border-radius: 5px 45px; border:1px solid grey;">
-     * <p>Section Content</p>
-     * <p>Other Paragraph</p>
-     * Stop All allows to stop execution of any scipt currently running that calls the tick() function which
-     * allows the gameloop to regain control of the game and process user commands. Typing <code>script stop</code> would make sure
-     * that all the scripts will stop their execution. Execution will be halted until <code>script resume</code> is called
+     * <p>
+     * <code>/script stop</code> allows to stop execution of any script currently running that calls the
+     * <code>gametick()</code> function which
+     * allows the gameloop to regain control of the game and process other commands. This will also make sure
+     * that all current and future scripts will stop their execution. Execution of all scripts will be
+     * prevented until <code>/script resume</code> command is called.
+     * </p>
+     * <p>Lets look at the following example. This is a program computes Fibonacci number in a recursive manner:</p>
+     * <pre>
+     * fib(n) -> if(n<3, 1, fib(n-1)+fib(n-2) ); fib(8)
+     * </pre>
+     * <p> That's really bad way of doing it, because the higher number we need to compute the compute requirements will rise
+     * exponentially with <code>n</code>. It takes a little over 50 milliseconds to do fib(24), so above one tick,
+     * but about a minute to do fib(40). Calling fib(40) will not only freeze the game, but also you woudn't be able to interrupt
+     * its execution. We can modify the script as follows</p>
+     * <pre>fib(n) -> ( gametick(50); if(n<3, 1, fib(n-1)+fib(n-2) ) ); fib(40)</pre>
+     * <p>But this would never finish as such call would finish after <code>~ 2^40</code> ticks. To make our computations
+     * responsive, yet able to respond to user interactions, other commands, as well as interrupt execution,
+     * we could do the following:</p>
+     * <pre>fib(n) -> ( if(n==23, gametick(50) ); if(n<3, 1, fib(n-1)+fib(n-2) ) ); fib(40)</pre>
+     * <p>This would slow down the computation of fib(40) from a minute to two, but allows the game to keep continue running
+     * and be responsive to commands, using about half of each tick to advance the computation.
+     * Obviously depending on the problem, and available hardware, certain things can take
+     * more or less time to execute, so portioning of work with calling <code>gametick</code> should be balanced in each
+     * case separately</p>
      * </div>
      * @param doStop .
      */
@@ -161,7 +181,7 @@ public class CarpetExpression
     /**
      * <h1>Blocks manipulations</h1>
      * <div style="padding-left: 20px; border-radius: 5px 45px; border:1px solid grey;">
-     * <p>Section Content</p>
+     * <h2>Section Content</h2>
      * <p>Other Paragraph</p>
      * </div>
      */
@@ -1097,6 +1117,8 @@ public class CarpetExpression
      */
     public boolean fillAndScanCommand(int x, int y, int z)
     {
+        if (stopAll)
+            return false;
         try
         {
             Context context = new CarpetContext(this.expr, source, origin).
@@ -1135,6 +1157,8 @@ public class CarpetExpression
      */
     public String scriptRunCommand(BlockPos pos)
     {
+        if (stopAll)
+            return "SCRIPTING PAUSED";
         try
         {
             Context context = new CarpetContext(this.expr, source, origin).
@@ -1175,6 +1199,8 @@ public class CarpetExpression
      */
     public static String invokeGlobalFunctionCommand(CommandSource source, String call, List<String> argv)
     {
+        if (stopAll)
+            return "SCRIPTING PAUSED";
         Expression.UserDefinedFunction acf = Expression.globalFunctions.get(call);
         if (acf == null)
             return "UNDEFINED";
