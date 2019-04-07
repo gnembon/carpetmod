@@ -3,7 +3,9 @@ package carpet.script;
 import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import javafx.util.Pair;
+import net.minecraft.command.CommandSource;
 import net.minecraft.command.arguments.EntitySelector;
+import net.minecraft.command.arguments.EntitySelectorParser;
 import net.minecraft.command.arguments.NBTPathArgument;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
@@ -20,12 +22,7 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.registry.IRegistry;
 import net.minecraft.util.text.TextComponentString;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
@@ -39,6 +36,27 @@ public class EntityValue extends Value
     {
         entity = e;
     }
+
+    private static Map<String, EntitySelector> selectorCache = new HashMap<>();
+    public static Collection<? extends Entity > getEntitiesFromSelector(CommandSource source, String selector)
+    {
+        try
+        {
+            EntitySelector entitySelector = selectorCache.get(selector);
+            if (entitySelector != null)
+            {
+                return entitySelector.select(source);
+            }
+            entitySelector = new EntitySelectorParser(new StringReader(selector), true).parse();
+            selectorCache.put(selector, entitySelector);
+            return entitySelector.select(source);
+        }
+        catch (CommandSyntaxException e)
+        {
+            throw new Expression.InternalExpressionException("Cannot select entities from "+selector);
+        }
+    }
+
     public Entity getEntity()
     {
         return entity;
@@ -66,7 +84,14 @@ public class EntityValue extends Value
         return super.equals(v);
     }
 
-    public static Map<String, Pair<Class<? extends Entity>, Predicate<? super Entity>>> entityPredicates =
+    public static Pair<Class<? extends Entity>, Predicate<? super Entity>> getPredicate(String who)
+    {
+        Pair<Class<? extends Entity>, Predicate<? super Entity>> res = entityPredicates.get(who);
+        if (res != null) return res;
+        return res; //TODO add more here like search by tags, or type
+        //if (who.startsWith('tag:'))
+    }
+    private static Map<String, Pair<Class<? extends Entity>, Predicate<? super Entity>>> entityPredicates =
             new HashMap<String, Pair<Class<? extends Entity>, Predicate<? super Entity>>>()
     {{
         put("all", new Pair<>(Entity.class, EntitySelectors.IS_ALIVE));

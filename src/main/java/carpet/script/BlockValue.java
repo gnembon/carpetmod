@@ -13,7 +13,9 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.registry.IRegistry;
 import net.minecraft.world.World;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class BlockValue extends Value
 {
@@ -47,13 +49,20 @@ public class BlockValue extends Value
         throw new Expression.InternalExpressionException("Unknown block: "+str);
     }
 
+    private static Map<String, BlockValue> bvCache= new HashMap<>();
     public static BlockValue fromCommandExpression(String str)
     {
         try
         {
+            BlockValue bv = bvCache.get(str);
+            if (bv != null) return bv;
             BlockStateParser blockstateparser = (new BlockStateParser(new StringReader(str), false)).parse(true);
             if (blockstateparser.getState() != null)
-                return new BlockValue(blockstateparser.getState(),null,null);
+            {
+                bv = new BlockValue(blockstateparser.getState(), null, null);
+                bvCache.put(str, bv);
+                return bv;
+            }
         }
         catch (CommandSyntaxException ignored)
         {

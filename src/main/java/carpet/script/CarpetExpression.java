@@ -897,7 +897,7 @@ public class CarpetExpression
 
         this.expr.addLazyFunction("entity_list", 1, (c, t, lv) -> {
             String who = lv.get(0).evalValue(c).getString();
-            Pair<Class<? extends Entity>, Predicate<? super Entity>> pair = EntityValue.entityPredicates.get(who);
+            Pair<Class<? extends Entity>, Predicate<? super Entity>> pair = EntityValue.getPredicate(who);
             if (pair == null)
             {
                 throw new InternalExpressionException("Unknown entity selection criterion: "+who);
@@ -918,7 +918,7 @@ public class CarpetExpression
                     Expression.getNumericValue(lv.get(6).evalValue(c)).getDouble()
             );
             String who = lv.get(0).evalValue(c).getString();
-            Pair<Class<? extends Entity>, Predicate<? super Entity>> pair = EntityValue.entityPredicates.get(who);
+            Pair<Class<? extends Entity>, Predicate<? super Entity>> pair = EntityValue.getPredicate(who);
             if (pair == null)
             {
                 throw new InternalExpressionException("Unknown entity selection criterion: "+who);
@@ -927,24 +927,15 @@ public class CarpetExpression
             return (_c, _t ) -> ListValue.wrap(entityList.stream().map(EntityValue::new).collect(Collectors.toList()));
         });
 
-        this.expr.addLazyFunction("entity_selector", -1, (c, t, lv) -> {
+        this.expr.addLazyFunction("entity_selector", -1, (c, t, lv) ->
+        {
             String selector = lv.get(0).evalValue(c).getString();
-
-            try
+            List<Value> retlist = new ArrayList<>();
+            for (Entity e: EntityValue.getEntitiesFromSelector(((CarpetContext)c).s, selector))
             {
-                EntitySelector entityselector = new EntitySelectorParser(new StringReader(selector), true).parse();
-                Collection<? extends Entity > entities = entityselector.select(((CarpetContext)c).s);
-                List<Value> retlist = new ArrayList<>();
-                for (Entity e: entities)
-                {
-                    retlist.add(new EntityValue(e));
-                }
-                return (c_, t_) -> ListValue.wrap(retlist);
+                retlist.add(new EntityValue(e));
             }
-            catch (CommandSyntaxException e)
-            {
-                throw new InternalExpressionException("Cannot select entities from "+selector);
-            }
+            return (c_, t_) -> ListValue.wrap(retlist);
         });
 
 
