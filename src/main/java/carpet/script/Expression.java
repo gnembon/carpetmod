@@ -1442,7 +1442,8 @@ public class Expression implements Cloneable
      * <p>Absolutely no idea, how the latter might be useful in practice. But since it compiles, can ship it.</p>
      *
      * <h3><code>relu(n)</code></h3>
-     * <p>Rectilinear function of <code>n</code>. 0 below 0, n above. Why not.</p>
+     * <p>Linear rectifier of <code>n</code>. 0 below 0, n above. Why not. <code>max(0,n)</code>
+     * with less moral repercussions.</p>
      * <h2>Trigonometric / Geometric Functions</h2>
      * <h3><code>sin(x)</code></h3>
      * <h3><code>cos(x)</code></h3>
@@ -2190,7 +2191,9 @@ public class Expression implements Cloneable
      * <h2>Type conversion functions</h2>
      * <h3><code>bool(expr)</code></h3>
      * <p>Returns a boolean context of the expression. Note that there are no true/false values in
-     * scarpet. <code>true</code> is alias of 1, and <code>false</code> is 0</p>
+     * scarpet. <code>true</code> is alias of 1, and <code>false</code> is 0. Bool is also interpreting
+     * string values as boolean, which is different from other places where boolean context can be used.
+     * This can be used in places where API functions return string values to represent binary values</p>
      * <pre>
      * bool(pi) =&gt; 1
      * bool(false) =&gt; 0
@@ -2198,6 +2201,9 @@ public class Expression implements Cloneable
      * bool(l()) =&gt; 0
      * bool(l('')) =&gt; 1
      * bool('foo') =&gt; 1
+     * bool('false') =&gt; 0
+     * bool('nulL') =&gt; 0
+     * if('false',1,0) =&gt; 1
      * </pre>
      *
      * <h3><code>number(expr)</code></h3>
@@ -2338,7 +2344,16 @@ public class Expression implements Cloneable
     public void SystemFunctions()
     {
         addLazyFunction("bool", 1, (c, t, lv) -> {
-            return (cc, tt) -> new NumericValue(lv.get(0).evalValue(c, Context.BOOLEAN).getBoolean());
+            Value v = lv.get(0).evalValue(c, Context.BOOLEAN);
+            if (v instanceof StringValue)
+            {
+                String str = v.getString();
+                if ("false".equalsIgnoreCase(str) || "null".equalsIgnoreCase(str))
+                {
+                    return (cc, tt) -> Value.FALSE;
+                }
+            }
+            return (cc, tt) -> new NumericValue(v.getBoolean());
         });
         addUnaryFunction("number", v -> {
             if (v instanceof NumericValue)

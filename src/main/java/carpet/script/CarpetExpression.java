@@ -54,7 +54,16 @@ import static java.lang.Math.min;
 
 /**
  * <h1>Minecraft specific API and <code>scarpet</code> language add-ons</h1>
- *
+ * <h2>Dimension issues</h2>
+ * <p>One note, which is important is that most of the calls for entities and blocks
+ * would refer to the current dimension of the caller, meaning, that if we for example
+ * list all the players using <code>player('all')</code> function, if a player is in the
+ * other dimension, calls to entities and blocks around that player would point incorrectly.
+ * Moreover, running commandblocks in the spawn chunks would mean that commands will always
+ * refer to the overworld blocks and entities.
+ * In case you would want to run commands across all dimensions, just run three of them, using
+ * <code>/execute in overworld/the_nether/the_end run script run ...</code> and query
+ * players using <code>player('*')</code>, which only returns players in current dimension.</p>
  */
 public class CarpetExpression
 {
@@ -66,28 +75,28 @@ public class CarpetExpression
     private static boolean stopAll = false;
 
     /**
-     * <h1>script stop/resume commands</h1>
+     * <h1><code>script stop/script resume</code> command</h1>
      * <div style="padding-left: 20px; border-radius: 5px 45px; border:1px solid grey;">
      * <p>
      * <code>/script stop</code> allows to stop execution of any script currently running that calls the
      * <code>gametick()</code> function which
-     * allows the gameloop to regain control of the game and process other commands. This will also make sure
-     * that all current and future scripts will stop their execution. Execution of all scripts will be
+     * allows the game loop to regain control of the game and process other commands. This will also make sure
+     * that all current and future programs will stop their execution. Execution of all programs will be
      * prevented until <code>/script resume</code> command is called.
      * </p>
      * <p>Lets look at the following example. This is a program computes Fibonacci number in a recursive manner:</p>
      * <pre>
-     * fib(n) -> if(n<3, 1, fib(n-1)+fib(n-2) ); fib(8)
+     * fib(n) -&gt; if(n&lt;3, 1, fib(n-1)+fib(n-2) ); fib(8)
      * </pre>
      * <p> That's really bad way of doing it, because the higher number we need to compute the compute requirements will rise
      * exponentially with <code>n</code>. It takes a little over 50 milliseconds to do fib(24), so above one tick,
      * but about a minute to do fib(40). Calling fib(40) will not only freeze the game, but also you woudn't be able to interrupt
      * its execution. We can modify the script as follows</p>
-     * <pre>fib(n) -> ( gametick(50); if(n<3, 1, fib(n-1)+fib(n-2) ) ); fib(40)</pre>
+     * <pre>fib(n) -&gt; ( gametick(50); if(n&lt;3, 1, fib(n-1)+fib(n-2) ) ); fib(40)</pre>
      * <p>But this would never finish as such call would finish after <code>~ 2^40</code> ticks. To make our computations
      * responsive, yet able to respond to user interactions, other commands, as well as interrupt execution,
      * we could do the following:</p>
-     * <pre>fib(n) -> ( if(n==23, gametick(50) ); if(n<3, 1, fib(n-1)+fib(n-2) ) ); fib(40)</pre>
+     * <pre>fib(n) -&gt; ( if(n==23, gametick(50) ); if(n&lt;3, 1, fib(n-1)+fib(n-2) ) ); fib(40)</pre>
      * <p>This would slow down the computation of fib(40) from a minute to two, but allows the game to keep continue running
      * and be responsive to commands, using about half of each tick to advance the computation.
      * Obviously depending on the problem, and available hardware, certain things can take
@@ -179,12 +188,250 @@ public class CarpetExpression
     }
 
     /**
-     * <h1>Blocks manipulations</h1>
+     * <h1>Blocks / World API</h1>
      * <div style="padding-left: 20px; border-radius: 5px 45px; border:1px solid grey;">
-     * <h2>Section Content</h2>
-     * <p>Other Paragraph</p>
+     * <h2>Specifying blocks</h2>
+     * <h3><code>block(x, y, z), block(state)</code></h3>
+     * <p>Returns either a block from specified location, or block with a specific state
+     * (as used by <code>/setblock</code> command), so allowing for block properties etc.
+     * Blocks can be referenced everywhere by its simple name, but its only used in its default state</p>
+     * <pre>
+     * block('air')  =&gt; air
+     * block('iron_trapdoor[half=top]')  =&gt; iron_trapdoor
+     * block(0,0,0) == block('bedrock')  =&gt; 1
+     * </pre>
+     * <h2>World Manipulation</h2>
+     * <p>All the functions below can be used with block value, queried with coord triple, or 3-long list.
+     * All <code>pos</code> in the functions referenced below refer to either method of passing block position</p>
+     * <h3><code>set(pos, block, property?, value?, ...)</code></h3>
+     * <p>First part of the <code>set</code> function is either a coord triple, list of tree numbers, or other block
+     * with coordinates. Second part, <code>block</code> is either block value as a result of <code>block()</code> function
+     * string value indicating the block name, and optional <code>property - value</code> pairs for extra block properties.
+     * If <code>block</code> is specified only by name, then if a destination block is the same the <code>set</code> operation
+     * is skipped, otherwise is executed, for other potential extra properties</p>
+     * <p>The returned value is either the block state that has been set, or <code>false</code> if block setting was skipped</p>
+     * <pre>
+     * set(0,5,0,'bedrock')  =&gt; bedrock
+     * set(l(0,5,0), 'bedrock')  =&gt; bedrock
+     * set(block(0,5,0), 'bedrock')  =&gt; bedrock
+     * scan(0,5,0,0,0,0,set(_,'bedrock'))  =&gt; 1
+     * set(pos(players()), 'bedrock')  =&gt; bedrock
+     * set(0,0,0,'bedrock')  =&gt; 0   // or 1 in overworlds generated in 1.8 and before
+     * scan(0,100,0,20,20,20,set(_,block('glass')))
+     *     // filling the area with glass
+     * scan(0,100,0,20,20,20,set(_,'glass'))
+     *     // about 10% faster due to less parsing
+     * b = block('glass'); scan(0,100,0,20,20,20,set(_,b))
+     *     // yet another slightly faster option, skips all parsing
+     *     // but will replace all blocks, even existing glass
+     * set(x,y,z,'iron_trapdoor')  // sets bottom iron trapdoor
+     * set(x,y,z,'iron_trapdoor[half=top]')  // Incorrect. sets bottom iron trapdoor - no parsing of properties
+     * set(x,y,z,'iron_trapdoor','half','top') // correct - top trapdoor
+     * set(x,y,z,block('iron_trapdoor[half=top]')) // also correct, block() provides extra parsing
+     * </pre>
+     * <h3><code>update(pos)</code></h3>
+     * <p>Causes a block update at position.</p>
+     * <h3><code>block_tick(pos)</code></h3>
+     * <p>Causes a block to tick at position.</p>
+     * <h3><code>random_tick(pos)</code></h3>
+     * <p>Causes a random tick at position.</p>
+     *
+     * <h2>Block and World querying</h2>
+     *
+     * <h3><code>pos(block), pos(entity)</code></h3>
+     * <p>Returns a triple of coordinates of a specified block or entity. Technically entities are queried with
+     * <code>query</code> function and the same can be achieved with <code>query(entity,'pos')</code>, but for simplicity
+     * <code>pos</code> allows to pass all positional objects.</p>
+     * <pre>
+     *     pos(block(0,5,0))  =&gt; l(0,5,0)
+     *     pos(players()) =&gt; l(12.3, 45.6, 32.05)
+     *     pos(block('stone'))  =&gt; Error: Cannot fetch position of an unrealized block
+     * </pre>
+     * <h3><code>property(pos, name)</code></h3>
+     * <p>Returns property of block at <code>pos</code>, or specified by <code>block</code> argument. If a block doesn't
+     * have that property, <code>null</code> value is returned. Returned values are always strings. It is expected from
+     * the user to know what to expect and convert values to numbers using <code>number()</code> function or booleans
+     * using <code>bool()</code> function.</p>
+     * <pre>
+     *     set(x,y,z,'iron_trapdoor','half','top'); property(x,y,z,'half')  =&gt; top
+     *     set(x,y,z,'air'); property(x,y,z,'half')  =&gt; null
+     *     property(block('iron_trapdoor[half=top]'),'half')  =&gt; top
+     *     property(block('iron_trapdoor[half=top]'),'powered')  =&gt; false
+     *     bool(property(block('iron_trapdoor[half=top]'),'powered'))  =&gt; 0
+     * </pre>
+     *
+     * <h3><code>solid(pos)</code></h3>
+     * <p>Boolean function, true of the block is solid</p>
+     * <h3> <code>air(pos)</code></h3>
+     * <p>Boolean function, true if a block is air.... or cave air...
+     * or void air.... or any other air they come up with.</p>
+     * <h3><code>liquid(pos)</code></h3>
+     * <p>Boolean function, true of the block is liquid.</p>
+     * <h3><code>liquid(pos)</code></h3>
+     * <p>Boolean function, true of the block is liquid, or liquidlogged</p>
+     * <h3><code>light(pos)</code></h3>
+     * <p>Integer function, returning total light level at position</p>
+     * <h3><code>block_light(pos)</code></h3>
+     * <p>Integer function, returning block light at position. From torches and other light sources.</p>
+     * <h3><code>sky_light(pos)</code></h3>
+     * <p>Numeric function, returning sky light at position. From the sky access.</p>
+     * <h3><code>see_sky(pos)</code></h3>
+     * <p>Boolean function, returning true if the block can see sky.</p>
+     * <h3><code>top(type, x, z)</code></h3>
+     * <p>Returns the Y value of the topmost block at given x, z coords, according to the
+     * heightmap specified by <code>type</code>. Valid options are:</p>
+     * <ul>
+     *     <li><code>light</code>: topmost light blocking block</li>
+     *     <li><code>motion</code>: topmost motion blocking block</li>
+     *     <li><code>terrain</code>: topmost motion blocking block except leaves</li>
+     *     <li><code>ocean_floor</code>: topmost non-water block</li>
+     *     <li><code>surface</code>: topmost surface block</li>
+     * </ul>
+     * <pre>
+     * top('motion', x, z)  =&gt; 63
+     * top('ocean_floor', x, z)  =&gt; 41
+     * </pre>
+     * <h3><code>loaded(pos)</code></h3>
+     * <p>Boolean function, true of the block is loaded. Normally <code>scarpet</code> doesn't check if operates on
+     * loaded area - the game will automatically load missing blocks. We see this as advantage.
+     * Vanilla <code>fill/clone</code> commands only check the specified corners for loadness.</p>
+     * <pre>
+     * loaded(pos(players()))  =&gt; 1
+     * loaded(100000,100,1000000)  =&gt; 0
+     * </pre>
+     * <h3><code>loaded_ep(pos)</code></h3>
+     * <p>Boolean function, true of the block is loaded and entity processing, as per 1.13.2</p>
+     * <h3><code>suffocates(pos)</code></h3>
+     * <p>Boolean function, true of the block causes suffocation.</p>
+     * <h3><code>power(pos)</code></h3>
+     * <p>Numeric function, returning redstone power level at position.</p>
+     * <h3><code>ticks_randomly(pos)</code></h3>
+     * <p>Boolean function, true if the block ticks randomly.</p>
+     * <h3><code>blocks_movement(pos)</code></h3>
+     * <p>Boolean function, true if block at position blocks movement.</p>
+     * <h3><code>block_sound(pos)</code></h3>
+     * <p>Returns the name of sound type made by the block at position. One of:</p>
+     * <ul>
+     *     <li><code>wood     </code>  </li>
+     *     <li><code>gravel   </code>  </li>
+     *     <li><code>grass    </code>  </li>
+     *     <li><code>stone    </code>  </li>
+     *     <li><code>metal    </code>  </li>
+     *     <li><code>glass    </code>  </li>
+     *     <li><code>wool     </code>  </li>
+     *     <li><code>sand     </code>  </li>
+     *     <li><code>snow     </code>  </li>
+     *     <li><code>ladder   </code>  </li>
+     *     <li><code>anvil    </code>  </li>
+     *     <li><code>slime    </code>  </li>
+     *     <li><code>sea_grass</code>  </li>
+     *     <li><code>coral    </code>  </li>
+     * </ul>
+     * <h3><code>material(pos)</code></h3>
+     * <p>Returns the name of material of the block at position. very useful to target a group of blocks. One of:</p>
+     * <ul>
+     *     <li><code> air                </code>  </li>
+     *     <li><code> void               </code>  </li>
+     *     <li><code> portal             </code>  </li>
+     *     <li><code> carpet             </code>  </li>
+     *     <li><code> plant              </code>  </li>
+     *     <li><code> water_plant        </code>  </li>
+     *     <li><code> vine               </code>  </li>
+     *     <li><code> sea_grass          </code>  </li>
+     *     <li><code> water              </code>  </li>
+     *     <li><code> bubble_column      </code>  </li>
+     *     <li><code> lava               </code>  </li>
+     *     <li><code> snow_layer         </code>  </li>
+     *     <li><code> fire               </code>  </li>
+     *     <li><code> redstone_bits      </code>  </li>
+     *     <li><code> cobweb             </code>  </li>
+     *     <li><code> redstone_lamp      </code>  </li>
+     *     <li><code> clay               </code>  </li>
+     *     <li><code> dirt               </code>  </li>
+     *     <li><code> grass              </code>  </li>
+     *     <li><code> packed_ice         </code>  </li>
+     *     <li><code> sand               </code>  </li>
+     *     <li><code> sponge             </code>  </li>
+     *     <li><code> wood               </code>  </li>
+     *     <li><code> wool               </code>  </li>
+     *     <li><code> tnt                </code>  </li>
+     *     <li><code> leaves             </code>  </li>
+     *     <li><code> glass              </code>  </li>
+     *     <li><code> ice                </code>  </li>
+     *     <li><code> cactus             </code>  </li>
+     *     <li><code> stone              </code>  </li>
+     *     <li><code> iron               </code>  </li>
+     *     <li><code> snow               </code>  </li>
+     *     <li><code> anvil              </code>  </li>
+     *     <li><code> barrier            </code>  </li>
+     *     <li><code> piston             </code>  </li>
+     *     <li><code> coral              </code>  </li>
+     *     <li><code> gourd              </code>  </li>
+     *     <li><code> gragon_egg         </code>  </li>
+     *     <li><code> cake               </code>  </li>
+     * </ul>
+     * <h3><code>map_colour(pos)</code></h3>
+     * <p>Returns the map colour of a block at position. One of:</p>
+     * <ul>
+     *     <li><code> air            </code>  </li>
+     *     <li><code> grass          </code>  </li>
+     *     <li><code> sand           </code>  </li>
+     *     <li><code> wool           </code>  </li>
+     *     <li><code> tnt            </code>  </li>
+     *     <li><code> ice            </code>  </li>
+     *     <li><code> iron           </code>  </li>
+     *     <li><code> foliage        </code>  </li>
+     *     <li><code> snow           </code>  </li>
+     *     <li><code> clay           </code>  </li>
+     *     <li><code> dirt           </code>  </li>
+     *     <li><code> stone          </code>  </li>
+     *     <li><code> water          </code>  </li>
+     *     <li><code> wood           </code>  </li>
+     *     <li><code> quartz         </code>  </li>
+     *     <li><code> adobe          </code>  </li>
+     *     <li><code> magenta        </code>  </li>
+     *     <li><code> light_blue     </code>  </li>
+     *     <li><code> yellow         </code>  </li>
+     *     <li><code> lime           </code>  </li>
+     *     <li><code> pink           </code>  </li>
+     *     <li><code> gray           </code>  </li>
+     *     <li><code> light_gray     </code>  </li>
+     *     <li><code> cyan           </code>  </li>
+     *     <li><code> purple         </code>  </li>
+     *     <li><code> blue           </code>  </li>
+     *     <li><code> brown          </code>  </li>
+     *     <li><code> green          </code>  </li>
+     *     <li><code> red            </code>  </li>
+     *     <li><code> black          </code>  </li>
+     *     <li><code> gold           </code>  </li>
+     *     <li><code> diamond        </code>  </li>
+     *     <li><code> lapis          </code>  </li>
+     *     <li><code> emerald        </code>  </li>
+     *     <li><code> obsidian       </code>  </li>
+     *     <li><code> netherrack     </code>  </li>
+     *     <li><code> white_terracotta          </code>  </li>
+     *     <li><code> orange_terracotta         </code>  </li>
+     *     <li><code> magenta_terracotta        </code>  </li>
+     *     <li><code> light_blue_terracotta     </code>  </li>
+     *     <li><code> yellow_terracotta         </code>  </li>
+     *     <li><code> lime_terracotta           </code>  </li>
+     *     <li><code> pink_terracotta           </code>  </li>
+     *     <li><code> gray_terracotta           </code>  </li>
+     *     <li><code> light_gray_terracotta     </code>  </li>
+     *     <li><code> cyan_terracotta           </code>  </li>
+     *     <li><code> purple_terracotta         </code>  </li>
+     *     <li><code> blue_terracotta           </code>  </li>
+     *     <li><code> brown_terracotta          </code>  </li>
+     *     <li><code> green_terracotta          </code>  </li>
+     *     <li><code> red_terracotta            </code>  </li>
+     *     <li><code> black_terracotta          </code>  </li>
+     * </ul>
+     *
+     *
      * </div>
      */
+
+
 
     public void BlockManipulation()
     {
@@ -193,11 +440,11 @@ public class CarpetExpression
             CarpetContext cc = (CarpetContext) c;
             if (lv.size() == 0)
             {
-                throw new InternalExpressionException("block requires at least one parameter");
+                throw new InternalExpressionException("Block requires at least one parameter");
             }
             if (lv.size() == 1)
             {
-                return (c_, t_) -> BlockValue.fromString(lv.get(0).evalValue(cc).getString());
+                return (c_, t_) -> BlockValue.fromCommandExpression(lv.get(0).evalValue(cc).getString());
                 //return new BlockValue(IRegistry.field_212618_g.get(new ResourceLocation(lv.get(0).getString())).getDefaultState(), origin);
             }
             return (c_, t_) -> BlockValue.fromParams(cc, lv, 0).block;
@@ -210,19 +457,19 @@ public class CarpetExpression
             {
                 BlockPos pos = ((BlockValue) arg).getPos();
                 if (pos == null)
-                    throw new InternalExpressionException("cannot fetch position of unlocalized block");
-                return (c_, t_) -> new ListValue(Arrays.asList(new NumericValue(pos.getX()), new NumericValue(pos.getY()), new NumericValue(pos.getZ())));
+                    throw new InternalExpressionException("Cannot fetch position of an unrealized block");
+                return (c_, t_) -> ListValue.of(new NumericValue(pos.getX()), new NumericValue(pos.getY()), new NumericValue(pos.getZ()));
             }
             else if (arg instanceof EntityValue)
             {
                 Entity e = ((EntityValue) arg).getEntity();
                 if (e == null)
-                    throw new InternalExpressionException("null entity");
-                return(c_, t_) -> new ListValue(Arrays.asList(new NumericValue(e.posX), new NumericValue(e.posY), new NumericValue(e.posZ)));
+                    throw new InternalExpressionException("Null entity");
+                return(c_, t_) -> ListValue.of(new NumericValue(e.posX), new NumericValue(e.posY), new NumericValue(e.posZ));
             }
             else
             {
-                throw new InternalExpressionException("you can only get position of a block type");
+                throw new InternalExpressionException("pos works only with a block or an entity type");
             }
         });
 
@@ -238,13 +485,13 @@ public class CarpetExpression
         this.expr.addLazyFunction("light", -1, (c, t, lv) ->
                 (c_, t_) -> new NumericValue(((CarpetContext)c).s.getWorld().getLight(BlockValue.fromParams((CarpetContext) c, lv, 0).block.getPos())));
 
-        this.expr.addLazyFunction("blockLight", -1, (c, t, lv) ->
+        this.expr.addLazyFunction("block_light", -1, (c, t, lv) ->
                 (c_, t_) -> new NumericValue(((CarpetContext)c).s.getWorld().getLightFor(EnumLightType.BLOCK, BlockValue.fromParams((CarpetContext) c, lv, 0).block.getPos())));
 
-        this.expr.addLazyFunction("skyLight", -1, (c, t, lv) ->
+        this.expr.addLazyFunction("sky_light", -1, (c, t, lv) ->
                 (c_, t_) -> new NumericValue(((CarpetContext)c).s.getWorld().getLightFor(EnumLightType.SKY, BlockValue.fromParams((CarpetContext) c, lv, 0).block.getPos())));
 
-        this.expr.addLazyFunction("seeSky", -1, (c, t, lv) ->
+        this.expr.addLazyFunction("see_sky", -1, (c, t, lv) ->
                 (c_, t_) -> new NumericValue(((CarpetContext)c).s.getWorld().canSeeSky(BlockValue.fromParams((CarpetContext) c, lv, 0).block.getPos())));
 
         this.expr.addLazyFunction("top", -1, (c, t, lv) -> {
@@ -254,10 +501,10 @@ public class CarpetExpression
             {
                 case "light": htype = Heightmap.Type.LIGHT_BLOCKING; break;
                 case "motion": htype = Heightmap.Type.MOTION_BLOCKING; break;
-                case "surface": htype = Heightmap.Type.WORLD_SURFACE; break;
-                case "ocean floor": htype = Heightmap.Type.OCEAN_FLOOR; break;
                 case "terrain": htype = Heightmap.Type.MOTION_BLOCKING_NO_LEAVES; break;
-                default: htype = Heightmap.Type.LIGHT_BLOCKING;
+                case "ocean_floor": htype = Heightmap.Type.OCEAN_FLOOR; break;
+                case "surface": htype = Heightmap.Type.WORLD_SURFACE; break;
+                default: throw new InternalExpressionException("Unknown heightmap type: "+type);
             }
             int x;
             int z;
@@ -282,7 +529,7 @@ public class CarpetExpression
         this.expr.addLazyFunction("loaded", -1, (c, t, lv) ->
                 (c_, t_) -> ((CarpetContext)c).s.getWorld().isBlockLoaded(BlockValue.fromParams((CarpetContext) c, lv, 0).block.getPos()) ? Value.TRUE : Value.FALSE);
 
-        this.expr.addLazyFunction("loadedEP", -1, (c, t, lv) ->
+        this.expr.addLazyFunction("loaded_ep", -1, (c, t, lv) ->
         {
             BlockPos pos = BlockValue.fromParams((CarpetContext)c, lv, 0).block.getPos();
             return (c_, t_) -> ((CarpetContext)c).s.getWorld().isAreaLoaded(pos.getX() - 32, 0, pos.getZ() - 32,
@@ -295,8 +542,8 @@ public class CarpetExpression
         this.expr.addLazyFunction("power", -1, (c, t, lv) ->
                 (c_, t_) -> new NumericValue(((CarpetContext)c).s.getWorld().getRedstonePowerFromNeighbors(BlockValue.fromParams((CarpetContext) c, lv, 0).block.getPos())));
 
-        this.expr.addLazyFunction("ticksRandomly", -1, (c, t, lv) ->
-                booleanStateTest(c, "ticksRandomly", lv, (s, p) -> s.needsRandomTick()));
+        this.expr.addLazyFunction("ticks_randomly", -1, (c, t, lv) ->
+                booleanStateTest(c, "ticks_randomly", lv, (s, p) -> s.needsRandomTick()));
 
         this.expr.addLazyFunction("update", -1, (c, t, lv) ->
                 booleanStateTest(c, "update", lv, (s, p) ->
@@ -305,16 +552,16 @@ public class CarpetExpression
                     return true;
                 }));
 
-        this.expr.addLazyFunction("blocktick", -1, (c, t, lv) ->
-                booleanStateTest(c, "blocktick", lv, (s, p) ->
+        this.expr.addLazyFunction("block_tick", -1, (c, t, lv) ->
+                booleanStateTest(c, "block_tick", lv, (s, p) ->
                 {
                     World w = ((CarpetContext)c).s.getWorld();
                     s.randomTick(w, p, w.rand);
                     return true;
                 }));
 
-        this.expr.addLazyFunction("randomtick", -1, (c, t, lv) ->
-                booleanStateTest(c, "randomtick", lv, (s, p) ->
+        this.expr.addLazyFunction("random_tick", -1, (c, t, lv) ->
+                booleanStateTest(c, "random_tick", lv, (s, p) ->
                 {
                     World w = ((CarpetContext)c).s.getWorld();
                     if (s.needsRandomTick() || s.getFluidState().getTickRandomly())
@@ -325,31 +572,19 @@ public class CarpetExpression
 
         this.expr.addLazyFunction("set", -1, (c, t, lv) ->
         {
-            if (lv.size() == 3)
-            {
-                Value entityValue = lv.get(0).evalValue(c);
-                if (!(entityValue instanceof EntityValue))
-                {
-                    throw new InternalExpressionException("Expecting entity with set call with 3 arguments");
-                }
-                String what = lv.get(1).evalValue(c).getString();
-                Value toWhat = lv.get(2).evalValue(c);
-                ((EntityValue) entityValue).set(what, toWhat);
-                return LazyValue.TRUE;
-            }
             CarpetContext cc = (CarpetContext)c;
             World world = cc.s.getWorld();
             if (lv.size() < 2 || lv.size() % 2 == 1)
-                throw new InternalExpressionException("set block should have at least 2 params and odd attributes, or 3 for entity");
+                throw new InternalExpressionException("set block should have at least 2 params and odd attributes");
             BlockValue.LocatorResult locator = BlockValue.fromParams(cc, lv, 0);
-            Value v3 = lv.get(locator.offset).evalValue(cc);
-            BlockValue bv = ((v3 instanceof BlockValue)) ? (BlockValue) v3 : BlockValue.fromString(v3.getString());
+            Value blockArg = lv.get(locator.offset).evalValue(cc);
+            BlockValue bv = ((blockArg instanceof BlockValue)) ? (BlockValue) blockArg : BlockValue.fromString(blockArg.getString());
             if (bv == BlockValue.NULL)
                 throw new InternalExpressionException("block to set to should be a valid block");
             IBlockState bs = bv.getBlockState();
 
             IBlockState targetBlockState = world.getBlockState(locator.block.getPos());
-            if (lv.size()==1+locator.offset) // no reqs for properties
+            if (lv.size()==1+locator.offset && !(blockArg instanceof BlockValue)) // no reqs for properties
                 if (targetBlockState.getBlock() == bs.getBlock())
                     return (c_, t_) -> Value.FALSE;
 
@@ -360,7 +595,7 @@ public class CarpetExpression
                 String paramString = lv.get(i).evalValue(c).getString();
                 IProperty<?> property = states.getProperty(paramString);
                 if (property == null)
-                    throw new InternalExpressionException("property " + paramString + " doesn't apply to " + v3.getString());
+                    throw new InternalExpressionException("property " + paramString + " doesn't apply to " + blockArg.getString());
 
                 String paramValue = lv.get(i + 1).evalValue(c).getString();
 
@@ -371,20 +606,20 @@ public class CarpetExpression
             return (c_, t_) -> new BlockValue(finalBS, world, locator.block.getPos());
         });
 
-        this.expr.addLazyFunction("blocksMovement", -1, (c, t, lv) ->
-                booleanStateTest(c, "blocksMovement", lv, (s, p) ->
+        this.expr.addLazyFunction("blocks_movement", -1, (c, t, lv) ->
+                booleanStateTest(c, "blocks_movement", lv, (s, p) ->
                         !s.allowsMovement(((CarpetContext) c).s.getWorld(), p, PathType.LAND)));
 
-        this.expr.addLazyFunction("sound", -1, (c, t, lv) ->
-                stateStringQuery(c, "sound", lv, (s, p) ->
+        this.expr.addLazyFunction("block_sound", -1, (c, t, lv) ->
+                stateStringQuery(c, "block_sound", lv, (s, p) ->
                         BlockInfo.soundName.get(s.getBlock().getSoundType())));
 
         this.expr.addLazyFunction("material",-1, (c, t, lv) ->
                 stateStringQuery(c, "material", lv, (s, p) ->
                         BlockInfo.materialName.get(s.getMaterial())));
 
-        this.expr.addLazyFunction("mapColour", -1,  (c, t, lv) ->
-                stateStringQuery(c, "mapColour", lv, (s, p) ->
+        this.expr.addLazyFunction("map_colour", -1,  (c, t, lv) ->
+                stateStringQuery(c, "map_colour", lv, (s, p) ->
                         BlockInfo.mapColourName.get(s.getMapColor(((CarpetContext)c).s.getWorld(), p))));
 
         this.expr.addLazyFunction("property", -1, (c, t, lv) ->
@@ -401,20 +636,193 @@ public class CarpetExpression
     }
 
     /**
-     * <h1>Entity manipulations</h1>
+     * <h1>Entity API</h1>
      * <div style="padding-left: 20px; border-radius: 5px 45px; border:1px solid grey;">
-     * <p>Section Content</p>
-     * <p>Other Paragraph</p>
+     * <h2>Entity Selection</h2>
+     * <p>Entities have to be fetched before using them. Entities can also change their state between calls to the script
+     * if game happens either in between separate calls to the programs, or if the program calls <code>game_tick</code>
+     * on its own. In this case - entities would need to be re-fetched, or the code should account for entities getting dead</p>
+     * <h3><code>player(), player(type), players(name)</code></h3>
+     * <p>
+     * With no arguments, it returns the calling player or the player closest to the caller. Note that the main context
+     * will receive <code>p</code> variable pointing to this player. With <code>type</code> or <code>name</code> specified
+     * it will try first to match a type, returning a list of players matching a type, and if this fails, will assume its
+     * player name query retuning player with that name, or <code>null</code> if no player was found.
+     * With <code>'all'</code>, list of all players in the game, in all dimensions, so end user needs to be cautious, that
+     * you might be referring to wrong blocks and entities around the player in question.
+     * WIth <code>type = '*'</code> it returns all players in caller dimension, <code>'survival'</code> returns all survival
+     * and adventure players, <code>'creative'</code> returns all creative players, <code>'spectating'</code> returns all spectating
+     * players, and <code>'!spectating'</code>, all not-spectating players. If all fails,
+     * with <code>name</code>, the player in question, if is logged in.</p>
+     * <h3><code>entity_id(uuid)</code></h3>
+     * <p>Fetching entities by their UUID string, as returned by <code>query(entity,'id')</code>. It returns null if no such entity
+     * is found. Safer way to 'store' entities between calls, as missing entities will be returning <code>null</code>.</p>
+     * <h3><code>entity_list(type)</code></h3>
+     * <p>Returns global lists of entities of a specified type. Currently the following selectors are available:</p>
+     * <ul>
+     *     <li><code>all</code></li>
+     *     <li><code>living</code></li>
+     *     <li><code>items</code></li>
+     *     <li><code>players</code></li>
+     *     <li><code>!players</code></li>
+     * </ul>
      *
+     * <h3><code>entity_area(type, cx, cy, cz, dx, dy, dz)</code></h3>
+     * <p>Returns entities of a specified type in an area centered on <code>cx, cy, cz</code> and
+     * at most <code>dx, dy, dz</code> blocks away from the center point. Uses same selectors as <code>entities_list</code></p>
      *
+     * <h3><code>entity_selector(selector)</code></h3>
+     * <p>Returns entities satisfying given vanilla entity selector. Most expensive from all the methods of selecting
+     * entities, but the most capable.</p>
      *
-     * <pre>map(entities_area('all',x,y,z,30,30,30),run('kill '+query(_,'id'))) // doesn't kill the player</pre>
+     * <h2>Entity Manipulation</h2>
+     *
+     * <p>Unlike with blocks, that use plethora of vastly different querying functions, entities are queried with
+     * <code>query</code> function and altered via <code>modify</code> function. Type of information needed or
+     * values to be modified are different for each call</p>
+     * <h3><code>query(e,'removed')</code></h3>
+     * <p>Boolean. True if the entity is removed</p>
+     * <h3><code>query(e,'id')</code></h3>
+     * <p>Returns UUID (unique id) of the entity. Can be used to access entities with the other vanilla commands.
+     * Apparently players cannot be accessed via UUID.</p>
+     * <pre>
+     * map(entities_area('all',x,y,z,30,30,30),run('kill '+query(_,'id'))) // doesn't kill the player
+     * </pre>
+     * <h3><code>query(e,'pos')</code></h3>
+     * <p>Triple of entity position</p>
+     * <h3><code>query(e,'x'), query(e,'y'), query(e,'z')</code></h3>
+     * <p>Respective entity coordinate</p>
+     * <h3><code>query(e,'pitch'), query(e,'yaw')</code></h3>
+     * <p>Pitch and Yaw or where entity is looking.</p>
+     * <h3><code>query(e,'motion')</code></h3>
+     * <p>Triple of entity motion vector, <code>l(motion_x, motion_y, motion_z)</code></p>
+     * <h3><code>query(e,'motion_x'), query(e,'motion_y'), query(e,'motion_z')</code></h3>
+     * <p>Respective component of the motion vector</p>
+     * <h3><code>query(e,'name')</code></h3>
+     * <p>String of entity name</p>
+     * <h3><code>query(e,'custom_name')</code></h3>
+     * <p>String of entity name</p>
+     * <h3><code>query(e,'type')</code></h3>
+     * <p>String of entity name</p>
+     * <pre>
+     * query(e,'name')  =&gt; Leatherworker
+     * query(e,'custom_name')  =&gt; null
+     * query(e,'type')  =&gt; villager
+     * </pre>
+     * <h3><code>query(e,'is_riding')</code></h3>
+     * <p>Boolean. True if riding another entity.</p>
+     * <h3><code>query(e,'is_ridden')</code></h3>
+     * <p>Boolean. True if another entity is riding it.</p>
+     * <h3><code>query(e,'passengers')</code></h3>
+     * <p>List of entities riding the entity.</p>
+     * <h3><code>query(e,'mount')</code></h3>
+     * <p>Entity that <code>e</code> rides.</p>
+     * <h3><code>query(e,'tags')</code></h3>
+     * <p>List of entity tags.</p>
+     * <h3><code>query(e,'has_tags',tag)</code></h3>
+     * <p>Boolean, True if the entity is marked with <code>tag</code>.</p>
+     * <h3><code>query(e,'is_burning')</code></h3>
+     * <p>Boolean, True if the entity is burning.</p>
+     * <h3><code>query(e,'fire')</code></h3>
+     * <p>Number of remaining ticks of being on fire.</p>
+     * <h3><code>query(e,'silent')</code></h3>
+     * <p>Boolean, True if the entity is silent.</p>
+     * <h3><code>query(e,'gravity')</code></h3>
+     * <p>Boolean, True if the entity is affected y gravity, like most entities do.</p>
+     * <h3><code>query(e,'immune_to_fire')</code></h3>
+     * <p>Boolean, True if the entity is immune to fire.</p>
+     * <h3><code>query(e,'dimension')</code></h3>
+     * <p>Name of the dimension entity is in.</p>
+     * <h3><code>query(e,'height')</code></h3>
+     * <p>Height of the entity.</p>
+     * <h3><code>query(e,'width')</code></h3>
+     * <p>Width of the entity.</p>
+     * <h3><code>query(e,'eye_height')</code></h3>
+     * <p>Eye height of the entity.</p>
+     * <h3><code>query(e,'age')</code></h3>
+     * <p>Age, in ticks, of the entity, i.e. how long it existed.</p>
+     * <h3><code>query(e,'item')</code></h3>
+     * <p>Name of the item if its an item entity, <code>null</code> otherwise</p>
+     * <h3><code>query(e,'count')</code></h3>
+     * <p>Number of items in a stack from item entity.<code>null</code> otherwise</p>
+     * <h3><code>query(e,'is_baby')</code></h3>
+     * <p>Boolean, true if its a baby.</p>
+     * <h3><code>query(e,'effect',name?)</code></h3>
+     * <p>Without extra arguments, it returns list of effect active on a living entity.
+     * Each entry is a triple of short effect name, amplifier, and remaining duration.
+     * With an argument, if the living entity has not that potion active, returns <code>null</code>, otherwise
+     * return a tuple of amplifier and remaining duration</p>
+     * <pre>
+     * query(p,'effect')  =&gt; [[haste, 0, 177], [speed, 0, 177]]
+     * query(p,'effect','haste')  =&gt; [0, 177]
+     * query(p,'effect','resistance')  =&gt; null
+     * </pre>
+     * <h3><code>query(e,'health')</code></h3>
+     * <p>Number indicating remaining entity health, or <code>null</code> if not applicable.</p>
+     * <h3><code>query(e,'holds',slot?)</code></h3>
+     * <p>Returns triple of short name, stack count, and NBT of item held in <code>slot</code>.
+     * Available options for <code>slot</code> are:</p>
+     * <ul>
+     *     <li><code>main</code></li>
+     *     <li><code>offhand</code></li>
+     *     <li><code>head</code></li>
+     *     <li><code>chest</code></li>
+     *     <li><code>legs</code></li>
+     *     <li><code>feet</code></li>
+     * </ul>
+     * <p>If <code>slot</code> is not specified, it defaults to the main hand.</p>
+     * <h3><code>query(e,'nbt',path?)</code></h3>
+     * <p>Returns full NBT of the entity. If path is specified, it fetches only that portion of the NBT,
+     * that corresponds to the path. For specification of <code>path</code> attribute, consult
+     * vanilla <code>/data get entity</code> command.</p>
+     * <p>Note that calls to <code>nbt</code> are considerably more expensive comparing to other
+     * calls in Minecraft API, and should only be used when there is no other option. Also returned
+     * NBT is just a string to any retrieval of information post can currently only be done with matching
+     * operator <code>~</code>. With time we are hoping not to support the <code>'nbt'</code> call better,
+     * but rather to fill the API, so that <code>'nbt'</code> calls are not needed</p>
+     * <h2>Entity Modification</h2>
+     * <p>Like with entity querying, entity modifications happen through one function. Most position and movements
+     * modifications don't work currently on players as their position is controlled by clients.</p>
+     * <p>Currently there is no ability to modify NBT directly, but you could always use <code>run('data modify entity</code></p>
+     * <h3><code>modify(e,'remove')</code></h3>
+     * <p>Removes (not kills) entity from the game.</p>
+     * <h3><code>modify(e,'kill')</code></h3>
+     * <p>Kills the entity.</p>
+     * <h3><code>modify(e, 'pos', x, y, z), modify(e, 'pos', l(x,y,z) )</code></h3>
+     * <p>Moves the entity to a specified coords.</p>
+     * <h3><code>modify(e, 'x', x), modify(e, 'y', y), modify(e, 'z', z)</code></h3>
+     * <p>Moves the entity in.... one direction.</p>
+     * <h3><code>modify(e, 'pitch', pitch), modify(e, 'yaw', yaw)</code></h3>
+     * <p>Changes entity's pitch or yaw.</p>
+     * <h3><code>modify(e, 'move', x, y, z), modify(e, 'move', l(x,y,z) )</code></h3>
+     * <p>Moves th entity by a vector from its current location.</p>
+     * <h3><code>modify(e, 'motion', x, y, z), modify(e, 'motion', l(x,y,z) )</code></h3>
+     * <p>Sets the motion vector (where an how much entity is moving).</p>
+     * <h3><code>modify(e, 'motion_z', x), modify(e, 'motion_y', y), modify(e, 'motion_z', z)</code></h3>
+     * <p>Sets the corresponding component of the motion vector.</p>
+     * <h3><code>modify(e, 'accelerate', x, y, z), modify(e, 'accelerate', l(x, y, z) )</code></h3>
+     * <p>Sets adds a vector to the motion vector. Most realistic way to apply a force to an entity.</p>
+     * <h3><code>modify(e, 'custom_name'), modify(e, 'custom_name', name )</code></h3>
+     * <p>Sets a custom name for an entity. No argument sets it empty, not removes it. Vanilla doesn't allow removing
+     * of attributes.</p>
+     * <h3><code>modify(e, 'dismount')</code></h3>
+     * <p>Dismounts riding entity.</p>
+     * <h3><code>modify(e, 'mount', other)</code></h3>
+     * <p>Mounts the entity to the <code>other</code>.</p>
+     * <h3><code>modify(e, 'drop_passengers')</code></h3>
+     * <p>Shakes off all passengers.</p>
+     * <h3><code>modify(e, 'mount_passengers', passenger, ? ...), modify(e, 'mount_passengers', l(passengers) )</code></h3>
+     * <p>Mounts on all listed entities on <code>e</code>.</p>
+     * <h3><code>modify(e, 'tag', tag, ? ...), modify(e, 'tag', l(tags) )</code></h3>
+     * <p>Adds tag / tags to the entity.</p>
+     * <h3><code>modify(e, 'clear_tag', tag, ? ...), modify(e, 'clear_tag', l(tags) )</code></h3>
+     * <p>Removes tag from entity.</p>
      * </div>
      */
 
     public void EntityManipulation()
     {
-        this.expr.addLazyFunction("players", -1, (c, t, lv) -> {
+        this.expr.addLazyFunction("player", -1, (c, t, lv) -> {
             if (lv.size() ==0)
             {
                 return (_c, _t) ->
@@ -434,9 +842,41 @@ public class CarpetExpression
                 };
             }
             String playerName = lv.get(0).evalValue(c).getString();
+            if ("all".equalsIgnoreCase(playerName))
+            {
+                return (_c, _t) -> ListValue.wrap(
+                        ((CarpetContext)_c).s.getServer().getPlayerList().getPlayers().
+                                stream().map(EntityValue::new).collect(Collectors.toList()));
+            }
             if ("*".equalsIgnoreCase(playerName))
             {
-                return (_c, _t) -> ListValue.wrap(((CarpetContext)_c).s.getServer().getPlayerList().getPlayers().stream().map(EntityValue::new).collect(Collectors.toList()));
+                return (_c, _t) -> ListValue.wrap(
+                        ((CarpetContext)_c).s.getWorld().getPlayers(EntityPlayer.class, (p) -> true).
+                                stream().map(EntityValue::new).collect(Collectors.toList()));
+            }
+            if ("survival".equalsIgnoreCase(playerName))
+            {
+                return (_c, _t) -> ListValue.wrap(
+                        ((CarpetContext)_c).s.getWorld().getPlayers(EntityPlayerMP.class, (p) -> p.interactionManager.survivalOrAdventure()).
+                                stream().map(EntityValue::new).collect(Collectors.toList()));
+            }
+            if ("creative".equalsIgnoreCase(playerName))
+            {
+                return (_c, _t) -> ListValue.wrap(
+                        ((CarpetContext)_c).s.getWorld().getPlayers(EntityPlayer.class, EntityPlayer::isCreative).
+                                stream().map(EntityValue::new).collect(Collectors.toList()));
+            }
+            if ("spectating".equalsIgnoreCase(playerName))
+            {
+                return (_c, _t) -> ListValue.wrap(
+                        ((CarpetContext)_c).s.getWorld().getPlayers(EntityPlayer.class, EntityPlayer::isSpectator).
+                                stream().map(EntityValue::new).collect(Collectors.toList()));
+            }
+            if ("!spectating".equalsIgnoreCase(playerName))
+            {
+                return (_c, _t) -> ListValue.wrap(
+                        ((CarpetContext)_c).s.getWorld().getPlayers(EntityPlayer.class, (p) -> !p.isSpectator()).
+                                stream().map(EntityValue::new).collect(Collectors.toList()));
             }
             EntityPlayerMP player = ((CarpetContext)c).s.getServer().getPlayerList().getPlayerByUsername(playerName);
             if (player != null)
@@ -455,7 +895,7 @@ public class CarpetExpression
             return (cc, tt) -> new EntityValue(e);
         });
 
-        this.expr.addLazyFunction("entities_list", 1, (c, t, lv) -> {
+        this.expr.addLazyFunction("entity_list", 1, (c, t, lv) -> {
             String who = lv.get(0).evalValue(c).getString();
             Pair<Class<? extends Entity>, Predicate<? super Entity>> pair = EntityValue.entityPredicates.get(who);
             if (pair == null)
@@ -466,7 +906,7 @@ public class CarpetExpression
             return (_c, _t ) -> ListValue.wrap(entityList.stream().map(EntityValue::new).collect(Collectors.toList()));
         });
 
-        this.expr.addLazyFunction("entities_area", 7, (c, t, lv) -> {
+        this.expr.addLazyFunction("entity_area", 7, (c, t, lv) -> {
             BlockPos center = new BlockPos(
                     Expression.getNumericValue(lv.get(1).evalValue(c)).getDouble(),
                     Expression.getNumericValue(lv.get(2).evalValue(c)).getDouble(),
@@ -487,7 +927,7 @@ public class CarpetExpression
             return (_c, _t ) -> ListValue.wrap(entityList.stream().map(EntityValue::new).collect(Collectors.toList()));
         });
 
-        this.expr.addLazyFunction("entities_selector", -1, (c, t, lv) -> {
+        this.expr.addLazyFunction("entity_selector", -1, (c, t, lv) -> {
             String selector = lv.get(0).evalValue(c).getString();
 
             try
@@ -548,22 +988,62 @@ public class CarpetExpression
     /**
      * <h1>Iterating over larger areas of blocks</h1>
      * <div style="padding-left: 20px; border-radius: 5px 45px; border:1px solid grey;">
-     * <p>Section Content</p>
-     * <p>Other Paragraph</p>
+     * <p>These functions help scan larger areas of blocks without using generic loop functions,
+     * like nested <code>loop</code>.</p>
+     * <h2> </h2>
+     * <h3><code>scan(cx, cy, cz, dx, dy, dz, px?, py?, pz?, expr)</code></h3>
+     * <p>Evaluates expression over area of blocks defined by its center (<code>cx, cy, cz</code>),
+     * expanded in all directions by <code>dx, dy, dz</code> blocks, or optionally in negative with <code>d</code> coords,
+     * and <code>p</code> coords in positive values. <code>expr</code> receives <code>_x, _y, _z</code>
+     * as coords of current analyzed block and <code>_</code> which represents the block itself.</p>
+     * <h3><code>volume(x1, y1, z1, x2, y2, z2, expr)</code></h3>
+     * <p>Evaluates expression for each block in the area, the same as the <code>scan</code>function, but using two opposite
+     * corners of the rectangular cuboid. Any corners can be specified, its like you would do with <code>/fill</code> command</p>
+     * <h3><code>neighbours(x, y, z), neighbours(block), neighbours(l(x,y,z))</code></h3>
+     * <p>Returns the list of 6 neighbouring blocks to the argument. Commonly used with other loop functions like <code>for</code></p>
+     * <pre>
+     * for(neighbours(x,y,z),air(_)) =&gt; 4 // number of air blocks around a block
+     * </pre>
+     * <h3><code>rect(cx, cy, cz, dx?, dy?, dz?, px?, py?, pz?)</code></h3>
+     * <p>returns an iterator, just like <code>range</code> function that iterates over rectangular cubarea of blocks. If
+     * only center point is specified, it iterates over 27 blocks. If <code>d</code> arguments are specified, expands selection
+     * of respective number of blocks in each direction. If <code>p</code> arguments are specified, it uses <code>d</code> for
+     * negative offset, and <code>p</code> for positive.</p>
+     * <h3><code>diamond(cx, cy, cz, radius?, height?)</code></h3>
+     * <p>Iterates over a diamond like area of blocks. With no radius and height, its 7 blocks centered around the middle
+     * (block + neighbours). With radius it expands shape on x and z coords, and wit custom height, on z. Any of these can be
+     * zero as well. radius of 0 makes a stick, height of 0 makes a diamond shape pad.</p>
      * </div>
      */
 
     public void IteratingOverAreasOfBlocks()
     {
-        this.expr.addLazyFunction("scan", 7, (c, t, lv) ->
+        this.expr.addLazyFunction("scan", -1, (c, t, lv) ->
         {
+            int lvsise = lv.size();
+            if (lvsise != 7 && lvsise != 10)
+                throw new InternalExpressionException("scan takes 2, or 3 triples of coords, and the expression");
             int cx = (int)Expression.getNumericValue(lv.get(0).evalValue(c)).getLong();
             int cy = (int)Expression.getNumericValue(lv.get(1).evalValue(c)).getLong();
             int cz = (int)Expression.getNumericValue(lv.get(2).evalValue(c)).getLong();
             int xrange = (int)Expression.getNumericValue(lv.get(3).evalValue(c)).getLong();
             int yrange = (int)Expression.getNumericValue(lv.get(4).evalValue(c)).getLong();
             int zrange = (int)Expression.getNumericValue(lv.get(5).evalValue(c)).getLong();
-            LazyValue expr = lv.get(6);
+            int xprange = xrange;
+            int yprange = yrange;
+            int zprange = zrange;
+            LazyValue expr;
+            if (lvsise == 7)
+            {
+                expr = lv.get(6);
+            }
+            else
+            {
+                xprange = (int)Expression.getNumericValue(lv.get(6).evalValue(c)).getLong();
+                yprange = (int)Expression.getNumericValue(lv.get(7).evalValue(c)).getLong();
+                zprange = (int)Expression.getNumericValue(lv.get(8).evalValue(c)).getLong();
+                expr = lv.get(9);
+            }
 
             //saving outer scope
             LazyValue _x = c.getVariable("_x");
@@ -571,20 +1051,20 @@ public class CarpetExpression
             LazyValue _z = c.getVariable("_z");
             LazyValue __ = c.getVariable("_");
             int sCount = 0;
-            for (int y=cy-yrange; y <= cy+yrange; y++)
+            for (int y=cy-yrange; y <= cy+yprange; y++)
             {
                 int yFinal = y;
                 c.setVariable("_y", (c_, t_) -> new NumericValue(yFinal).bindTo("_y"));
-                for (int x=cx-xrange; x <= cx+xrange; x++)
+                for (int x=cx-xrange; x <= cx+xprange; x++)
                 {
                     int xFinal = x;
                     c.setVariable("_x", (c_, t_) -> new NumericValue(xFinal).bindTo("_x"));
-                    for (int z=cz-zrange; z <= cz+zrange; z++)
+                    for (int z=cz-zrange; z <= cz+zprange; z++)
                     {
                         int zFinal = z;
                         c.setVariable( "_", (cc_, t_c) -> BlockValue.fromCoords(((CarpetContext)c), xFinal,yFinal,zFinal).bindTo("_"));
                         c.setVariable("_z", (c_, t_) -> new NumericValue(zFinal).bindTo("_z"));
-                        if (expr.evalValue(c).getBoolean())
+                        if (expr.evalValue(c, Context.BOOLEAN).getBoolean())
                         {
                             sCount += 1;
                         }
@@ -635,7 +1115,7 @@ public class CarpetExpression
                         int zFinal = z;
                         c.setVariable( "_", (cc_, t_c) -> BlockValue.fromCoords(((CarpetContext)c), xFinal,yFinal,zFinal).bindTo("_"));
                         c.setVariable("_z", (c_, t_) -> new NumericValue(zFinal).bindTo("_z"));
-                        if (expr.evalValue(c).getBoolean())
+                        if (expr.evalValue(c, Context.BOOLEAN).getBoolean())
                         {
                             sCount += 1;
                         }
@@ -1109,6 +1589,11 @@ public class CarpetExpression
      * <div style="padding-left: 20px; border-radius: 5px 45px; border:1px solid grey;">
      * <p>Section Content</p>
      * <p>Other Paragraph</p>
+     *
+     *
+     * fluffy ball round(sqrt(x*x+y*y+z*z)-rand(abs(y)))==32
+     * - outside
+     * + inside
      * </div>
      * @param x .
      * @param y .

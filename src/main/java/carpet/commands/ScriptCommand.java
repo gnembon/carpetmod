@@ -339,7 +339,7 @@ public class ScriptCommand
                     }
                     catch (ExpressionInspector.CarpetExpressionException e)
                     {
-                        CarpetSettings.LOG.error("Exception: "+e);
+                        Messenger.m(source, "r Exception while filling the area:\n","l "+e.getMessage());
                         return 0;
                     }
                     catch (ArithmeticException e)

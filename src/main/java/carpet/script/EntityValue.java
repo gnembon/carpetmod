@@ -90,23 +90,25 @@ public class EntityValue extends Value
         put("feet", EntityEquipmentSlot.FEET);
     }};
     private static Map<String, BiFunction<Entity, Value, Value>> featureAccessors = new HashMap<String, BiFunction<Entity, Value, Value>>() {{
+        put("removed", (entity, arg) -> new NumericValue(entity.removed));
+        put("id",(e, a) -> new StringValue(e.getCachedUniqueIdString()));
         put("pos", (e, a) -> ListValue.of(new NumericValue(e.posX), new NumericValue(e.posY), new NumericValue(e.posZ)));
         put("x", (e, a) -> new NumericValue(e.posX));
         put("y", (e, a) -> new NumericValue(e.posY));
         put("z", (e, a) -> new NumericValue(e.posZ));
         put("motion", (e, a) -> ListValue.of(new NumericValue(e.motionX), new NumericValue(e.motionY), new NumericValue(e.motionZ)));
-        put("motionx", (e, a) -> new NumericValue(e.motionX));
-        put("motiony", (e, a) -> new NumericValue(e.motionY));
-        put("motionz", (e, a) -> new NumericValue(e.motionZ));
-        put("name", (e, a) -> new StringValue(e.getName().getString()));
-        put("custom_name", (e, a) -> new StringValue(e.hasCustomName()?e.getCustomName().getString():""));
-        put("type", (e, a) -> new StringValue(e.getType().func_212546_e().getString()));
+        put("motion_x", (e, a) -> new NumericValue(e.motionX));
+        put("motion_y", (e, a) -> new NumericValue(e.motionY));
+        put("motion_z", (e, a) -> new NumericValue(e.motionZ));
+        put("name", (e, a) -> new StringValue(e.getDisplayName().getString()));
+        put("custom_name", (e, a) -> e.hasCustomName()?new StringValue(e.getCustomName().getString()):Value.NULL);
+        put("type", (e, a) -> new StringValue(e.getType().getTranslationKey().replaceFirst("entity\\.minecraft\\.","")));
         put("is_riding", (e, a) -> new NumericValue(e.isPassenger()));
         put("is_ridden", (e, a) -> new NumericValue(e.isBeingRidden()));
         put("passengers", (e, a) -> ListValue.wrap(e.getPassengers().stream().map(EntityValue::new).collect(Collectors.toList())));
         put("mount", (e, a) -> (e.getRidingEntity()!=null)?new EntityValue(e.getRidingEntity()):Value.NULL);
         put("tags", (e, a) -> ListValue.wrap(e.getTags().stream().map(StringValue::new).collect(Collectors.toList())));
-        put("tag", (e, a) -> new NumericValue(e.getTags().contains(a.getString())));
+        put("has_tag", (e, a) -> new NumericValue(e.getTags().contains(a.getString())));
         put("yaw", (e, a)-> new NumericValue(e.rotationYaw));
         put("pitch", (e, a)-> new NumericValue(e.rotationPitch));
         put("is_burning", (e, a) -> new NumericValue(e.getFire()>0));
@@ -114,7 +116,7 @@ public class EntityValue extends Value
         put("silent", (e, a)-> new NumericValue(e.isSilent()));
         put("gravity", (e, a) -> new NumericValue(!e.hasNoGravity()));
         put("immune_to_fire", (e, a) -> new NumericValue(e.isImmuneToFire()));
-        put("id",(e, a) -> new StringValue(e.getCachedUniqueIdString()));
+
         put("invulnerable", (e, a) -> new NumericValue(e.isInvulnerable()));
         put("dimension", (e, a) -> new StringValue(e.dimension.getSuffix()));
         put("height", (e, a) -> new NumericValue(e.height));
@@ -218,6 +220,7 @@ public class EntityValue extends Value
     }
 
     private static Map<String, BiConsumer<Entity, Value>> featureModifiers = new HashMap<String, BiConsumer<Entity, Value>>() {{
+        put("remove", (entity, value) -> entity.remove());
         put("health", (e, v) -> { if (e instanceof EntityLivingBase) ((EntityLivingBase) e).setHealth((float)Expression.getNumericValue(v).getDouble()); });
         put("kill", (e, v) -> e.onKillCommand());
         put("pos", (e, v) ->
@@ -264,9 +267,9 @@ public class EntityValue extends Value
             e.motionY = Expression.getNumericValue(coords.get(1)).getDouble();
             e.motionZ = Expression.getNumericValue(coords.get(2)).getDouble();
         });
-        put("motionx", (e, v) -> e.motionX = Expression.getNumericValue(v).getDouble());
-        put("motiony", (e, v) -> e.motionY = Expression.getNumericValue(v).getDouble());
-        put("motionz", (e, v) -> e.motionZ = Expression.getNumericValue(v).getDouble());
+        put("motion_x", (e, v) -> e.motionX = Expression.getNumericValue(v).getDouble());
+        put("motion_y", (e, v) -> e.motionY = Expression.getNumericValue(v).getDouble());
+        put("motion_z", (e, v) -> e.motionZ = Expression.getNumericValue(v).getDouble());
 
         put("accelerate", (e, v) ->
         {
