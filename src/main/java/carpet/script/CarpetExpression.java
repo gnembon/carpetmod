@@ -12,8 +12,6 @@ import javafx.util.Pair;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.command.CommandSource;
-import net.minecraft.command.arguments.EntitySelector;
-import net.minecraft.command.arguments.EntitySelectorParser;
 import net.minecraft.command.arguments.ParticleArgument;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
@@ -39,7 +37,6 @@ import net.minecraft.world.storage.SessionLockException;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -217,13 +214,12 @@ public class CarpetExpression
      * scan(0,5,0,0,0,0,set(_,'bedrock'))  =&gt; 1
      * set(pos(players()), 'bedrock')  =&gt; bedrock
      * set(0,0,0,'bedrock')  =&gt; 0   // or 1 in overworlds generated in 1.8 and before
-     * scan(0,100,0,20,20,20,set(_,block('glass')))
-     *     // filling the area with glass
      * scan(0,100,0,20,20,20,set(_,'glass'))
-     *     // about 10% faster due to less parsing
+     *     // filling the area with glass
+     * scan(0,100,0,20,20,20,set(_,block('glass')))
+     *     // little bit faster due to internal caching of block state selectors
      * b = block('glass'); scan(0,100,0,20,20,20,set(_,b))
-     *     // yet another slightly faster option, skips all parsing
-     *     // but will replace all blocks, even existing glass
+     *     // yet another option, skips all parsing
      * set(x,y,z,'iron_trapdoor')  // sets bottom iron trapdoor
      * set(x,y,z,'iron_trapdoor[half=top]')  // Incorrect. sets bottom iron trapdoor - no parsing of properties
      * set(x,y,z,'iron_trapdoor','half','top') // correct - top trapdoor
@@ -433,7 +429,7 @@ public class CarpetExpression
 
 
 
-    public void BlockManipulation()
+    public void APIBlockManipulation()
     {
         this.expr.addLazyFunction("block", -1, (c, t, lv) ->
         {
@@ -672,8 +668,8 @@ public class CarpetExpression
      * at most <code>dx, dy, dz</code> blocks away from the center point. Uses same selectors as <code>entities_list</code></p>
      *
      * <h3><code>entity_selector(selector)</code></h3>
-     * <p>Returns entities satisfying given vanilla entity selector. Most expensive from all the methods of selecting
-     * entities, but the most capable.</p>
+     * <p>Returns entities satisfying given vanilla entity selector. Most complex among all the methods of selecting
+     * entities, but the most capable. Selectors are cached so should be as fast as other methods of selecting entities.</p>
      *
      * <h2>Entity Manipulation</h2>
      *
@@ -820,7 +816,7 @@ public class CarpetExpression
      * </div>
      */
 
-    public void EntityManipulation()
+    public void APIEntityManipulation()
     {
         this.expr.addLazyFunction("player", -1, (c, t, lv) -> {
             if (lv.size() ==0)
@@ -1007,7 +1003,7 @@ public class CarpetExpression
      * </div>
      */
 
-    public void IteratingOverAreasOfBlocks()
+    public void APIIteratingOverAreasOfBlocks()
     {
         this.expr.addLazyFunction("scan", -1, (c, t, lv) ->
         {
@@ -1368,7 +1364,6 @@ public class CarpetExpression
                         return block;
                     }
                 };
-
             }
         });
     }
@@ -1376,13 +1371,87 @@ public class CarpetExpression
     //TODO sounds
     /**
      * <h1>Auxiliary aspects</h1>
+     * <p>Collection of other methods that control smaller, yet still important aspects of the game</p>
+     * <h2>Sounds</h2>
+     * <h3><code>sound(pos, name, volume?, pitch?)</code></h3>
+     * <p>Plays a specific sound <code>name</code>, at block or position <code>pos</code>, with optional
+     * <code>volume</code> and modified <code>pitch</code>. <code>pos</code> can be either a block, triple of coords,
+     * or a list of thee numbers. Uses the same options as a corresponding <code>playsound</code> command.</p>
+     * <h2>Particles</h2>
+     * <h3><code>particle(pos, name, count?. spread?, speed?, playername?)</code></h3>
+     * <p>Renders a cloud of particles <code>name</code> centered around <code>pos</code> position, by default
+     * <code>count</code> 10 of them, default <code>speed</code> of 0, and to all players nearby, but these
+     * options can be changed via optional arguments. Follow vanilla <code>/particle</code> command on details on those
+     * options</p>
+     * <h2>System function</h2>
+     * <h3><code>print(expr)</code></h3>
+     * <p>Displays the result of the expression to the chat. Overrides default <code>scarpet</code> behaviour of
+     * sending everyting to stderr.</p>
+     * <h3><code>run(expr)</code></h3>
+     * <p>Runs a command from the string result of the <code>expr</code> expression, and returns its success count</p>
+     * <h3><code>save()</code></h3>
+     * <p>Performs autosave, saves all chunks, player data, etc. Useful for programs where autosave is disabled
+     * due to performance reasons and saves the world only on demand.</p>
+     * <h3><code>tick_time()</code></h3>
+     * <p>Returns game tick counter. Can be used to run certain operations every n-th ticks, or to count in-game time</p>
+     * <h3><code>game_tick(mstime?)</code></h3>
+     * <p>Causes game to run for one tick. By default runs it and returns control to the program, but can optionally
+     * accept expected tick length, in milliseconds. You can't use it to permanently change the game speed, but
+     * setting longer commands with custom tick speeds can be interrupted via <code>/script stop</code> command</p>
+     * <pre>
+     * loop(1000,tick())  // runs the game as fast as it can for 1000 ticks
+     * loop(1000,tick(100)) // runs the game twice as slow for 1000 ticks
+     * </pre>
+     * <h3><code>plop(pos, what)</code></h3>
+     * <p>Plops a structure or a feature at a given <code>pos</code>, so block, triple position coordinates
+     * or a list of coordinates. To <code>what</code> gets plopped and exactly where it often depends on the
+     * feature or structure itself. For example, all structures are chunk aligned, and often span multiple chunks.
+     * Repeated calls to plop a structure in the same chunk would result either in the same strucuture generated on
+     * top of each other, or with different state, but same position. Most
+     * structures generate at specific altitudes, which are hardcoded, or with certain blocks around them. API will cancel
+     * all extra position / biome / random requirements for structure / feature placement, but some hardcoded limitations
+     * may still cause some of strucutures/features not to place. Some features require special blocks to be present, like
+     * coral -&gt; water or ice spikes -&gt; snow block, and for some features, like fossils, placement is all sorts of
+     * messed up.</p>
+     * <p>
+     * All generated structures will retain their properties, like mob spawning, however in many cases the world / dimension
+     * itself has certain rules to spawn mobs, like plopping a nether fortress in the overworld will not spawn nether mobs
+     * because nether mobs can spawn only in the nether, but plopped in the nether - will behave like a valid nether
+     * fortress.</p>
+     * <p><code>plop</code>  will not use world random number generator to generate structures and features, but its own.
+     * This has a benefit that they will generate properly randomly, not the same time every time</p>
+     * <p>The following strucutures can be generated:</p>
+     * <ul>
+     *
+     *     <li><code>monument</code>: Ocean Monument. Generates at fixed Y coordinate, surrounds itself with water.</li>
+     *     <li><code>fortress</code>: Nether Fortress. Altitude varies, but its bounded by the code.</li>
+     *     <li><code>mansion</code>: Woodland Mansion</li>
+     *     <li><code>jungle_temple</code>: Jungle Temple</li>
+     *     <li><code>desert_temple</code>: Desert Temple. Generates at fixed Y altitude.</li>
+     *     <li><code>end_city</code>: End City with Shulkers</li>
+     *     <li><code>igloo</code>: Igloo</li>
+     *     <li><code>shipwreck</code>: Shipwreck, version1?</li>
+     *     <li><code>shipwreck2</code>: Shipwreck, version2?</li>
+     *     <li><code>witchhut</code>: Witch hut. Above sea level.</li>
+     *     <li><code>stronghold</code>: Stronghold. Spawns at harcoded Y ranges.</li>
+     *     <li><code>stronghold</code>: Stronghold. Spawns at harcoded Y ranges.</li>
+     *     <li><code>stronghold</code>: Stronghold. Spawns at harcoded Y ranges.</li>
+     *     <li><code>stronghold</code>: Stronghold. Spawns at harcoded Y ranges.</li>
+     *
+     *
+     * </ul>
+     * <h3><code></code></h3>
+     * <p></p>
+     * <h3><code></code></h3>
+     * <p></p>
+     *
      * <div style="padding-left: 20px; border-radius: 5px 45px; border:1px solid grey;">
      * <p>Section Content</p>
      * <p>Other Paragraph</p>
      * </div>
      */
 
-    public void AuxiliaryAspects()
+    public void APIAuxiliaryAspects()
     {
         this.expr.addLazyFunction("sound", -1, (c, t, lv) -> {
             CarpetContext cc = (CarpetContext)c;
@@ -1504,7 +1573,7 @@ public class CarpetExpression
             return (cc, tt) -> Value.TRUE;
         });
 
-        this.expr.addLazyFunction("ticktime", 0, (c, t, lv) -> (cc, tt) -> new NumericValue(((CarpetContext)cc).s.getServer().getTickCounter()));
+        this.expr.addLazyFunction("tick_time", 0, (c, t, lv) -> (cc, tt) -> new NumericValue(((CarpetContext)cc).s.getServer().getTickCounter()));
         this.expr.addLazyFunction("ticktime2", 0, (c, t, lv) -> (cc, tt) -> new NumericValue(((CarpetContext)cc).s.getServer().getTickCounter()));
 
         this.expr.addLazyFunction("ticktime3", 0, (c, t, lv) ->
@@ -1513,7 +1582,7 @@ public class CarpetExpression
             return (cc, tt) -> time;
         });
 
-        this.expr.addLazyFunction("gametick", -1, (c, t, lv) -> {
+        this.expr.addLazyFunction("game_tick", -1, (c, t, lv) -> {
             CommandSource s = ((CarpetContext)c).s;
             s.getServer().tick( () -> System.nanoTime()-tickStart<50000000L);
             s.getServer().dontPanic(); // optional not to freak out the watchdog
@@ -1569,10 +1638,10 @@ public class CarpetExpression
         this.source = source;
         this.expr = new Expression(expression);
 
-        BlockManipulation();
-        EntityManipulation();
-        IteratingOverAreasOfBlocks();
-        AuxiliaryAspects();
+        APIBlockManipulation();
+        APIEntityManipulation();
+        APIIteratingOverAreasOfBlocks();
+        APIAuxiliaryAspects();
     }
 
     /**
