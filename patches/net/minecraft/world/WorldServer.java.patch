@@ -137,3 +137,12 @@
                  this.profiler.endStartSection("thunder");
  
                  if (flag && flag1 && this.rand.nextInt(100000) == 0)
+@@ -499,7 +566,7 @@
+         }
+     }
+ 
+-    protected BlockPos adjustPosToNearbyEntity(BlockPos pos)
++    public BlockPos adjustPosToNearbyEntity(BlockPos pos) // [CM] Changed access to public for summonNaturalLightning
+     {
+         BlockPos blockpos = this.getHeight(Heightmap.Type.MOTION_BLOCKING, pos);
+         AxisAlignedBB axisalignedbb = (new AxisAlignedBB(blockpos, new BlockPos(blockpos.getX(), this.getHeight(), blockpos.getZ()))).grow(3.0D);

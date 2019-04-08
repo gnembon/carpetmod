@@ -1,0 +1,61 @@
+--- a/net/minecraft/command/impl/SummonCommand.java
++++ b/net/minecraft/command/impl/SummonCommand.java
+@@ -1,5 +1,6 @@
+ package net.minecraft.command.impl;
+ 
++import carpet.CarpetSettings;
+ import com.mojang.brigadier.CommandDispatcher;
+ import com.mojang.brigadier.exceptions.CommandSyntaxException;
+ import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
+@@ -14,11 +15,14 @@
+ import net.minecraft.entity.EntityType;
+ import net.minecraft.entity.IEntityLivingData;
+ import net.minecraft.entity.effect.EntityLightningBolt;
++import net.minecraft.entity.passive.EntitySkeletonHorse;
+ import net.minecraft.nbt.NBTTagCompound;
+ import net.minecraft.util.ResourceLocation;
+ import net.minecraft.util.math.BlockPos;
+ import net.minecraft.util.math.Vec3d;
+ import net.minecraft.util.text.TextComponentTranslation;
++import net.minecraft.world.DifficultyInstance;
++import net.minecraft.world.WorldServer;
+ import net.minecraft.world.chunk.storage.AnvilChunkLoader;
+ 
+ public class SummonCommand
+@@ -50,7 +54,35 @@
+         if (EntityType.getId(EntityType.LIGHTNING_BOLT).equals(p_198737_1_))
+         {
+             Entity entity1 = new EntityLightningBolt(p_198737_0_.getWorld(), p_198737_2_.x, p_198737_2_.y, p_198737_2_.z, false);
+-            p_198737_0_.getWorld().addWeatherEffect(entity1);
++            
++            // [CM] SummonNaturalLightning - if statement around
++            if (!CarpetSettings.getBool("summonNaturalLightning"))
++            {
++                p_198737_0_.getWorld().addWeatherEffect(entity1);
++            }
++            else
++            {
++                BlockPos bp = ((WorldServer)p_198737_0_.getWorld()).adjustPosToNearbyEntity(new BlockPos(p_198737_2_.x, 0, p_198737_2_.z));
++                if(p_198737_0_.getWorld().isRainingAt(bp)){
++                    DifficultyInstance difficultyinstance = p_198737_0_.getWorld().getDifficultyForLocation(bp);
++        
++                    if (p_198737_0_.getWorld().getGameRules().getBoolean("doMobSpawning") && p_198737_0_.getWorld().rand.nextDouble() < (double)difficultyinstance.getAdditionalDifficulty() * 0.01D)
++                    {
++                        EntitySkeletonHorse entityskeletonhorse = new EntitySkeletonHorse(p_198737_0_.getWorld());
++                        entityskeletonhorse.setTrap(true);
++                        entityskeletonhorse.setGrowingAge(0);
++                        entityskeletonhorse.setPosition((double)bp.getX(), (double)bp.getY(), (double)bp.getZ());
++                        p_198737_0_.getWorld().spawnEntity(entityskeletonhorse);
++                        p_198737_0_.getWorld().addWeatherEffect(new EntityLightningBolt(p_198737_0_.getWorld(), (double)bp.getX(), (double)bp.getY(), (double)bp.getZ(), true));
++                    }
++                    else
++                    {
++                        p_198737_0_.getWorld().addWeatherEffect(new EntityLightningBolt(p_198737_0_.getWorld(), (double)bp.getX(), (double)bp.getY(), (double)bp.getZ(), false));
++                    }
++                }
++            }
++            // [CM] SummonNaturalLightning - End
++            
+             p_198737_0_.sendFeedback(new TextComponentTranslation("commands.summon.success", entity1.getDisplayName()), true);
+             return 1;
+         }

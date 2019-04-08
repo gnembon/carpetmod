@@ -192,7 +192,7 @@ public class CarpetSettings
   rule("silverFishDropGravel",  "experimental", "Silverfish drop a gravel item when breaking out of a block"),
   /////rule("renewablePackedIce",    "experimental", "Multiple ice crushed by falling anvils make packed ice"),
   /////rule("renewableDragonEggs",   "experimental", "Dragon eggs when fed meet items spawn more eggs"),
-  //!rule("summonNaturalLightning","creative", "summoning a lightning bolt has all the side effects of natural lightning"),
+  rule("summonNaturalLightning","creative", "summoning a lightning bolt has all the side effects of natural lightning"),
   rule("commandSpawn",          "commands", "Enables /spawn command for spawn tracking").isACommand(),
   rule("commandTick",           "commands", "Enables /tick command to control game speed").isACommand(),
   rule("commandLog",            "commands", "Enables /log command to monitor events in the game via chat and overlays").isACommand(),
