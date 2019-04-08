@@ -8,11 +8,11 @@ The most comprehensive and convoluted mod for carpets evar. Built based on jarmo
 - Have Java SDK and git installed (prefferably, or download zipped repo to a folder)
 - open command prompt  
 - type:
-- - `./git clone https://github.com/gnembon/carpetmod.git`
-- - `./cd carpetmod`
-- - `./gradlew setup`
-- - `./gradlew genPatches`
-- - `./gradlew createRelease`
+- - `git clone https://github.com/gnembon/carpetmod.git`
+- - `cd carpetmod`
+- - `gradlew setup`
+- - `gradlew genPatches`
+- - `gradlew createRelease`
 - patches for client and server are in `/build/distributions`
 - optionally (to patch the server automatically)
 - - have commandline 7za installed
