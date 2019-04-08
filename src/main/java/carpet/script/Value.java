@@ -1,7 +1,5 @@
 package carpet.script;
 
-import org.apache.commons.lang3.ObjectUtils;
-
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 

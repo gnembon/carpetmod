@@ -50,7 +50,7 @@ import static java.lang.Math.max;
 import static java.lang.Math.min;
 
 /**
- * <h1>Minecraft specific API and <code>scarpet</code> language add-ons</h1>
+ * <h1>Minecraft specific API and <code>scarpet</code> language add-ons and commands</h1>
  * <p>Here is the gist of the Minecraft related functions. Otherwise the CarpetScript could live without Minecraft.</p>
  * <h2>Dimension issues</h2>
  * <p>One note, which is important is that most of the calls for entities and blocks
@@ -1723,7 +1723,10 @@ public class CarpetExpression
      * /draw sphere 0 100 0 32 white_stained_glass replace air
      *
      * fluffy ball round(sqrt(x*x+y*y+z*z)-rand(abs(y)))==32
+     *
      * </pre>
+     * <p>The last method is the one that world edit is using (part of carpet mod). It turns out that the outline method with <code>32.5</code> radius,
+     * fill method with <code>round</code> function and draw command are equivalent</p>
      * </div>
      * @param x .
      * @param y .
@@ -1762,10 +1765,13 @@ public class CarpetExpression
     }
 
     /**
-     * <h1>script run command</h1>
+     * <h1><code>/script run</code> command</h1>
      * <div style="padding-left: 20px; border-radius: 5px 45px; border:1px solid grey;">
-     * <p>Section Content</p>
-     * <p>Other Paragraph</p>
+     * <p>primary way to input commands. The command executes in the context, position, and dimension of the executing
+     * player, commandblock, etc... The command receives 4 variables, <code>x</code>, <code>y</code>, <code>z</code>
+     * and <code>p</code> indicating position and the executing entity of the command.
+     * It is advisable to use <code>/execute in ... at ... as ... run script run ...</code> or similar, to simulate running
+     * commands in a different scope</p>
      * </div>
      * @param pos .
      * @return .
@@ -1802,10 +1808,38 @@ public class CarpetExpression
     }
 
     /**
-     * <h1> script invoke / invokepoint / invokearea commands</h1>
+     * <h1><code>/script invoke / invokepoint / invokearea</code>, <code>/script globals</code> commands</h1>
      * <div style="padding-left: 20px; border-radius: 5px 45px; border:1px solid grey;">
-     * <p>Section Content</p>
-     * <p>Other Paragraph</p>
+     * <p><code>invoke</code> family of commands provide convenient way to invoke stored procedures (i.e. functions
+     * that has been defined previously by any running script. To view current stored procedure set,
+     * run <code>/script globals</code>, to define a new stored procedure, just run a <code>/script run function(a,b) -&gt; ( ... )</code>
+     * command with your procedure once, and to forget a procedure, use <code>undef</code> function:
+     * <code>/script run undef('function')</code></p>
+     * <h2></h2>
+     * <h3><code>/script invoke &lt;fun&gt; &lt;args?&gt; ... </code></h3>
+     * <p>Equivalent of running <code>/script run fun(args, ...)</code>, but you get the benefit of getting the tab completion of the
+     * command name, and lower permission level required to run these (since player is not capable of running any custom code
+     * in this case, only this that has been executed before by an operator). Arguments will be passed literally, so for example
+     * built-in variables are allowed like <code>x, y, z, p, pi, euler</code>, and all strings need to be wrapped in single quotes</p>
+     * <p>Command will check provided arguments with required arguments (count) and fail if not enough or too much arguments
+     * are provided. Operators defining functions are advised to use descriptive arguments names, as these will be visible
+     * for invokers and form the base of understanding what each argument does.</p>
+     * <p><code>invoke</code> family of commands will tab complete any stored function that does not start with <code>'_'</code>,
+     * it will still allow to run procedures starting with <code>'_'</code> but not suggest them, and ban execution of any
+     * hidden stored procedures, so ones that start with <code>'__'</code>. In case operator needs to use subroutines
+     * for convenience and don't want to expose them to the <code>invoke</code> callers, they can use this mechanic.</p>
+     * <pre>
+     * /script run example_function(const, phrase, price) -&gt; print(const+' '+phrase+' '+price)
+     * /script invoke example_function pi 'costs' 5
+     * </pre>
+     * <h3><code>/script invokepoint &lt;fun&gt; &lt;coords x y z&gt; &lt;args?&gt; ... </code></h3>
+     * <p>It is equivalent to <code>invoke</code> except it assumes that the first three arguments are coordinates, and provides
+     * coordinates tab completion, with <code>looking at... </code> mechanics for convenience. All other arguments are expected
+     * at the end</p>
+     * <h3><code>/script invokearea &lt;fun&gt; &lt;coords x y z&gt; &lt;coords x y z&gt; &lt;args?&gt; ... </code></h3>
+     * <p>It is equivalent to <code>invoke</code> except it assumes that the first three arguments are one set of ccordinates,
+     * followed by the second set of coordinates, providing tab completion, with <code>looking at... </code> mechanics for convenience,
+     * followed by any other required arguments</p>
      * </div>
      * @param source .
      * @param call .
@@ -1852,7 +1886,6 @@ public class CarpetExpression
         {
             throw new ExpressionInspector.CarpetExpressionException("math doesn't compute... "+ae.getMessage());
         }
-
     }
 
     void setLogOutput(boolean to)

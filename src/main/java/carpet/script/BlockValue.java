@@ -4,7 +4,6 @@ import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
-import net.minecraft.command.arguments.BlockStateInput;
 import net.minecraft.command.arguments.BlockStateParser;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.ResourceLocation;
