@@ -27,7 +27,6 @@ public class Context
 
     Context(Expression expr)
     {
-        variables.putAll(expr.defaultVariables);
         logOutput = expr.getLogger();
     }
 
@@ -85,5 +84,10 @@ public class Context
     public Set<String> getAllVariableNames()
     {
         return variables.keySet();
+    }
+
+    public Context recreateFor(Expression e)
+    {
+        return new Context(e);
     }
 }

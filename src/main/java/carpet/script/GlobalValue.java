@@ -1,8 +1,8 @@
 package carpet.script;
 
-public class LocalValue extends Value
+public class GlobalValue extends Value
 {
-    public LocalValue(Value variable)
+    public GlobalValue(Value variable)
     {
         variable.assertAssignable();
         this.boundVariable = variable.boundVariable;

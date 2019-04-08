@@ -42,7 +42,7 @@ public class ScriptCommand
                 then(literal("globals").executes( (c) -> listGlobals(c.getSource()))).
                 then(literal("stop").executes( (c) -> { CarpetExpression.BreakExecutionOfAllScriptsWithCommands(true); return 1;})).
                 then(literal("resume").executes( (c) -> { CarpetExpression.BreakExecutionOfAllScriptsWithCommands(false); return 1;})).
-                then(literal("run").
+                then(literal("run").requires((player) -> player.hasPermissionLevel(2)).
                         then(argument("expr", StringArgumentType.greedyString()).
                                 executes((c) -> compute(
                                         c.getSource(),
@@ -103,11 +103,11 @@ public class ScriptCommand
                                                                 BlockPosArgument.getBlockPos(c, "to"),
                                                                 StringArgumentType.getString(c, "arguments")
                                                         ))))))).
-                then(literal("scan").
+                then(literal("scan").requires((player) -> player.hasPermissionLevel(2)).
                         then(argument("origin", BlockPosArgument.blockPos()).
                                 then(argument("from", BlockPosArgument.blockPos()).
                                         then(argument("to", BlockPosArgument.blockPos()).
-                                                then(argument("expr", StringArgumentType.string()).
+                                                then(argument("expr", StringArgumentType.greedyString()).
                                                         executes( (c) -> scriptScan(
                                                                 c.getSource(),
                                                                 BlockPosArgument.getBlockPos(c, "origin"),
@@ -115,7 +115,7 @@ public class ScriptCommand
                                                                 BlockPosArgument.getBlockPos(c, "to"),
                                                                 StringArgumentType.getString(c, "expr")
                                                         ))))))).
-                then(literal("fill").
+                then(literal("fill").requires((player) -> player.hasPermissionLevel(2)).
                         then(argument("origin", BlockPosArgument.blockPos()).
                                 then(argument("from", BlockPosArgument.blockPos()).
                                         then(argument("to", BlockPosArgument.blockPos()).
@@ -142,7 +142,7 @@ public class ScriptCommand
                                                                                 BlockPredicateArgument.getBlockPredicate(c, "filter"),
                                                                                 "solid"
                                                                         )))))))))).
-                then(literal("outline").
+                then(literal("outline").requires((player) -> player.hasPermissionLevel(2)).
                         then(argument("origin", BlockPosArgument.blockPos()).
                                 then(argument("from", BlockPosArgument.blockPos()).
                                         then(argument("to", BlockPosArgument.blockPos()).
@@ -339,7 +339,7 @@ public class ScriptCommand
                     }
                     catch (ExpressionInspector.CarpetExpressionException e)
                     {
-                        CarpetSettings.LOG.error("Exception: "+e);
+                        Messenger.m(source, "r Exception while filling the area:\n","l "+e.getMessage());
                         return 0;
                     }
                     catch (ArithmeticException e)
@@ -351,7 +351,7 @@ public class ScriptCommand
         final int maxx = area.getXSize()-1;
         final int maxy = area.getYSize()-1;
         final int maxz = area.getZSize()-1;
-        if ("edge".equalsIgnoreCase(mode))
+        if ("outline".equalsIgnoreCase(mode))
         {
             boolean[][][] newVolume = new boolean[area.getXSize()][area.getYSize()][area.getZSize()];
             for (int x = 0; x <= maxx; x++)
