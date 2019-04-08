@@ -341,9 +341,9 @@ public class Expression implements Cloneable
         put("false", (c, t) -> Value.FALSE);
 
         //special variables for second order functions so we don't need to check them all the time
-        put("_", (c, t) -> new NumericValue(0).bindTo("_"));
-        put("_i", (c, t) -> new NumericValue(0).bindTo("_i"));
-        put("_a", (c, t) -> new NumericValue(0).bindTo("_a"));
+        put("_", (c, t) -> Value.ZERO);
+        put("_i", (c, t) -> Value.ZERO);
+        put("_a", (c, t) -> Value.ZERO);
     }};
 
     /* should the evaluator output value of each ;'s statement during execution */

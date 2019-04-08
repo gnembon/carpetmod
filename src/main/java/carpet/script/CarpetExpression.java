@@ -51,6 +51,7 @@ import static java.lang.Math.min;
 
 /**
  * <h1>Minecraft specific API and <code>scarpet</code> language add-ons</h1>
+ * <p>Here is the gist of the Minecraft related functions. Otherwise the CarpetScript could live without Minecraft.</p>
  * <h2>Dimension issues</h2>
  * <p>One note, which is important is that most of the calls for entities and blocks
  * would refer to the current dimension of the caller, meaning, that if we for example
@@ -429,7 +430,7 @@ public class CarpetExpression
 
 
 
-    public void APIBlockManipulation()
+    public void API_BlockManipulation()
     {
         this.expr.addLazyFunction("block", -1, (c, t, lv) ->
         {
@@ -816,7 +817,7 @@ public class CarpetExpression
      * </div>
      */
 
-    public void APIEntityManipulation()
+    public void API_EntityManipulation()
     {
         this.expr.addLazyFunction("player", -1, (c, t, lv) -> {
             if (lv.size() ==0)
@@ -1003,7 +1004,7 @@ public class CarpetExpression
      * </div>
      */
 
-    public void APIIteratingOverAreasOfBlocks()
+    public void API_IteratingOverAreasOfBlocks()
     {
         this.expr.addLazyFunction("scan", -1, (c, t, lv) ->
         {
@@ -1498,7 +1499,7 @@ public class CarpetExpression
      * </div>
      */
 
-    public void APIAuxiliaryAspects()
+    public void API_AuxiliaryAspects()
     {
         this.expr.addLazyFunction("sound", -1, (c, t, lv) -> {
             CarpetContext cc = (CarpetContext)c;
@@ -1666,41 +1667,63 @@ public class CarpetExpression
         });
     }
 
+    static
+    {
+        Expression.globalVariables.put("_x", (c, t) -> Value.ZERO);
+        Expression.globalVariables.put("_y", (c, t) -> Value.ZERO);
+        Expression.globalVariables.put("_z", (c, t) -> Value.ZERO);
+    }
     /**
-     * <h1>Minecraft API</h1>
-     * <p>Here is the gist of the Minecraft related functions. Otherwise the CarpetScript could live without Minecraft.</p>
+     * <h1>.</h1>
      * @param expression expression
      * @param source source
      * @param origin origin
      */
-    static
-    {
-        Expression.globalVariables.put("_x", (c, t) -> new NumericValue(0).bindTo("_x"));
-        Expression.globalVariables.put("_y", (c, t) -> new NumericValue(0).bindTo("_y"));
-        Expression.globalVariables.put("_z", (c, t) -> new NumericValue(0).bindTo("_z"));
-    }
     public CarpetExpression(String expression, CommandSource source, BlockPos origin)
     {
         this.origin = origin;
         this.source = source;
         this.expr = new Expression(expression);
 
-        APIBlockManipulation();
-        APIEntityManipulation();
-        APIIteratingOverAreasOfBlocks();
-        APIAuxiliaryAspects();
+        API_BlockManipulation();
+        API_EntityManipulation();
+        API_IteratingOverAreasOfBlocks();
+        API_AuxiliaryAspects();
     }
 
     /**
-     * <h1>fill and scan commands</h1>
+     * <h1><code>/script scan</code>, <code>/script scan</code> and <code>/script outline</code> commands</h1>
      * <div style="padding-left: 20px; border-radius: 5px 45px; border:1px solid grey;">
-     * <p>Section Content</p>
-     * <p>Other Paragraph</p>
-     *
+     * <p>These commands can be used to evaluate an expression over an area of blocks. They all need to have specified
+     * the origin of the analyzed area (which is used as referenced (0,0,0), and two corners of an area to analyzed. If
+     * you would want that the script block coordinates refer to the actual world coordinates, use origin of <code>0 0 0</code>,
+     * or if it doesn't matter, duplicating coordinates of one of the corners is the easiest way.</p>
+     * <p>These commands, unlike raw <code>/script run </code> are limited by vanilla fill / clone command
+     * limit of 32k blocks, which can be altered with carpet mod's own <code>/carpet fillLimit</code> command.</p>
+     * <h2></h2>
+     * <h3><code>/script scan origin&lt;x y z&gt;  corner&lt;x y z&gt; corner&lt;x y z&gt; expr</code></h3>
+     * <p>Evaluates expression for each point in the area and returns number of successes (result was positive). Since
+     * the command by itself doesn't affect the area, the effects would be in side effects.</p>
+     * <h3><code>/script fill origin&lt;x y z&gt;  corner&lt;x y z&gt; corner&lt;x y z&gt; "expr" &lt;block&gt; (? replace &lt;replacement&gt;) </code></h3>
+     * <p>Think of it as a regular fill command, that sets blocks based on whether a result of the command was successful.
+     * Note that the expression is in quotes. Thankfully string constants in <code>scarpet</code> use single quotes. Can be used
+     * to fill complex geometric shapes.</p>
+     * <h3><code>/script outline origin&lt;x y z&gt;  corner&lt;x y z&gt; corner&lt;x y z&gt; "expr" &lt;block&gt; (? replace &lt;replacement&gt;) </code></h3>
+     * <p>Similar to <code>fill</code> command it evaluates an expression for each block in the area, but in this case setting blocks
+     * where condition was true and any of the neighbouring blocks were evaluated negatively. This allows to create surface areas,
+     * like sphere for example, without resorting to various rounding modes and tricks.</p>
+     * <p>Here is an example of seven ways to draw a sphere of radius of 32 blocks around 0 100 0: </p>
+     * <pre>
+     * /script outline 0 100 0 -40 60 -40 40 140 40 "x*x+y*y+z*z &lt;  32*32" white_stained_glass replace air
+     * /script outline 0 100 0 -40 60 -40 40 140 40 "x*x+y*y+z*z &lt;= 32*32" white_stained_glass replace air
+     * /script outline 0 100 0 -40 60 -40 40 140 40 "x*x+y*y+z*z &lt;  32.5*32.5" white_stained_glass replace air
+     * /script fill    0 100 0 -40 60 -40 40 140 40 "floor(sqrt(x*x+y*y+z*z)) == 32" white_stained_glass replace air
+     * /script fill    0 100 0 -40 60 -40 40 140 40 "round(sqrt(x*x+y*y+z*z)) == 32" white_stained_glass replace air
+     * /script fill    0 100 0 -40 60 -40 40 140 40 "ceil(sqrt(x*x+y*y+z*z)) == 32" white_stained_glass replace air
+     * /draw sphere 0 100 0 32 white_stained_glass replace air
      *
      * fluffy ball round(sqrt(x*x+y*y+z*z)-rand(abs(y)))==32
-     * - outside
-     * + inside
+     * </pre>
      * </div>
      * @param x .
      * @param y .
