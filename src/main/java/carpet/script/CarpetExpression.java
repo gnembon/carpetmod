@@ -1371,6 +1371,7 @@ public class CarpetExpression
     //TODO sounds
     /**
      * <h1>Auxiliary aspects</h1>
+     * <div style="padding-left: 20px; border-radius: 5px 45px; border:1px solid grey;">
      * <p>Collection of other methods that control smaller, yet still important aspects of the game</p>
      * <h2>Sounds</h2>
      * <h3><code>sound(pos, name, volume?, pitch?)</code></h3>
@@ -1420,7 +1421,7 @@ public class CarpetExpression
      * fortress.</p>
      * <p><code>plop</code>  will not use world random number generator to generate structures and features, but its own.
      * This has a benefit that they will generate properly randomly, not the same time every time</p>
-     * <p>The following strucutures can be generated:</p>
+     * <p>Structure list:</p>
      * <ul>
      *
      *     <li><code>monument</code>: Ocean Monument. Generates at fixed Y coordinate, surrounds itself with water.</li>
@@ -1432,22 +1433,68 @@ public class CarpetExpression
      *     <li><code>igloo</code>: Igloo</li>
      *     <li><code>shipwreck</code>: Shipwreck, version1?</li>
      *     <li><code>shipwreck2</code>: Shipwreck, version2?</li>
-     *     <li><code>witchhut</code>: Witch hut. Above sea level.</li>
-     *     <li><code>stronghold</code>: Stronghold. Spawns at harcoded Y ranges.</li>
-     *     <li><code>stronghold</code>: Stronghold. Spawns at harcoded Y ranges.</li>
-     *     <li><code>stronghold</code>: Stronghold. Spawns at harcoded Y ranges.</li>
-     *     <li><code>stronghold</code>: Stronghold. Spawns at harcoded Y ranges.</li>
-     *
-     *
+     *     <li><code>witchhut</code></li>
+     *     <li><code>oceanruin, oceanruin_small, oceanruin_tall</code>: Stone variants of ocean ruins.</li>
+     *     <li><code>oceanruin_warm, oceanruin_warm_small, oceanruin_warm_tall</code>: Sandstone variants of ocean ruins.</li>
+     *     <li><code>treasure</code>: A treasure chest. Yes, its a whole structure.</li>
+     *     <li><code>mineshaft</code>: A mineshaft.</li>
+     *     <li><code>mineshaft_mesa</code>: A Mesa (Badlands) version of a mineshaft.</li>
+     *     <li><code>village</code>: Plains, oak village.</li>
+     *     <li><code>village_desert</code>: Desert, sandstone village.</li>
+     *     <li><code>village_savanna</code>: Savanna, acacia village.</li>
+     *     <li><code>village_taiga</code>: Taiga, spruce village.</li>
      * </ul>
-     * <h3><code></code></h3>
-     * <p></p>
-     * <h3><code></code></h3>
-     * <p></p>
+     * <p>Feature list:</p>
+     * <ul>
+     *     <li><code>oak</code></li>
+     *     <li><code>oak_large</code>: oak with branches.</li>
+     *     <li><code>birch</code></li>
+     *     <li><code>birch_large</code>: tall variant of birch tree.</li>
+     *     <li><code>shrub</code>: low bushes that grow in jungles.</li>
+     *     <li><code>shrub_acacia</code>: low bush but configured with acacia</li>
+     *     <li><code>shrub_snowy</code>: low bush with white blocks</li>
+     *     <li><code>jungle</code>: a tree</li>
+     *     <li><code>spruce_matchstick</code>: tall spruce with minimal leafage.</li>
+     *     <li><code>dark_oak</code></li>
+     *     <li><code>acacia</code></li>
+     *     <li><code>spruce</code></li>
+     *     <li><code>oak_swamp</code>: oak with more leaves and vines.</li>
+     *     <li><code>jungle_large</code>: 2x2 jungle tree</li>
+     *     <li><code>spruce_matchstick_large</code>: 2x2 spruce tree with minimal leafage</li>
+     *     <li><code>spruce_large</code>: 2x2 spruce tree</li>
+     *     <li><code>well</code>: desert well</li>
+     *     <li><code>grass</code>: a few spots of tall grass</li>
+     *     <li><code>grass_jungle</code>: little bushier grass feature</li>
+     *     <li><code>fern</code>: a few random ferns</li>
+     *     <li><code>cactus</code>: random cacti</li>
+     *     <li><code>dead_bush</code>: a few random dead bushi</li>
+     *     <li><code>fossils</code>: underground fossils, placement little wonky</li>
+     *     <li><code>mushroom_brown</code>: large brown mushroom.</li>
+     *     <li><code>mushroom_red</code>: large red mushroom.</li>
+     *     <li><code>ice_spike</code>: ice spike. Require snow block below to place.</li>
+     *     <li><code>glowstone</code>: glowstone cluster. Required netherrack above it.</li>
+     *     <li><code>melon</code>: a patch of melons</li>
+     *     <li><code>pumpkin</code>: a patch of pumpkins</li>
+     *     <li><code>sugarcane</code></li>
+     *     <li><code>lilypad</code></li>
+     *     <li><code>dungeon</code>: Dungeon. These are hard to place, and fail often.</li>
+     *     <li><code>iceberg</code>: Iceberg. Generate at sea level.</li>
+     *     <li><code>iceberg_blue</code>: Blue ice iceberg.</li>
+     *     <li><code>lake</code></li>
+     *     <li><code>lava_lake</code></li>
+     *     <li><code>end_island</code></li>
+     *     <li><code>chorus</code>: Chorus plant. Require endstone to place.</li>
+     *     <li><code>sea_grass</code>: a patch of sea grass. Require water.</li>
+     *     <li><code>sea_grass_river</code>: a variant.</li>
+     *     <li><code>kelp</code></li>
+     *     <li><code>coral_tree, coral_mushroom, coral_claw</code>: various coral types, random color.</li>
+     *     <li><code>coral</code>: random coral structure. Require water to spawn.</li>
+     *     <li><code>sea_pickle</code></li>
+     *     <li><code>boulder</code>: A rocky, mossy formation from a giant taiga biome. Doesn't update client properly,
+     *     needs relogging.</li>
+     * </ul>
      *
-     * <div style="padding-left: 20px; border-radius: 5px 45px; border:1px solid grey;">
-     * <p>Section Content</p>
-     * <p>Other Paragraph</p>
+     *
      * </div>
      */
 
