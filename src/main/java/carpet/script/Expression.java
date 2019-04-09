@@ -25,7 +25,7 @@ import static java.lang.Math.min;
 
 
 /**
- * <h1>Scarpet programming language</h1>
+ * <h1>Fundamental components of <code>scarpet</code> programming language.</h1>
  *
  * <p>Scarpet (a.k.a. Carpet Script, or Script for Carpet) is a programming language designed to provide
  * the ability to write custom programs to run within Minecraft and
