@@ -168,6 +168,35 @@ public class CarpetExpression
         return (c_, t_) -> new StringValue(test.apply(block.getBlockState(), block.getPos()));
     }
 
+    private LazyValue genericStateTest(
+            Context c,
+            String name,
+            List<LazyValue> params,
+            Expression.TriFunction<IBlockState, BlockPos, World, Value> test
+    )
+    {
+        CarpetContext cc = (CarpetContext) c;
+        if (params.size() == 0)
+        {
+            throw new InternalExpressionException(name + " requires at least one parameter");
+        }
+        Value v0 = params.get(0).evalValue(c);
+        if (v0 instanceof BlockValue)
+            return (c_, t_) ->
+            {
+                try
+                {
+                    return test.apply(((BlockValue) v0).getBlockState(), ((BlockValue) v0).getPos(), cc.s.getWorld());
+                }
+                catch (NullPointerException ignored)
+                {
+                    throw new InternalExpressionException(name+" function requires a block that is positioned in the world");
+                }
+            };
+        BlockValue block = BlockValue.fromParams(cc, params, 0).block;
+        return (c_, t_) -> test.apply(block.getBlockState(), block.getPos(), cc.s.getWorld());
+    }
+
 
     private <T extends Comparable<T>> IBlockState setProperty(IProperty<T> property, String name, String value,
                                                               IBlockState bs)
@@ -266,6 +295,16 @@ public class CarpetExpression
      * <p>Boolean function, true of the block is liquid.</p>
      * <h3><code>liquid(pos)</code></h3>
      * <p>Boolean function, true of the block is liquid, or liquidlogged</p>
+     * <h3><code>flammable(pos)</code></h3>
+     * <p>Boolean function, true of the block is flammable</p>
+     * <h3><code>transparent(pos)</code></h3>
+     * <p>Boolean function, true of the block is transparent</p>
+     * <h3><code>opacity(pos)</code></h3>
+     * <p>Numeric, returning opacity level of a block</p>
+     * <h3><code>blocks_daylight(pos)</code></h3>
+     * <p>Boolean function, true of the block blocks daylight</p>
+     * <h3><code>emitted_light(pos)</code></h3>
+     * <p>Numeric, returning light level emitted from block</p>
      * <h3><code>light(pos)</code></h3>
      * <p>Integer function, returning total light level at position</p>
      * <h3><code>block_light(pos)</code></h3>
@@ -274,6 +313,11 @@ public class CarpetExpression
      * <p>Numeric function, returning sky light at position. From the sky access.</p>
      * <h3><code>see_sky(pos)</code></h3>
      * <p>Boolean function, returning true if the block can see sky.</p>
+     * <h3><code>hardness(pos)</code></h3>
+     * <p>Numeric function, indicating hardness of a block.</p>
+     * <h3><code>blast_resistance(pos)</code></h3>
+     * <p>Numeric function, indicating blast_resistance of a block.</p>
+
      * <h3><code>top(type, x, z)</code></h3>
      * <p>Returns the Y value of the topmost block at given x, z coords, according to the
      * heightmap specified by <code>type</code>. Valid options are:</p>
@@ -479,17 +523,39 @@ public class CarpetExpression
         this.expr.addLazyFunction("liquid", -1, (c, t, lv) ->
                 booleanStateTest(c, "liquid", lv, (s, p) -> !s.getFluidState().isEmpty()));
 
+        this.expr.addLazyFunction("flammable", -1, (c, t, lv) ->
+                booleanStateTest(c, "flammable", lv, (s, p) -> !s.getMaterial().isFlammable()));
+
+        this.expr.addLazyFunction("transparent", -1, (c, t, lv) ->
+                booleanStateTest(c, "transparent", lv, (s, p) -> !s.getMaterial().isOpaque()));
+
+        this.expr.addLazyFunction("opacity", -1, (c, t, lv) ->
+                genericStateTest(c, "opacity", lv, (s, p, w) -> new NumericValue(s.getOpacity(w, p))));
+
+        this.expr.addLazyFunction("blocks_daylight", -1, (c, t, lv) ->
+                genericStateTest(c, "blocks_daylight", lv, (s, p, w) -> new NumericValue(s.propagatesSkylightDown(w, p))));
+
+        this.expr.addLazyFunction("emitted_light", -1, (c, t, lv) ->
+                genericStateTest(c, "emitted_light", lv, (s, p, w) -> new NumericValue(s.getLightValue())));
+
         this.expr.addLazyFunction("light", -1, (c, t, lv) ->
-                (c_, t_) -> new NumericValue(((CarpetContext)c).s.getWorld().getLight(BlockValue.fromParams((CarpetContext) c, lv, 0).block.getPos())));
+                genericStateTest(c, "light", lv, (s, p, w) -> new NumericValue(w.getLight(p))));
 
         this.expr.addLazyFunction("block_light", -1, (c, t, lv) ->
-                (c_, t_) -> new NumericValue(((CarpetContext)c).s.getWorld().getLightFor(EnumLightType.BLOCK, BlockValue.fromParams((CarpetContext) c, lv, 0).block.getPos())));
+                genericStateTest(c, "block_light", lv, (s, p, w) -> new NumericValue(w.getLightFor(EnumLightType.BLOCK, p))));
 
         this.expr.addLazyFunction("sky_light", -1, (c, t, lv) ->
-                (c_, t_) -> new NumericValue(((CarpetContext)c).s.getWorld().getLightFor(EnumLightType.SKY, BlockValue.fromParams((CarpetContext) c, lv, 0).block.getPos())));
+                genericStateTest(c, "sky_light", lv, (s, p, w) -> new NumericValue(w.getLightFor(EnumLightType.SKY, p))));
 
         this.expr.addLazyFunction("see_sky", -1, (c, t, lv) ->
-                (c_, t_) -> new NumericValue(((CarpetContext)c).s.getWorld().canSeeSky(BlockValue.fromParams((CarpetContext) c, lv, 0).block.getPos())));
+                genericStateTest(c, "see_sky", lv, (s, p, w) -> new NumericValue(w.canSeeSky(p))));
+
+        this.expr.addLazyFunction("hardness", -1, (c, t, lv) ->
+                genericStateTest(c, "hardness", lv, (s, p, w) -> new NumericValue(s.getBlockHardness(w, p))));
+
+        this.expr.addLazyFunction("blast_resistance", -1, (c, t, lv) ->
+                genericStateTest(c, "blast_resistance", lv, (s, p, w) -> new NumericValue(s.getBlock().getExplosionResistance())));
+
 
         this.expr.addLazyFunction("top", -1, (c, t, lv) -> {
             String type = lv.get(0).evalValue(c).getString().toLowerCase(Locale.ROOT);
@@ -524,20 +590,18 @@ public class CarpetExpression
         });
 
         this.expr.addLazyFunction("loaded", -1, (c, t, lv) ->
-                (c_, t_) -> ((CarpetContext)c).s.getWorld().isBlockLoaded(BlockValue.fromParams((CarpetContext) c, lv, 0).block.getPos()) ? Value.TRUE : Value.FALSE);
+                genericStateTest(c, "loaded", lv, (s, p, w) -> w.isBlockLoaded(p)?Value.TRUE:Value.FALSE));
 
         this.expr.addLazyFunction("loaded_ep", -1, (c, t, lv) ->
-        {
-            BlockPos pos = BlockValue.fromParams((CarpetContext)c, lv, 0).block.getPos();
-            return (c_, t_) -> ((CarpetContext)c).s.getWorld().isAreaLoaded(pos.getX() - 32, 0, pos.getZ() - 32,
-                    pos.getX() + 32, 0, pos.getZ() + 32, true) ? Value.TRUE : Value.FALSE;
-        });
+                genericStateTest(c, "loaded_ep", lv, (s, p, w) ->
+                        w.isAreaLoaded(p.getX()-32, 0, p.getZ() - 32,
+                                p.getX()+32, 0, p.getZ()+32, true)?Value.TRUE:Value.FALSE));
 
         this.expr.addLazyFunction("suffocates", -1, (c, t, lv) ->
                 booleanStateTest(c, "suffocates", lv, (s, p) -> s.causesSuffocation()));
 
         this.expr.addLazyFunction("power", -1, (c, t, lv) ->
-                (c_, t_) -> new NumericValue(((CarpetContext)c).s.getWorld().getRedstonePowerFromNeighbors(BlockValue.fromParams((CarpetContext) c, lv, 0).block.getPos())));
+                genericStateTest(c, "power", lv, (s, p, w) -> new NumericValue(w.getRedstonePowerFromNeighbors(p))));
 
         this.expr.addLazyFunction("ticks_randomly", -1, (c, t, lv) ->
                 booleanStateTest(c, "ticks_randomly", lv, (s, p) -> s.needsRandomTick()));

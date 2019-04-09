@@ -1099,7 +1099,7 @@ public class Expression implements Cloneable
      *         <li>Comparison <code>== != &gt; &gt;= &lt;= &lt; ~</code></li>
      *         <li>Logical And<code>&amp;&amp;</code></li>
      *         <li>Logical Or <code>||</code></li>
-     *         <li>Assignment <code>= =+ &lt;&gt;</code></li>
+     *         <li>Assignment <code>= += &lt;&gt;</code></li>
      *         <li>Definition <code>-&gt;</code></li>
      *         <li>Next statement<code>;</code></li>
      *         <li>Comma <code>,</code></li>
