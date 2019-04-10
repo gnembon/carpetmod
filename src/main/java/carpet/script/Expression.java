@@ -106,8 +106,6 @@ import static java.lang.Math.min;
  * <code>f</code> is the function name, and <code>a, b, c</code> are the arguments which can be any other expression.
  * And that's all the parts of the language, so all in all - sounds quite simple.</p>
  *
- * <h2>Strings</h2>
- *
  * <h2>Code flow</h2>
  * <p>
  *     Like any other proper programming language, <code>scarpet</code> needs brackets, basically to identify
@@ -816,6 +814,20 @@ public class Expression implements Cloneable
      * function. Certain calls to Minecraft specific calls would also set <code>_x</code>,
      * <code>_y</code>, <code>_z</code>, indicating block positions. All variables starting with
      * <code>_</code> are read-only, and cannot be declared and modified in client code.</p>
+     *
+     * <h2>Literals</h2>
+     * <p><code>scarpet</code> accepts numeric and string liters constants.
+     * Numbers look like <code>1, 2.5, -3e-7, 0xff, </code> and are internally represented as Java's <code>double</code>
+     * but <code>scarpet</code> will try to trim trailing zeros as much as possible so if you need to use them as intergers,
+     * you can. Strings using single quoting, for multiple reasons, but primarily to allow for easier use of strings inside
+     * doubly quoted command arguments (when passing a script as a parameter of <code>/script fill</code> for example,
+     * or when typing in jsons inside scarpet to feed back into a <code>/data merge</code> command for example. Strings also
+     * use backslashes <code>\</code> for quoting special characters, in both plain strings and regular expressions</p>
+     * <pre>
+     * 'foo'
+     * print('This doesn\'t work')
+     * nbt ~ '\\.foo'   // matching '.' as a '.', not 'any character match'
+     * </pre>
      * </div>
      */
 
@@ -1178,11 +1190,14 @@ public class Expression implements Cloneable
      * return the index. Currently it doesn't have any special behaviour for numbers - it checks for existence of characters
      * in string representation of the left operand with respect of the regular expression on the right hand side.
      * string</p>
+     * <p>in Minecraft API portion <code>entity ~ feature</code> is a shortcode for <code>query(entity,feature)</code>
+     * for queries that do not take any extra arguments.</p>
      * <pre>
      * l(1,2,3) ~ 2  =&gt; 1
      * l(1,2,3) ~ 4  =&gt; null
      * 'foobar' ~ '.b'  =&gt; 'ob'
      * players('*') ~ 'gnembon'  // null unless player gnembon is logged in (better to use player('gnembon') instead
+     * p ~ 'sneaking' // if p is an entity returns whether p is sneaking
      * </pre>
      * <p>Or a longer example of an ineffective way to searching for a squid</p>
      * <pre>
