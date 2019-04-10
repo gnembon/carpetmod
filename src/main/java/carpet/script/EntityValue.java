@@ -8,7 +8,11 @@ import net.minecraft.command.arguments.EntitySelector;
 import net.minecraft.command.arguments.EntitySelectorParser;
 import net.minecraft.command.arguments.NBTPathArgument;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityCreature;
+import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.ai.EntityAIBase;
+import net.minecraft.entity.ai.EntityAIMoveTowardsRestriction;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.EntityEquipmentSlot;
@@ -18,6 +22,7 @@ import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionEffect;
 import net.minecraft.util.EntitySelectors;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.registry.IRegistry;
 import net.minecraft.util.text.TextComponentString;
 
@@ -151,6 +156,48 @@ public class EntityValue extends Value
         put("count", (e, a) -> (e instanceof EntityItem)?new NumericValue(((EntityItem) e).getItem().getCount()):Value.NULL);
         // EntityItem -> despawn timer via ssGetAge
         put("is_baby", (e, a) -> (e instanceof EntityLivingBase)?new NumericValue(((EntityLivingBase) e).isChild()):Value.NULL);
+        put("target", (e, a) -> {
+            if (e instanceof EntityLiving)
+            {
+                EntityLivingBase target = ((EntityLiving) e).getAttackTarget();
+                if (target != null)
+                {
+                    return new EntityValue(target);
+                }
+            }
+            return Value.NULL;
+        });
+        put("home", (e, a) -> {
+            if (e instanceof EntityCreature)
+            {
+                return ((EntityCreature) e).hasHome()?new BlockValue(null, e.getEntityWorld(), ((EntityCreature) e).getHomePosition()):Value.FALSE;
+            }
+            return Value.NULL;
+        });
+        put("sneaking", (e, a) -> {
+            if (e instanceof EntityPlayer)
+            {
+                return e.isSneaking()?Value.TRUE:Value.FALSE;
+            }
+            return Value.NULL;
+        });
+        put("sprinting", (e, a) -> {
+            if (e instanceof EntityPlayer)
+            {
+                return e.isSprinting()?Value.TRUE:Value.FALSE;
+            }
+            return Value.NULL;
+        });
+        put("swimming", (e, a) -> {
+            if (e instanceof EntityPlayer)
+            {
+                return e.isSwimming()?Value.TRUE:Value.FALSE;
+            }
+            return Value.NULL;
+        });
+        //gamemode player
+        //spectating_entity
+        // isGlowing
         put("effect", (e, a) ->
         {
             if (!(e instanceof EntityLivingBase))
@@ -235,11 +282,24 @@ public class EntityValue extends Value
             return new StringValue(res);
         });
     }};
+    private static <Req extends Entity> Req assertEntityArgType(Class<Req> klass, Value arg)
+    {
+        if (!(arg instanceof EntityValue))
+        {
+            return null;
+        }
+        Entity e = ((EntityValue) arg).getEntity();
+        if (!(klass.isAssignableFrom(e.getClass())))
+        {
+            return null;
+        }
+        return (Req)e;
+    }
 
     public void set(String what, Value toWhat)
     {
         if (!(featureModifiers.containsKey(what)))
-            throw new Expression.InternalExpressionException("unknown action on entity: "+what);
+            throw new Expression.InternalExpressionException("unknown action on entity: " + what);
         featureModifiers.get(what).accept(entity, toWhat);
     }
 
@@ -348,7 +408,80 @@ public class EntityValue extends Value
             else
                 e.removeTag(v.getString());
         });
+        put("target", (e, v) -> {
+            // attacks indefinitely - might need to do it through tasks
+            if (e instanceof EntityLiving)
+            {
+                EntityLivingBase elb = assertEntityArgType(EntityLivingBase.class, v);
+                ((EntityLiving) e).setAttackTarget(elb);
+            }
+        });
+        put("talk", (e, v) -> {
+            // attacks indefinitely
+            if (e instanceof EntityLiving)
+            {
+                ((EntityLiving) e).playAmbientSound();
+            }
+        });
+        put("home", (e, v) -> {
+            if (!(e instanceof EntityCreature))
+                return;
+            EntityCreature ec = (EntityCreature)e;
+            if (v == null)
+                throw new Expression.InternalExpressionException("home requires at least one position argument, and optional distance, or null to cancel");
+            if (v instanceof NullValue)
+            {
+                ec.detachHome();
+                ec.getAI(false).removeTask(ec.temporaryTasks.get("home"));
+                ec.temporaryTasks.remove("home");
+                return;
+            }
 
+            BlockPos pos;
+            int distance = 16;
+
+            if (v instanceof BlockValue)
+            {
+                pos = ((BlockValue) v).getPos();
+                if (pos == null) throw new Expression.InternalExpressionException("block is not positioned in the world");
+            }
+            else if (v instanceof ListValue)
+            {
+                List<Value> lv = ((ListValue) v).getItems();
+                if (lv.get(0) instanceof BlockValue)
+                {
+                    pos = ((BlockValue) lv.get(0)).getPos();
+                    if (lv.size()>1)
+                    {
+                        distance = (int)Expression.getNumericValue(lv.get(1)).getLong();
+                    }
+                }
+                else if (lv.size()>=3)
+                {
+                    pos = new BlockPos(Expression.getNumericValue(lv.get(0)).getLong(),
+                            Expression.getNumericValue(lv.get(1)).getLong(),
+                            Expression.getNumericValue(lv.get(2)).getLong());
+                    if (lv.size()>3)
+                    {
+                        distance = (int)Expression.getNumericValue(lv.get(4)).getLong();
+                    }
+                }
+                else throw new Expression.InternalExpressionException("home requires at least one position argument, and optional distance");
+
+            }
+            else throw new Expression.InternalExpressionException("home requires at least one position argument, and optional distance");
+
+            ec.setHomePosAndDistance(pos, distance);
+            if (!ec.temporaryTasks.containsKey("home"))
+            {
+                EntityAIBase task = new EntityAIMoveTowardsRestriction(ec, 1.0D);
+                ec.temporaryTasks.put("home", task);
+                ec.getAI(false).addTask(10, task);
+            }
+        });
+
+        // gamemode epmp
+        // spectate
         //                                        "fire"
         //                                                "extinguish"
         //                                                        "silent"

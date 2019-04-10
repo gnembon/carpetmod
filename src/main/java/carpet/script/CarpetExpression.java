@@ -808,6 +808,16 @@ public class CarpetExpression
      * <p>Number of items in a stack from item entity.<code>null</code> otherwise</p>
      * <h3><code>query(e,'is_baby')</code></h3>
      * <p>Boolean, true if its a baby.</p>
+     * <h3><code>query(e,'target')</code></h3>
+     * <p>Returns mob's attack target or null if none or not applicable.</p>
+     * <h3><code>query(e,'home')</code></h3>
+     * <p>Returns creature's home position or null if none or not applicable.</p>
+     * <h3><code>query(e,'sneaking')</code></h3>
+     * <p>Boolean, true if entity is sneaking.</p>
+     * <h3><code>query(e,'sprinting')</code></h3>
+     * <p>Boolean, true if entity is sprinting.</p>
+     * <h3><code>query(e,'swimming')</code></h3>
+     * <p>Boolean, true if entity is swimming.</p>
      * <h3><code>query(e,'effect',name?)</code></h3>
      * <p>Without extra arguments, it returns list of effect active on a living entity.
      * Each entry is a triple of short effect name, amplifier, and remaining duration.
@@ -878,6 +888,14 @@ public class CarpetExpression
      * <p>Adds tag / tags to the entity.</p>
      * <h3><code>modify(e, 'clear_tag', tag, ? ...), modify(e, 'clear_tag', l(tags) )</code></h3>
      * <p>Removes tag from entity.</p>
+     * <h3><code>modify(e, 'target', other_entity), modify(e, 'target', null )</code></h3>
+     * <p>Sets attack target on a given entity if possible, or removes attack target.</p>
+     * <h3><code>modify(e, 'talk')</code></h3>
+     * <p>Make noises.</p>
+     * <h3><code>modify(e, 'home', null), modify(e, 'home', block, distance?), modify(e, 'home', x, y, z, distance?)</code></h3>
+     * <p>Sets AI to stay around the home position, within <code>distance</code> blocks from it. <code>distance</code>
+     * defaults to 16 blocks. <code>null</code> removes it. <i>May</i> not work fully with mobs that have this AI built in, like
+     * Villagers.</p>
      * </div>
      */
 
