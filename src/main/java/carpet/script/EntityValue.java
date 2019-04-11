@@ -415,14 +415,14 @@ public class EntityValue extends Value
             else
                 e.removeTag(v.getString());
         });
-        put("target", (e, v) -> {
-            // attacks indefinitely - might need to do it through tasks
-            if (e instanceof EntityLiving)
-            {
-                EntityLivingBase elb = assertEntityArgType(EntityLivingBase.class, v);
-                ((EntityLiving) e).setAttackTarget(elb);
-            }
-        });
+        //put("target", (e, v) -> {
+        //    // attacks indefinitely - might need to do it through tasks
+        //    if (e instanceof EntityLiving)
+        //    {
+        //        EntityLivingBase elb = assertEntityArgType(EntityLivingBase.class, v);
+        //        ((EntityLiving) e).setAttackTarget(elb);
+        //    }
+        //});
         put("talk", (e, v) -> {
             // attacks indefinitely
             if (e instanceof EntityLiving)

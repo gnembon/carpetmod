@@ -1,6 +1,8 @@
 package carpet.script;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 /**
  * Expression tokenizer that allows to iterate over a {@link String}
@@ -32,6 +34,8 @@ public class Tokenizer implements Iterator<Tokenizer.Token>
         this.expression = expr;
     }
 
+
+
     @Override
     public boolean hasNext()
     {
@@ -52,6 +56,14 @@ public class Tokenizer implements Iterator<Tokenizer.Token>
     {
         return ch == 'x' || ch == 'X' || (ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f')
                 || (ch >= 'A' && ch <= 'F');
+    }
+
+    public static List<Token> simplepass(String input)
+    {
+        Tokenizer tok = new Tokenizer(null, input);
+        List<Token> res = new ArrayList<>();
+        while (tok.hasNext()) res.add(tok.next());
+        return res;
     }
 
     @Override
@@ -106,33 +118,34 @@ public class Tokenizer implements Iterator<Tokenizer.Token>
         {
             pos++;
             linepos++;
-            if (previousToken == null || previousToken.type != Token.TokenType.STRINGPARAM)
+            if (pos == input.length())
             {
-                ch = input.charAt(pos);
-                while (ch != '\'')
-                {
-                    if (ch == '\\')
-                    {
-                        pos++;
-                        linepos++;
-                        if (pos == input.length())
-                        {
-                            token.type = Token.TokenType.STRINGPARAM;
-                            throw new Expression.ExpressionException(this.expression, token, "Program truncated");
-                        }
-                    }
-                    token.append(input.charAt(pos++));
-                    linepos++;
-                    ch = pos == input.length() ? 0 : input.charAt(pos);
-                }
-                pos++;
-                linepos++;
                 token.type = Token.TokenType.STRINGPARAM;
+                if (expression != null)
+                    throw new Expression.ExpressionException(this.expression, token, "Program truncated");
             }
-            else
+            ch = input.charAt(pos);
+            while (ch != '\'')
             {
-                return next();
+                if (ch == '\\')
+                {
+                    pos++;
+                    linepos++;
+                    if (pos == input.length())
+                    {
+                        token.type = Token.TokenType.STRINGPARAM;
+                        if (expression != null)
+                            throw new Expression.ExpressionException(this.expression, token, "Program truncated");
+                    }
+                }
+                token.append(input.charAt(pos++));
+                linepos++;
+                ch = pos == input.length() ? 0 : input.charAt(pos);
             }
+            pos++;
+            linepos++;
+            token.type = Token.TokenType.STRINGPARAM;
+
         }
         else if (Character.isLetter(ch) || "_".indexOf(ch) >= 0)
         {
@@ -159,7 +172,7 @@ public class Tokenizer implements Iterator<Tokenizer.Token>
                 pos--;
                 linepos--;
             }
-            if (previousToken != null && (
+            if (expression != null && previousToken != null && (
                     previousToken.type == Token.TokenType.VARIABLE ||
                     previousToken.type == Token.TokenType.FUNCTION ||
                     previousToken.type == Token.TokenType.LITERAL ||
@@ -188,7 +201,7 @@ public class Tokenizer implements Iterator<Tokenizer.Token>
             token.append(ch);
             pos++;
             linepos++;
-            if (previousToken != null && previousToken.type == Token.TokenType.OPERATOR && (ch == ')' || ch == ',')  )
+            if (expression != null && previousToken != null && previousToken.type == Token.TokenType.OPERATOR && (ch == ')' || ch == ',')  )
             {
                 if (previousToken.surface.equalsIgnoreCase(";"))
                     throw new Expression.ExpressionException(this.expression, previousToken,
@@ -211,7 +224,7 @@ public class Tokenizer implements Iterator<Tokenizer.Token>
                 greedyMatch += ch;
                 pos++;
                 linepos++;
-                if (this.expression.isAnOperator(greedyMatch))
+                if (Expression.none.isAnOperator(greedyMatch))
                 {
                     validOperatorSeenUntil = pos;
                 }

@@ -2547,6 +2547,7 @@ public class Expression implements Cloneable
 
     }
 
+    static Expression none = new Expression("null");
     /**
      * @param expression .
      */
@@ -2832,8 +2833,6 @@ public class Expression implements Cloneable
                 case LITERAL:
                     stack.push((c, t) ->
                     {
-                        if (token.surface.equalsIgnoreCase("NULL")) // TODO possibly not neded if works with euler and pi
-                            return Value.NULL;
                         try
                         {
                             return new NumericValue(token.surface);
@@ -2842,7 +2841,6 @@ public class Expression implements Cloneable
                         {
                             throw new ExpressionException(this, token, "Not a number");
                         }
-
                     });
                     break;
                 case STRINGPARAM:

@@ -35,6 +35,7 @@ import net.minecraft.world.WorldServer;
 import net.minecraft.world.gen.Heightmap;
 import net.minecraft.world.storage.SessionLockException;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -888,8 +889,6 @@ public class CarpetExpression
      * <p>Adds tag / tags to the entity.</p>
      * <h3><code>modify(e, 'clear_tag', tag, ? ...), modify(e, 'clear_tag', l(tags) )</code></h3>
      * <p>Removes tag from entity.</p>
-     * <h3><code>modify(e, 'target', other_entity), modify(e, 'target', null )</code></h3>
-     * <p>Sets attack target on a given entity if possible, or removes attack target.</p>
      * <h3><code>modify(e, 'talk')</code></h3>
      * <p>Make noises.</p>
      * <h3><code>modify(e, 'home', null), modify(e, 'home', block, distance?), modify(e, 'home', x, y, z, distance?)</code></h3>
@@ -1901,8 +1900,9 @@ public class CarpetExpression
      * <h3><code>/script invoke &lt;fun&gt; &lt;args?&gt; ... </code></h3>
      * <p>Equivalent of running <code>/script run fun(args, ...)</code>, but you get the benefit of getting the tab completion of the
      * command name, and lower permission level required to run these (since player is not capable of running any custom code
-     * in this case, only this that has been executed before by an operator). Arguments will be passed literally, so for example
-     * built-in variables are allowed like <code>x, y, z, p, pi, euler</code>, and all strings need to be wrapped in single quotes</p>
+     * in this case, only this that has been executed before by an operator). Arguments will be checked for validity, and
+     * you can only pass simple values as arguments (strings, numbers, or <code>null</code> value). Use quotes to include
+     * whitespaces in argument strings.</p>
      * <p>Command will check provided arguments with required arguments (count) and fail if not enough or too much arguments
      * are provided. Operators defining functions are advised to use descriptive arguments names, as these will be visible
      * for invokers and form the base of understanding what each argument does.</p>
@@ -1912,7 +1912,7 @@ public class CarpetExpression
      * for convenience and don't want to expose them to the <code>invoke</code> callers, they can use this mechanic.</p>
      * <pre>
      * /script run example_function(const, phrase, price) -&gt; print(const+' '+phrase+' '+price)
-     * /script invoke example_function pi 'costs' 5
+     * /script invoke example_function pi costs 5
      * </pre>
      * <h3><code>/script invokepoint &lt;fun&gt; &lt;coords x y z&gt; &lt;args?&gt; ... </code></h3>
      * <p>It is equivalent to <code>invoke</code> except it assumes that the first three arguments are coordinates, and provides
@@ -1925,48 +1925,116 @@ public class CarpetExpression
      * </div>
      * @param source .
      * @param call .
-     * @param argv .
+     * @param coords .
+     * @param arg .
      * @return .
      */
-    public static String invokeGlobalFunctionCommand(CommandSource source, String call, List<String> argv)
+
+    public static String invokeGlobalFunctionCommand(CommandSource source, String call, List<Integer> coords, String arg)
     {
         if (stopAll)
             return "SCRIPTING PAUSED";
         Expression.UserDefinedFunction acf = Expression.globalFunctions.get(call);
         if (acf == null)
             return "UNDEFINED";
+        List<LazyValue> argv = new ArrayList<>();
+        for (Integer i: coords)
+            argv.add( (c, t) -> new NumericValue(i));
+        String sign = "";
+        for (Tokenizer.Token tok : Tokenizer.simplepass(arg))
+        {
+            switch (tok.type)
+            {
+                case VARIABLE:
+                    if (tok.surface.equalsIgnoreCase("null"))
+                    {
+                        argv.add((c, t) -> Value.NULL);
+                        break;
+                    }
+                case STRINGPARAM:
+                    argv.add((c, t) -> new StringValue(tok.surface));
+                    sign = "";
+                    break;
+
+                case LITERAL:
+                    try
+                    {
+                        String finalSign = sign;
+                        argv.add((c, t) ->new NumericValue(finalSign+tok.surface));
+                        sign = "";
+                    }
+                    catch (NumberFormatException exception)
+                    {
+                        return "Fail: "+sign+tok.surface+" seems like a number but it is not a number. Use quotes to ensure its a string";
+                    }
+                    break;
+                case HEX_LITERAL:
+                    try
+                    {
+                        String finalSign = sign;
+                        argv.add((c, t) -> new NumericValue(new BigInteger(finalSign+tok.surface.substring(2), 16).doubleValue()));
+                        sign = "";
+                    }
+                    catch (NumberFormatException exception)
+                    {
+                        return "Fail: "+sign+tok.surface+" seems like a number but it is not a number. Use quotes to ensure its a string";
+                    }
+                    break;
+                case OPERATOR:
+                case UNARY_OPERATOR:
+                    if ((tok.surface.equals("-") || tok.surface.equals("-u")) && sign.isEmpty())
+                    {
+                        sign = "-";
+                    }
+                    else
+                    {
+                        return "Fail: operators, like " + tok.surface + " are not allowed in invoke";
+                    }
+                    break;
+                case FUNCTION:
+                    return "Fail: passing functions like "+tok.surface+"() to invoke is not allowed";
+                case OPEN_PAREN:
+                case COMMA:
+                case CLOSE_PAREN:
+                    return "Fail: "+tok.surface+" is not allowed in invoke";
+            }
+        }
         List<String> args = acf.getArguments();
         if (argv.size() != args.size())
         {
-            return "Fail: stored function "+call+" takes "+args.size()+" arguments, not "+argv.size()+
-                  ": "+String.join(", ", args);
+            String error = "Fail: stored function "+call+" takes "+args.size()+" arguments, not "+argv.size()+ ":\n";
+            for (int i = 0; i < max(argv.size(), args.size()); i++)
+            {
+                error += (i<args.size()?args.get(i):"??")+" => "+(i<argv.size()?argv.get(i).evalValue(null).getString():"??")+"\n";
+            }
+            return error;
         }
         try
         {
-            Vec3d pos = source.getPos();
-            Expression expr = new Expression(call+"("+String.join(" , ",argv)+" ) ").withName(call);
-            Context context = new CarpetContext(expr, source, BlockPos.ORIGIN).
-                    with("x", (c, t) -> new NumericValue(Math.round(pos.x))).
-                    with("y", (c, t) -> new NumericValue(Math.round(pos.y))).
-                    with("z", (c, t) -> new NumericValue(Math.round(pos.z)));
-            Entity e = source.getEntity();
-            if (e==null)
+            Expression.none.setLogOutput((s) -> Messenger.m(source, "gi " + s));
+            Context context = new CarpetContext(Expression.none, source, BlockPos.ORIGIN);
+            Value ret;
+            try
             {
-                context.with("p", LazyValue.NULL );
+                ret = acf.lazyEval(context, Context.VOID, acf.expression, acf.token, argv).evalValue(context);
             }
-            else
+            catch (Expression.ThrowStatement exc)
             {
-                context.with("p", (cc, tt) -> new EntityValue(e));
+                ret = exc.retval;
             }
-            return expr.eval(context).getString();
+            return ret.getString();
         }
         catch (ExpressionException e)
         {
-             return e.getMessage();
+            return e.getMessage();
         }
         catch (ArithmeticException ae)
         {
             throw new ExpressionInspector.CarpetExpressionException("math doesn't compute... "+ae.getMessage());
+        }
+        finally
+        {
+            Expression.none.setLogOutput(null);
         }
     }
 
