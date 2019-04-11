@@ -2013,24 +2013,15 @@ public class CarpetExpression
         {
             Expression.none.setLogOutput((s) -> Messenger.m(source, "gi " + s));
             Context context = new CarpetContext(Expression.none, source, BlockPos.ORIGIN);
-            Value ret;
-            try
-            {
-                ret = acf.lazyEval(context, Context.VOID, acf.expression, acf.token, argv).evalValue(context);
-            }
-            catch (Expression.ThrowStatement exc)
-            {
-                ret = exc.retval;
-            }
-            return ret.getString();
+            return Expression.evalValue(
+                    () -> acf.lazyEval(context, Context.VOID, acf.expression, acf.token, argv),
+                    context,
+                    Context.VOID
+            ).getString();
         }
         catch (ExpressionException e)
         {
             return e.getMessage();
-        }
-        catch (ArithmeticException ae)
-        {
-            throw new ExpressionInspector.CarpetExpressionException("math doesn't compute... "+ae.getMessage());
         }
         finally
         {

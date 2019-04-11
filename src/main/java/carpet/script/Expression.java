@@ -15,6 +15,7 @@ import java.util.Stack;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -1894,9 +1895,9 @@ public class Expression implements Cloneable
         });
 
         addBinaryFunction("element", (v1, v2) -> {
-            if (!(v1.getClass().equals(ListValue.class))) // with more list classes, do instanceof ListValue, not instanceof LazyListValue
+            if (v1 instanceof LazyListValue || !(v1 instanceof ListValue))
             {
-                throw new InternalExpressionException("First argument of element should be a list");
+                throw new InternalExpressionException("First argument of element should be a proper list");
             }
             List<Value> items = ((ListValue)v1).getItems();
             long index = getNumericValue(v2).getLong();
@@ -2742,9 +2743,14 @@ public class Expression implements Cloneable
         {
             ast = getAST();
         }
+        return evalValue(() -> ast, c, expectedType);
+    }
+
+    static Value evalValue(Supplier<LazyValue> exprProvider, Context c, Integer expectedType)
+    {
         try
         {
-            return ast.evalValue(c, expectedType);
+            return exprProvider.get().evalValue(c, expectedType);
         }
         catch (ExitStatement exit)
         {
