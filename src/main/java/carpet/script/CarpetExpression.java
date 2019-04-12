@@ -1492,6 +1492,8 @@ public class CarpetExpression
      * <h3><code>particle_line(name, pos, pos2, density?)</code></h3>
      * <p>Renders a line of particles from point <code>pos</code> to <code>pos2</code> with supplied density (defaults 1),
      * which indicates how far part you would want particles to appear, so <code>0.1</code> means one every 10cm.</p>
+     * <h3><code>particle_rect(name, pos, pos2, density?)</code></h3>
+     * <p>Renders a cuboid of particles between point <code>pos</code> to <code>pos2</code> with supplied density.</p>
      * <h2>System function</h2>
      * <h3><code>print(expr)</code></h3>
      * <p>Displays the result of the expression to the chat. Overrides default <code>scarpet</code> behaviour of
