@@ -726,7 +726,7 @@ public class CarpetExpression
      * <p>Entities have to be fetched before using them. Entities can also change their state between calls to the script
      * if game happens either in between separate calls to the programs, or if the program calls <code>game_tick</code>
      * on its own. In this case - entities would need to be re-fetched, or the code should account for entities getting dead</p>
-     * <h3><code>players(), players(type), players(name)</code></h3>
+     * <h3><code>player(), player(type), player(name)</code></h3>
      * <p>
      * With no arguments, it returns the calling player or the player closest to the caller. Note that the main context
      * will receive <code>p</code> variable pointing to this player. With <code>type</code> or <code>name</code> specified
@@ -922,7 +922,7 @@ public class CarpetExpression
 
     public void API_EntityManipulation()
     {
-        this.expr.addLazyFunction("players", -1, (c, t, lv) -> {
+        this.expr.addLazyFunction("player", -1, (c, t, lv) -> {
             if (lv.size() ==0)
             {
                 return (_c, _t) ->
