@@ -49,6 +49,7 @@ import java.util.stream.Collectors;
 import static java.lang.Math.abs;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
+import static java.lang.Math.sqrt;
 
 /**
  * <h1>Minecraft specific API and <code>scarpet</code> language add-ons and commands</h1>
@@ -213,6 +214,27 @@ public class CarpetExpression
             throw new InternalExpressionException(value + " is not a valid value for property " + name);
         }
         return bs;
+    }
+
+    private int drawParticleLine(WorldServer world, IParticleData particle, Vec3d from, Vec3d to, double density)
+    {
+        double lineLengthSq = from.squareDistanceTo(to);
+        if (lineLengthSq == 0) return 0;
+        Vec3d incvec = to.subtract(from).scale(2*density/sqrt(lineLengthSq));
+        int pcount = 0;
+        for (Vec3d delta = new Vec3d(0.0,0.0,0.0);
+             delta.lengthSquared()<lineLengthSq;
+             delta = delta.add(incvec.scale(Expression.randomizer.nextFloat())))
+        {
+            for (EntityPlayer player : world.playerEntities)
+            {
+                world.spawnParticle((EntityPlayerMP)player, particle, true,
+                        delta.x+from.x, delta.y+from.y, delta.z+from.z, 1,
+                        0.0, 0.0, 0.0, 0.0);
+                pcount ++;
+            }
+        }
+        return pcount;
     }
 
     /**
@@ -1461,11 +1483,15 @@ public class CarpetExpression
      * <code>volume</code> and modified <code>pitch</code>. <code>pos</code> can be either a block, triple of coords,
      * or a list of thee numbers. Uses the same options as a corresponding <code>playsound</code> command.</p>
      * <h2>Particles</h2>
-     * <h3><code>particle(pos, name, count?. spread?, speed?, playername?)</code></h3>
+     * <h3><code>particle(name, pos, count?. spread?, speed?, playername?)</code></h3>
      * <p>Renders a cloud of particles <code>name</code> centered around <code>pos</code> position, by default
      * <code>count</code> 10 of them, default <code>speed</code> of 0, and to all players nearby, but these
      * options can be changed via optional arguments. Follow vanilla <code>/particle</code> command on details on those
-     * options</p>
+     * options. Valid particle names are for example
+     * <code>'angry_villager', 'item diamond', 'block stone', 'dust 0.8 0.1 0.1 4'</code></p>
+     * <h3><code>particle_line(name, pos, pos2, density?)</code></h3>
+     * <p>Renders a line of particles from point <code>pos</code> to <code>pos2</code> with supplied density (defaults 1),
+     * which indicates how far part you would want particles to appear, so <code>0.1</code> means one every 10cm.</p>
      * <h2>System function</h2>
      * <h3><code>print(expr)</code></h3>
      * <p>Displays the result of the expression to the chat. Overrides default <code>scarpet</code> behaviour of
@@ -1609,30 +1635,34 @@ public class CarpetExpression
             int totalPlayed = count;
             return (_c, _t) -> new NumericValue(totalPlayed);
         });
+
+
+
         //particle(x,y,z,"particle",count?10, duration,bool all)
         this.expr.addLazyFunction("particle", -1, (c, t, lv) ->
         {
+            // partcle block: blockname
             CarpetContext cc = (CarpetContext)c;
             MinecraftServer ms = cc.s.getServer();
             WorldServer world = cc.s.getWorld();
-            BlockValue.VectorLocator locator = BlockValue.locateVec(cc, lv, 0);
-            String particleName = lv.get(locator.offset).evalValue(c).getString();
+            BlockValue.VectorLocator locator = BlockValue.locateVec(cc, lv, 1);
+            String particleName = lv.get(0).evalValue(c).getString();
             int count = 10;
             double speed = 0;
             float spread = 0.5f;
             EntityPlayerMP player = null;
-            if (lv.size() > 1+locator.offset)
+            if (lv.size() > locator.offset)
             {
-                count = (int)Expression.getNumericValue(lv.get(1+locator.offset).evalValue(c)).getLong();
-                if (lv.size() > 2+locator.offset)
+                count = (int)Expression.getNumericValue(lv.get(locator.offset).evalValue(c)).getLong();
+                if (lv.size() > 1+locator.offset)
                 {
-                    spread = (float)Expression.getNumericValue(lv.get(2+locator.offset).evalValue(c)).getDouble();
-                    if (lv.size() > 3+locator.offset)
+                    spread = (float)Expression.getNumericValue(lv.get(1+locator.offset).evalValue(c)).getDouble();
+                    if (lv.size() > 2+locator.offset)
                     {
-                        speed = Expression.getNumericValue(lv.get(3 + locator.offset).evalValue(c)).getDouble();
-                        if (lv.size() > 4 + locator.offset) // should accept entity as well as long as it is player
+                        speed = Expression.getNumericValue(lv.get(2 + locator.offset).evalValue(c)).getDouble();
+                        if (lv.size() > 3 + locator.offset) // should accept entity as well as long as it is player
                         {
-                            player = ms.getPlayerList().getPlayerByUsername(lv.get(4 + locator.offset).evalValue(c).getString());
+                            player = ms.getPlayerList().getPlayerByUsername(lv.get(3 + locator.offset).evalValue(c).getString());
                         }
                     }
                 }
@@ -1649,9 +1679,9 @@ public class CarpetExpression
             Vec3d vec = locator.vec;
             if (player == null)
             {
-                for (EntityPlayerMP p : (ms.getPlayerList().getPlayers()))
+                for (EntityPlayer p : (world.playerEntities))
                 {
-                    world.spawnParticle(p, particle, true, vec.x, vec.y, vec.z, count,
+                    world.spawnParticle((EntityPlayerMP)p, particle, true, vec.x, vec.y, vec.z, count,
                             spread, spread, spread, speed);
                 }
             }
@@ -1663,6 +1693,87 @@ public class CarpetExpression
             }
 
             return (c_, t_) -> Value.TRUE;
+        });
+
+        //particle(x,y,z,"particle",count?10, duration,bool all)
+        this.expr.addLazyFunction("particle_line", -1, (c, t, lv) ->
+        {
+            // partcle block: blockname
+            CarpetContext cc = (CarpetContext)c;
+            WorldServer world = cc.s.getWorld();
+            String particleName = lv.get(0).evalValue(c).getString();
+            IParticleData particle;
+            try
+            {
+                particle = ParticleArgument.func_197189_a(new StringReader(particleName));
+            }
+            catch (CommandSyntaxException e)
+            {
+                throw new InternalExpressionException("No such particle: "+particleName);
+            }
+            BlockValue.VectorLocator pos1 = BlockValue.locateVec(cc, lv, 1);
+            BlockValue.VectorLocator pos2 = BlockValue.locateVec(cc, lv, pos1.offset);
+            int offset = pos2.offset;
+            double density = (lv.size() > offset)?Expression.getNumericValue(lv.get(offset).evalValue(c)).getDouble():1.0;
+            if (density <= 0)
+            {
+                throw new InternalExpressionException("Particle density should be positive");
+            }
+            return (c_, t_) -> new NumericValue(drawParticleLine(world, particle, pos1.vec, pos2.vec, density));
+        });
+
+        this.expr.addLazyFunction("particle_rect", -1, (c, t, lv) ->
+        {
+            // partcle block: blockname
+            CarpetContext cc = (CarpetContext)c;
+            WorldServer world = cc.s.getWorld();
+            String particleName = lv.get(0).evalValue(c).getString();
+            IParticleData particle;
+            try
+            {
+                particle = ParticleArgument.func_197189_a(new StringReader(particleName));
+            }
+            catch (CommandSyntaxException e)
+            {
+                throw new InternalExpressionException("No such particle: "+particleName);
+            }
+            BlockValue.VectorLocator pos1 = BlockValue.locateVec(cc, lv, 1);
+            BlockValue.VectorLocator pos2 = BlockValue.locateVec(cc, lv, pos1.offset);
+            int offset = pos2.offset;
+            double density = 1.0;
+            if (lv.size() > offset)
+            {
+                density = Expression.getNumericValue(lv.get(offset).evalValue(c)).getDouble();
+            }
+            if (density <= 0)
+            {
+                throw new InternalExpressionException("Particle density should be positive");
+            }
+            Vec3d a = pos1.vec;
+            Vec3d b = pos2.vec;
+            double ax = min(a.x, b.x);
+            double ay = min(a.y, b.y);
+            double az = min(a.z, b.z);
+            double bx = max(a.x, b.x);
+            double by = max(a.y, b.y);
+            double bz = max(a.z, b.z);
+            int pc = 0;
+            pc += drawParticleLine(world, particle, new Vec3d(ax, ay, az), new Vec3d(ax, by, az), density);
+            pc += drawParticleLine(world, particle, new Vec3d(ax, by, az), new Vec3d(bx, by, az), density);
+            pc += drawParticleLine(world, particle, new Vec3d(bx, by, az), new Vec3d(bx, ay, az), density);
+            pc += drawParticleLine(world, particle, new Vec3d(bx, ay, az), new Vec3d(ax, ay, az), density);
+
+            pc += drawParticleLine(world, particle, new Vec3d(ax, ay, bz), new Vec3d(ax, by, bz), density);
+            pc += drawParticleLine(world, particle, new Vec3d(ax, by, bz), new Vec3d(bx, by, bz), density);
+            pc += drawParticleLine(world, particle, new Vec3d(bx, by, bz), new Vec3d(bx, ay, bz), density);
+            pc += drawParticleLine(world, particle, new Vec3d(bx, ay, bz), new Vec3d(ax, ay, bz), density);
+
+            pc += drawParticleLine(world, particle, new Vec3d(ax, ay, az), new Vec3d(ax, ay, bz), density);
+            pc += drawParticleLine(world, particle, new Vec3d(ax, by, az), new Vec3d(ax, by, bz), density);
+            pc += drawParticleLine(world, particle, new Vec3d(bx, by, az), new Vec3d(bx, by, bz), density);
+            pc += drawParticleLine(world, particle, new Vec3d(bx, ay, az), new Vec3d(bx, ay, bz), density);
+            int particleCount = pc;
+            return (c_, t_) -> new NumericValue(particleCount);
         });
 
         //"overriden" native call that prints to stderr

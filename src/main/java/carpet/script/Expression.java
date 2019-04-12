@@ -121,7 +121,7 @@ import static java.lang.Math.min;
  * Look at the following example usage of <code>if()</code> function:
  * </p>
  * <pre>
- * if(x&lt;y+6,set(x,8+y,z,'air');plop(x,top('surface',x,z),z,'birch'),sin(query(player(),'yaw'))&gt;0.5,plop(0,0,0,'boulder'),particle(x,y,z,'fire'))
+ * if(x&lt;y+6,set(x,8+y,z,'air');plop(x,top('surface',x,z),z,'birch'),sin(query(player(),'yaw'))&gt;0.5,plop(0,0,0,'boulder'),particle('fire',x,y,z))
  * </pre>
  * <p>Would you prefer to read</p>
  * <pre>
@@ -130,7 +130,7 @@ import static java.lang.Math.min;
  *            plop(x,top('surface',x,z),z,'birch'),
  *       sin(query(player(),'yaw'))&gt;0.5,
  *            plop(0,0,0,'boulder'),
- *       particle(x,y,z,'fire')
+ *       particle('fire',x,y,z)
  * )
  * </pre>
  * <p>Or rather:</p>
@@ -148,7 +148,7 @@ import static java.lang.Math.min;
  *         plop(0,0,0,'boulder')
  *     ),
  *
- *     particle(x,y,z,'fire')
+ *     particle('fire',x,y,z)
  * )
  * </pre>
  * <p>Whichever style you prefer it doesn't matter. It typically depends on the situation and the complexity of the
@@ -298,7 +298,7 @@ public class Expression implements Cloneable
         put("def->", 2);
         put("nextop;", 1);
     }};
-    private static final Random randomizer = new Random();
+    protected static final Random randomizer = new Random();
 
     private static final Value PI = new NumericValue(
             "3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679");

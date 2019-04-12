@@ -145,7 +145,6 @@ public class Tokenizer implements Iterator<Tokenizer.Token>
             pos++;
             linepos++;
             token.type = Token.TokenType.STRINGPARAM;
-
         }
         else if (Character.isLetter(ch) || "_".indexOf(ch) >= 0)
         {
@@ -171,16 +170,6 @@ public class Tokenizer implements Iterator<Tokenizer.Token>
                 }
                 pos--;
                 linepos--;
-            }
-            if (expression != null && previousToken != null && (
-                    previousToken.type == Token.TokenType.VARIABLE ||
-                    previousToken.type == Token.TokenType.FUNCTION ||
-                    previousToken.type == Token.TokenType.LITERAL ||
-                    previousToken.type == Token.TokenType.CLOSE_PAREN ||
-                    previousToken.type == Token.TokenType.HEX_LITERAL ||
-                    previousToken.type == Token.TokenType.STRINGPARAM ) )
-            {
-                throw new Expression.ExpressionException(this.expression, previousToken, token.surface +" is not allowed after "+previousToken.surface);
             }
             token.type = ch == '(' ? Token.TokenType.FUNCTION : Token.TokenType.VARIABLE;
         }
@@ -251,6 +240,24 @@ public class Tokenizer implements Iterator<Tokenizer.Token>
             {
                 token.type = Token.TokenType.OPERATOR;
             }
+        }
+        if (expression != null && previousToken != null &&
+            (
+                token.type == Token.TokenType.LITERAL ||
+                token.type == Token.TokenType.HEX_LITERAL ||
+                token.type == Token.TokenType.VARIABLE ||
+                token.type == Token.TokenType.STRINGPARAM
+            ) &&(
+                previousToken.type == Token.TokenType.VARIABLE ||
+                previousToken.type == Token.TokenType.FUNCTION ||
+                previousToken.type == Token.TokenType.LITERAL ||
+                previousToken.type == Token.TokenType.CLOSE_PAREN ||
+                previousToken.type == Token.TokenType.HEX_LITERAL ||
+                previousToken.type == Token.TokenType.STRINGPARAM
+            )
+        )
+        {
+            throw new Expression.ExpressionException(this.expression, previousToken, "'"+token.surface +"' is not allowed after '"+previousToken.surface+"'");
         }
         return previousToken = token;
     }
