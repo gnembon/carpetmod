@@ -35,6 +35,7 @@ import net.minecraft.world.WorldServer;
 import net.minecraft.world.gen.Heightmap;
 import net.minecraft.world.storage.SessionLockException;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -48,6 +49,7 @@ import java.util.stream.Collectors;
 import static java.lang.Math.abs;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
+import static java.lang.Math.sqrt;
 
 /**
  * <h1>Minecraft specific API and <code>scarpet</code> language add-ons and commands</h1>
@@ -212,6 +214,27 @@ public class CarpetExpression
             throw new InternalExpressionException(value + " is not a valid value for property " + name);
         }
         return bs;
+    }
+
+    private int drawParticleLine(WorldServer world, IParticleData particle, Vec3d from, Vec3d to, double density)
+    {
+        double lineLengthSq = from.squareDistanceTo(to);
+        if (lineLengthSq == 0) return 0;
+        Vec3d incvec = to.subtract(from).scale(2*density/sqrt(lineLengthSq));
+        int pcount = 0;
+        for (Vec3d delta = new Vec3d(0.0,0.0,0.0);
+             delta.lengthSquared()<lineLengthSq;
+             delta = delta.add(incvec.scale(Expression.randomizer.nextFloat())))
+        {
+            for (EntityPlayer player : world.playerEntities)
+            {
+                world.spawnParticle((EntityPlayerMP)player, particle, true,
+                        delta.x+from.x, delta.y+from.y, delta.z+from.z, 1,
+                        0.0, 0.0, 0.0, 0.0);
+                pcount ++;
+            }
+        }
+        return pcount;
     }
 
     /**
@@ -888,8 +911,6 @@ public class CarpetExpression
      * <p>Adds tag / tags to the entity.</p>
      * <h3><code>modify(e, 'clear_tag', tag, ? ...), modify(e, 'clear_tag', l(tags) )</code></h3>
      * <p>Removes tag from entity.</p>
-     * <h3><code>modify(e, 'target', other_entity), modify(e, 'target', null )</code></h3>
-     * <p>Sets attack target on a given entity if possible, or removes attack target.</p>
      * <h3><code>modify(e, 'talk')</code></h3>
      * <p>Make noises.</p>
      * <h3><code>modify(e, 'home', null), modify(e, 'home', block, distance?), modify(e, 'home', x, y, z, distance?)</code></h3>
@@ -1462,11 +1483,17 @@ public class CarpetExpression
      * <code>volume</code> and modified <code>pitch</code>. <code>pos</code> can be either a block, triple of coords,
      * or a list of thee numbers. Uses the same options as a corresponding <code>playsound</code> command.</p>
      * <h2>Particles</h2>
-     * <h3><code>particle(pos, name, count?. spread?, speed?, playername?)</code></h3>
+     * <h3><code>particle(name, pos, count?. spread?, speed?, playername?)</code></h3>
      * <p>Renders a cloud of particles <code>name</code> centered around <code>pos</code> position, by default
      * <code>count</code> 10 of them, default <code>speed</code> of 0, and to all players nearby, but these
      * options can be changed via optional arguments. Follow vanilla <code>/particle</code> command on details on those
-     * options</p>
+     * options. Valid particle names are for example
+     * <code>'angry_villager', 'item diamond', 'block stone', 'dust 0.8 0.1 0.1 4'</code></p>
+     * <h3><code>particle_line(name, pos, pos2, density?)</code></h3>
+     * <p>Renders a line of particles from point <code>pos</code> to <code>pos2</code> with supplied density (defaults 1),
+     * which indicates how far part you would want particles to appear, so <code>0.1</code> means one every 10cm.</p>
+     * <h3><code>particle_rect(name, pos, pos2, density?)</code></h3>
+     * <p>Renders a cuboid of particles between point <code>pos</code> to <code>pos2</code> with supplied density.</p>
      * <h2>System function</h2>
      * <h3><code>print(expr)</code></h3>
      * <p>Displays the result of the expression to the chat. Overrides default <code>scarpet</code> behaviour of
@@ -1610,30 +1637,34 @@ public class CarpetExpression
             int totalPlayed = count;
             return (_c, _t) -> new NumericValue(totalPlayed);
         });
+
+
+
         //particle(x,y,z,"particle",count?10, duration,bool all)
         this.expr.addLazyFunction("particle", -1, (c, t, lv) ->
         {
+            // partcle block: blockname
             CarpetContext cc = (CarpetContext)c;
             MinecraftServer ms = cc.s.getServer();
             WorldServer world = cc.s.getWorld();
-            BlockValue.VectorLocator locator = BlockValue.locateVec(cc, lv, 0);
-            String particleName = lv.get(locator.offset).evalValue(c).getString();
+            BlockValue.VectorLocator locator = BlockValue.locateVec(cc, lv, 1);
+            String particleName = lv.get(0).evalValue(c).getString();
             int count = 10;
             double speed = 0;
             float spread = 0.5f;
             EntityPlayerMP player = null;
-            if (lv.size() > 1+locator.offset)
+            if (lv.size() > locator.offset)
             {
-                count = (int)Expression.getNumericValue(lv.get(1+locator.offset).evalValue(c)).getLong();
-                if (lv.size() > 2+locator.offset)
+                count = (int)Expression.getNumericValue(lv.get(locator.offset).evalValue(c)).getLong();
+                if (lv.size() > 1+locator.offset)
                 {
-                    spread = (float)Expression.getNumericValue(lv.get(2+locator.offset).evalValue(c)).getDouble();
-                    if (lv.size() > 3+locator.offset)
+                    spread = (float)Expression.getNumericValue(lv.get(1+locator.offset).evalValue(c)).getDouble();
+                    if (lv.size() > 2+locator.offset)
                     {
-                        speed = Expression.getNumericValue(lv.get(3 + locator.offset).evalValue(c)).getDouble();
-                        if (lv.size() > 4 + locator.offset) // should accept entity as well as long as it is player
+                        speed = Expression.getNumericValue(lv.get(2 + locator.offset).evalValue(c)).getDouble();
+                        if (lv.size() > 3 + locator.offset) // should accept entity as well as long as it is player
                         {
-                            player = ms.getPlayerList().getPlayerByUsername(lv.get(4 + locator.offset).evalValue(c).getString());
+                            player = ms.getPlayerList().getPlayerByUsername(lv.get(3 + locator.offset).evalValue(c).getString());
                         }
                     }
                 }
@@ -1650,9 +1681,9 @@ public class CarpetExpression
             Vec3d vec = locator.vec;
             if (player == null)
             {
-                for (EntityPlayerMP p : (ms.getPlayerList().getPlayers()))
+                for (EntityPlayer p : (world.playerEntities))
                 {
-                    world.spawnParticle(p, particle, true, vec.x, vec.y, vec.z, count,
+                    world.spawnParticle((EntityPlayerMP)p, particle, true, vec.x, vec.y, vec.z, count,
                             spread, spread, spread, speed);
                 }
             }
@@ -1664,6 +1695,87 @@ public class CarpetExpression
             }
 
             return (c_, t_) -> Value.TRUE;
+        });
+
+        //particle(x,y,z,"particle",count?10, duration,bool all)
+        this.expr.addLazyFunction("particle_line", -1, (c, t, lv) ->
+        {
+            // partcle block: blockname
+            CarpetContext cc = (CarpetContext)c;
+            WorldServer world = cc.s.getWorld();
+            String particleName = lv.get(0).evalValue(c).getString();
+            IParticleData particle;
+            try
+            {
+                particle = ParticleArgument.func_197189_a(new StringReader(particleName));
+            }
+            catch (CommandSyntaxException e)
+            {
+                throw new InternalExpressionException("No such particle: "+particleName);
+            }
+            BlockValue.VectorLocator pos1 = BlockValue.locateVec(cc, lv, 1);
+            BlockValue.VectorLocator pos2 = BlockValue.locateVec(cc, lv, pos1.offset);
+            int offset = pos2.offset;
+            double density = (lv.size() > offset)?Expression.getNumericValue(lv.get(offset).evalValue(c)).getDouble():1.0;
+            if (density <= 0)
+            {
+                throw new InternalExpressionException("Particle density should be positive");
+            }
+            return (c_, t_) -> new NumericValue(drawParticleLine(world, particle, pos1.vec, pos2.vec, density));
+        });
+
+        this.expr.addLazyFunction("particle_rect", -1, (c, t, lv) ->
+        {
+            // partcle block: blockname
+            CarpetContext cc = (CarpetContext)c;
+            WorldServer world = cc.s.getWorld();
+            String particleName = lv.get(0).evalValue(c).getString();
+            IParticleData particle;
+            try
+            {
+                particle = ParticleArgument.func_197189_a(new StringReader(particleName));
+            }
+            catch (CommandSyntaxException e)
+            {
+                throw new InternalExpressionException("No such particle: "+particleName);
+            }
+            BlockValue.VectorLocator pos1 = BlockValue.locateVec(cc, lv, 1);
+            BlockValue.VectorLocator pos2 = BlockValue.locateVec(cc, lv, pos1.offset);
+            int offset = pos2.offset;
+            double density = 1.0;
+            if (lv.size() > offset)
+            {
+                density = Expression.getNumericValue(lv.get(offset).evalValue(c)).getDouble();
+            }
+            if (density <= 0)
+            {
+                throw new InternalExpressionException("Particle density should be positive");
+            }
+            Vec3d a = pos1.vec;
+            Vec3d b = pos2.vec;
+            double ax = min(a.x, b.x);
+            double ay = min(a.y, b.y);
+            double az = min(a.z, b.z);
+            double bx = max(a.x, b.x);
+            double by = max(a.y, b.y);
+            double bz = max(a.z, b.z);
+            int pc = 0;
+            pc += drawParticleLine(world, particle, new Vec3d(ax, ay, az), new Vec3d(ax, by, az), density);
+            pc += drawParticleLine(world, particle, new Vec3d(ax, by, az), new Vec3d(bx, by, az), density);
+            pc += drawParticleLine(world, particle, new Vec3d(bx, by, az), new Vec3d(bx, ay, az), density);
+            pc += drawParticleLine(world, particle, new Vec3d(bx, ay, az), new Vec3d(ax, ay, az), density);
+
+            pc += drawParticleLine(world, particle, new Vec3d(ax, ay, bz), new Vec3d(ax, by, bz), density);
+            pc += drawParticleLine(world, particle, new Vec3d(ax, by, bz), new Vec3d(bx, by, bz), density);
+            pc += drawParticleLine(world, particle, new Vec3d(bx, by, bz), new Vec3d(bx, ay, bz), density);
+            pc += drawParticleLine(world, particle, new Vec3d(bx, ay, bz), new Vec3d(ax, ay, bz), density);
+
+            pc += drawParticleLine(world, particle, new Vec3d(ax, ay, az), new Vec3d(ax, ay, bz), density);
+            pc += drawParticleLine(world, particle, new Vec3d(ax, by, az), new Vec3d(ax, by, bz), density);
+            pc += drawParticleLine(world, particle, new Vec3d(bx, by, az), new Vec3d(bx, by, bz), density);
+            pc += drawParticleLine(world, particle, new Vec3d(bx, ay, az), new Vec3d(bx, ay, bz), density);
+            int particleCount = pc;
+            return (c_, t_) -> new NumericValue(particleCount);
         });
 
         //"overriden" native call that prints to stderr
@@ -1901,8 +2013,9 @@ public class CarpetExpression
      * <h3><code>/script invoke &lt;fun&gt; &lt;args?&gt; ... </code></h3>
      * <p>Equivalent of running <code>/script run fun(args, ...)</code>, but you get the benefit of getting the tab completion of the
      * command name, and lower permission level required to run these (since player is not capable of running any custom code
-     * in this case, only this that has been executed before by an operator). Arguments will be passed literally, so for example
-     * built-in variables are allowed like <code>x, y, z, p, pi, euler</code>, and all strings need to be wrapped in single quotes</p>
+     * in this case, only this that has been executed before by an operator). Arguments will be checked for validity, and
+     * you can only pass simple values as arguments (strings, numbers, or <code>null</code> value). Use quotes to include
+     * whitespaces in argument strings.</p>
      * <p>Command will check provided arguments with required arguments (count) and fail if not enough or too much arguments
      * are provided. Operators defining functions are advised to use descriptive arguments names, as these will be visible
      * for invokers and form the base of understanding what each argument does.</p>
@@ -1912,7 +2025,7 @@ public class CarpetExpression
      * for convenience and don't want to expose them to the <code>invoke</code> callers, they can use this mechanic.</p>
      * <pre>
      * /script run example_function(const, phrase, price) -&gt; print(const+' '+phrase+' '+price)
-     * /script invoke example_function pi 'costs' 5
+     * /script invoke example_function pi costs 5
      * </pre>
      * <h3><code>/script invokepoint &lt;fun&gt; &lt;coords x y z&gt; &lt;args?&gt; ... </code></h3>
      * <p>It is equivalent to <code>invoke</code> except it assumes that the first three arguments are coordinates, and provides
@@ -1925,48 +2038,107 @@ public class CarpetExpression
      * </div>
      * @param source .
      * @param call .
-     * @param argv .
+     * @param coords .
+     * @param arg .
      * @return .
      */
-    public static String invokeGlobalFunctionCommand(CommandSource source, String call, List<String> argv)
+
+    public static String invokeGlobalFunctionCommand(CommandSource source, String call, List<Integer> coords, String arg)
     {
         if (stopAll)
             return "SCRIPTING PAUSED";
         Expression.UserDefinedFunction acf = Expression.globalFunctions.get(call);
         if (acf == null)
             return "UNDEFINED";
+        List<LazyValue> argv = new ArrayList<>();
+        for (Integer i: coords)
+            argv.add( (c, t) -> new NumericValue(i));
+        String sign = "";
+        for (Tokenizer.Token tok : Tokenizer.simplepass(arg))
+        {
+            switch (tok.type)
+            {
+                case VARIABLE:
+                    if (tok.surface.equalsIgnoreCase("null"))
+                    {
+                        argv.add((c, t) -> Value.NULL);
+                        break;
+                    }
+                case STRINGPARAM:
+                    argv.add((c, t) -> new StringValue(tok.surface));
+                    sign = "";
+                    break;
+
+                case LITERAL:
+                    try
+                    {
+                        String finalSign = sign;
+                        argv.add((c, t) ->new NumericValue(finalSign+tok.surface));
+                        sign = "";
+                    }
+                    catch (NumberFormatException exception)
+                    {
+                        return "Fail: "+sign+tok.surface+" seems like a number but it is not a number. Use quotes to ensure its a string";
+                    }
+                    break;
+                case HEX_LITERAL:
+                    try
+                    {
+                        String finalSign = sign;
+                        argv.add((c, t) -> new NumericValue(new BigInteger(finalSign+tok.surface.substring(2), 16).doubleValue()));
+                        sign = "";
+                    }
+                    catch (NumberFormatException exception)
+                    {
+                        return "Fail: "+sign+tok.surface+" seems like a number but it is not a number. Use quotes to ensure its a string";
+                    }
+                    break;
+                case OPERATOR:
+                case UNARY_OPERATOR:
+                    if ((tok.surface.equals("-") || tok.surface.equals("-u")) && sign.isEmpty())
+                    {
+                        sign = "-";
+                    }
+                    else
+                    {
+                        return "Fail: operators, like " + tok.surface + " are not allowed in invoke";
+                    }
+                    break;
+                case FUNCTION:
+                    return "Fail: passing functions like "+tok.surface+"() to invoke is not allowed";
+                case OPEN_PAREN:
+                case COMMA:
+                case CLOSE_PAREN:
+                    return "Fail: "+tok.surface+" is not allowed in invoke";
+            }
+        }
         List<String> args = acf.getArguments();
         if (argv.size() != args.size())
         {
-            return "Fail: stored function "+call+" takes "+args.size()+" arguments, not "+argv.size()+
-                  ": "+String.join(", ", args);
+            String error = "Fail: stored function "+call+" takes "+args.size()+" arguments, not "+argv.size()+ ":\n";
+            for (int i = 0; i < max(argv.size(), args.size()); i++)
+            {
+                error += (i<args.size()?args.get(i):"??")+" => "+(i<argv.size()?argv.get(i).evalValue(null).getString():"??")+"\n";
+            }
+            return error;
         }
         try
         {
-            Vec3d pos = source.getPos();
-            Expression expr = new Expression(call+"("+String.join(" , ",argv)+" ) ").withName(call);
-            Context context = new CarpetContext(expr, source, BlockPos.ORIGIN).
-                    with("x", (c, t) -> new NumericValue(Math.round(pos.x))).
-                    with("y", (c, t) -> new NumericValue(Math.round(pos.y))).
-                    with("z", (c, t) -> new NumericValue(Math.round(pos.z)));
-            Entity e = source.getEntity();
-            if (e==null)
-            {
-                context.with("p", LazyValue.NULL );
-            }
-            else
-            {
-                context.with("p", (cc, tt) -> new EntityValue(e));
-            }
-            return expr.eval(context).getString();
+            Expression.none.setLogOutput((s) -> Messenger.m(source, "gi " + s));
+            Context context = new CarpetContext(Expression.none, source, BlockPos.ORIGIN);
+            return Expression.evalValue(
+                    () -> acf.lazyEval(context, Context.VOID, acf.expression, acf.token, argv),
+                    context,
+                    Context.VOID
+            ).getString();
         }
         catch (ExpressionException e)
         {
-             return e.getMessage();
+            return e.getMessage();
         }
-        catch (ArithmeticException ae)
+        finally
         {
-            throw new ExpressionInspector.CarpetExpressionException("math doesn't compute... "+ae.getMessage());
+            Expression.none.setLogOutput(null);
         }
     }
 

@@ -88,6 +88,13 @@ public class EntityValue extends Value
         return super.equals(v);
     }
 
+    @Override
+    public Value in(Value v)
+    {
+        String what = v.getString();
+        return this.get(what, null);
+    }
+
     public static Pair<Class<? extends Entity>, Predicate<? super Entity>> getPredicate(String who)
     {
         Pair<Class<? extends Entity>, Predicate<? super Entity>> res = entityPredicates.get(who);
@@ -408,14 +415,14 @@ public class EntityValue extends Value
             else
                 e.removeTag(v.getString());
         });
-        put("target", (e, v) -> {
-            // attacks indefinitely - might need to do it through tasks
-            if (e instanceof EntityLiving)
-            {
-                EntityLivingBase elb = assertEntityArgType(EntityLivingBase.class, v);
-                ((EntityLiving) e).setAttackTarget(elb);
-            }
-        });
+        //put("target", (e, v) -> {
+        //    // attacks indefinitely - might need to do it through tasks
+        //    if (e instanceof EntityLiving)
+        //    {
+        //        EntityLivingBase elb = assertEntityArgType(EntityLivingBase.class, v);
+        //        ((EntityLiving) e).setAttackTarget(elb);
+        //    }
+        //});
         put("talk", (e, v) -> {
             // attacks indefinitely
             if (e instanceof EntityLiving)

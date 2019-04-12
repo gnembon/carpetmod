@@ -15,6 +15,7 @@ import java.util.Stack;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -106,8 +107,6 @@ import static java.lang.Math.min;
  * <code>f</code> is the function name, and <code>a, b, c</code> are the arguments which can be any other expression.
  * And that's all the parts of the language, so all in all - sounds quite simple.</p>
  *
- * <h2>Strings</h2>
- *
  * <h2>Code flow</h2>
  * <p>
  *     Like any other proper programming language, <code>scarpet</code> needs brackets, basically to identify
@@ -122,7 +121,7 @@ import static java.lang.Math.min;
  * Look at the following example usage of <code>if()</code> function:
  * </p>
  * <pre>
- * if(x&lt;y+6,set(x,8+y,z,'air');plop(x,top('surface',x,z),z,'birch'),sin(query(player(),'yaw'))&gt;0.5,plop(0,0,0,'boulder'),particle(x,y,z,'fire'))
+ * if(x&lt;y+6,set(x,8+y,z,'air');plop(x,top('surface',x,z),z,'birch'),sin(query(player(),'yaw'))&gt;0.5,plop(0,0,0,'boulder'),particle('fire',x,y,z))
  * </pre>
  * <p>Would you prefer to read</p>
  * <pre>
@@ -131,7 +130,7 @@ import static java.lang.Math.min;
  *            plop(x,top('surface',x,z),z,'birch'),
  *       sin(query(player(),'yaw'))&gt;0.5,
  *            plop(0,0,0,'boulder'),
- *       particle(x,y,z,'fire')
+ *       particle('fire',x,y,z)
  * )
  * </pre>
  * <p>Or rather:</p>
@@ -149,7 +148,7 @@ import static java.lang.Math.min;
  *         plop(0,0,0,'boulder')
  *     ),
  *
- *     particle(x,y,z,'fire')
+ *     particle('fire',x,y,z)
  * )
  * </pre>
  * <p>Whichever style you prefer it doesn't matter. It typically depends on the situation and the complexity of the
@@ -299,7 +298,7 @@ public class Expression implements Cloneable
         put("def->", 2);
         put("nextop;", 1);
     }};
-    private static final Random randomizer = new Random();
+    protected static final Random randomizer = new Random();
 
     private static final Value PI = new NumericValue(
             "3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679");
@@ -816,6 +815,20 @@ public class Expression implements Cloneable
      * function. Certain calls to Minecraft specific calls would also set <code>_x</code>,
      * <code>_y</code>, <code>_z</code>, indicating block positions. All variables starting with
      * <code>_</code> are read-only, and cannot be declared and modified in client code.</p>
+     *
+     * <h2>Literals</h2>
+     * <p><code>scarpet</code> accepts numeric and string liters constants.
+     * Numbers look like <code>1, 2.5, -3e-7, 0xff, </code> and are internally represented as Java's <code>double</code>
+     * but <code>scarpet</code> will try to trim trailing zeros as much as possible so if you need to use them as intergers,
+     * you can. Strings using single quoting, for multiple reasons, but primarily to allow for easier use of strings inside
+     * doubly quoted command arguments (when passing a script as a parameter of <code>/script fill</code> for example,
+     * or when typing in jsons inside scarpet to feed back into a <code>/data merge</code> command for example. Strings also
+     * use backslashes <code>\</code> for quoting special characters, in both plain strings and regular expressions</p>
+     * <pre>
+     * 'foo'
+     * print('This doesn\'t work')
+     * nbt ~ '\\.foo'   // matching '.' as a '.', not 'any character match'
+     * </pre>
      * </div>
      */
 
@@ -1178,11 +1191,14 @@ public class Expression implements Cloneable
      * return the index. Currently it doesn't have any special behaviour for numbers - it checks for existence of characters
      * in string representation of the left operand with respect of the regular expression on the right hand side.
      * string</p>
+     * <p>in Minecraft API portion <code>entity ~ feature</code> is a shortcode for <code>query(entity,feature)</code>
+     * for queries that do not take any extra arguments.</p>
      * <pre>
      * l(1,2,3) ~ 2  =&gt; 1
      * l(1,2,3) ~ 4  =&gt; null
      * 'foobar' ~ '.b'  =&gt; 'ob'
      * players('*') ~ 'gnembon'  // null unless player gnembon is logged in (better to use player('gnembon') instead
+     * p ~ 'sneaking' // if p is an entity returns whether p is sneaking
      * </pre>
      * <p>Or a longer example of an ineffective way to searching for a squid</p>
      * <pre>
@@ -1879,9 +1895,9 @@ public class Expression implements Cloneable
         });
 
         addBinaryFunction("element", (v1, v2) -> {
-            if (!(v1.getClass().equals(ListValue.class))) // with more list classes, do instanceof ListValue, not instanceof LazyListValue
+            if (v1 instanceof LazyListValue || !(v1 instanceof ListValue))
             {
-                throw new InternalExpressionException("First argument of element should be a list");
+                throw new InternalExpressionException("First argument of element should be a proper list");
             }
             List<Value> items = ((ListValue)v1).getItems();
             long index = getNumericValue(v2).getLong();
@@ -2532,6 +2548,7 @@ public class Expression implements Cloneable
 
     }
 
+    static Expression none = new Expression("null");
     /**
      * @param expression .
      */
@@ -2726,9 +2743,14 @@ public class Expression implements Cloneable
         {
             ast = getAST();
         }
+        return evalValue(() -> ast, c, expectedType);
+    }
+
+    static Value evalValue(Supplier<LazyValue> exprProvider, Context c, Integer expectedType)
+    {
         try
         {
-            return ast.evalValue(c, expectedType);
+            return exprProvider.get().evalValue(c, expectedType);
         }
         catch (ExitStatement exit)
         {
@@ -2817,8 +2839,6 @@ public class Expression implements Cloneable
                 case LITERAL:
                     stack.push((c, t) ->
                     {
-                        if (token.surface.equalsIgnoreCase("NULL")) // TODO possibly not neded if works with euler and pi
-                            return Value.NULL;
                         try
                         {
                             return new NumericValue(token.surface);
@@ -2827,7 +2847,6 @@ public class Expression implements Cloneable
                         {
                             throw new ExpressionException(this, token, "Not a number");
                         }
-
                     });
                     break;
                 case STRINGPARAM:

@@ -236,22 +236,22 @@ public class ScriptCommand
             Messenger.m(source, "r Hidden functions are only callable in scripts");
             return 0;
         }
-        List<String> arguments = new ArrayList<>();
+        List<Integer> positions = new ArrayList<>();
         if (pos1 != null)
         {
-            arguments.add(Integer.toString(pos1.getX()));
-            arguments.add(Integer.toString(pos1.getY()));
-            arguments.add(Integer.toString(pos1.getZ()));
+            positions.add(pos1.getX());
+            positions.add(pos1.getY());
+            positions.add(pos1.getZ());
         }
         if (pos2 != null)
         {
-            arguments.add(Integer.toString(pos2.getX()));
-            arguments.add(Integer.toString(pos2.getY()));
-            arguments.add(Integer.toString(pos2.getZ()));
+            positions.add(pos2.getX());
+            positions.add(pos2.getY());
+            positions.add(pos2.getZ());
         }
-        if (!(args.trim().isEmpty()))
-            arguments.addAll(Arrays.asList(args.trim().split("\\s+")));
-        handleCall(source, () -> CarpetExpression.invokeGlobalFunctionCommand(source, call,arguments));
+        //if (!(args.trim().isEmpty()))
+        //    arguments.addAll(Arrays.asList(args.trim().split("\\s+")));
+        handleCall(source, () -> CarpetExpression.invokeGlobalFunctionCommand(source, call,positions, args.trim()));
         return 1;
     }
 
