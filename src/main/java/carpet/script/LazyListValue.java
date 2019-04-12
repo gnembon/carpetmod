@@ -92,4 +92,10 @@ public abstract class LazyListValue extends ListValue implements Iterator<Value>
         }
         return ListValue.wrap(result);
     }
+    @Override
+    public Value add(Value other)
+    {
+        throw new Expression.InternalExpressionException("Cannot add to iterators");
+    }
+
 }

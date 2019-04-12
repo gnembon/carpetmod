@@ -44,7 +44,7 @@ public class ListValue extends Value
 
     private ListValue()
     {
-        items = null;
+        items = new ArrayList<>();
     }
 
     @Override
