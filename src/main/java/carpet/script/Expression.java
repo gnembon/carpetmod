@@ -1174,7 +1174,7 @@ public class Expression implements Cloneable
      * <h3><code>Logical Operators  &amp;&amp;   ||</code></h3>
      * <p>These operator compute respective boolean operation on the operands. What it important is that if calculating
      * of the second operand is not necessary, it won't be evaluated, which means one can use them as conditional
-     * statements</p>
+     * statements. In case of success returns first positive operand (<code>||</code>) or last one (<code>&amp;&amp;</code>).</p>
      * <pre>
      * true || false  =&gt; 1
      * null || false =&gt; 0
@@ -1197,7 +1197,7 @@ public class Expression implements Cloneable
      * l(1,2,3) ~ 2  =&gt; 1
      * l(1,2,3) ~ 4  =&gt; null
      * 'foobar' ~ '.b'  =&gt; 'ob'
-     * players('*') ~ 'gnembon'  // null unless player gnembon is logged in (better to use player('gnembon') instead
+     * player('*') ~ 'gnembon'  // null unless player gnembon is logged in (better to use player('gnembon') instead
      * p ~ 'sneaking' // if p is an entity returns whether p is sneaking
      * </pre>
      * <p>Or a longer example of an ineffective way to searching for a squid</p>
@@ -1272,18 +1272,18 @@ public class Expression implements Cloneable
 
         addLazyBinaryOperator("&&", precedence.get("and&&"), false, (c, t, lv1, lv2) ->
         {
-            boolean b1 = lv1.evalValue(c, Context.BOOLEAN).getBoolean();
-            if (!b1) return LazyValue.FALSE;
-            boolean b2 = lv2.evalValue(c, Context.BOOLEAN).getBoolean();
-            return b2 ? LazyValue.TRUE : LazyValue.FALSE;
+            Value v1 = lv1.evalValue(c, Context.BOOLEAN);
+            if (!v1.getBoolean()) return (cc, tt) -> v1;
+            Value v2 = lv2.evalValue(c, Context.BOOLEAN);
+            return v2.getBoolean() ? ((cc, tt) -> v2) : LazyValue.FALSE;
         });
 
         addLazyBinaryOperator("||", precedence.get("or||"), false, (c, t, lv1, lv2) ->
         {
-            boolean b1 = lv1.evalValue(c, Context.BOOLEAN).getBoolean();
-            if (b1) return LazyValue.TRUE;
-            boolean b2 = lv2.evalValue(c, Context.BOOLEAN).getBoolean();
-            return b2 ? LazyValue.TRUE : LazyValue.FALSE;
+            Value v1 = lv1.evalValue(c, Context.BOOLEAN);
+            if (v1.getBoolean()) return (cc, tt) -> v1;
+            Value v2 = lv2.evalValue(c, Context.BOOLEAN);
+            return v2.getBoolean() ? ((cc, tt) -> v2) : LazyValue.FALSE;
         });
 
         addBinaryOperator("~", precedence.get("compare>=><=<"), true, Value::in);
@@ -2555,7 +2555,7 @@ public class Expression implements Cloneable
     public Expression(String expression)
     {
         expression = expression.trim().replaceAll(";+$", "");
-        this.expression = expression.replaceAll("\\$", "\n");
+        this.expression = expression.replaceAll("\\$", "\n").trim();
         VariablesAndConstants();
         UserDefinedFunctionsAndControlFlow();
         Operators();
