@@ -10,7 +10,7 @@ NOCOLOR='\033[0m'
 echo "Location server..."
 if [[ ! -f server.jar ]]; then
      printf "${RED}... cannot locate server jar, make sure its placed in current directory\n"
-     echo "    and its named like: server<....>.jar"
+     echo "    and its named like: server.jar"
      exit 1
 fi
 
