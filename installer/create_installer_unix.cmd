@@ -17,6 +17,7 @@ copy ..\build\distributions\carpetmod_1.13.2_Server.zip output-ux > nul
 copy unix_install_server.sh output-ux > nul
 copy unix_install_singleplayer.sh output-ux > nul
 copy README.txt output-ux > nul
+copy 1.13.2-carpet.json output-ux > nul
 if exist carpet_package_ux.zip del /q carpet_package_ux.zip
 echo Zipping ...
 7za a carpet_package_ux.zip .\output-ux\* > nul
