@@ -15,9 +15,12 @@ import net.minecraft.entity.ai.EntityAIBase;
 import net.minecraft.entity.ai.EntityAIMoveTowardsRestriction;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.inventory.EntityEquipmentSlot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.network.play.server.SPacketEntityTeleport;
+import net.minecraft.network.play.server.SPacketEntityVelocity;
 import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionEffect;
 import net.minecraft.util.EntitySelectors;
@@ -26,7 +29,11 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.registry.IRegistry;
 import net.minecraft.util.text.TextComponentString;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
@@ -105,7 +112,7 @@ public class EntityValue extends Value
     private static Map<String, Pair<Class<? extends Entity>, Predicate<? super Entity>>> entityPredicates =
             new HashMap<String, Pair<Class<? extends Entity>, Predicate<? super Entity>>>()
     {{
-        put("all", new Pair<>(Entity.class, EntitySelectors.IS_ALIVE));
+        put("*", new Pair<>(Entity.class, EntitySelectors.IS_ALIVE));
         put("living", new Pair<>(EntityLivingBase.class, EntitySelectors.IS_ALIVE));
         put("items", new Pair<>(EntityItem.class, EntitySelectors.IS_ALIVE));
         put("players", new Pair<>(EntityPlayer.class, EntitySelectors.IS_ALIVE));
@@ -127,7 +134,8 @@ public class EntityValue extends Value
     }};
     private static Map<String, BiFunction<Entity, Value, Value>> featureAccessors = new HashMap<String, BiFunction<Entity, Value, Value>>() {{
         put("removed", (entity, arg) -> new NumericValue(entity.removed));
-        put("id",(e, a) -> new StringValue(e.getCachedUniqueIdString()));
+        put("uuid",(e, a) -> new StringValue(e.getCachedUniqueIdString()));
+        put("id",(e, a) -> new NumericValue(e.getEntityId()));
         put("pos", (e, a) -> ListValue.of(new NumericValue(e.posX), new NumericValue(e.posY), new NumericValue(e.posZ)));
         put("x", (e, a) -> new NumericValue(e.posX));
         put("y", (e, a) -> new NumericValue(e.posY));
@@ -154,7 +162,7 @@ public class EntityValue extends Value
         put("immune_to_fire", (e, a) -> new NumericValue(e.isImmuneToFire()));
 
         put("invulnerable", (e, a) -> new NumericValue(e.isInvulnerable()));
-        put("dimension", (e, a) -> new StringValue(e.dimension.getSuffix()));
+        put("dimension", (e, a) -> new StringValue(e.dimension.toString().replaceFirst("minecraft:","")));
         put("height", (e, a) -> new NumericValue(e.height));
         put("width", (e, a) -> new NumericValue(e.width));
         put("eye_height", (e, a) -> new NumericValue(e.getEyeHeight()));
@@ -202,7 +210,20 @@ public class EntityValue extends Value
             }
             return Value.NULL;
         });
-        //gamemode player
+        put("gamemode", (e, a) -> {
+            if (e instanceof  EntityPlayerMP)
+            {
+                return new StringValue(((EntityPlayerMP) e).interactionManager.getGameType().getName());
+            }
+            return Value.NULL;
+        });
+        put("gamemode_id", (e, a) -> {
+            if (e instanceof  EntityPlayerMP)
+            {
+                return new NumericValue(((EntityPlayerMP) e).interactionManager.getGameType().getID());
+            }
+            return Value.NULL;
+        });
         //spectating_entity
         // isGlowing
         put("effect", (e, a) ->
@@ -324,15 +345,48 @@ public class EntityValue extends Value
             e.posX = Expression.getNumericValue(coords.get(0)).getDouble();
             e.posY = Expression.getNumericValue(coords.get(1)).getDouble();
             e.posZ = Expression.getNumericValue(coords.get(2)).getDouble();
+            e.setPosition(e.posX, e.posY, e.posZ);
+            if (e instanceof EntityPlayerMP)
+                ((EntityPlayerMP)e).connection.sendPacket(new SPacketEntityTeleport(e));
         });
-        put("x", (e, v) -> e.posX = Expression.getNumericValue(v).getDouble());
-        put("y", (e, v) -> e.posY = Expression.getNumericValue(v).getDouble());
-        put("z", (e, v) -> e.posZ = Expression.getNumericValue(v).getDouble());
-        put("pitch", (e, v) -> e.rotationPitch = (float)Expression.getNumericValue(v).getDouble());
-        put("yaw", (e, v) -> e.rotationYaw = (float)Expression.getNumericValue(v).getDouble());
-        //                        "look"
-        //                        "turn"
-        //                                "nod"
+        put("x", (e, v) ->
+        {
+            e.posX = Expression.getNumericValue(v).getDouble();
+            e.setPosition(e.posX, e.posY, e.posZ);
+            if (e instanceof EntityPlayerMP)
+                ((EntityPlayerMP)e).connection.sendPacket(new SPacketEntityTeleport(e));
+        });
+        put("y", (e, v) ->
+        {
+            e.posY = Expression.getNumericValue(v).getDouble();
+            e.setPosition(e.posX, e.posY, e.posZ);
+            if (e instanceof EntityPlayerMP)
+                ((EntityPlayerMP)e).connection.sendPacket(new SPacketEntityTeleport(e));
+        });
+        put("z", (e, v) ->
+        {
+            e.posZ = Expression.getNumericValue(v).getDouble();
+            e.setPosition(e.posX, e.posY, e.posZ);
+            if (e instanceof EntityPlayerMP)
+                ((EntityPlayerMP)e).connection.sendPacket(new SPacketEntityTeleport(e));
+        });
+        put("pitch", (e, v) ->
+        {
+            e.rotationPitch = (float) Expression.getNumericValue(v).getDouble();
+            e.prevRotationPitch = e.rotationPitch;
+            if (e instanceof EntityPlayerMP)
+                ((EntityPlayerMP)e).connection.sendPacket(new SPacketEntityTeleport(e));
+        });
+        put("yaw", (e, v) ->
+        {
+            e.rotationYaw = (float) Expression.getNumericValue(v).getDouble();
+            e.prevRotationYaw = e.rotationYaw;
+            if (e instanceof EntityPlayerMP)
+                ((EntityPlayerMP)e).connection.sendPacket(new SPacketEntityTeleport(e));
+        });
+        //"look"
+        //"turn"
+        //"nod"
 
         put("move", (e, v) ->
         {
@@ -344,8 +398,10 @@ public class EntityValue extends Value
             e.posX += Expression.getNumericValue(coords.get(0)).getDouble();
             e.posY += Expression.getNumericValue(coords.get(1)).getDouble();
             e.posZ += Expression.getNumericValue(coords.get(2)).getDouble();
+            e.setPosition(e.posX, e.posY, e.posZ);
+            if (e instanceof EntityPlayerMP)
+                ((EntityPlayerMP)e).connection.sendPacket(new SPacketEntityTeleport(e));
         });
-
 
         put("motion", (e, v) ->
         {
@@ -357,10 +413,27 @@ public class EntityValue extends Value
             e.motionX = Expression.getNumericValue(coords.get(0)).getDouble();
             e.motionY = Expression.getNumericValue(coords.get(1)).getDouble();
             e.motionZ = Expression.getNumericValue(coords.get(2)).getDouble();
+            if (e instanceof EntityPlayerMP)
+                ((EntityPlayerMP)e).connection.sendPacket(new SPacketEntityVelocity(e));
         });
-        put("motion_x", (e, v) -> e.motionX = Expression.getNumericValue(v).getDouble());
-        put("motion_y", (e, v) -> e.motionY = Expression.getNumericValue(v).getDouble());
-        put("motion_z", (e, v) -> e.motionZ = Expression.getNumericValue(v).getDouble());
+        put("motion_x", (e, v) ->
+        {
+            e.motionX = Expression.getNumericValue(v).getDouble();
+            if (e instanceof EntityPlayerMP)
+                ((EntityPlayerMP)e).connection.sendPacket(new SPacketEntityVelocity(e));
+        });
+        put("motion_y", (e, v) ->
+        {
+            e.motionY = Expression.getNumericValue(v).getDouble();
+            if (e instanceof EntityPlayerMP)
+                ((EntityPlayerMP)e).connection.sendPacket(new SPacketEntityVelocity(e));
+        });
+        put("motion_z", (e, v) ->
+        {
+            e.motionZ = Expression.getNumericValue(v).getDouble();
+            if (e instanceof EntityPlayerMP)
+                ((EntityPlayerMP)e).connection.sendPacket(new SPacketEntityVelocity(e));
+        });
 
         put("accelerate", (e, v) ->
         {
@@ -374,6 +447,9 @@ public class EntityValue extends Value
                     Expression.getNumericValue(coords.get(1)).getDouble(),
                     Expression.getNumericValue(coords.get(2)).getDouble()
             );
+            if (e instanceof EntityPlayerMP)
+                ((EntityPlayerMP)e).connection.sendPacket(new SPacketEntityVelocity(e));
+
         });
         put("custom_name", (e, v) -> {
             String name = v.getString();
@@ -487,21 +563,21 @@ public class EntityValue extends Value
             }
         });
 
-        // gamemode epmp
+        // gamemode
         // spectate
-        //                                        "fire"
-        //                                                "extinguish"
-        //                                                        "silent"
-        //                                                                "gravity"
-        //                                                                        "invulnerable"
-        //                                                                                "dimension"
-        //                                                                                        "item"
-        //                                                                                                "count",
-        //"age",
-        //"effect_"name
-        //"hold"
-        //        "hold_offhand"
-        //                "jump"
-        //"nbt"
+        // "fire"
+        // "extinguish"
+        // "silent"
+        // "gravity"
+        // "invulnerable"
+        // "dimension"
+        // "item"
+        // "count",
+        // "age",
+        // "effect_"name
+        // "hold"
+        // "hold_offhand"
+        // "jump"
+        // "nbt" <-big one, for now use run('data merge entity ...
     }};
 }

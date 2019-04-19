@@ -129,8 +129,6 @@ public class CarpetExpression
 
     }
 
-
-
     private LazyValue booleanStateTest(
             Context c,
             String name,
@@ -198,7 +196,6 @@ public class CarpetExpression
         BlockValue block = BlockValue.fromParams(cc, params, 0).block;
         return (c_, t_) -> test.apply(block.getBlockState(), block.getPos(), cc.s.getWorld());
     }
-
 
     private <T extends Comparable<T>> IBlockState setProperty(IProperty<T> property, String name, String value,
                                                               IBlockState bs)
@@ -490,12 +487,8 @@ public class CarpetExpression
      *     <li><code> red_terracotta            </code>  </li>
      *     <li><code> black_terracotta          </code>  </li>
      * </ul>
-     *
-     *
      * </div>
      */
-
-
 
     public void API_BlockManipulation()
     {
@@ -653,7 +646,6 @@ public class CarpetExpression
                     return true;
                 }));
 
-
         this.expr.addLazyFunction("set", -1, (c, t, lv) ->
         {
             CarpetContext cc = (CarpetContext)c;
@@ -726,7 +718,7 @@ public class CarpetExpression
      * <p>Entities have to be fetched before using them. Entities can also change their state between calls to the script
      * if game happens either in between separate calls to the programs, or if the program calls <code>game_tick</code>
      * on its own. In this case - entities would need to be re-fetched, or the code should account for entities getting dead</p>
-     * <h3><code>player(), player(type), players(name)</code></h3>
+     * <h3><code>player(), player(type), player(name)</code></h3>
      * <p>
      * With no arguments, it returns the calling player or the player closest to the caller. Note that the main context
      * will receive <code>p</code> variable pointing to this player. With <code>type</code> or <code>name</code> specified
@@ -738,13 +730,16 @@ public class CarpetExpression
      * and adventure players, <code>'creative'</code> returns all creative players, <code>'spectating'</code> returns all spectating
      * players, and <code>'!spectating'</code>, all not-spectating players. If all fails,
      * with <code>name</code>, the player in question, if is logged in.</p>
-     * <h3><code>entity_id(uuid)</code></h3>
-     * <p>Fetching entities by their UUID string, as returned by <code>query(entity,'id')</code>. It returns null if no such entity
-     * is found. Safer way to 'store' entities between calls, as missing entities will be returning <code>null</code>.</p>
+     * <h3><code>entity_id(uuid), entity_id(id)</code></h3>
+     * <p>Fetching entities wither by their ID obtained via <code>entity ~ 'id'</code>, which is unique
+     * for a dimension and current world run, or by UUID, obtained via <code>entity ~ 'uuid'</code>.
+     * It returns null if no such entity
+     * is found. Safer way to 'store' entities between calls, as missing entities will be returning <code>null</code>.
+     * Both calls using UUID or numerical ID are <code>O(1)</code>, but obviously using UUIDs takes more memory and compute.</p>
      * <h3><code>entity_list(type)</code></h3>
      * <p>Returns global lists of entities of a specified type. Currently the following selectors are available:</p>
      * <ul>
-     *     <li><code>all</code></li>
+     *     <li><code>*</code>: all</li>
      *     <li><code>living</code></li>
      *     <li><code>items</code></li>
      *     <li><code>players</code></li>
@@ -767,10 +762,15 @@ public class CarpetExpression
      * <h3><code>query(e,'removed')</code></h3>
      * <p>Boolean. True if the entity is removed</p>
      * <h3><code>query(e,'id')</code></h3>
-     * <p>Returns UUID (unique id) of the entity. Can be used to access entities with the other vanilla commands.
-     * Apparently players cannot be accessed via UUID.</p>
+     * <p>Returns numerical id of the entity. Most efficient way to keep track of entites in a script. Ids are only unique
+     * within current game session (ids are not preserved between restarts), and dimension (each dimension has its own ids
+     * which can overlap. </p>
+     * <h3><code>query(e,'uuid')</code></h3>
+     * <p>Returns UUID (unique id) of the entity. Can be used to access entities with the other vanilla commands and remains unique
+     * regardless of the dimension, and is preserved between game restarts.
+     * Apparently players cannot be accessed via UUID, but name instead.</p>
      * <pre>
-     * map(entities_area('all',x,y,z,30,30,30),run('kill '+query(_,'id'))) // doesn't kill the player
+     * map(entities_area('*',x,y,z,30,30,30),run('kill '+query(_,'id'))) // doesn't kill the player
      * </pre>
      * <h3><code>query(e,'pos')</code></h3>
      * <p>Triple of entity position</p>
@@ -841,6 +841,10 @@ public class CarpetExpression
      * <p>Boolean, true if entity is sprinting.</p>
      * <h3><code>query(e,'swimming')</code></h3>
      * <p>Boolean, true if entity is swimming.</p>
+     * <h3><code>query(e,'gamemode')</code></h3>
+     * <p>String with gamemode, or <code>null</code> if not a player.</p>
+     * <h3><code>query(e,'gamemode_id')</code></h3>
+     * <p>Good'ol gamemode id, or null if not a player.</p>
      * <h3><code>query(e,'effect',name?)</code></h3>
      * <p>Without extra arguments, it returns list of effect active on a living entity.
      * Each entry is a triple of short effect name, amplifier, and remaining duration.
@@ -986,8 +990,16 @@ public class CarpetExpression
 
         this.expr.addLazyFunction("entity_id", 1, (c, t, lv) ->
         {
-            String who = lv.get(0).evalValue(c).getString();
-            Entity e = ((CarpetContext)c).s.getWorld().getEntityFromUuid(UUID.fromString(who));
+            Value who = lv.get(0).evalValue(c);
+            Entity e;
+            if (who instanceof NumericValue)
+            {
+                e = ((CarpetContext)c).s.getWorld().getEntityByID((int)((NumericValue) who).getLong());
+            }
+            else
+            {
+                e = ((CarpetContext)c).s.getWorld().getEntityFromUuid(UUID.fromString(who.getString()));
+            }
             if (e==null)
             {
                 return LazyValue.NULL;
@@ -1478,7 +1490,7 @@ public class CarpetExpression
      * <div style="padding-left: 20px; border-radius: 5px 45px; border:1px solid grey;">
      * <p>Collection of other methods that control smaller, yet still important aspects of the game</p>
      * <h2>Sounds</h2>
-     * <h3><code>sound(pos, name, volume?, pitch?)</code></h3>
+     * <h3><code>sound(name, pos, volume?, pitch?)</code></h3>
      * <p>Plays a specific sound <code>name</code>, at block or position <code>pos</code>, with optional
      * <code>volume</code> and modified <code>pitch</code>. <code>pos</code> can be either a block, triple of coords,
      * or a list of thee numbers. Uses the same options as a corresponding <code>playsound</code> command.</p>
@@ -1513,6 +1525,8 @@ public class CarpetExpression
      * loop(1000,tick())  // runs the game as fast as it can for 1000 ticks
      * loop(1000,tick(100)) // runs the game twice as slow for 1000 ticks
      * </pre>
+     * <h3><code>current_dimension()</code></h3>
+     * <p>Returns current dimension that scripts run in.</p>
      * <h3><code>plop(pos, what)</code></h3>
      * <p>Plops a structure or a feature at a given <code>pos</code>, so block, triple position coordinates
      * or a list of coordinates. To <code>what</code> gets plopped and exactly where it often depends on the
@@ -1603,8 +1617,6 @@ public class CarpetExpression
      *     <li><code>boulder</code>: A rocky, mossy formation from a giant taiga biome. Doesn't update client properly,
      *     needs relogging.</li>
      * </ul>
-     *
-     *
      * </div>
      */
 
@@ -1612,18 +1624,18 @@ public class CarpetExpression
     {
         this.expr.addLazyFunction("sound", -1, (c, t, lv) -> {
             CarpetContext cc = (CarpetContext)c;
-            BlockValue.VectorLocator locator = BlockValue.locateVec(cc, lv, 0);
-            ResourceLocation soundName = new ResourceLocation(lv.get(locator.offset).evalValue(c).getString());
+            ResourceLocation soundName = new ResourceLocation(lv.get(0).evalValue(c).getString());
+            BlockValue.VectorLocator locator = BlockValue.locateVec(cc, lv, 1);
             if (!(IRegistry.field_212633_v.func_212607_c(soundName)))
                 throw new InternalExpressionException("No such sound: "+soundName.getPath());
             float volume = 1.0F;
             float pitch = 1.0F;
-            if (lv.size() > 1+locator.offset)
+            if (lv.size() > 0+locator.offset)
             {
-                volume = (float)Expression.getNumericValue(lv.get(1+locator.offset).evalValue(c)).getDouble();
-                if (lv.size() > 2+locator.offset)
+                volume = (float)Expression.getNumericValue(lv.get(0+locator.offset).evalValue(c)).getDouble();
+                if (lv.size() > 1+locator.offset)
                 {
-                    pitch = (float)Expression.getNumericValue(lv.get(2+locator.offset).evalValue(c)).getDouble();
+                    pitch = (float)Expression.getNumericValue(lv.get(1+locator.offset).evalValue(c)).getDouble();
                 }
             }
             Vec3d vec = locator.vec;
@@ -1638,12 +1650,8 @@ public class CarpetExpression
             return (_c, _t) -> new NumericValue(totalPlayed);
         });
 
-
-
-        //particle(x,y,z,"particle",count?10, duration,bool all)
         this.expr.addLazyFunction("particle", -1, (c, t, lv) ->
         {
-            // partcle block: blockname
             CarpetContext cc = (CarpetContext)c;
             MinecraftServer ms = cc.s.getServer();
             WorldServer world = cc.s.getWorld();
@@ -1697,10 +1705,8 @@ public class CarpetExpression
             return (c_, t_) -> Value.TRUE;
         });
 
-        //particle(x,y,z,"particle",count?10, duration,bool all)
         this.expr.addLazyFunction("particle_line", -1, (c, t, lv) ->
         {
-            // partcle block: blockname
             CarpetContext cc = (CarpetContext)c;
             WorldServer world = cc.s.getWorld();
             String particleName = lv.get(0).evalValue(c).getString();
@@ -1726,7 +1732,6 @@ public class CarpetExpression
 
         this.expr.addLazyFunction("particle_rect", -1, (c, t, lv) ->
         {
-            // partcle block: blockname
             CarpetContext cc = (CarpetContext)c;
             WorldServer world = cc.s.getWorld();
             String particleName = lv.get(0).evalValue(c).getString();
@@ -1778,7 +1783,7 @@ public class CarpetExpression
             return (c_, t_) -> new NumericValue(particleCount);
         });
 
-        //"overriden" native call that prints to stderr
+        //"overridden" native call that prints to stderr
         this.expr.addLazyFunction("print", 1, (c, t, lv) ->
         {
             Messenger.m(((CarpetContext)c).s, "w " + lv.get(0).evalValue(c).getString());
@@ -1815,14 +1820,8 @@ public class CarpetExpression
             return (cc, tt) -> Value.TRUE;
         });
 
-        this.expr.addLazyFunction("tick_time", 0, (c, t, lv) -> (cc, tt) -> new NumericValue(((CarpetContext)cc).s.getServer().getTickCounter()));
-        this.expr.addLazyFunction("ticktime2", 0, (c, t, lv) -> (cc, tt) -> new NumericValue(((CarpetContext)cc).s.getServer().getTickCounter()));
-
-        this.expr.addLazyFunction("ticktime3", 0, (c, t, lv) ->
-        {
-            Value time = new NumericValue(((CarpetContext) c).s.getServer().getTickCounter());
-            return (cc, tt) -> time;
-        });
+        this.expr.addLazyFunction("tick_time", 0, (c, t, lv) ->
+                (cc, tt) -> new NumericValue(((CarpetContext)cc).s.getServer().getTickCounter()));
 
         this.expr.addLazyFunction("game_tick", -1, (c, t, lv) -> {
             CommandSource s = ((CarpetContext)c).s;
@@ -1851,7 +1850,11 @@ public class CarpetExpression
             return (cc, tt) -> Value.TRUE;
         });
 
-        //not ready yet
+        this.expr.addLazyFunction("current_dimension", 0, (c, t, lv) -> {
+            CommandSource s = ((CarpetContext)c).s;
+            return (cc, tt) -> new StringValue(s.getWorld().dimension.getType().toString().replaceFirst("minecraft:",""));
+        });
+
         this.expr.addLazyFunction("plop", 4, (c, t, lv) ->{
             BlockValue.LocatorResult locator = BlockValue.fromParams((CarpetContext)c, lv, 0);
             Boolean res = FeatureGenerator.spawn(lv.get(locator.offset).evalValue(c).getString(), ((CarpetContext)c).s.getWorld(), locator.block.getPos());
@@ -1934,17 +1937,18 @@ public class CarpetExpression
         try
         {
             Context context = new CarpetContext(this.expr, source, origin).
-                    with("x", (c, t) -> new NumericValue(x - origin.getX())).
-                    with("y", (c, t) -> new NumericValue(y - origin.getY())).
-                    with("z", (c, t) -> new NumericValue(z - origin.getZ()));
+                    with("x", (c, t) -> new NumericValue(x - origin.getX()).bindTo("x")).
+                    with("y", (c, t) -> new NumericValue(y - origin.getY()).bindTo("y")).
+                    with("z", (c, t) -> new NumericValue(z - origin.getZ()).bindTo("z")).
+                    with("_", (c, t) -> new BlockValue(null, source.getWorld(), new BlockPos(x, y, z)).bindTo("_"));
             Entity e = source.getEntity();
             if (e==null)
             {
-                context.with("p", LazyValue.NULL );
+                context.with("p", (cc, tt) -> Value.NULL.reboundedTo("p") );
             }
             else
             {
-                context.with("p", (cc, tt) -> new EntityValue(e));
+                context.with("p", (cc, tt) -> new EntityValue(e).bindTo("p"));
             }
             return this.expr.eval(context).getBoolean();
         }
@@ -2059,9 +2063,9 @@ public class CarpetExpression
             switch (tok.type)
             {
                 case VARIABLE:
-                    if (tok.surface.equalsIgnoreCase("null"))
+                    if (Expression.globalVariables.containsKey(tok.surface.toLowerCase(Locale.ROOT)))
                     {
-                        argv.add((c, t) -> Value.NULL);
+                        argv.add(Expression.globalVariables.get(tok.surface.toLowerCase(Locale.ROOT)));
                         break;
                     }
                 case STRINGPARAM:
