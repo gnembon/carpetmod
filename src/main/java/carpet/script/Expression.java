@@ -87,12 +87,13 @@ import static java.lang.Math.min;
  * $    )
  *
  * /script invoke check_area_around_closest_player_for_block 'diamond_ore'
+ *
  * </pre>
  * <p>or simply</p>
  * <pre>
  * script run print('There is'+for(rect(x,9,z,8,8,8), _ == 'diamond_ore')+' diamond ore around you')
  * </pre>
- * <p>It definitely pays to check what higher level <code>scarpet</code> functions have to offer</p>
+ * <p>It definitely pays to check what higher level <code>scarpet</code> functions have to offer.</p>
  * <h1>Programs</h1>
  * <p>
  * You can think of an program like a mathematical expression, like
@@ -269,14 +270,10 @@ import static java.lang.Math.min;
  *     ...
  *     check_foo_not_zero(outer(foo)) -&gt; if(foo == 0, foo = 1)
  * </pre>
- *
  *<p><code>outer</code> scope can only be used in
  * function signatures to indicate outer variables. They are not arguments, but still you would want to use
  * locally without affecting other uses of foo in your program.
  * </p>
- *
- *
- *
  * <p>For the most part - passing arguments as values, and using returned values   .
  * The main usecase of <code>Scarpet</code> would rather be simpler scripts, default scope for all variables is global, unless variable
  * is declared with <code>local</code> scope explicitly.
@@ -1489,8 +1486,6 @@ public class Expression implements Cloneable
      *
      */
 
-
-
     public void ArithmeticOperations()
     {
         addLazyFunction("not", 1, (c, t, lv) -> lv.get(0).evalValue(c, Context.BOOLEAN).getBoolean() ? ((cc, tt) -> Value.FALSE) : ((cc, tt) -> Value.TRUE));
@@ -1505,8 +1500,6 @@ public class Expression implements Cloneable
             }
             return new NumericValue(factorial);
         });
-
-
         addMathematicalUnaryFunction("sin",    (d) -> Math.sin(Math.toRadians(d)));
         addMathematicalUnaryFunction("cos",    (d) -> Math.cos(Math.toRadians(d)));
         addMathematicalUnaryFunction("tan",    (d) -> Math.tan(Math.toRadians(d)));
@@ -1539,7 +1532,6 @@ public class Expression implements Cloneable
         addMathematicalUnaryFunction("log10", Math::log10);
         addMathematicalUnaryFunction("log", a -> Math.log(a)/Math.log(2));
         addMathematicalUnaryFunction("log1p", x -> Math.log1p(x)/Math.log(2));
-
         addMathematicalUnaryFunction("sqrt", Math::sqrt);
         addMathematicalUnaryFunction("abs", Math::abs);
         addMathematicalUnaryFunction("round", (d) -> (double)Math.round(d));
@@ -1593,10 +1585,7 @@ public class Expression implements Cloneable
         });
 
         addUnaryFunction("relu", (v) -> v.compareTo(Value.ZERO) < 0 ? Value.ZERO : v);
-
     }
-
-
 
     /**
      * <h1>Lists, loops, and higher order functions</h1>
@@ -1797,8 +1786,6 @@ public class Expression implements Cloneable
             return new ListValue.ListConstructorValue(lv);
         });
 
-
-
         addFunction("join", (lv) ->
         {
             if (lv.size() < 2)
@@ -1820,15 +1807,17 @@ public class Expression implements Cloneable
             }
             return new StringValue(toJoin.stream().map(Value::getString).collect(Collectors.joining(delimiter)));
         });
+
         addBinaryFunction("split", (d, v) -> {
             String delimiter = d.getString();
             String hwat = v.getString();
             return ListValue.wrap(Arrays.stream(hwat.split(delimiter)).map(StringValue::new).collect(Collectors.toList()));
         });
+
         addFunction("slice", (lv) -> {
 
             if (lv.size() != 2 && lv.size() != 3)
-                throw new InternalExpressionException("sub takes 2 or 3 arguments");
+                throw new InternalExpressionException("slice takes 2 or 3 arguments");
             Value hwat = lv.get(0);
             long from = getNumericValue(lv.get(1)).getLong();
             long to = -1;
@@ -1871,8 +1860,6 @@ public class Expression implements Cloneable
             return (cc, tt) -> ListValue.wrap(toSort);
         });
 
-
-
         addFunction("range", (lv) ->
         {
             long from = 0;
@@ -1911,7 +1898,6 @@ public class Expression implements Cloneable
         //condition and expression will get a bound 'i'
         //returns last successful expression or false
         // while(cond, limit, expr) => ??
-        //replaced with for
         addLazyFunction("while", 3, (c, t, lv) ->
         {
             long limit = getNumericValue(lv.get(1).evalValue(c)).getLong();
@@ -1936,7 +1922,7 @@ public class Expression implements Cloneable
         });
 
         // loop(Num, expr, exit_condition) => last_value
-        // loop(list, expr,
+        // loop(list, expr)
         // expr receives bounded variable '_' indicating iteration
         addLazyFunction("loop", -1, (c, t, lv) ->
         {
@@ -1964,8 +1950,6 @@ public class Expression implements Cloneable
             Value trulyLastOne = lastOne;
             return (cc, tt) -> trulyLastOne;
         });
-
-
 
         // map(list or Num, expr) => list_results
         // receives bounded variable '_' with the expression
@@ -2081,7 +2065,6 @@ public class Expression implements Cloneable
             return (cc, tt) -> whyWontYouTrustMeJava;
         });
 
-
         // all(list, expr) => boolean
         // receives bounded variable '_' with the expression, and "_i" with index
         // returns true if expr is true for all items
@@ -2114,7 +2097,6 @@ public class Expression implements Cloneable
             c.setVariable("_i", _iter);
             return result;
         });
-
 
         // similar to map, but returns total number of successes
         // for(list, expr, exit_expr) => success_count
@@ -2452,7 +2434,6 @@ public class Expression implements Cloneable
             }
         });
 
-
         addUnaryFunction("length", v -> new NumericValue(v.length()));
         addLazyFunction("rand", 1, (c, t, lv) -> {
             Value argument = lv.get(0).evalValue(c);
@@ -2563,7 +2544,6 @@ public class Expression implements Cloneable
         SystemFunctions();
         ListsLoopsAndHigherOrderFunctions();
     }
-
 
     private List<Tokenizer.Token> shuntingYard(String expression)
     {

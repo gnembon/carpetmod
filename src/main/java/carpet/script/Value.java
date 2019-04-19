@@ -146,7 +146,6 @@ public abstract class Value implements Comparable<Value>, Cloneable
         }
     }
 
-
     public long readInteger()
     {
         return (long)readNumber();

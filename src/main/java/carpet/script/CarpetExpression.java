@@ -129,8 +129,6 @@ public class CarpetExpression
 
     }
 
-
-
     private LazyValue booleanStateTest(
             Context c,
             String name,
@@ -198,7 +196,6 @@ public class CarpetExpression
         BlockValue block = BlockValue.fromParams(cc, params, 0).block;
         return (c_, t_) -> test.apply(block.getBlockState(), block.getPos(), cc.s.getWorld());
     }
-
 
     private <T extends Comparable<T>> IBlockState setProperty(IProperty<T> property, String name, String value,
                                                               IBlockState bs)
@@ -490,12 +487,8 @@ public class CarpetExpression
      *     <li><code> red_terracotta            </code>  </li>
      *     <li><code> black_terracotta          </code>  </li>
      * </ul>
-     *
-     *
      * </div>
      */
-
-
 
     public void API_BlockManipulation()
     {
@@ -652,7 +645,6 @@ public class CarpetExpression
                         s.randomTick(w, p, w.rand);
                     return true;
                 }));
-
 
         this.expr.addLazyFunction("set", -1, (c, t, lv) ->
         {
@@ -1625,8 +1617,6 @@ public class CarpetExpression
      *     <li><code>boulder</code>: A rocky, mossy formation from a giant taiga biome. Doesn't update client properly,
      *     needs relogging.</li>
      * </ul>
-     *
-     *
      * </div>
      */
 
@@ -1660,12 +1650,8 @@ public class CarpetExpression
             return (_c, _t) -> new NumericValue(totalPlayed);
         });
 
-
-
-        //particle(x,y,z,"particle",count?10, duration,bool all)
         this.expr.addLazyFunction("particle", -1, (c, t, lv) ->
         {
-            // partcle block: blockname
             CarpetContext cc = (CarpetContext)c;
             MinecraftServer ms = cc.s.getServer();
             WorldServer world = cc.s.getWorld();
@@ -1719,10 +1705,8 @@ public class CarpetExpression
             return (c_, t_) -> Value.TRUE;
         });
 
-        //particle(x,y,z,"particle",count?10, duration,bool all)
         this.expr.addLazyFunction("particle_line", -1, (c, t, lv) ->
         {
-            // partcle block: blockname
             CarpetContext cc = (CarpetContext)c;
             WorldServer world = cc.s.getWorld();
             String particleName = lv.get(0).evalValue(c).getString();
@@ -1748,7 +1732,6 @@ public class CarpetExpression
 
         this.expr.addLazyFunction("particle_rect", -1, (c, t, lv) ->
         {
-            // partcle block: blockname
             CarpetContext cc = (CarpetContext)c;
             WorldServer world = cc.s.getWorld();
             String particleName = lv.get(0).evalValue(c).getString();
@@ -1800,7 +1783,7 @@ public class CarpetExpression
             return (c_, t_) -> new NumericValue(particleCount);
         });
 
-        //"overriden" native call that prints to stderr
+        //"overridden" native call that prints to stderr
         this.expr.addLazyFunction("print", 1, (c, t, lv) ->
         {
             Messenger.m(((CarpetContext)c).s, "w " + lv.get(0).evalValue(c).getString());
@@ -1837,14 +1820,8 @@ public class CarpetExpression
             return (cc, tt) -> Value.TRUE;
         });
 
-        this.expr.addLazyFunction("tick_time", 0, (c, t, lv) -> (cc, tt) -> new NumericValue(((CarpetContext)cc).s.getServer().getTickCounter()));
-        this.expr.addLazyFunction("ticktime2", 0, (c, t, lv) -> (cc, tt) -> new NumericValue(((CarpetContext)cc).s.getServer().getTickCounter()));
-
-        this.expr.addLazyFunction("ticktime3", 0, (c, t, lv) ->
-        {
-            Value time = new NumericValue(((CarpetContext) c).s.getServer().getTickCounter());
-            return (cc, tt) -> time;
-        });
+        this.expr.addLazyFunction("tick_time", 0, (c, t, lv) ->
+                (cc, tt) -> new NumericValue(((CarpetContext)cc).s.getServer().getTickCounter()));
 
         this.expr.addLazyFunction("game_tick", -1, (c, t, lv) -> {
             CommandSource s = ((CarpetContext)c).s;
@@ -1872,12 +1849,12 @@ public class CarpetExpression
                 throw new Expression.ExitStatement(Value.NULL);
             return (cc, tt) -> Value.TRUE;
         });
+
         this.expr.addLazyFunction("current_dimension", 0, (c, t, lv) -> {
             CommandSource s = ((CarpetContext)c).s;
             return (cc, tt) -> new StringValue(s.getWorld().dimension.getType().toString().replaceFirst("minecraft:",""));
         });
 
-        //not ready yet
         this.expr.addLazyFunction("plop", 4, (c, t, lv) ->{
             BlockValue.LocatorResult locator = BlockValue.fromParams((CarpetContext)c, lv, 0);
             Boolean res = FeatureGenerator.spawn(lv.get(locator.offset).evalValue(c).getString(), ((CarpetContext)c).s.getWorld(), locator.block.getPos());

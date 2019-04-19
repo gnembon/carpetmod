@@ -384,9 +384,9 @@ public class EntityValue extends Value
             if (e instanceof EntityPlayerMP)
                 ((EntityPlayerMP)e).connection.sendPacket(new SPacketEntityTeleport(e));
         });
-        //                        "look"
-        //                        "turn"
-        //                                "nod"
+        //"look"
+        //"turn"
+        //"nod"
 
         put("move", (e, v) ->
         {
@@ -402,7 +402,6 @@ public class EntityValue extends Value
             if (e instanceof EntityPlayerMP)
                 ((EntityPlayerMP)e).connection.sendPacket(new SPacketEntityTeleport(e));
         });
-
 
         put("motion", (e, v) ->
         {
@@ -564,21 +563,21 @@ public class EntityValue extends Value
             }
         });
 
-        // gamemode epmp
+        // gamemode
         // spectate
-        //                                        "fire"
-        //                                                "extinguish"
-        //                                                        "silent"
-        //                                                                "gravity"
-        //                                                                        "invulnerable"
-        //                                                                                "dimension"
-        //                                                                                        "item"
-        //                                                                                                "count",
-        //"age",
-        //"effect_"name
-        //"hold"
-        //        "hold_offhand"
-        //                "jump"
-        //"nbt"
+        // "fire"
+        // "extinguish"
+        // "silent"
+        // "gravity"
+        // "invulnerable"
+        // "dimension"
+        // "item"
+        // "count",
+        // "age",
+        // "effect_"name
+        // "hold"
+        // "hold_offhand"
+        // "jump"
+        // "nbt" <-big one, for now use run('data merge entity ...
     }};
 }
