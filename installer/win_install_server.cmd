@@ -2,7 +2,7 @@
 echo Locating server ...
 if not exist server.jar (
     echo ... cannot locate server jar, make sure its placed in current directory
-    echo     and its named like: server<....>.jar
+    echo     and its named like: server.jar
     pause
     goto:eof
 )
