@@ -737,7 +737,7 @@ public class CarpetExpression
      * is found. Safer way to 'store' entities between calls, as missing entities will be returning <code>null</code>.
      * Both calls using UUID or numerical ID are <code>O(1)</code>, but obviously using UUIDs takes more memory and compute.</p>
      * <h3><code>entity_list(type)</code></h3>
-     * <p>Returns global lists of entities of a specified type. Currently the following selectors are available:</p>
+     * <p>Returns global lists of entities in the current dimension of a specified type. Currently the following selectors are available:</p>
      * <ul>
      *     <li><code>*</code>: all</li>
      *     <li><code>living</code></li>
