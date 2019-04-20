@@ -2,7 +2,6 @@ package carpet.script;
 
 import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import javafx.util.Pair;
 import net.minecraft.command.CommandSource;
 import net.minecraft.command.arguments.EntitySelector;
 import net.minecraft.command.arguments.EntitySelectorParser;
@@ -25,6 +24,7 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.registry.IRegistry;
 import net.minecraft.util.text.TextComponentString;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.*;
 import java.util.function.BiConsumer;
@@ -105,11 +105,11 @@ public class EntityValue extends Value
     private static Map<String, Pair<Class<? extends Entity>, Predicate<? super Entity>>> entityPredicates =
             new HashMap<String, Pair<Class<? extends Entity>, Predicate<? super Entity>>>()
     {{
-        put("all", new Pair<>(Entity.class, EntitySelectors.IS_ALIVE));
-        put("living", new Pair<>(EntityLivingBase.class, EntitySelectors.IS_ALIVE));
-        put("items", new Pair<>(EntityItem.class, EntitySelectors.IS_ALIVE));
-        put("players", new Pair<>(EntityPlayer.class, EntitySelectors.IS_ALIVE));
-        put("!players", new Pair<>(Entity.class, (e) -> !(e instanceof EntityPlayer) ));
+        put("all", Pair.of(Entity.class, EntitySelectors.IS_ALIVE));
+        put("living", Pair.of(EntityLivingBase.class, EntitySelectors.IS_ALIVE));
+        put("items", Pair.of(EntityItem.class, EntitySelectors.IS_ALIVE));
+        put("players", Pair.of(EntityPlayer.class, EntitySelectors.IS_ALIVE));
+        put("!players", Pair.of(Entity.class, (e) -> !(e instanceof EntityPlayer) ));
     }};
     public Value get(String what, Value arg)
     {
