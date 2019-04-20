@@ -246,7 +246,8 @@ public class Tokenizer implements Iterator<Tokenizer.Token>
                 token.type == Token.TokenType.LITERAL ||
                 token.type == Token.TokenType.HEX_LITERAL ||
                 token.type == Token.TokenType.VARIABLE ||
-                token.type == Token.TokenType.STRINGPARAM
+                token.type == Token.TokenType.STRINGPARAM ||
+                token.type == Token.TokenType.FUNCTION
             ) &&(
                 previousToken.type == Token.TokenType.VARIABLE ||
                 previousToken.type == Token.TokenType.FUNCTION ||

@@ -40,7 +40,7 @@ import net.minecraft.server.MinecraftServer;
 public class CarpetSettings
 {
     public static boolean locked = false;
-    public static final String carpetVersion = "v19_02_14";
+    public static final String carpetVersion = "v19_04_20";
 
     public static final Logger LOG = LogManager.getLogger();
     private static final Map<String, CarpetSettingEntry> settings_store;

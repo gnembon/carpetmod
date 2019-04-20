@@ -87,12 +87,13 @@ import static java.lang.Math.min;
  * $    )
  *
  * /script invoke check_area_around_closest_player_for_block 'diamond_ore'
+ *
  * </pre>
  * <p>or simply</p>
  * <pre>
  * script run print('There is'+for(rect(x,9,z,8,8,8), _ == 'diamond_ore')+' diamond ore around you')
  * </pre>
- * <p>It definitely pays to check what higher level <code>scarpet</code> functions have to offer</p>
+ * <p>It definitely pays to check what higher level <code>scarpet</code> functions have to offer.</p>
  * <h1>Programs</h1>
  * <p>
  * You can think of an program like a mathematical expression, like
@@ -269,14 +270,10 @@ import static java.lang.Math.min;
  *     ...
  *     check_foo_not_zero(outer(foo)) -&gt; if(foo == 0, foo = 1)
  * </pre>
- *
  *<p><code>outer</code> scope can only be used in
  * function signatures to indicate outer variables. They are not arguments, but still you would want to use
  * locally without affecting other uses of foo in your program.
  * </p>
- *
- *
- *
  * <p>For the most part - passing arguments as values, and using returned values   .
  * The main usecase of <code>Scarpet</code> would rather be simpler scripts, default scope for all variables is global, unless variable
  * is declared with <code>local</code> scope explicitly.
@@ -1174,7 +1171,7 @@ public class Expression implements Cloneable
      * <h3><code>Logical Operators  &amp;&amp;   ||</code></h3>
      * <p>These operator compute respective boolean operation on the operands. What it important is that if calculating
      * of the second operand is not necessary, it won't be evaluated, which means one can use them as conditional
-     * statements</p>
+     * statements. In case of success returns first positive operand (<code>||</code>) or last one (<code>&amp;&amp;</code>).</p>
      * <pre>
      * true || false  =&gt; 1
      * null || false =&gt; 0
@@ -1197,7 +1194,7 @@ public class Expression implements Cloneable
      * l(1,2,3) ~ 2  =&gt; 1
      * l(1,2,3) ~ 4  =&gt; null
      * 'foobar' ~ '.b'  =&gt; 'ob'
-     * players('*') ~ 'gnembon'  // null unless player gnembon is logged in (better to use player('gnembon') instead
+     * player('*') ~ 'gnembon'  // null unless player gnembon is logged in (better to use player('gnembon') instead
      * p ~ 'sneaking' // if p is an entity returns whether p is sneaking
      * </pre>
      * <p>Or a longer example of an ineffective way to searching for a squid</p>
@@ -1272,18 +1269,18 @@ public class Expression implements Cloneable
 
         addLazyBinaryOperator("&&", precedence.get("and&&"), false, (c, t, lv1, lv2) ->
         {
-            boolean b1 = lv1.evalValue(c, Context.BOOLEAN).getBoolean();
-            if (!b1) return LazyValue.FALSE;
-            boolean b2 = lv2.evalValue(c, Context.BOOLEAN).getBoolean();
-            return b2 ? LazyValue.TRUE : LazyValue.FALSE;
+            Value v1 = lv1.evalValue(c, Context.BOOLEAN);
+            if (!v1.getBoolean()) return (cc, tt) -> v1;
+            Value v2 = lv2.evalValue(c, Context.BOOLEAN);
+            return v2.getBoolean() ? ((cc, tt) -> v2) : LazyValue.FALSE;
         });
 
         addLazyBinaryOperator("||", precedence.get("or||"), false, (c, t, lv1, lv2) ->
         {
-            boolean b1 = lv1.evalValue(c, Context.BOOLEAN).getBoolean();
-            if (b1) return LazyValue.TRUE;
-            boolean b2 = lv2.evalValue(c, Context.BOOLEAN).getBoolean();
-            return b2 ? LazyValue.TRUE : LazyValue.FALSE;
+            Value v1 = lv1.evalValue(c, Context.BOOLEAN);
+            if (v1.getBoolean()) return (cc, tt) -> v1;
+            Value v2 = lv2.evalValue(c, Context.BOOLEAN);
+            return v2.getBoolean() ? ((cc, tt) -> v2) : LazyValue.FALSE;
         });
 
         addBinaryOperator("~", precedence.get("compare>=><=<"), true, Value::in);
@@ -1489,8 +1486,6 @@ public class Expression implements Cloneable
      *
      */
 
-
-
     public void ArithmeticOperations()
     {
         addLazyFunction("not", 1, (c, t, lv) -> lv.get(0).evalValue(c, Context.BOOLEAN).getBoolean() ? ((cc, tt) -> Value.FALSE) : ((cc, tt) -> Value.TRUE));
@@ -1505,8 +1500,6 @@ public class Expression implements Cloneable
             }
             return new NumericValue(factorial);
         });
-
-
         addMathematicalUnaryFunction("sin",    (d) -> Math.sin(Math.toRadians(d)));
         addMathematicalUnaryFunction("cos",    (d) -> Math.cos(Math.toRadians(d)));
         addMathematicalUnaryFunction("tan",    (d) -> Math.tan(Math.toRadians(d)));
@@ -1539,7 +1532,6 @@ public class Expression implements Cloneable
         addMathematicalUnaryFunction("log10", Math::log10);
         addMathematicalUnaryFunction("log", a -> Math.log(a)/Math.log(2));
         addMathematicalUnaryFunction("log1p", x -> Math.log1p(x)/Math.log(2));
-
         addMathematicalUnaryFunction("sqrt", Math::sqrt);
         addMathematicalUnaryFunction("abs", Math::abs);
         addMathematicalUnaryFunction("round", (d) -> (double)Math.round(d));
@@ -1593,10 +1585,7 @@ public class Expression implements Cloneable
         });
 
         addUnaryFunction("relu", (v) -> v.compareTo(Value.ZERO) < 0 ? Value.ZERO : v);
-
     }
-
-
 
     /**
      * <h1>Lists, loops, and higher order functions</h1>
@@ -1797,8 +1786,6 @@ public class Expression implements Cloneable
             return new ListValue.ListConstructorValue(lv);
         });
 
-
-
         addFunction("join", (lv) ->
         {
             if (lv.size() < 2)
@@ -1820,15 +1807,17 @@ public class Expression implements Cloneable
             }
             return new StringValue(toJoin.stream().map(Value::getString).collect(Collectors.joining(delimiter)));
         });
+
         addBinaryFunction("split", (d, v) -> {
             String delimiter = d.getString();
             String hwat = v.getString();
             return ListValue.wrap(Arrays.stream(hwat.split(delimiter)).map(StringValue::new).collect(Collectors.toList()));
         });
+
         addFunction("slice", (lv) -> {
 
             if (lv.size() != 2 && lv.size() != 3)
-                throw new InternalExpressionException("sub takes 2 or 3 arguments");
+                throw new InternalExpressionException("slice takes 2 or 3 arguments");
             Value hwat = lv.get(0);
             long from = getNumericValue(lv.get(1)).getLong();
             long to = -1;
@@ -1871,8 +1860,6 @@ public class Expression implements Cloneable
             return (cc, tt) -> ListValue.wrap(toSort);
         });
 
-
-
         addFunction("range", (lv) ->
         {
             long from = 0;
@@ -1911,7 +1898,6 @@ public class Expression implements Cloneable
         //condition and expression will get a bound 'i'
         //returns last successful expression or false
         // while(cond, limit, expr) => ??
-        //replaced with for
         addLazyFunction("while", 3, (c, t, lv) ->
         {
             long limit = getNumericValue(lv.get(1).evalValue(c)).getLong();
@@ -1936,7 +1922,7 @@ public class Expression implements Cloneable
         });
 
         // loop(Num, expr, exit_condition) => last_value
-        // loop(list, expr,
+        // loop(list, expr)
         // expr receives bounded variable '_' indicating iteration
         addLazyFunction("loop", -1, (c, t, lv) ->
         {
@@ -1964,8 +1950,6 @@ public class Expression implements Cloneable
             Value trulyLastOne = lastOne;
             return (cc, tt) -> trulyLastOne;
         });
-
-
 
         // map(list or Num, expr) => list_results
         // receives bounded variable '_' with the expression
@@ -2081,7 +2065,6 @@ public class Expression implements Cloneable
             return (cc, tt) -> whyWontYouTrustMeJava;
         });
 
-
         // all(list, expr) => boolean
         // receives bounded variable '_' with the expression, and "_i" with index
         // returns true if expr is true for all items
@@ -2114,7 +2097,6 @@ public class Expression implements Cloneable
             c.setVariable("_i", _iter);
             return result;
         });
-
 
         // similar to map, but returns total number of successes
         // for(list, expr, exit_expr) => success_count
@@ -2452,7 +2434,6 @@ public class Expression implements Cloneable
             }
         });
 
-
         addUnaryFunction("length", v -> new NumericValue(v.length()));
         addLazyFunction("rand", 1, (c, t, lv) -> {
             Value argument = lv.get(0).evalValue(c);
@@ -2555,7 +2536,7 @@ public class Expression implements Cloneable
     public Expression(String expression)
     {
         expression = expression.trim().replaceAll(";+$", "");
-        this.expression = expression.replaceAll("\\$", "\n");
+        this.expression = expression.replaceAll("\\$", "\n").trim();
         VariablesAndConstants();
         UserDefinedFunctionsAndControlFlow();
         Operators();
@@ -2563,7 +2544,6 @@ public class Expression implements Cloneable
         SystemFunctions();
         ListsLoopsAndHigherOrderFunctions();
     }
-
 
     private List<Tokenizer.Token> shuntingYard(String expression)
     {
