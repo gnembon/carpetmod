@@ -12,9 +12,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -24,7 +22,6 @@ import java.io.IOException;
 import java.io.FileNotFoundException;
 
 import carpet.helpers.SpawnChunks;
-import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.dedicated.DedicatedServer;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.WorldServer;
@@ -34,11 +31,10 @@ import org.apache.logging.log4j.Logger;
 
 //import carpet.carpetclient.CarpetClientRuleChanger;
 //import carpet.utils.TickingArea;
+import static carpet.CarpetSettings.RuleCategory.*;
 import net.minecraft.server.MinecraftServer;
 
 import javax.annotation.Nullable;
-
-import static carpet.CarpetSettings.RuleCategory.*;
 
 // /s /c commands tp players back where they started
 // discuss xcom accurateBlockPlacement -> flexible or alternate block placement
