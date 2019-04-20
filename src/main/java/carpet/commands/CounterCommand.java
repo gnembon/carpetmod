@@ -17,7 +17,7 @@ public class CounterCommand
     {
         LiteralArgumentBuilder<CommandSource> literalargumentbuilder = Commands.literal("counter").executes((context)
          -> listAllCounters(context.getSource(), false)).requires((player) ->
-                CarpetSettings.getBool("hopperCounters"));
+                CarpetSettings.hopperCounters);
 
         literalargumentbuilder.
                 then((Commands.literal("reset").executes( (p_198489_1_)->

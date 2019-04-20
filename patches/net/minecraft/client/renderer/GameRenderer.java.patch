@@ -14,10 +14,10 @@
 -        this.farPlaneDistance = (float)(this.mc.gameSettings.renderDistanceChunks * 16);
 +        //[CM] viewDistance override
 +        int renderDistance;
-+        if (CarpetSettings.clientViewDistance == 0)
++        if (CarpetSettings.viewDistance == 0)
 +            renderDistance = this.mc.gameSettings.renderDistanceChunks;
 +        else {
-+            renderDistance = CarpetSettings.clientViewDistance;
++            renderDistance = CarpetSettings.viewDistance;
 +        }
 +
 +        this.farPlaneDistance = (float)(renderDistance * 16); //[CM] replaced this.mc.gameSettings.renderDistanceChunks with renderDistance
@@ -31,10 +31,10 @@
 -        if (this.mc.gameSettings.renderDistanceChunks >= 4)
 +        //[CM] viewDistance override
 +        int renderDistance;
-+        if (CarpetSettings.clientViewDistance == 0)
++        if (CarpetSettings.viewDistance == 0)
 +            renderDistance = this.mc.gameSettings.renderDistanceChunks;
 +        else {
-+            renderDistance = CarpetSettings.clientViewDistance;
++            renderDistance = CarpetSettings.viewDistance;
 +        }
 +
 +        if (renderDistance >= 4) //[CM] replaced this.mc.gameSettings.renderDistanceChunks with renderDistance

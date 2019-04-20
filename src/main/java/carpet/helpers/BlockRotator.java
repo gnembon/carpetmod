@@ -25,7 +25,7 @@ public class BlockRotator
 {
     public static boolean flipBlockWithCactus(World worldIn, BlockPos pos, IBlockState state, EntityPlayer playerIn, EnumHand hand, EnumFacing facing, float hitX, float hitY, float hitZ)
     {
-        if (!playerIn.abilities.allowEdit || !CarpetSettings.getBool("flippinCactus") || !player_holds_cactus_mainhand(playerIn))
+        if (!playerIn.abilities.allowEdit || !CarpetSettings.flippinCactus || !player_holds_cactus_mainhand(playerIn))
         {
             return false;
         }
@@ -247,7 +247,7 @@ public class BlockRotator
     }
     public static boolean flippinEligibility(Entity entity)
     {
-        if (CarpetSettings.getBool("flippinCactus")
+        if (CarpetSettings.flippinCactus
                 && (entity instanceof EntityPlayer))
         {
             EntityPlayer player = (EntityPlayer)entity;

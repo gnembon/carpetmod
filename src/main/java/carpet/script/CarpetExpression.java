@@ -677,7 +677,7 @@ public class CarpetExpression
 
                 bs = setProperty(property, paramString, paramValue, bs);
             }
-            cc.s.getWorld().setBlockState(locator.block.getPos(), bs, 2 | (CarpetSettings.getBool("fillUpdates") ? 0 : 1024));
+            cc.s.getWorld().setBlockState(locator.block.getPos(), bs, 2 | (CarpetSettings.fillUpdates ? 0 : 1024));
             final IBlockState finalBS = bs;
             return (c_, t_) -> new BlockValue(finalBS, world, locator.block.getPos());
         });

@@ -37,10 +37,10 @@
                  this.serverTime = Util.milliTime();
 -                this.statusResponse.setServerDescription(new TextComponentString(this.motd));
 +                // [CM] if statement around -- CustomMOTD
-+                if ("_".equals(CarpetSettings.getString("customMOTD")))
++                if ("_".equals(CarpetSettings.customMOTD))
 +                    this.statusResponse.setServerDescription(new TextComponentString(this.motd));
 +                else
-+                    this.statusResponse.setServerDescription(new TextComponentString(CarpetSettings.getString("customMOTD")));
++                    this.statusResponse.setServerDescription(new TextComponentString(CarpetSettings.customMOTD));
 +                // [CM] End -- CustomMOTD
                  this.statusResponse.setVersion(new ServerStatusResponse.Version("1.13.2", 404));
                  this.applyServerIconToResponse(this.statusResponse);

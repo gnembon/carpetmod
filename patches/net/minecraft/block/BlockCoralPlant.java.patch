@@ -35,7 +35,7 @@
  
 +    public boolean canGrow(IBlockReader worldIn, BlockPos pos, IBlockState state, boolean isClient)
 +    {
-+        return CarpetSettings.getBool("renewableCoral") && state.get(field_212560_b) && worldIn.getFluidState(pos.up()).isTagged(FluidTags.WATER);
++        return CarpetSettings.renewableCoral && state.get(field_212560_b) && worldIn.getFluidState(pos.up()).isTagged(FluidTags.WATER);
 +    }
 +
 +    public boolean canUseBonemeal(World worldIn, Random rand, BlockPos pos, IBlockState state)

@@ -40,7 +40,7 @@
                      }
 +                    else if ( // case of two shulkerbox items, both with no tag. We know its same item and both have same tag
 +                         (itemstack1.getItem() instanceof ItemBlock) &&
-+                         (CarpetSettings.getBool("stackableShulkerBoxes")) &&
++                         (CarpetSettings.stackableShulkerBoxes) &&
 +                         (((ItemBlock) itemstack1.getItem()).getBlock() instanceof BlockShulkerBox) &&
 +                         (!itemstack1.hasTag() )
 +                    )

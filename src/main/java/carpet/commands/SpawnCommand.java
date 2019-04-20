@@ -40,7 +40,7 @@ public class SpawnCommand
     public static void register(CommandDispatcher<CommandSource> dispatcher)
     {
         LiteralArgumentBuilder<CommandSource> literalargumentbuilder = literal("spawn").
-                requires((player) -> CarpetSettings.getBool("commandSpawn"));
+                requires((player) -> CarpetSettings.commandSpawn);
 
         literalargumentbuilder.
                 then(literal("list").

@@ -37,7 +37,7 @@
              flag = false;
          }
 -        else
-+        else if (CarpetSettings.getBool("portalCaching") && this.destinationHistoryCache.containsKey(l)) // potential best candidate for linkage.
++        else if (CarpetSettings.portalCaching && this.destinationHistoryCache.containsKey(l)) // potential best candidate for linkage.
          {
 +            Teleporter.PortalPosition teleporter$portalposition_cm = (Teleporter.PortalPosition)this.destinationHistoryCache.get(l);
 +            if (this.world.getBlockState(teleporter$portalposition_cm).getBlock() == Blocks.NETHER_PORTAL)
@@ -62,7 +62,7 @@
              }
  
 +            /* carpet mod */
-+            if (CarpetSettings.getBool("portalCaching") && (flag || flag_cm))
++            if (CarpetSettings.portalCaching && (flag || flag_cm))
 +            {
 +                //its timeless
 +                this.destinationHistoryCache.put(l, new Teleporter.PortalPosition(blockpos, 0L));
@@ -77,7 +77,7 @@
          }
  
 +        /* carpet mod */
-+        if (CarpetSettings.getBool("portalCaching"))
++        if (CarpetSettings.portalCaching)
 +        {
 +            clearHistoryCache();
 +        }
@@ -93,7 +93,7 @@
 +            /* carpet mod */
 +            //failsafe - arbitrary, but will never happen in normal circumstances,
 +            //but who knows these freekin players.
-+            if (CarpetSettings.getBool("portalCaching") && this.destinationHistoryCache.size()> 65000 )
++            if (CarpetSettings.portalCaching && this.destinationHistoryCache.size()> 65000 )
 +            {
 +                removeAllCachedEntries();
 +            }

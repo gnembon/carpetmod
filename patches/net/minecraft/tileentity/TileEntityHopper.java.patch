@@ -36,7 +36,7 @@
      private boolean transferItemsOut()
      {
 +        /* carpet mod */
-+        if (CarpetSettings.b_hopperCounters)
++        if (CarpetSettings.hopperCounters)
 +        {
 +            EnumDyeColor wool_color = WoolTool.getWoolColorAtPosition(
 +                    getWorld(),

@@ -39,7 +39,7 @@
  
 -                            if (!this.player.isInvulnerableDimensionChange() && (!this.player.getServerWorld().getGameRules().getBoolean("disableElytraMovementCheck") || !this.player.isElytraFlying()))
 +                            //[CM] Added AntiCheatSpeed
-+                            if (!CarpetSettings.getBool("antiCheatSpeed") && !this.player.isInvulnerableDimensionChange() && (!this.player.getServerWorld().getGameRules().getBoolean("disableElytraMovementCheck") || !this.player.isElytraFlying()))
++                            if (!CarpetSettings.antiCheatSpeed && !this.player.isInvulnerableDimensionChange() && (!this.player.getServerWorld().getGameRules().getBoolean("disableElytraMovementCheck") || !this.player.isElytraFlying()))
                              {
                                  float f2 = this.player.isElytraFlying() ? 300.0F : 100.0F;
  

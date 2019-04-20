@@ -15,7 +15,7 @@
 -        float f1 = -entityIn.getYaw(1.0F) * ((float)Math.PI / 180F);
 +        // [CM] start useMainYaw fix
 +        float f1;
-+        if (!CarpetSettings.getBool("placementRotationFix"))
++        if (!CarpetSettings.placementRotationFix)
 +        {
 +            f1 = -entityIn.getYaw(1.0F) * ((float)Math.PI / 180F);
 +        }

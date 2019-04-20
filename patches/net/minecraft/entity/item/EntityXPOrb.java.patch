@@ -59,7 +59,7 @@
          this.move(MoverType.SELF, this.motionX, this.motionY, this.motionZ);
 +
 +        //Adding code here for combining XP orbs. [CM]
-+        if (CarpetSettings.getBool("combineXPOrbs"))
++        if (CarpetSettings.combineXPOrbs)
 +        {
 +            if (this.delayBeforeCombine > 0)
 +            {
@@ -81,7 +81,7 @@
          {
 -            if (this.delayBeforeCanPickup == 0 && entityIn.xpCooldown == 0)
 +            // [CM] added ORed condition
-+            if (this.delayBeforeCanPickup == 0 && (entityIn.xpCooldown == 0 || CarpetSettings.getBool("xpNoCooldown")))
++            if (this.delayBeforeCanPickup == 0 && (entityIn.xpCooldown == 0 || CarpetSettings.xpNoCooldown))
              {
                  entityIn.xpCooldown = 2;
                  entityIn.onItemPickup(this, 1);

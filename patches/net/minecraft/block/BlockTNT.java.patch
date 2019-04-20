@@ -14,7 +14,7 @@
          if (oldState.getBlock() != state.getBlock())
          {
 -            if (worldIn.isBlockPowered(pos))
-+            if (!CarpetSettings.getBool("TNTDoNotUpdate") && worldIn.isBlockPowered(pos))
++            if (!CarpetSettings.TNTDoNotUpdate && worldIn.isBlockPowered(pos))
              {
                  this.explode(worldIn, pos);
                  worldIn.removeBlock(pos);

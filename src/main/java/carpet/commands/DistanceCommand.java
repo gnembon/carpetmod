@@ -17,7 +17,7 @@ public class DistanceCommand
     public static void register(CommandDispatcher<CommandSource> dispatcher)
     {
         LiteralArgumentBuilder<CommandSource> command = literal("distance").
-                requires((player) -> CarpetSettings.getBool("commandDistance")).
+                requires((player) -> CarpetSettings.commandDistance).
                 then(literal("from").
                         executes( (c) -> DistanceCalculator.setStart(c.getSource(), c.getSource().getPos())).
                         then(argument("from", Vec3Argument.vec3()).

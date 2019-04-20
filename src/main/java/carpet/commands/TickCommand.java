@@ -26,7 +26,7 @@ public class TickCommand
     public static void register(CommandDispatcher<CommandSource> dispatcher)
     {
         LiteralArgumentBuilder<CommandSource> literalargumentbuilder = literal("tick").
-                requires((player) -> CarpetSettings.getBool("commandTick")).
+                requires((player) -> CarpetSettings.commandTick).
                 then(literal("rate").
                         executes((c) -> queryTps(c.getSource())).
                         then(argument("rate", floatArg(0.1F, 500.0F)).

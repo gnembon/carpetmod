@@ -12,7 +12,7 @@
              int i = 1;
  
 -            if (i + this.toMove.size() > 12)
-+            if (i + this.toMove.size() > CarpetSettings.n_pushLimit)
++            if (i + this.toMove.size() > CarpetSettings.pushLimit)
              {
                  return false;
              }
@@ -21,7 +21,7 @@
                      ++i;
  
 -                    if (i + this.toMove.size() > 12)
-+                    if (i + this.toMove.size() > CarpetSettings.n_pushLimit)
++                    if (i + this.toMove.size() > CarpetSettings.pushLimit)
                      {
                          return false;
                      }
@@ -30,7 +30,7 @@
                      }
  
 -                    if (this.toMove.size() >= 12)
-+                    if (this.toMove.size() >= CarpetSettings.n_pushLimit)
++                    if (this.toMove.size() >= CarpetSettings.pushLimit)
                      {
                          return false;
                      }

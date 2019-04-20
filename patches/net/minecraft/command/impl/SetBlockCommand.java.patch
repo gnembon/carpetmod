@@ -12,14 +12,14 @@
              }
  
 -            if (flag && !p_198683_2_.place(worldserver, p_198683_1_, 2))
-+            if (flag && !p_198683_2_.place(worldserver, p_198683_1_, 2 | (CarpetSettings.getBool("fillUpdates")?0:1024))) // [CM]
++            if (flag && !p_198683_2_.place(worldserver, p_198683_1_, 2 | (CarpetSettings.fillUpdates?0:1024))) // [CM]
              {
                  throw field_198689_a.create();
              }
              else
              {
 +                // CM
-+                if (CarpetSettings.getBool("fillUpdates"))
++                if (CarpetSettings.fillUpdates)
 +                {
                  worldserver.notifyNeighbors(p_198683_1_, p_198683_2_.getBlockState().getBlock());
 +                }

@@ -28,7 +28,7 @@
 +                //this.targetEntity = list.get(0);
 +                //return true;
 +                //CM replaced with
-+                if (!CarpetSettings.getBool("invisibilityFix") || !(list.get(0) instanceof EntityPlayer))
++                if (!CarpetSettings.invisibilityFix || !(list.get(0) instanceof EntityPlayer))
 +                {
 +                    this.targetEntity = list.get(0);
 +                    return true;

@@ -15,7 +15,7 @@
  
      public int getMaxInPortalTime()
      {
-+        if (CarpetSettings.getBool("portalCreativeDelay"))
++        if (CarpetSettings.portalCreativeDelay)
 +        {
 +            if ( PortalHelper.player_holds_obsidian(this))
 +            {
@@ -33,7 +33,7 @@
 -        if (!this.world.isRemote && (this.fallDistance > 0.5F || this.isInWater() || this.isPassenger()) || this.abilities.isFlying)
 -        {
 +        //[CM] Conditions For Persistent Parrots
-+        boolean parrots_will_drop = !CarpetSettings.getBool("persistentParrots") || this.abilities.disableDamage;
++        boolean parrots_will_drop = !CarpetSettings.persistentParrots || this.abilities.disableDamage;
 +        if (!this.world.isRemote && ((parrots_will_drop && this.fallDistance > 0.5F) || this.isInWater() || (parrots_will_drop && this.isPassenger()) ) || this.abilities.isFlying ) {
              this.spawnShoulderEntities();
          }
@@ -45,7 +45,7 @@
 -                this.spawnShoulderEntities();
 +                // this.spawnShoulderEntities();     // [CM] Removed line
 +                // [CM] PersistentParrots - Optionally Dismount Parrots
-+                if (CarpetSettings.getBool("persistentParrots") && !this.isSneaking())
++                if (CarpetSettings.persistentParrots && !this.isSneaking())
 +                {
 +                    if (this.rand.nextFloat() < ((amount)/15.0) )
 +                    {

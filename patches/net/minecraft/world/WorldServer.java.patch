@@ -80,7 +80,7 @@
 -
 -            this.allPlayersSleeping = j > 0 && j >= this.playerEntities.size() - i;
 +            // [CM] Added variable int & Conditional statement -- SleepingThreshold
-+            int sleepingThreshold = CarpetSettings.getInt("sleepingThreshold");
++            int sleepingThreshold = CarpetSettings.sleepingThreshold;
 +            if (sleepingThreshold < 100)
 +            {
 +                // Custom Amount
@@ -99,7 +99,7 @@
          if (this.allPlayersSleeping && !this.isRemote)
          {
 +            // [CM] Added variable int and conditional statement -- SleepingThreshold
-+            int sleepingThreshold = CarpetSettings.getInt("sleepingThreshold");
++            int sleepingThreshold = CarpetSettings.sleepingThreshold;
 +            if (sleepingThreshold < 100)
 +            {
 +                float numberOfPlayers = 0;

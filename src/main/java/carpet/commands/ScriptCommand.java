@@ -38,7 +38,7 @@ public class ScriptCommand
     public static void register(CommandDispatcher<CommandSource> dispatcher)
     {
         LiteralArgumentBuilder<CommandSource> command = literal("script").
-                requires((player) -> CarpetSettings.getBool("commandScript")).
+                requires((player) -> CarpetSettings.commandScript).
                 then(literal("globals").executes( (c) -> listGlobals(c.getSource()))).
                 then(literal("stop").executes( (c) -> { CarpetExpression.BreakExecutionOfAllScriptsWithCommands(true); return 1;})).
                 then(literal("resume").executes( (c) -> { CarpetExpression.BreakExecutionOfAllScriptsWithCommands(false); return 1;})).
@@ -271,7 +271,7 @@ public class ScriptCommand
     {
         MutableBoundingBox area = new MutableBoundingBox(a, b);
         CarpetExpression cexpr = new CarpetExpression(expr, source, origin);
-        if (area.getXSize() * area.getYSize() * area.getZSize() > CarpetSettings.getInt("fillLimit"))
+        if (area.getXSize() * area.getYSize() * area.getZSize() > CarpetSettings.fillLimit)
         {
             Messenger.m(source, "r too many blocks to evaluate: " + area.getXSize() * area.getYSize() * area.getZSize());
             return 1;
@@ -312,7 +312,7 @@ public class ScriptCommand
     {
         MutableBoundingBox area = new MutableBoundingBox(a, b);
         CarpetExpression cexpr = new CarpetExpression(expr, source, origin);
-        if (area.getXSize() * area.getYSize() * area.getZSize() > CarpetSettings.getInt("fillLimit"))
+        if (area.getXSize() * area.getYSize() * area.getZSize() > CarpetSettings.fillLimit)
         {
             Messenger.m(source, "r too many blocks to evaluate: "+ area.getXSize() * area.getYSize() * area.getZSize());
             return 1;
@@ -399,7 +399,7 @@ public class ScriptCommand
                             if (block.place(
                                     world,
                                     mbpos,
-                                    2 | (CarpetSettings.getBool("fillUpdates") ?0:1024)
+                                    2 | (CarpetSettings.fillUpdates ?0:1024)
                             ))
                             {
                                 ++affected;
@@ -409,7 +409,7 @@ public class ScriptCommand
                 }
             }
         }
-        if (CarpetSettings.getBool("fillUpdates") && block != null)
+        if (CarpetSettings.fillUpdates && block != null)
         {
             for (int x = 0; x <= maxx; x++)
             {

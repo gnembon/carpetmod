@@ -30,7 +30,7 @@ public class GhastHelper
         @Override
         public boolean shouldExecute()
         {
-            if (CarpetSettings.getBool("rideableGhasts") && this.getEntityLiving().hasCustomName())
+            if (CarpetSettings.rideableGhasts && this.getEntityLiving().hasCustomName())
             {
                 return false;
             }
@@ -40,7 +40,7 @@ public class GhastHelper
         @Override
         public boolean shouldContinueExecuting()
         {
-            if (CarpetSettings.getBool("rideableGhasts") && this.getEntityLiving().hasCustomName())
+            if (CarpetSettings.rideableGhasts && this.getEntityLiving().hasCustomName())
             {
                 return false;
             }
@@ -90,7 +90,7 @@ public class GhastHelper
         }
         public boolean shouldExecute()
         {
-            if (!CarpetSettings.getBool("rideableGhasts"))
+            if (!CarpetSettings.rideableGhasts)
             {
                 return false;
             }
@@ -197,7 +197,7 @@ public class GhastHelper
 
         public boolean shouldExecute()
         {
-            if (!CarpetSettings.getBool("rideableGhasts"))
+            if (!CarpetSettings.rideableGhasts)
             {
                 return false;
             }

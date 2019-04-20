@@ -30,23 +30,23 @@ public class WoolTool
 
     public static void carpetPlacedAction(EnumDyeColor color, EntityPlayer placer, BlockPos pos, World worldIn)
     {
-		if (!CarpetSettings.getBool("carpets"))
+		if (!CarpetSettings.carpets)
 		{
 			return;
 		}
         switch (color)
         {
             case PINK:
-                if (CarpetSettings.getBool("commandSpawn"))
+                if (CarpetSettings.commandSpawn)
                     Messenger.send(placer, SpawnReporter.report(pos, worldIn));
 
                 break;
             case BLACK:
-                if (CarpetSettings.getBool("commandSpawn"))
+                if (CarpetSettings.commandSpawn)
                     Messenger.send(placer, SpawnReporter.show_mobcaps(pos, worldIn));
                 break;
             case BROWN:
-                if (CarpetSettings.getBool("commandDistance"))
+                if (CarpetSettings.commandDistance)
                 {
                     CommandSource source = placer.getCommandSource();
                     if (!DistanceCalculator.hasStartingPoint(source) || placer.isSneaking()) {
@@ -58,15 +58,15 @@ public class WoolTool
                 }
                 break;
             case GRAY:
-                if (CarpetSettings.getBool("commandInfo"))
+                if (CarpetSettings.commandInfo)
                     Messenger.send(placer, BlockInfo.blockInfo(pos.down(), worldIn));
                 break;
             case YELLOW:
-                if (CarpetSettings.getBool("commandInfo"))
+                if (CarpetSettings.commandInfo)
                     EntityInfo.issue_entity_info(placer);
                 break;
 			case GREEN:
-                if (CarpetSettings.getBool("hopperCounters"))
+                if (CarpetSettings.hopperCounters)
                 {
                     EnumDyeColor under = getWoolColorAtPosition(worldIn, pos.down());
                     if (under == null) return;
@@ -74,7 +74,7 @@ public class WoolTool
                 }
 				break;
 			case RED:
-                if (CarpetSettings.getBool("hopperCounters"))
+                if (CarpetSettings.hopperCounters)
                 {
                     EnumDyeColor under = getWoolColorAtPosition(worldIn, pos.down());
                     if (under == null) return;

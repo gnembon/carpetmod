@@ -13,7 +13,7 @@
          while (this.server.isServerRunning())
          {
              long i = this.server.getServerTime();
-+            if (CarpetSettings.getBool("watchdogCrashFix"))
++            if (CarpetSettings.watchdogCrashFix)
 +            {
 +                //actual last reported server time, if there is more than 60s between this and now
 +                //that's actually when single tick took this.maxTickTime ticks

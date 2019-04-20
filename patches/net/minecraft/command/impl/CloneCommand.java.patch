@@ -12,10 +12,10 @@
              int i = mutableboundingbox.getXSize() * mutableboundingbox.getYSize() * mutableboundingbox.getZSize();
  
 -            if (i > 32768)
-+            if (i > CarpetSettings.getInt("fillLimit")) // [CM] replaces 32768
++            if (i > CarpetSettings.fillLimit) // [CM] replaces 32768
              {
 -                throw CLONE_TOO_BIG_EXCEPTION.create(32768, i);
-+                throw CLONE_TOO_BIG_EXCEPTION.create(CarpetSettings.getInt("fillLimit"), i);
++                throw CLONE_TOO_BIG_EXCEPTION.create(CarpetSettings.fillLimit, i);
              }
              else
              {
@@ -24,13 +24,13 @@
                              }
  
 -                            worldserver.setBlockState(blockpos3, Blocks.BARRIER.getDefaultState(), 2);
-+                            worldserver.setBlockState(blockpos3, Blocks.BARRIER.getDefaultState(), 2 | (CarpetSettings.getBool("fillUpdates")?0:1024)); // [CM]
++                            worldserver.setBlockState(blockpos3, Blocks.BARRIER.getDefaultState(), 2 | (CarpetSettings.fillUpdates?0:1024)); // [CM]
                          }
  
                          for (BlockPos blockpos4 : deque)
                          {
 -                            worldserver.setBlockState(blockpos4, Blocks.AIR.getDefaultState(), 3);
-+                            worldserver.setBlockState(blockpos4, Blocks.AIR.getDefaultState(), 3 | (CarpetSettings.getBool("fillUpdates")?0:1024)); // [CM]
++                            worldserver.setBlockState(blockpos4, Blocks.AIR.getDefaultState(), 3 | (CarpetSettings.fillUpdates?0:1024)); // [CM]
                          }
                      }
  
@@ -39,7 +39,7 @@
                          }
  
 -                        worldserver.setBlockState(clonecommand$blockinfo.pos, Blocks.BARRIER.getDefaultState(), 2);
-+                        worldserver.setBlockState(clonecommand$blockinfo.pos, Blocks.BARRIER.getDefaultState(), 2 | (CarpetSettings.getBool("fillUpdates")?0:1024)); // [CM]
++                        worldserver.setBlockState(clonecommand$blockinfo.pos, Blocks.BARRIER.getDefaultState(), 2 | (CarpetSettings.fillUpdates?0:1024)); // [CM]
                      }
  
                      int i1 = 0;
@@ -47,7 +47,7 @@
                      for (CloneCommand.BlockInfo clonecommand$blockinfo1 : list3)
                      {
 -                        if (worldserver.setBlockState(clonecommand$blockinfo1.pos, clonecommand$blockinfo1.state, 2))
-+                        if (worldserver.setBlockState(clonecommand$blockinfo1.pos, clonecommand$blockinfo1.state, 2 | (CarpetSettings.getBool("fillUpdates")?0:1024)))
++                        if (worldserver.setBlockState(clonecommand$blockinfo1.pos, clonecommand$blockinfo1.state, 2 | (CarpetSettings.fillUpdates?0:1024)))
                          {
                              ++i1;
                          }
@@ -56,10 +56,10 @@
                          }
  
 -                        worldserver.setBlockState(clonecommand$blockinfo2.pos, clonecommand$blockinfo2.state, 2);
-+                        worldserver.setBlockState(clonecommand$blockinfo2.pos, clonecommand$blockinfo2.state, 2 | (CarpetSettings.getBool("fillUpdates")?0:1024)); // [CM]
++                        worldserver.setBlockState(clonecommand$blockinfo2.pos, clonecommand$blockinfo2.state, 2 | (CarpetSettings.fillUpdates?0:1024)); // [CM]
                      }
 +                    /*carpet mod */
-+                    if (CarpetSettings.getBool("fillUpdates"))
++                    if (CarpetSettings.fillUpdates)
 +                    {   /*carpet mod end EXTRA INDENTATION START*/
  
                      for (CloneCommand.BlockInfo clonecommand$blockinfo3 : list4)

@@ -15,7 +15,7 @@
              IBlockState iblockstate1 = Blocks.KELP_PLANT.getDefaultState();
              int k = 1 + p_212245_3_.nextInt(10);
 -
-+            final int x = CarpetSettings.getInt("kelpGenerationGrowLimit");
++            final int x = CarpetSettings.kelpGenerationGrowLimit;
 +            Supplier<Integer> height = () -> 25-x+p_212245_3_.nextInt(Math.min(23,x+1));
              for (int l = 0; l <= k; ++l)
              {

@@ -33,7 +33,7 @@ public class InfoCommand
     public static void register(CommandDispatcher<CommandSource> dispatcher)
     {
         LiteralArgumentBuilder<CommandSource> command = literal("info").
-                requires((player) -> CarpetSettings.getBool("commandInfo")).
+                requires((player) -> CarpetSettings.commandInfo).
                 then(literal("block").
                         then(argument("block position", BlockPosArgument.blockPos()).
                                 executes( (c) -> infoBlock(

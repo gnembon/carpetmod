@@ -13,7 +13,7 @@
  
 -                if (!flag)
 +                // [CM] Added if statement around
-+                if (!flag || !CarpetSettings.getBool("calmNetherFires"))
++                if (!flag || !CarpetSettings.calmNetherFires)
                  {
                      worldIn.getPendingBlockTicks().scheduleTick(pos, this, this.tickRate(worldIn) + random.nextInt(10));
 +                }

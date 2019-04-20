@@ -27,7 +27,7 @@
                              }
 +
 +                            // [CM] Added UnloadedEntityFix
-+                            if (CarpetSettings.getBool("unloadedEntityFix"))
++                            if (CarpetSettings.unloadedEntityFix)
 +                            {
 +                                world.tickEntity(entity, false);
 +                            }

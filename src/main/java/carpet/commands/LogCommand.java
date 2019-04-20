@@ -26,7 +26,7 @@ public class LogCommand
     public static void register(CommandDispatcher<CommandSource> dispatcher)
     {
         LiteralArgumentBuilder<CommandSource> literalargumentbuilder = Commands.literal("log").
-                requires((player) -> CarpetSettings.getBool("commandLog")).
+                requires((player) -> CarpetSettings.commandLog).
                 executes((context) -> listLogs(context.getSource())).
                 then(Commands.literal("clear").
                         executes( (c) -> unsubFromAll(c.getSource(), c.getSource().getName())).

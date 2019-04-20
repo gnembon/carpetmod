@@ -24,7 +24,7 @@
 +             */
 +            protected ItemStack dispenseStack(IBlockSource source, ItemStack stack)
 +            {
-+                if(CarpetSettings.getBool("rotatorBlock"))
++                if(CarpetSettings.rotatorBlock)
 +                {
 +                    return BlockRotator.dispenserRotate(source, stack);
 +                }

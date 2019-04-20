@@ -20,12 +20,12 @@
                  }
              }
  
-+            //CM start
-+            boolean optimizedDespawnRange = CarpetSettings.getBool("optimizedDespawnRange");
++            //CM start // not needed because of mobSpawningAlgorithm
++            /*boolean optimizedDespawnRange = CarpetSettings.getBool("optimizedDespawnRange");
 +            if (i==0 && optimizedDespawnRange) // worlds without valid chunks are skipped.
 +            {
 +                return 0;
-+            }
++            }*/
 +            //CM end
 +
              int k4 = 0;

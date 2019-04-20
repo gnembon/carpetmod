@@ -20,7 +20,7 @@
          {
              blockportal$size.placePortalBlocks();
 +            //CM
-+            if (CarpetSettings.getBool("portalCaching"))
++            if (CarpetSettings.portalCaching)
 +            {
 +                ((WorldServer) worldIn).getDefaultTeleporter().clearHistoryCache();
 +            }
@@ -33,7 +33,7 @@
          EnumFacing.Axis enumfacing$axis1 = stateIn.get(AXIS);
          boolean flag = enumfacing$axis1 != enumfacing$axis && enumfacing$axis.isHorizontal();
 +        //CM
-+        if (CarpetSettings.getBool("portalCaching")) // broken down statement below to accomodate for clear cache call
++        if (CarpetSettings.portalCaching) // broken down statement below to accomodate for clear cache call
 +        {
 +            if (!flag && facingState.getBlock() != this && !(new BlockPortal.Size(worldIn, currentPos, enumfacing$axis1)).func_208508_f())
 +            {

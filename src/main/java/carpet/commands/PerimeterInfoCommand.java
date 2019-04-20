@@ -22,7 +22,7 @@ public class PerimeterInfoCommand
     public static void register(CommandDispatcher<CommandSource> dispatcher)
     {
         LiteralArgumentBuilder<CommandSource> command = literal("perimeterinfo").
-                requires((player) -> CarpetSettings.getBool("commandPerimeterInfo")).
+                requires((player) -> CarpetSettings.commandPerimeterInfo).
                 executes( (c) -> perimeterDiagnose(
                         c.getSource(),
                         new BlockPos(c.getSource().getPos()),

@@ -36,7 +36,7 @@
 -        this.motionZ = (double)(-((float)Math.cos((double)f)) * 0.02F);
 +        // [CM] Changed value of float 'f' and if statement around vanilla code.
 +        float f = 0F;
-+        if(!CarpetSettings.getBool("tntPrimerMomentumRemoved")) {
++        if(!CarpetSettings.tntPrimerMomentumRemoved) {
 +            f = (float) (Math.random() * (double) ((float) Math.PI * 2F));
 +            this.motionX = (double) (-((float) Math.sin((double) f)) * 0.02F);
 +            this.motionY = (double) 0.2F;

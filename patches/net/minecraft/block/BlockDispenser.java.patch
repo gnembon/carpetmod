@@ -17,7 +17,7 @@
 +        boolean flag = false;   // [CM] Added line in place of the removed line
 +
 +     // [CM] Added QuasiConnectivity Tweak For Droppers And Dispensers
-+        if (CarpetSettings.getBool("quasiConnectivity"))
++        if (CarpetSettings.quasiConnectivity)
 +        {
 +            flag = worldIn.isBlockPowered(pos) || worldIn.isBlockPowered(pos.up());
 +        }

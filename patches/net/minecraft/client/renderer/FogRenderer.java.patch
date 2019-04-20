@@ -16,10 +16,10 @@
 -        float f = 0.25F + 0.75F * (float)this.mc.gameSettings.renderDistanceChunks / 32.0F;
 +        //[CM] viewDistance override
 +        int renderDistance;
-+        if (CarpetSettings.clientViewDistance == 0)
++        if (CarpetSettings.viewDistance == 0)
 +            renderDistance = this.mc.gameSettings.renderDistanceChunks;
 +        else {
-+            renderDistance = CarpetSettings.clientViewDistance;
++            renderDistance = CarpetSettings.viewDistance;
 +        }
 +
 +        float f = 0.25F + 0.75F * (float)renderDistance / 32.0F; //[CM] replaced this.mc.gameSettings.renderDistanceChunks with renderDistance

@@ -13,7 +13,7 @@
  
 -        this.affectedBlockPositions.addAll(set);
 +        // [CM] if statement around - explosionNoBlockDamage
-+        if (!CarpetSettings.getBool("explosionNoBlockDamage"))
++        if (!CarpetSettings.explosionNoBlockDamage)
 +            this.affectedBlockPositions.addAll(set);
 +        // [CM] End - explosionNoBlockDamage
          float f3 = this.size * 2.0F;

@@ -12,7 +12,7 @@
          else
          {
 +            // [CM] QuasiConnectivity Tweak For Pistons
-+            if (!CarpetSettings.getBool("quasiConnectivity"))
++            if (!CarpetSettings.quasiConnectivity)
 +            {
 +                return false;
 +            }

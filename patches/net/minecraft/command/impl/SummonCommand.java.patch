@@ -29,7 +29,7 @@
 -            p_198737_0_.getWorld().addWeatherEffect(entity1);
 +            
 +            // [CM] SummonNaturalLightning - if statement around
-+            if (!CarpetSettings.getBool("summonNaturalLightning"))
++            if (!CarpetSettings.summonNaturalLightning)
 +            {
 +                p_198737_0_.getWorld().addWeatherEffect(entity1);
 +            }

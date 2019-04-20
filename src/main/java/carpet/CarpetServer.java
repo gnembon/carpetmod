@@ -49,8 +49,7 @@ public class CarpetServer // static for now - easier to handle all around the co
     }
     public static void onServerLoaded(MinecraftServer server)
     {
-        CarpetSettings.apply_settings_from_conf(server);
-        //CarpetSettings.reload_all_statics(); // not needed anymore due to validators
+        CarpetSettings.applySettingsFromConf(server);
     }
     // Separate from onServerLoaded, because a server can be loaded multiple times in singleplayer
     public static void onGameStarted() {

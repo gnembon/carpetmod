@@ -15,10 +15,10 @@
 +
 +        //[CM] viewDistance override
 +        int i;
-+        if (CarpetSettings.clientViewDistance == 0)
++        if (CarpetSettings.viewDistance == 0)
 +            i = this.mc.gameSettings.renderDistanceChunks;
 +        else {
-+            i = CarpetSettings.clientViewDistance;
++            i = CarpetSettings.viewDistance;
 +        }
 +
          this.profiler.startSection("buildList");

@@ -22,13 +22,13 @@ public class CameraModeCommand
     public static void register(CommandDispatcher<CommandSource> dispatcher)
     {
         LiteralArgumentBuilder<CommandSource> camera = literal("c").
-                requires((player) -> CarpetSettings.getBool("commandCameramode")).
+                requires((player) -> CarpetSettings.commandCameramode).
                 executes((c) -> cameraMode(c.getSource(), c.getSource().asPlayer())).
                 then(argument("player", EntityArgument.singlePlayer()).
                         executes( (c) -> cameraMode(c.getSource(), EntityArgument.getOnePlayer(c, "player"))));
 
         LiteralArgumentBuilder<CommandSource> survival = literal("s").
-                requires((player) -> CarpetSettings.getBool("commandCameramode")).
+                requires((player) -> CarpetSettings.commandCameramode).
                 executes((c) -> survivalMode(
                         c.getSource(),
                         c.getSource().asPlayer())).
