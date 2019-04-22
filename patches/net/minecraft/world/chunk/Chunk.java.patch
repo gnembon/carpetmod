@@ -17,7 +17,17 @@
      private final ClassInheritanceMultiMap<Entity>[] entityLists;
      private final Map<String, StructureStart> structureStarts = Maps.newHashMap();
      private final Map<String, LongSet> structureReferences = Maps.newHashMap();
-@@ -489,9 +491,16 @@
+@@ -170,7 +172,8 @@
+ 
+     public Set<BlockPos> getTileEntitiesPos()
+     {
+-        Set<BlockPos> set = Sets.newHashSet(this.deferredTileEntities.keySet());
++        // [CM] Reload update order fix
++        Set<BlockPos> set = CarpetSettings.b_reloadUpdateOrderFix ? Sets.newLinkedHashSet(this.deferredTileEntities.keySet()) :  Sets.newHashSet(this.deferredTileEntities.keySet());
+         set.addAll(this.tileEntities.keySet());
+         return set;
+     }
+@@ -489,9 +492,16 @@
          }
      }
  
@@ -34,7 +44,7 @@
          int i = pos.getX() & 15;
          int j = pos.getY();
          int k = pos.getZ() & 15;
-@@ -568,7 +577,8 @@
+@@ -568,7 +578,8 @@
                      }
                  }
  
