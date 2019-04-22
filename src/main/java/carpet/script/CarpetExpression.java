@@ -428,7 +428,7 @@ public class CarpetExpression
      *     <li><code> piston             </code>  </li>
      *     <li><code> coral              </code>  </li>
      *     <li><code> gourd              </code>  </li>
-     *     <li><code> gragon_egg         </code>  </li>
+     *     <li><code> dragon_egg         </code>  </li>
      *     <li><code> cake               </code>  </li>
      * </ul>
      * <h3><code>map_colour(pos)</code></h3>
