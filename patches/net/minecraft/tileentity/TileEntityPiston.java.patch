@@ -35,27 +35,24 @@
                          }
                      }
                  }
-@@ -374,8 +388,17 @@
-         super.read(compound);
+@@ -375,7 +389,15 @@
          this.pistonState = NBTUtil.readBlockState(compound.getCompound("blockState"));
          this.pistonFacing = EnumFacing.byIndex(compound.getInt("facing"));
--        this.progress = compound.getFloat("progress");
+         this.progress = compound.getFloat("progress");
 -        this.lastProgress = this.progress;
 +        // [CM] Reload update order fix
-+        if (!CarpetSettings.b_reloadUpdateOrderFix)
++        if( CarpetSettings.b_reloadUpdateOrderFix && compound.hasKey("lastProgress"))
 +        {
-+            this.progress = compound.getFloat("progress");
-+            this.lastProgress = this.progress;
++            this.lastProgress = compound.getFloat("lastProgress");
 +        }
 +        else
 +        {
-+            this.progress = compound.getFloat("progress");
-+            this.lastProgress = compound.getFloat("lastProgress");
++            this.lastProgress = this.progress;
 +        }
          this.extending = compound.getBoolean("extending");
          this.shouldHeadBeRendered = compound.getBoolean("source");
      }
-@@ -385,7 +408,16 @@
+@@ -385,7 +407,16 @@
          super.write(compound);
          compound.setTag("blockState", NBTUtil.writeBlockState(this.pistonState));
          compound.setInt("facing", this.pistonFacing.getIndex());
