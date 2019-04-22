@@ -606,12 +606,14 @@ public class CarpetExpression
         });
 
         this.expr.addLazyFunction("loaded", -1, (c, t, lv) ->
-                genericStateTest(c, "loaded", lv, (s, p, w) -> w.isBlockLoaded(p)?Value.TRUE:Value.FALSE));
+                (c_, t_) -> ((CarpetContext)c).s.getWorld().isBlockLoaded(BlockValue.fromParams((CarpetContext) c, lv, 0).block.getPos()) ? Value.TRUE : Value.FALSE);
 
         this.expr.addLazyFunction("loaded_ep", -1, (c, t, lv) ->
-                genericStateTest(c, "loaded_ep", lv, (s, p, w) ->
-                        w.isAreaLoaded(p.getX()-32, 0, p.getZ() - 32,
-                                p.getX()+32, 0, p.getZ()+32, true)?Value.TRUE:Value.FALSE));
+        {
+            BlockPos pos = BlockValue.fromParams((CarpetContext)c, lv, 0).block.getPos();
+            return (c_, t_) -> ((CarpetContext)c).s.getWorld().isAreaLoaded(pos.getX() - 32, 0, pos.getZ() - 32,
+                    pos.getX() + 32, 0, pos.getZ() + 32, true) ? Value.TRUE : Value.FALSE;
+        });
 
         this.expr.addLazyFunction("suffocates", -1, (c, t, lv) ->
                 booleanStateTest(c, "suffocates", lv, (s, p) -> s.causesSuffocation()));
