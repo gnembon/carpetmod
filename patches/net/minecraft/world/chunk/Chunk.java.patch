@@ -1,6 +1,23 @@
 --- a/net/minecraft/world/chunk/Chunk.java
 +++ b/net/minecraft/world/chunk/Chunk.java
-@@ -489,9 +489,16 @@
+@@ -1,5 +1,6 @@
+ package net.minecraft.world.chunk;
+ 
++import carpet.CarpetSettings;
+ import com.google.common.collect.Maps;
+ import com.google.common.collect.Queues;
+ import com.google.common.collect.Sets;
+@@ -70,7 +71,8 @@
+     public final int z;
+     private boolean isGapLightingUpdated;
+     private final UpgradeData upgradeData;
+-    private final Map<BlockPos, TileEntity> tileEntities = Maps.newHashMap();
++    // [CM] Reload update order fix - Initialize tileEntites based on carpet rule
++    private final Map<BlockPos, TileEntity> tileEntities = CarpetSettings.b_reloadUpdateOrderFix ? Maps.newLinkedHashMap() : Maps.newHashMap();
+     private final ClassInheritanceMultiMap<Entity>[] entityLists;
+     private final Map<String, StructureStart> structureStarts = Maps.newHashMap();
+     private final Map<String, LongSet> structureReferences = Maps.newHashMap();
+@@ -489,9 +491,16 @@
          }
      }
  
@@ -17,7 +34,7 @@
          int i = pos.getX() & 15;
          int j = pos.getY();
          int k = pos.getZ() & 15;
-@@ -568,7 +575,8 @@
+@@ -568,7 +577,8 @@
                      }
                  }
  

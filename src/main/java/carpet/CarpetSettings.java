@@ -63,6 +63,7 @@ public class CarpetSettings
     public static boolean b_fastRedstoneDust = false;
     public static int railPowerLimitAdjusted = 8;
     public static boolean b_disableSpawnChunks = false;
+    public static boolean b_reloadUpdateOrderFix = false;
 
     /*
     public static boolean extendedConnectivity = false;
@@ -346,6 +347,9 @@ public class CarpetSettings
                                   .choices("25", "0 2 25").setNotStrict(),
   rule("renewableCoral",          "feature", "Coral structures will grow with bonemeal from coral plants"),
   rule("placementRotationFix",    "fix", "fixes block placement rotation issue when player rotates quickly while placing blocks"),
+  rule("reloadUpdateOrderFix",    "fix", "Fixes reload update order for tile entities")
+                                  .extraInfo("Fixes instant wires randomly breaking...Effective after chunk reload.")
+                                  .boolAccelerate(),
         };
         for (CarpetSettingEntry rule: RuleList)
         {

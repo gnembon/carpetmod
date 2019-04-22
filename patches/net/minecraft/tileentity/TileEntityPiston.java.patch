@@ -35,3 +35,41 @@
                          }
                      }
                  }
+@@ -374,8 +388,17 @@
+         super.read(compound);
+         this.pistonState = NBTUtil.readBlockState(compound.getCompound("blockState"));
+         this.pistonFacing = EnumFacing.byIndex(compound.getInt("facing"));
+-        this.progress = compound.getFloat("progress");
+-        this.lastProgress = this.progress;
++        // [CM] Reload update order fix
++        if (!CarpetSettings.b_reloadUpdateOrderFix)
++        {
++            this.progress = compound.getFloat("progress");
++            this.lastProgress = this.progress;
++        }
++        else
++        {
++            this.progress = compound.getFloat("progress");
++            this.lastProgress = compound.getFloat("lastProgress");
++        }
+         this.extending = compound.getBoolean("extending");
+         this.shouldHeadBeRendered = compound.getBoolean("source");
+     }
+@@ -385,7 +408,16 @@
+         super.write(compound);
+         compound.setTag("blockState", NBTUtil.writeBlockState(this.pistonState));
+         compound.setInt("facing", this.pistonFacing.getIndex());
+-        compound.setFloat("progress", this.lastProgress);
++        // [CM] Reload update order fix
++        if (!CarpetSettings.b_reloadUpdateOrderFix)
++        {
++            compound.setFloat("progress", this.lastProgress);
++        }
++        else
++        {
++            compound.setFloat("progress", this.progress);
++            compound.setFloat("lastProgress", this.lastProgress);
++        }
+         compound.setBoolean("extending", this.extending);
+         compound.setBoolean("source", this.shouldHeadBeRendered);
+         return compound;
