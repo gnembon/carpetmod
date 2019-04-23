@@ -1788,7 +1788,15 @@ public class CarpetExpression
         //"overridden" native call that prints to stderr
         this.expr.addLazyFunction("print", 1, (c, t, lv) ->
         {
-            Messenger.m(((CarpetContext)c).s, "w " + lv.get(0).evalValue(c).getString());
+            CommandSource s = ((CarpetContext)c).s;
+            if (s.getEntity() instanceof  EntityPlayer)
+            {
+                Messenger.m((EntityPlayer) s.getEntity(), "w "+ lv.get(0).evalValue(c).getString());
+            }
+            else
+            {
+                Messenger.m(s, "w ");
+            }
             return lv.get(0); // pass through for variables
         });
 
