@@ -348,11 +348,6 @@ public class Expression implements Cloneable
         globalVariables.put("_a", (c, t) -> Value.ZERO);
     }
 
-    /* should the evaluator output value of each ;'s statement during execution */
-    private Consumer<String> logOutput = null;
-    Consumer<String> getLogger() {return logOutput;}
-    void setLogOutput(Consumer<String> to) { logOutput = to; }
-
     @Override
     protected Expression clone() throws CloneNotSupportedException
     {
@@ -740,7 +735,7 @@ public class Expression implements Cloneable
                             ". Should be "+arguments.size()+", not "+lazyParams.size()+" like "+arguments
                     );
                 }
-                Context newFrame = c.recreateFor(e);
+                Context newFrame = c.recreate();
 
                 for (String global : globals)
                 {
@@ -996,8 +991,6 @@ public class Expression implements Cloneable
         addLazyBinaryOperator(";",precedence.get("nextop;"), true, (c, t, lv1, lv2) ->
         {
             Value v1 = lv1.evalValue(c, Context.VOID);
-            if (c.getLogger() != null)
-                c.getLogger().accept(v1.getString());
             return lv2;
         });
 

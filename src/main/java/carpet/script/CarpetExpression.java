@@ -114,17 +114,17 @@ public class CarpetExpression
     {
         public CommandSource s;
         public BlockPos origin;
-        CarpetContext(Expression expr, CommandSource source, BlockPos origin)
+        CarpetContext(CommandSource source, BlockPos origin)
         {
-            super(expr);
+            super();
             s = source;
             this.origin = origin;
         }
 
         @Override
-        public Context recreateFor(Expression e)
+        public Context recreate()
         {
-            return new CarpetContext(e, this.s, this.origin);
+            return new CarpetContext(this.s, this.origin);
         }
 
     }
@@ -1963,7 +1963,7 @@ public class CarpetExpression
             return false;
         try
         {
-            Context context = new CarpetContext(this.expr, source, origin).
+            Context context = new CarpetContext(source, origin).
                     with("x", (c, t) -> new NumericValue(x - origin.getX()).bindTo("x")).
                     with("y", (c, t) -> new NumericValue(y - origin.getY()).bindTo("y")).
                     with("z", (c, t) -> new NumericValue(z - origin.getZ()).bindTo("z")).
@@ -2007,7 +2007,7 @@ public class CarpetExpression
             return "SCRIPTING PAUSED";
         try
         {
-            Context context = new CarpetContext(this.expr, source, origin).
+            Context context = new CarpetContext(source, origin).
                     with("x", (c, t) -> new NumericValue(pos.getX() - origin.getX()).bindTo("x")).
                     with("y", (c, t) -> new NumericValue(pos.getY() - origin.getY()).bindTo("y")).
                     with("z", (c, t) -> new NumericValue(pos.getZ() - origin.getZ()).bindTo("z"));
@@ -2155,8 +2155,7 @@ public class CarpetExpression
         }
         try
         {
-            Expression.none.setLogOutput((s) -> Messenger.m(source, "gi " + s));
-            Context context = new CarpetContext(Expression.none, source, BlockPos.ORIGIN);
+            Context context = new CarpetContext(source, BlockPos.ORIGIN);
             return Expression.evalValue(
                     () -> acf.lazyEval(context, Context.VOID, acf.expression, acf.token, argv),
                     context,
@@ -2167,16 +2166,8 @@ public class CarpetExpression
         {
             return e.getMessage();
         }
-        finally
-        {
-            Expression.none.setLogOutput(null);
-        }
     }
 
-    void setLogOutput(boolean to)
-    {
-        this.expr.setLogOutput(to ? (s) -> Messenger.m(source, "gi " + s) : null);
-    }
     static void setChatErrorSnooper(CommandSource source)
     {
         ExpressionException.errorSnooper = (expr, token, message) ->

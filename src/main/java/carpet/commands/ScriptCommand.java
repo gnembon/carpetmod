@@ -260,8 +260,6 @@ public class ScriptCommand
     {
         handleCall(source, () -> {
             CarpetExpression ex = new CarpetExpression(expr, source, new BlockPos(0, 0, 0));
-            if (source.getWorld().getGameRules().getBoolean("commandBlockOutput"))
-                ExpressionInspector.CarpetExpression_setLogOutput(ex, true);
             return ex.scriptRunCommand(new BlockPos(source.getPos()));
         });
         return 1;

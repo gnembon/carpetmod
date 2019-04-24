@@ -18,16 +18,9 @@ public class Context
     static final int LOCALIZATION = 8;
 
     private Map<String, LazyValue> variables = new HashMap<>();
-    private Consumer<String> logOutput;
 
-    public Consumer<String> getLogger()
+    Context()
     {
-        return logOutput;
-    }
-
-    Context(Expression expr)
-    {
-        logOutput = expr.getLogger();
     }
 
     LazyValue getVariable(String name)
@@ -86,8 +79,8 @@ public class Context
         return variables.keySet();
     }
 
-    public Context recreateFor(Expression e)
+    public Context recreate()
     {
-        return new Context(e);
+        return new Context();
     }
 }
