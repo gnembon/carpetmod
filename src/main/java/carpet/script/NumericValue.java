@@ -61,6 +61,10 @@ public class NumericValue extends Value
         {
             return new NumericValue(getDouble() * ((NumericValue) v).getDouble() );
         }
+        if (v instanceof ListValue)
+        {
+            return v.multiply(this);
+        }
         return new StringValue(StringUtils.repeat(v.getString(), (int) getLong()));
     }
     public Value divide(Value v)

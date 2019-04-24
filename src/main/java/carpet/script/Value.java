@@ -63,7 +63,7 @@ public abstract class Value implements Comparable<Value>, Cloneable
     }
     public Value multiply(Value v)
     {
-        if (v instanceof NumericValue)
+        if (v instanceof NumericValue || v instanceof ListValue)
         {
             return v.multiply(this);
         }
