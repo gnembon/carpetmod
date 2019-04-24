@@ -347,42 +347,42 @@ public class EntityValue extends Value
             e.posZ = Expression.getNumericValue(coords.get(2)).getDouble();
             e.setPosition(e.posX, e.posY, e.posZ);
             if (e instanceof EntityPlayerMP)
-                ((EntityPlayerMP)e).connection.sendPacket(new SPacketEntityTeleport(e));
+                ((EntityPlayerMP)e).connection.setPlayerLocation(e.posX, e.posY, e.posZ, e.rotationYaw, e.rotationPitch);
         });
         put("x", (e, v) ->
         {
             e.posX = Expression.getNumericValue(v).getDouble();
             e.setPosition(e.posX, e.posY, e.posZ);
             if (e instanceof EntityPlayerMP)
-                ((EntityPlayerMP)e).connection.sendPacket(new SPacketEntityTeleport(e));
+                ((EntityPlayerMP)e).connection.setPlayerLocation(e.posX, e.posY, e.posZ, e.rotationYaw, e.rotationPitch);
         });
         put("y", (e, v) ->
         {
             e.posY = Expression.getNumericValue(v).getDouble();
             e.setPosition(e.posX, e.posY, e.posZ);
             if (e instanceof EntityPlayerMP)
-                ((EntityPlayerMP)e).connection.sendPacket(new SPacketEntityTeleport(e));
+                ((EntityPlayerMP)e).connection.setPlayerLocation(e.posX, e.posY, e.posZ, e.rotationYaw, e.rotationPitch);
         });
         put("z", (e, v) ->
         {
             e.posZ = Expression.getNumericValue(v).getDouble();
             e.setPosition(e.posX, e.posY, e.posZ);
             if (e instanceof EntityPlayerMP)
-                ((EntityPlayerMP)e).connection.sendPacket(new SPacketEntityTeleport(e));
+                ((EntityPlayerMP)e).connection.setPlayerLocation(e.posX, e.posY, e.posZ, e.rotationYaw, e.rotationPitch);
         });
         put("pitch", (e, v) ->
         {
             e.rotationPitch = (float) Expression.getNumericValue(v).getDouble();
             e.prevRotationPitch = e.rotationPitch;
             if (e instanceof EntityPlayerMP)
-                ((EntityPlayerMP)e).connection.sendPacket(new SPacketEntityTeleport(e));
+                ((EntityPlayerMP)e).connection.setPlayerLocation(e.posX, e.posY, e.posZ, e.rotationYaw, e.rotationPitch);
         });
         put("yaw", (e, v) ->
         {
             e.rotationYaw = (float) Expression.getNumericValue(v).getDouble();
             e.prevRotationYaw = e.rotationYaw;
             if (e instanceof EntityPlayerMP)
-                ((EntityPlayerMP)e).connection.sendPacket(new SPacketEntityTeleport(e));
+                ((EntityPlayerMP)e).connection.setPlayerLocation(e.posX, e.posY, e.posZ, e.rotationYaw, e.rotationPitch);
         });
         //"look"
         //"turn"
@@ -400,7 +400,7 @@ public class EntityValue extends Value
             e.posZ += Expression.getNumericValue(coords.get(2)).getDouble();
             e.setPosition(e.posX, e.posY, e.posZ);
             if (e instanceof EntityPlayerMP)
-                ((EntityPlayerMP)e).connection.sendPacket(new SPacketEntityTeleport(e));
+                ((EntityPlayerMP)e).connection.setPlayerLocation(e.posX, e.posY, e.posZ, e.rotationYaw, e.rotationPitch);
         });
 
         put("motion", (e, v) ->
