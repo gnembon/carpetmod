@@ -329,18 +329,24 @@ public class Expression implements Cloneable
 
     static final Map<String, UserDefinedFunction> globalFunctions = new HashMap<>();
 
-    static final Map<String, LazyValue> globalVariables = new HashMap<String, LazyValue>() {{
-        put("euler", (c, t) -> euler);
-        put("pi", (c, t) -> PI);
-        put("null", (c, t) -> Value.NULL);
-        put("true", (c, t) -> Value.TRUE);
-        put("false", (c, t) -> Value.FALSE);
+    static final Map<String, LazyValue> globalVariables = new HashMap<>();
+    static
+    {
+        setGlobals();
+    }
+    static void setGlobals()
+    {
+        globalVariables.put("euler", (c, t) -> euler);
+        globalVariables.put("pi", (c, t) -> PI);
+        globalVariables.put("null", (c, t) -> Value.NULL);
+        globalVariables.put("true", (c, t) -> Value.TRUE);
+        globalVariables.put("false", (c, t) -> Value.FALSE);
 
         //special variables for second order functions so we don't need to check them all the time
-        put("_", (c, t) -> Value.ZERO);
-        put("_i", (c, t) -> Value.ZERO);
-        put("_a", (c, t) -> Value.ZERO);
-    }};
+        globalVariables.put("_", (c, t) -> Value.ZERO);
+        globalVariables.put("_i", (c, t) -> Value.ZERO);
+        globalVariables.put("_a", (c, t) -> Value.ZERO);
+    }
 
     /* should the evaluator output value of each ;'s statement during execution */
     private Consumer<String> logOutput = null;

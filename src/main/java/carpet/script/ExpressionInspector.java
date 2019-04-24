@@ -64,4 +64,5 @@ public class ExpressionInspector
             super(message);
         }
     }
+    public static void CarpetExpression_resetExpressionEngine() { CarpetExpression.resetExpressionEngine(); }
 }

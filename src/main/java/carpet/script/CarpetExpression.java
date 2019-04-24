@@ -1876,10 +1876,27 @@ public class CarpetExpression
 
     static
     {
+        setGlobals();
+    }
+    static void setGlobals()
+    {
         Expression.globalVariables.put("_x", (c, t) -> Value.ZERO);
         Expression.globalVariables.put("_y", (c, t) -> Value.ZERO);
         Expression.globalVariables.put("_z", (c, t) -> Value.ZERO);
     }
+    static void resetExpressionEngine()
+    {
+        Expression.globalFunctions.clear();
+        Expression.globalVariables.clear();
+        Expression.setGlobals();
+        CarpetExpression.setGlobals();
+        CarpetExpression.tickStart = 0L;
+        CarpetExpression.stopAll = false;
+        CarpetExpression.resetErrorSnooper();
+
+    }
+
+
     /**
      * <h1>.</h1>
      * @param expression expression
