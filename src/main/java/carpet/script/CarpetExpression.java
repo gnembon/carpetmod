@@ -38,8 +38,10 @@ import org.apache.commons.lang3.tuple.Pair;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.BiFunction;
@@ -211,6 +213,24 @@ public class CarpetExpression
             throw new InternalExpressionException(value + " is not a valid value for property " + name);
         }
         return bs;
+    }
+
+    private static Map<String, IParticleData> particleCache = new HashMap<>();
+    private IParticleData getParticleData(String name)
+    {
+        IParticleData particle = particleCache.get(name);
+        if (particle != null)
+            return particle;
+        try
+        {
+            particle = ParticleArgument.func_197189_a(new StringReader(name));
+        }
+        catch (CommandSyntaxException e)
+        {
+            throw new InternalExpressionException("No such particle: "+name);
+        }
+        particleCache.put(name, particle);
+        return particle;
     }
 
     private int drawParticleLine(WorldServer world, IParticleData particle, Vec3d from, Vec3d to, double density)
@@ -1679,15 +1699,7 @@ public class CarpetExpression
                     }
                 }
             }
-            IParticleData particle;
-            try
-            {
-                particle = ParticleArgument.func_197189_a(new StringReader(particleName));
-            }
-            catch (CommandSyntaxException e)
-            {
-                throw new InternalExpressionException("No such particle: "+particleName);
-            }
+            IParticleData particle = getParticleData(particleName);
             Vec3d vec = locator.vec;
             if (player == null)
             {
@@ -1712,15 +1724,7 @@ public class CarpetExpression
             CarpetContext cc = (CarpetContext)c;
             WorldServer world = cc.s.getWorld();
             String particleName = lv.get(0).evalValue(c).getString();
-            IParticleData particle;
-            try
-            {
-                particle = ParticleArgument.func_197189_a(new StringReader(particleName));
-            }
-            catch (CommandSyntaxException e)
-            {
-                throw new InternalExpressionException("No such particle: "+particleName);
-            }
+            IParticleData particle = getParticleData(particleName);
             BlockValue.VectorLocator pos1 = BlockValue.locateVec(cc, lv, 1);
             BlockValue.VectorLocator pos2 = BlockValue.locateVec(cc, lv, pos1.offset);
             int offset = pos2.offset;
@@ -1737,15 +1741,7 @@ public class CarpetExpression
             CarpetContext cc = (CarpetContext)c;
             WorldServer world = cc.s.getWorld();
             String particleName = lv.get(0).evalValue(c).getString();
-            IParticleData particle;
-            try
-            {
-                particle = ParticleArgument.func_197189_a(new StringReader(particleName));
-            }
-            catch (CommandSyntaxException e)
-            {
-                throw new InternalExpressionException("No such particle: "+particleName);
-            }
+            IParticleData particle = getParticleData(particleName);
             BlockValue.VectorLocator pos1 = BlockValue.locateVec(cc, lv, 1);
             BlockValue.VectorLocator pos2 = BlockValue.locateVec(cc, lv, pos1.offset);
             int offset = pos2.offset;
