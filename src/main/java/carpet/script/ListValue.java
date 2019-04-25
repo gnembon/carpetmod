@@ -7,6 +7,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static java.lang.Math.abs;
+
 public class ListValue extends Value
 {
     protected List<Value> items;
@@ -206,6 +208,32 @@ public class ListValue extends Value
     }
     public void fatality()
     {
+    }
+
+    public void extend(List<Value> subList)
+    {
+        for (Value v: subList)
+            items.add(v);
+    }
+
+    public void addAtIndex(int index, List<Value> subList)
+    {
+        int numitems = items.size();
+        long range = abs(index)/numitems;
+        index += (range+2)*numitems;
+        index = index % numitems;
+        for (Value v: subList)
+        {
+            if (index < numitems)
+            {
+                items.set(index, v);
+            }
+            else
+            {
+                items.add(v);
+            }
+            index++;
+        }
     }
 
 

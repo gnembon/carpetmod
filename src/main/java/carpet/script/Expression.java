@@ -1313,14 +1313,15 @@ public class Expression implements Cloneable
                 while(li.hasNext())
                 {
                     String lname = li.next().getVariable();
-                    Value vval = ri.next();
-                    c.setVariable(lname, (cc, tt) -> vval.reboundedTo(lname));
+                    Value vval = ri.next().reboundedTo(lname);
+                    c.setVariable(lname, (cc, tt) -> vval);
                 }
                 return (cc, tt) -> Value.TRUE;
             }
             v1.assertAssignable();
             String varname = v1.getVariable();
-            LazyValue boundedLHS = (cc, tt) -> v2.reboundedTo(varname);
+            Value copy = v2.reboundedTo(varname);
+            LazyValue boundedLHS = (cc, tt) -> copy;
             c.setVariable(varname, boundedLHS);
             return boundedLHS;
         });
@@ -1342,8 +1343,8 @@ public class Expression implements Cloneable
                 {
                     Value lval = li.next();
                     String lname = lval.getVariable();
-                    Value vval = ri.next();
-                    c.setVariable(lname, (cc, tt) -> lval.add(vval).bindTo(lname));
+                    Value result = lval.add(ri.next()).bindTo(lname);
+                    c.setVariable(lname, (cc, tt) -> result);
                 }
                 return (cc, tt) -> Value.TRUE;
             }
@@ -1357,7 +1358,8 @@ public class Expression implements Cloneable
             }
             else
             {
-                boundedLHS = (cc, tt) -> v1.add(v2).bindTo(varname);
+                Value result = v1.add(v2).bindTo(varname);
+                boundedLHS = (cc, tt) -> result;
             }
             c.setVariable(varname, boundedLHS);
             return boundedLHS;
@@ -1383,8 +1385,10 @@ public class Expression implements Cloneable
                     Value rval = ri.next();
                     String lname = lval.getVariable();
                     String rname = rval.getVariable();
-                    c.setVariable(lname, (cc, tt) -> rval.reboundedTo(lname));
-                    c.setVariable(rname, (cc, tt) -> lval.reboundedTo(rname));
+                    lval.reboundedTo(rname);
+                    rval.reboundedTo(lname);
+                    c.setVariable(lname, (cc, tt) -> rval);
+                    c.setVariable(rname, (cc, tt) -> lval);
                 }
                 return (cc, tt) -> Value.TRUE;
             }
@@ -1682,6 +1686,17 @@ public class Expression implements Cloneable
      *     element(l(range(10)), 93)  =&gt; 3
      * </pre>
      *
+     * <h3><code>put(list, index, values ...), put(list, null, values ...)</code></h3>
+     * <p>Modifies the list by replacing values startign from <code>index</code> with <code>values</code>.
+     * use negative numbers to reach elements from the end of the list. <code>put</code>
+     * call will always be able to find the index. In case there is few items, it will loop over. In case end
+     * of the list is reached before <code>values</code> run out, list is extended to accomodate for more values. in case you
+     * want to append at the end of the list, use <code>null</code> as index. returns number of elements inserted.</p>
+     * <pre>
+     *     a = l(1, 2, 3); put(a, 1, 4); a  =&gt; [1, 4, 3]
+     *     a = l(1, 2, 3); put(a, null, 4, 5, 6); a  =&gt; [1, 2, 3, 4, 5, 6]
+     *     a = l(l(0,0,0),l(0,0,0),l(0,0,0)); put(element(a, 1), 1, 1); a =&gt; [[0, 0, 0], [0, 1, 0], [0, 0, 0]]
+     * </pre>
      * <h3><code>while(cond, limit, expr)</code></h3>
      * <p>Evaluates expression <code>expr</code> repeatedly until condition <code>cond</code> becomes false,
      * but not more than <code>limit</code> times. Returns the result of the last <code>expr</code> evaluation,
@@ -1892,6 +1907,30 @@ public class Expression implements Cloneable
             index += (range+2)*numitems;
             index = index % numitems;
             return items.get((int)index);
+        });
+        addFunction("put", (lv) ->
+        {
+            if(lv.size()<3)
+            {
+                throw new InternalExpressionException("put takes at least three arguments, a list, index, and values to insert at that index");
+            }
+            Value list = lv.get(0);
+            if (list instanceof LazyListValue || !(list instanceof ListValue))
+            {
+                throw new InternalExpressionException("First argument of element should be a list");
+            }
+            int size = lv.size();
+            //List<Value> items = ((ListValue)lv.get(0)).getItems();
+            Value index = lv.get(1);
+            if (index == Value.NULL)
+            {
+                ((ListValue) list).extend(lv.subList(2,size));
+            }
+            else
+            {
+                ((ListValue) list).addAtIndex((int)getNumericValue(index).getLong(), lv.subList(2,size));
+            }
+            return new NumericValue(size-2);
         });
 
         //condition and expression will get a bound 'i'

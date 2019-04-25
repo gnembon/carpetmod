@@ -37,7 +37,6 @@ public abstract class Value implements Comparable<Value>, Cloneable
     }
     public Value bindTo(String var)
     {
-
         this.boundVariable = var;
         return this;
     }
