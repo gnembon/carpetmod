@@ -145,9 +145,13 @@ public class CarpetExpression
         }
         Value v0 = params.get(0).evalValue(c);
         if (v0 instanceof BlockValue)
-            return (c_, t_) -> test.apply(((BlockValue) v0).getBlockState(), ((BlockValue) v0).getPos()) ? Value.TRUE : Value.FALSE;
+        {
+            Value retval = test.apply(((BlockValue) v0).getBlockState(), ((BlockValue) v0).getPos()) ? Value.TRUE : Value.FALSE;
+            return (c_, t_) -> retval;
+        }
         BlockValue block = BlockValue.fromParams(cc, params, 0).block;
-        return (c_, t_) -> test.apply(block.getBlockState(), block.getPos()) ? Value.TRUE : Value.FALSE;
+        Value retval = test.apply(block.getBlockState(), block.getPos()) ? Value.TRUE : Value.FALSE;
+        return (c_, t_) -> retval;
     }
 
     private LazyValue stateStringQuery(
@@ -165,9 +169,13 @@ public class CarpetExpression
 
         Value v0 = params.get(0).evalValue(c);
         if (v0 instanceof BlockValue)
-            return (c_, t_) -> new StringValue(test.apply( ((BlockValue) v0).getBlockState(), ((BlockValue) v0).getPos()));
+        {
+            Value retval = new StringValue(test.apply( ((BlockValue) v0).getBlockState(), ((BlockValue) v0).getPos()));
+            return (c_, t_) -> retval;
+        }
         BlockValue block = BlockValue.fromParams(cc, params, 0).block;
-        return (c_, t_) -> new StringValue(test.apply(block.getBlockState(), block.getPos()));
+        Value retval = new StringValue(test.apply(block.getBlockState(), block.getPos()));
+        return (c_, t_) -> retval;
     }
 
     private LazyValue genericStateTest(
@@ -184,19 +192,20 @@ public class CarpetExpression
         }
         Value v0 = params.get(0).evalValue(c);
         if (v0 instanceof BlockValue)
-            return (c_, t_) ->
+        {
+            try
             {
-                try
-                {
-                    return test.apply(((BlockValue) v0).getBlockState(), ((BlockValue) v0).getPos(), cc.s.getWorld());
-                }
-                catch (NullPointerException ignored)
-                {
-                    throw new InternalExpressionException(name+" function requires a block that is positioned in the world");
-                }
-            };
+                Value retval = test.apply(((BlockValue) v0).getBlockState(), ((BlockValue) v0).getPos(), cc.s.getWorld());
+                return (_c, _t) -> retval;
+            }
+            catch (NullPointerException ignored)
+            {
+                throw new InternalExpressionException(name + " function requires a block that is positioned in the world");
+            }
+        }
         BlockValue block = BlockValue.fromParams(cc, params, 0).block;
-        return (c_, t_) -> test.apply(block.getBlockState(), block.getPos(), cc.s.getWorld());
+        Value retval = test.apply(block.getBlockState(), block.getPos(), cc.s.getWorld());
+        return (c_, t_) -> retval;
     }
 
     private <T extends Comparable<T>> IBlockState setProperty(IProperty<T> property, String name, String value,
@@ -521,10 +530,12 @@ public class CarpetExpression
             }
             if (lv.size() == 1)
             {
-                return (c_, t_) -> BlockValue.fromCommandExpression(lv.get(0).evalValue(cc).getString());
+                Value retval = BlockValue.fromCommandExpression(lv.get(0).evalValue(cc).getString());
+                return (c_, t_) -> retval;
                 //return new BlockValue(IRegistry.field_212618_g.get(new ResourceLocation(lv.get(0).getString())).getDefaultState(), origin);
             }
-            return (c_, t_) -> BlockValue.fromParams(cc, lv, 0).block;
+            Value retval = BlockValue.fromParams(cc, lv, 0).block;
+            return (c_, t_) -> retval;
         });
 
         this.expr.addLazyFunction("pos", 1, (c, t, lv) ->
@@ -535,14 +546,16 @@ public class CarpetExpression
                 BlockPos pos = ((BlockValue) arg).getPos();
                 if (pos == null)
                     throw new InternalExpressionException("Cannot fetch position of an unrealized block");
-                return (c_, t_) -> ListValue.of(new NumericValue(pos.getX()), new NumericValue(pos.getY()), new NumericValue(pos.getZ()));
+                Value retval = ListValue.of(new NumericValue(pos.getX()), new NumericValue(pos.getY()), new NumericValue(pos.getZ()));
+                return (c_, t_) -> retval;
             }
             else if (arg instanceof EntityValue)
             {
                 Entity e = ((EntityValue) arg).getEntity();
                 if (e == null)
                     throw new InternalExpressionException("Null entity");
-                return(c_, t_) -> ListValue.of(new NumericValue(e.posX), new NumericValue(e.posY), new NumericValue(e.posZ));
+                Value retval = ListValue.of(new NumericValue(e.posX), new NumericValue(e.posY), new NumericValue(e.posZ));
+                return(c_, t_) -> retval;
             }
             else
             {
@@ -619,20 +632,24 @@ public class CarpetExpression
                 x = (int)Expression.getNumericValue(lv.get(1).evalValue(c)).getLong();
                 z = (int)Expression.getNumericValue(lv.get(2).evalValue(c)).getLong();
             }
-            int y = ((CarpetContext)c).s.getWorld().getChunk(x >> 4, z >> 4).getTopBlockY(htype, x & 15, z & 15) + 1;
-            return (c_, t_) -> new NumericValue(y);
+            Value retval = new NumericValue(((CarpetContext)c).s.getWorld().getChunk(x >> 4, z >> 4).getTopBlockY(htype, x & 15, z & 15) + 1);
+            return (c_, t_) -> retval;
             //BlockPos pos = new BlockPos(x,y,z);
             //return new BlockValue(source.getWorld().getBlockState(pos), pos);
         });
 
         this.expr.addLazyFunction("loaded", -1, (c, t, lv) ->
-                (c_, t_) -> ((CarpetContext)c).s.getWorld().isBlockLoaded(BlockValue.fromParams((CarpetContext) c, lv, 0).block.getPos()) ? Value.TRUE : Value.FALSE);
+        {
+            Value retval = ((CarpetContext) c).s.getWorld().isBlockLoaded(BlockValue.fromParams((CarpetContext) c, lv, 0).block.getPos()) ? Value.TRUE : Value.FALSE;
+            return (c_, t_) -> retval;
+        });
 
         this.expr.addLazyFunction("loaded_ep", -1, (c, t, lv) ->
         {
             BlockPos pos = BlockValue.fromParams((CarpetContext)c, lv, 0).block.getPos();
-            return (c_, t_) -> ((CarpetContext)c).s.getWorld().isAreaLoaded(pos.getX() - 32, 0, pos.getZ() - 32,
+            Value retval = ((CarpetContext)c).s.getWorld().isAreaLoaded(pos.getX() - 32, 0, pos.getZ() - 32,
                     pos.getX() + 32, 0, pos.getZ() + 32, true) ? Value.TRUE : Value.FALSE;
+            return (c_, t_) -> retval;
         });
 
         this.expr.addLazyFunction("suffocates", -1, (c, t, lv) ->
@@ -700,8 +717,8 @@ public class CarpetExpression
                 bs = setProperty(property, paramString, paramValue, bs);
             }
             cc.s.getWorld().setBlockState(locator.block.getPos(), bs, 2 | (CarpetSettings.getBool("fillUpdates") ? 0 : 1024));
-            final IBlockState finalBS = bs;
-            return (c_, t_) -> new BlockValue(finalBS, world, locator.block.getPos());
+            Value retval = new BlockValue(bs, world, locator.block.getPos());
+            return (c_, t_) -> retval;
         });
 
         this.expr.addLazyFunction("blocks_movement", -1, (c, t, lv) ->
@@ -729,7 +746,8 @@ public class CarpetExpression
             IProperty<?> property = states.getProperty(tag);
             if (property == null)
                 return LazyValue.NULL;
-            return (_c, _t ) -> new StringValue(state.get(property).toString());
+            Value retval = new StringValue(state.get(property).toString());
+            return (_c, _t ) -> retval;
         });
     }
 
@@ -951,63 +969,68 @@ public class CarpetExpression
         this.expr.addLazyFunction("player", -1, (c, t, lv) -> {
             if (lv.size() ==0)
             {
-                return (_c, _t) ->
+
+                Entity callingEntity = ((CarpetContext)c).s.getEntity();
+                if (callingEntity instanceof EntityPlayer)
                 {
-                    Entity callingEntity = ((CarpetContext)_c).s.getEntity();
-                    if (callingEntity instanceof EntityPlayer)
-                    {
-                        return new EntityValue(callingEntity);
-                    }
-                    Vec3d pos = ((CarpetContext)_c).s.getPos();
-                    EntityPlayer closestPlayer = ((CarpetContext)_c).s.getWorld().getClosestPlayer(pos.x, pos.y, pos.z, -1.0, EntitySelectors.IS_ALIVE);
-                    if (closestPlayer != null)
-                    {
-                        return new EntityValue(closestPlayer);
-                    }
-                    return Value.NULL;
-                };
+                    Value retval = new EntityValue(callingEntity);
+                    return (_c, _t) -> retval;
+                }
+                Vec3d pos = ((CarpetContext)c).s.getPos();
+                EntityPlayer closestPlayer = ((CarpetContext)c).s.getWorld().getClosestPlayer(pos.x, pos.y, pos.z, -1.0, EntitySelectors.IS_ALIVE);
+                if (closestPlayer != null)
+                {
+                    Value retval = new EntityValue(closestPlayer);
+                    return (_c, _t) -> retval;
+                }
+                return (_c, _t) -> Value.NULL;
             }
             String playerName = lv.get(0).evalValue(c).getString();
+            Value retval = Value.NULL;
             if ("all".equalsIgnoreCase(playerName))
             {
-                return (_c, _t) -> ListValue.wrap(
-                        ((CarpetContext)_c).s.getServer().getPlayerList().getPlayers().
+                retval = ListValue.wrap(
+                        ((CarpetContext)c).s.getServer().getPlayerList().getPlayers().
                                 stream().map(EntityValue::new).collect(Collectors.toList()));
             }
-            if ("*".equalsIgnoreCase(playerName))
+            else if ("*".equalsIgnoreCase(playerName))
             {
-                return (_c, _t) -> ListValue.wrap(
-                        ((CarpetContext)_c).s.getWorld().getPlayers(EntityPlayer.class, (p) -> true).
+                retval = ListValue.wrap(
+                        ((CarpetContext)c).s.getWorld().getPlayers(EntityPlayer.class, (p) -> true).
                                 stream().map(EntityValue::new).collect(Collectors.toList()));
             }
-            if ("survival".equalsIgnoreCase(playerName))
+            else if ("survival".equalsIgnoreCase(playerName))
             {
-                return (_c, _t) -> ListValue.wrap(
-                        ((CarpetContext)_c).s.getWorld().getPlayers(EntityPlayerMP.class, (p) -> p.interactionManager.survivalOrAdventure()).
+                retval =  ListValue.wrap(
+                        ((CarpetContext)c).s.getWorld().getPlayers(EntityPlayerMP.class, (p) -> p.interactionManager.survivalOrAdventure()).
                                 stream().map(EntityValue::new).collect(Collectors.toList()));
             }
-            if ("creative".equalsIgnoreCase(playerName))
+            else if ("creative".equalsIgnoreCase(playerName))
             {
-                return (_c, _t) -> ListValue.wrap(
-                        ((CarpetContext)_c).s.getWorld().getPlayers(EntityPlayer.class, EntityPlayer::isCreative).
+                retval = ListValue.wrap(
+                        ((CarpetContext)c).s.getWorld().getPlayers(EntityPlayer.class, EntityPlayer::isCreative).
                                 stream().map(EntityValue::new).collect(Collectors.toList()));
             }
-            if ("spectating".equalsIgnoreCase(playerName))
+            else if ("spectating".equalsIgnoreCase(playerName))
             {
-                return (_c, _t) -> ListValue.wrap(
-                        ((CarpetContext)_c).s.getWorld().getPlayers(EntityPlayer.class, EntityPlayer::isSpectator).
+                retval = ListValue.wrap(
+                        ((CarpetContext)c).s.getWorld().getPlayers(EntityPlayer.class, EntityPlayer::isSpectator).
                                 stream().map(EntityValue::new).collect(Collectors.toList()));
             }
-            if ("!spectating".equalsIgnoreCase(playerName))
+            else if ("!spectating".equalsIgnoreCase(playerName))
             {
-                return (_c, _t) -> ListValue.wrap(
-                        ((CarpetContext)_c).s.getWorld().getPlayers(EntityPlayer.class, (p) -> !p.isSpectator()).
+                retval = ListValue.wrap(
+                        ((CarpetContext)c).s.getWorld().getPlayers(EntityPlayer.class, (p) -> !p.isSpectator()).
                                 stream().map(EntityValue::new).collect(Collectors.toList()));
             }
-            EntityPlayerMP player = ((CarpetContext)c).s.getServer().getPlayerList().getPlayerByUsername(playerName);
-            if (player != null)
-                return (_c, _t) -> new EntityValue(player);
-            return LazyValue.NULL;
+            else
+            {
+                EntityPlayerMP player = ((CarpetContext) c).s.getServer().getPlayerList().getPlayerByUsername(playerName);
+                if (player != null)
+                    retval = new EntityValue(player);
+            }
+            Value finalVar = retval;
+            return (cc, tt) -> finalVar;
         });
 
         this.expr.addLazyFunction("entity_id", 1, (c, t, lv) ->
@@ -1037,7 +1060,8 @@ public class CarpetExpression
                 throw new InternalExpressionException("Unknown entity selection criterion: "+who);
             }
             List<Entity> entityList = ((CarpetContext)c).s.getWorld().getEntities(pair.getKey(), pair.getValue());
-            return (_c, _t ) -> ListValue.wrap(entityList.stream().map(EntityValue::new).collect(Collectors.toList()));
+            Value retval = ListValue.wrap(entityList.stream().map(EntityValue::new).collect(Collectors.toList()));
+            return (_c, _t ) -> retval;
         });
 
         this.expr.addLazyFunction("entity_area", 7, (c, t, lv) -> {
@@ -1058,7 +1082,8 @@ public class CarpetExpression
                 throw new InternalExpressionException("Unknown entity selection criterion: "+who);
             }
             List<Entity> entityList = ((CarpetContext)c).s.getWorld().getEntitiesWithinAABB(pair.getKey(), area, pair.getValue());
-            return (_c, _t ) -> ListValue.wrap(entityList.stream().map(EntityValue::new).collect(Collectors.toList()));
+            Value retval = ListValue.wrap(entityList.stream().map(EntityValue::new).collect(Collectors.toList()));
+            return (_c, _t ) -> retval;
         });
 
         this.expr.addLazyFunction("entity_selector", -1, (c, t, lv) ->
@@ -1082,12 +1107,14 @@ public class CarpetExpression
             if (!(v instanceof EntityValue))
                 throw new InternalExpressionException("First argument to query_entity should be an entity");
             String what = lv.get(1).evalValue(c).getString();
+            Value retval;
             if (lv.size()==2)
-                return (_c, _t) -> ((EntityValue) v).get(what, null);
-            if (lv.size()==3)
-                return (_c, _t) -> ((EntityValue) v).get(what, lv.get(2).evalValue(c));
-            return (_c, _t) -> ((EntityValue) v).get(what, ListValue.wrap(lv.subList(2, lv.size()).stream().map((vv) -> vv.evalValue(c)).collect(Collectors.toList())));
-
+                retval = ((EntityValue) v).get(what, null);
+            else if (lv.size()==3)
+                retval = ((EntityValue) v).get(what, lv.get(2).evalValue(c));
+            else
+                retval = ((EntityValue) v).get(what, ListValue.wrap(lv.subList(2, lv.size()).stream().map((vv) -> vv.evalValue(c)).collect(Collectors.toList())));
+            return (cc, tt) -> retval;
         });
 
         // or update
@@ -1187,8 +1214,10 @@ public class CarpetExpression
                     for (int z=cz-zrange; z <= cz+zprange; z++)
                     {
                         int zFinal = z;
-                        c.setVariable( "_", (cc_, t_c) -> BlockValue.fromCoords(((CarpetContext)c), xFinal,yFinal,zFinal).bindTo("_"));
+
                         c.setVariable("_z", (c_, t_) -> new NumericValue(zFinal).bindTo("_z"));
+                        Value blockValue = BlockValue.fromCoords(((CarpetContext)c), xFinal,yFinal,zFinal).bindTo("_");
+                        c.setVariable( "_", (cc_, t_c) -> blockValue);
                         if (expr.evalValue(c, Context.BOOLEAN).getBoolean())
                         {
                             sCount += 1;
@@ -1238,8 +1267,9 @@ public class CarpetExpression
                     for (int z=minz; z <= maxz; z++)
                     {
                         int zFinal = z;
-                        c.setVariable( "_", (cc_, t_c) -> BlockValue.fromCoords(((CarpetContext)c), xFinal,yFinal,zFinal).bindTo("_"));
                         c.setVariable("_z", (c_, t_) -> new NumericValue(zFinal).bindTo("_z"));
+                        Value blockValue = BlockValue.fromCoords(((CarpetContext)c), xFinal,yFinal,zFinal).bindTo("_");
+                        c.setVariable( "_", (cc_, t_c) -> blockValue);
                         if (expr.evalValue(c, Context.BOOLEAN).getBoolean())
                         {
                             sCount += 1;
@@ -1269,7 +1299,8 @@ public class CarpetExpression
             neighbours.add(new BlockValue(null, world, center.south()));
             neighbours.add(new BlockValue(null, world, center.east()));
             neighbours.add(new BlockValue(null, world, center.west()));
-            return (c_, t_) -> ListValue.wrap(neighbours);
+            Value retval = ListValue.wrap(neighbours);
+            return (c_, t_) -> retval;
         });
 
         this.expr.addLazyFunction("rect", -1, (c, t, lv)->
@@ -1396,7 +1427,7 @@ public class CarpetExpression
                 cz = (int)((NumericValue) lv.get(2).evalValue(c)).getLong();
                 if (lv.size()==3)
                 {
-                    return (_c, _t ) -> new ListValue(Arrays.asList(
+                    Value retval = new ListValue(Arrays.asList(
                             BlockValue.fromCoords(cc, cx, cy-1, cz),
                             BlockValue.fromCoords(cc, cx, cy, cz),
                             BlockValue.fromCoords(cc, cx-1, cy, cz),
@@ -1405,6 +1436,7 @@ public class CarpetExpression
                             BlockValue.fromCoords(cc, cx, cy, cz+1),
                             BlockValue.fromCoords(cc, cx, cy+1, cz)
                     ));
+                    return (_c, _t ) -> retval;
                 }
                 else if (lv.size()==4)
                 {
@@ -1733,7 +1765,8 @@ public class CarpetExpression
             {
                 throw new InternalExpressionException("Particle density should be positive");
             }
-            return (c_, t_) -> new NumericValue(drawParticleLine(world, particle, pos1.vec, pos2.vec, density));
+            Value retval = new NumericValue(drawParticleLine(world, particle, pos1.vec, pos2.vec, density));
+            return (c_, t_) -> retval;
         });
 
         this.expr.addLazyFunction("particle_rect", -1, (c, t, lv) ->
@@ -1805,8 +1838,9 @@ public class CarpetExpression
             );
             Vec3d posf = new Vec3d((double)target.getX()+0.5D,(double)target.getY(),(double)target.getZ()+0.5D);
             CommandSource s = ((CarpetContext)c).s;
-            return (c_, t_) -> new NumericValue(s.getServer().getCommandManager().handleCommand(
+            Value retval = new NumericValue(s.getServer().getCommandManager().handleCommand(
                     s.withPos(posf).withFeedbackDisabled(), lv.get(0).evalValue(c).getString()));
+            return (c_, t_) -> retval;
         });
 
         this.expr.addLazyFunction("save", 0, (c, t, lv) -> {
@@ -1827,7 +1861,10 @@ public class CarpetExpression
         });
 
         this.expr.addLazyFunction("tick_time", 0, (c, t, lv) ->
-                (cc, tt) -> new NumericValue(((CarpetContext)cc).s.getServer().getTickCounter()));
+        {
+            Value time = new NumericValue(((CarpetContext) c).s.getServer().getTickCounter());
+            return (cc, tt) -> time;
+        });
 
         this.expr.addLazyFunction("game_tick", -1, (c, t, lv) -> {
             CommandSource s = ((CarpetContext)c).s;
@@ -1858,7 +1895,8 @@ public class CarpetExpression
 
         this.expr.addLazyFunction("current_dimension", 0, (c, t, lv) -> {
             CommandSource s = ((CarpetContext)c).s;
-            return (cc, tt) -> new StringValue(s.getWorld().dimension.getType().toString().replaceFirst("minecraft:",""));
+            Value retval = new StringValue(s.getWorld().dimension.getType().toString().replaceFirst("minecraft:",""));
+            return (cc, tt) -> retval;
         });
 
         this.expr.addLazyFunction("plop", 4, (c, t, lv) ->{
@@ -1967,11 +2005,13 @@ public class CarpetExpression
             Entity e = source.getEntity();
             if (e==null)
             {
-                context.with("p", (cc, tt) -> Value.NULL.reboundedTo("p") );
+                Value nullPlayer = Value.NULL.reboundedTo("p");
+                context.with("p", (cc, tt) -> nullPlayer );
             }
             else
             {
-                context.with("p", (cc, tt) -> new EntityValue(e).bindTo("p"));
+                Value playerValue = new EntityValue(e).bindTo("p");
+                context.with("p", (cc, tt) -> playerValue);
             }
             return this.expr.eval(context).getBoolean();
         }
@@ -2010,11 +2050,13 @@ public class CarpetExpression
             Entity e = source.getEntity();
             if (e==null)
             {
-                context.with("p", (cc, tt) -> Value.NULL.reboundedTo("p") );
+                Value nullPlayer = Value.NULL.reboundedTo("p");
+                context.with("p", (cc, tt) -> nullPlayer );
             }
             else
             {
-                context.with("p", (cc, tt) -> new EntityValue(e).bindTo("p"));
+                Value playerValue = new EntityValue(e).bindTo("p");
+                context.with("p", (cc, tt) -> playerValue);
             }
             return this.expr.eval(context).getString();
         }
