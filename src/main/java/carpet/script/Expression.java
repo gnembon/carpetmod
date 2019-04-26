@@ -1043,13 +1043,17 @@ public class Expression implements Cloneable
             {
                 if (lv.get(i).evalValue(c, Context.BOOLEAN).getBoolean())
                 {
-                    int iFinal = i;
-                    return (cc, tt) -> lv.get(iFinal+1).evalValue(cc);
+                    //int iFinal = i;
+                    Value ret = lv.get(i+1).evalValue(c);
+                    return (cc, tt) -> ret;
                 }
             }
             if (lv.size()%2 == 1)
-                return (cc, tt) -> lv.get(lv.size() - 1).evalValue(cc);
-            return (cc, tt) -> new NumericValue(0);
+            {
+                Value ret = lv.get(lv.size() - 1).evalValue(c);
+                return (cc, tt) -> ret;
+            }
+            return (cc, tt) -> Value.ZERO;
         });
     }
 
