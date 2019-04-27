@@ -175,7 +175,7 @@ public class CarpetSettings
   //!rule("displayMobAI",          "creative", "Uses nametags to display current mobs AI tasks"),
   //???rule("fastMovingEntityOptimization", "experimental", "Optimized movement calculation or very fast moving entities"),
   //???rule("blockCollisionsOptimization", "experimental", "Optimized entity-block collision calculations. By masa"),
-  //!rule("desertShrubs",          "feature", "Saplings turn into dead shrubs in hot climates and no water access when it attempts to grow into a tree"),
+  rule("desertShrubs",          "feature", "Saplings turn into dead shrubs in hot climates and no water access when it attempts to grow into a tree"),
   /////rule("nitwitCrafter",         "experimental", "Nitwit villagers will have 3 hidden crafting recipes they can craft")
   //                              .extraInfo("They require food for crafting and prefer a specific food type to craft faster.",
   //                                         "They have one crafting recipe to start out and unlock there higher recipes as they craft",
