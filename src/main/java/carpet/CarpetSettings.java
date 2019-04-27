@@ -351,6 +351,8 @@ public class CarpetSettings
   rule("placementRotationFix",    "fix", "fixes block placement rotation issue when player rotates quickly while placing blocks"),
   rule("endCitySavingFix",        "fix", "Fixes the saving of end cities.")
                                   .extraInfo("Every End city that got saved once was invalidated on a server restart."),
+  rule("leadFix",                 "fix", "Fixes leads breaking/becoming invisible in unloaded chunks")
+                                  .extraInfo("You may still get visibly broken leash links on the client side, but server side the link is still there."),
         };
         for (CarpetSettingEntry rule: RuleList)
         {
