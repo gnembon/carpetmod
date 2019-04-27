@@ -1,14 +1,50 @@
 --- a/net/minecraft/entity/EntityLiving.java
 +++ b/net/minecraft/entity/EntityLiving.java
-@@ -1,5 +1,7 @@
+@@ -1,7 +1,11 @@
  package net.minecraft.entity;
  
 +import carpet.CarpetSettings;
 +import carpet.logging.logHelpers.DamageReporter;
  import com.google.common.collect.Maps;
++
  import java.util.Arrays;
++import java.util.HashMap;
  import java.util.Map;
-@@ -836,7 +838,7 @@
+ import java.util.Random;
+ import java.util.UUID;
+@@ -9,6 +13,7 @@
+ import net.minecraft.block.BlockAbstractSkull;
+ import net.minecraft.block.state.IBlockState;
+ import net.minecraft.enchantment.EnchantmentHelper;
++import net.minecraft.entity.ai.EntityAIBase;
+ import net.minecraft.entity.ai.EntityAITasks;
+ import net.minecraft.entity.ai.EntityJumpHelper;
+ import net.minecraft.entity.ai.EntityLookHelper;
+@@ -75,6 +80,9 @@
+     protected PathNavigate navigator;
+     protected final EntityAITasks tasks;
+     protected final EntityAITasks targetTasks;
++    //[CM scarpet]
++    public final Map<String, EntityAIBase> temporaryTasks = new HashMap<>();
++    //
+     private EntityLivingBase attackTarget;
+     private final EntitySenses senses;
+     private final NonNullList<ItemStack> inventoryHands = NonNullList.withSize(2, ItemStack.EMPTY);
+@@ -110,6 +118,13 @@
+         }
+     }
+ 
++    //[CM scarpet - access to tasks
++    public EntityAITasks getAI(boolean target)
++    {
++        return target?targetTasks:tasks;
++    }
++
++
+     protected void initEntityAI()
+     {
+     }
+@@ -836,7 +851,7 @@
  
      public boolean isNotColliding(IWorldReaderBase worldIn)
      {
@@ -17,7 +53,7 @@
      }
  
      @OnlyIn(Dist.CLIENT)
-@@ -1447,10 +1449,16 @@
+@@ -1447,10 +1462,16 @@
          float f = (float)this.getAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).getValue();
          int i = 0;
  

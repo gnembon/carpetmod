@@ -42,7 +42,7 @@ public class ScriptCommand
                 then(literal("globals").executes( (c) -> listGlobals(c.getSource()))).
                 then(literal("stop").executes( (c) -> { CarpetExpression.BreakExecutionOfAllScriptsWithCommands(true); return 1;})).
                 then(literal("resume").executes( (c) -> { CarpetExpression.BreakExecutionOfAllScriptsWithCommands(false); return 1;})).
-                then(literal("run").
+                then(literal("run").requires((player) -> player.hasPermissionLevel(2)).
                         then(argument("expr", StringArgumentType.greedyString()).
                                 executes((c) -> compute(
                                         c.getSource(),
@@ -103,11 +103,11 @@ public class ScriptCommand
                                                                 BlockPosArgument.getBlockPos(c, "to"),
                                                                 StringArgumentType.getString(c, "arguments")
                                                         ))))))).
-                then(literal("scan").
+                then(literal("scan").requires((player) -> player.hasPermissionLevel(2)).
                         then(argument("origin", BlockPosArgument.blockPos()).
                                 then(argument("from", BlockPosArgument.blockPos()).
                                         then(argument("to", BlockPosArgument.blockPos()).
-                                                then(argument("expr", StringArgumentType.string()).
+                                                then(argument("expr", StringArgumentType.greedyString()).
                                                         executes( (c) -> scriptScan(
                                                                 c.getSource(),
                                                                 BlockPosArgument.getBlockPos(c, "origin"),
@@ -115,7 +115,7 @@ public class ScriptCommand
                                                                 BlockPosArgument.getBlockPos(c, "to"),
                                                                 StringArgumentType.getString(c, "expr")
                                                         ))))))).
-                then(literal("fill").
+                then(literal("fill").requires((player) -> player.hasPermissionLevel(2)).
                         then(argument("origin", BlockPosArgument.blockPos()).
                                 then(argument("from", BlockPosArgument.blockPos()).
                                         then(argument("to", BlockPosArgument.blockPos()).
@@ -142,7 +142,7 @@ public class ScriptCommand
                                                                                 BlockPredicateArgument.getBlockPredicate(c, "filter"),
                                                                                 "solid"
                                                                         )))))))))).
-                then(literal("outline").
+                then(literal("outline").requires((player) -> player.hasPermissionLevel(2)).
                         then(argument("origin", BlockPosArgument.blockPos()).
                                 then(argument("from", BlockPosArgument.blockPos()).
                                         then(argument("to", BlockPosArgument.blockPos()).
@@ -236,22 +236,22 @@ public class ScriptCommand
             Messenger.m(source, "r Hidden functions are only callable in scripts");
             return 0;
         }
-        List<String> arguments = new ArrayList<>();
+        List<Integer> positions = new ArrayList<>();
         if (pos1 != null)
         {
-            arguments.add(Integer.toString(pos1.getX()));
-            arguments.add(Integer.toString(pos1.getY()));
-            arguments.add(Integer.toString(pos1.getZ()));
+            positions.add(pos1.getX());
+            positions.add(pos1.getY());
+            positions.add(pos1.getZ());
         }
         if (pos2 != null)
         {
-            arguments.add(Integer.toString(pos2.getX()));
-            arguments.add(Integer.toString(pos2.getY()));
-            arguments.add(Integer.toString(pos2.getZ()));
+            positions.add(pos2.getX());
+            positions.add(pos2.getY());
+            positions.add(pos2.getZ());
         }
-        if (!(args.trim().isEmpty()))
-            arguments.addAll(Arrays.asList(args.trim().split("\\s+")));
-        handleCall(source, () -> CarpetExpression.invokeGlobalFunctionCommand(source, call,arguments));
+        //if (!(args.trim().isEmpty()))
+        //    arguments.addAll(Arrays.asList(args.trim().split("\\s+")));
+        handleCall(source, () -> CarpetExpression.invokeGlobalFunctionCommand(source, call,positions, args.trim()));
         return 1;
     }
 
@@ -260,8 +260,6 @@ public class ScriptCommand
     {
         handleCall(source, () -> {
             CarpetExpression ex = new CarpetExpression(expr, source, new BlockPos(0, 0, 0));
-            if (source.getWorld().getGameRules().getBoolean("commandBlockOutput"))
-                ExpressionInspector.CarpetExpression_setLogOutput(ex, true);
             return ex.scriptRunCommand(new BlockPos(source.getPos()));
         });
         return 1;
@@ -339,7 +337,7 @@ public class ScriptCommand
                     }
                     catch (ExpressionInspector.CarpetExpressionException e)
                     {
-                        CarpetSettings.LOG.error("Exception: "+e);
+                        Messenger.m(source, "r Exception while filling the area:\n","l "+e.getMessage());
                         return 0;
                     }
                     catch (ArithmeticException e)
@@ -351,7 +349,7 @@ public class ScriptCommand
         final int maxx = area.getXSize()-1;
         final int maxy = area.getYSize()-1;
         final int maxz = area.getZSize()-1;
-        if ("edge".equalsIgnoreCase(mode))
+        if ("outline".equalsIgnoreCase(mode))
         {
             boolean[][][] newVolume = new boolean[area.getXSize()][area.getYSize()][area.getZSize()];
             for (int x = 0; x <= maxx; x++)

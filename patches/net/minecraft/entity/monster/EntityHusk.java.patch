@@ -1,0 +1,29 @@
+--- a/net/minecraft/entity/monster/EntityHusk.java
++++ b/net/minecraft/entity/monster/EntityHusk.java
+@@ -1,6 +1,8 @@
+ package net.minecraft.entity.monster;
+ 
+ import javax.annotation.Nullable;
++
++import carpet.CarpetSettings;
+ import net.minecraft.entity.Entity;
+ import net.minecraft.entity.EntityLivingBase;
+ import net.minecraft.entity.EntityType;
+@@ -15,6 +17,7 @@
+ import net.minecraft.util.math.BlockPos;
+ import net.minecraft.world.IWorld;
+ import net.minecraft.world.World;
++import net.minecraft.world.gen.feature.Feature;
+ import net.minecraft.world.storage.loot.LootTableList;
+ 
+ public class EntityHusk extends EntityZombie
+@@ -26,7 +29,8 @@
+ 
+     public boolean canSpawn(IWorld worldIn, boolean p_205020_2_)
+     {
+-        return super.canSpawn(worldIn, p_205020_2_) && (p_205020_2_ || worldIn.canSeeSky(new BlockPos(this)));
++        BlockPos tmp = new BlockPos(this);
++        return super.canSpawn(worldIn, p_205020_2_) && (p_205020_2_ || worldIn.canSeeSky(tmp) || (CarpetSettings.b_huskSpawningInTemples && Feature.DESERT_PYRAMID.isPositionInStructure(worldIn, tmp)));
+     }
+ 
+     protected boolean shouldBurnInDay()

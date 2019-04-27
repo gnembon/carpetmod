@@ -4,6 +4,7 @@ import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.command.arguments.BlockStateParser;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
@@ -11,7 +12,9 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.registry.IRegistry;
 import net.minecraft.world.World;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class BlockValue extends Value
 {
@@ -42,7 +45,28 @@ public class BlockValue extends Value
         catch (CommandSyntaxException ignored)
         {
         }
-        return NULL;
+        throw new Expression.InternalExpressionException("Unknown block: "+str);
+    }
+
+    private static Map<String, BlockValue> bvCache= new HashMap<>();
+    public static BlockValue fromCommandExpression(String str)
+    {
+        try
+        {
+            BlockValue bv = bvCache.get(str);
+            if (bv != null) return bv;
+            BlockStateParser blockstateparser = (new BlockStateParser(new StringReader(str), false)).parse(true);
+            if (blockstateparser.getState() != null)
+            {
+                bv = new BlockValue(blockstateparser.getState(), null, null);
+                bvCache.put(str, bv);
+                return bv;
+            }
+        }
+        catch (CommandSyntaxException ignored)
+        {
+        }
+        throw new Expression.InternalExpressionException("Cannot parse block: "+str);
     }
 
     public static VectorLocator locateVec(CarpetExpression.CarpetContext c, List<LazyValue> params, int offset)
@@ -54,6 +78,16 @@ public class BlockValue extends Value
             {
                 return new VectorLocator(new Vec3d(((BlockValue) v1).getPos()).add(0.5,0.5,0.5), 1+offset);
             }
+            if (v1 instanceof ListValue)
+            {
+                List<Value> args = ((ListValue) v1).getItems();
+                return new VectorLocator( new Vec3d(
+                        Expression.getNumericValue(args.get(0)).getDouble(),
+                        Expression.getNumericValue(args.get(1)).getDouble(),
+                        Expression.getNumericValue(args.get(2)).getDouble()),
+                        offset+1
+                );
+            }
             return new VectorLocator( new Vec3d(
                     Expression.getNumericValue(v1).getDouble(),
                     Expression.getNumericValue(params.get(1 + offset).evalValue(c)).getDouble(),
@@ -63,7 +97,7 @@ public class BlockValue extends Value
         }
         catch (IndexOutOfBoundsException e)
         {
-            throw new Expression.InternalExpressionException("position should be defined either by three coordinates, or a block value");
+            throw new Expression.InternalExpressionException("Position should be defined either by three coordinates, or a block value");
         }
     }
 
@@ -81,9 +115,23 @@ public class BlockValue extends Value
             {
                 return new LocatorResult(((BlockValue) v1), 1+offset);
             }
-            int xpos = (int) ((NumericValue) v1).getLong();
-            int ypos = (int) ((NumericValue) params.get(1 + offset).evalValue(c)).getLong();
-            int zpos = (int) ((NumericValue) params.get(2 + offset).evalValue(c)).getLong();
+            if (v1 instanceof ListValue)
+            {
+                List<Value> args = ((ListValue) v1).getItems();
+                int xpos = (int) Expression.getNumericValue(args.get(0)).getLong();
+                int ypos = (int) Expression.getNumericValue(args.get(1)).getLong();
+                int zpos = (int) Expression.getNumericValue(args.get(2)).getLong();
+                return new LocatorResult(
+                        new BlockValue(
+                                null,
+                                c.s.getWorld(),
+                                new BlockPos(c.origin.getX() + xpos, c.origin.getY() + ypos, c.origin.getZ() + zpos)
+                        ),
+                        1+offset);
+            }
+            int xpos = (int) Expression.getNumericValue(v1).getLong();
+            int ypos = (int) Expression.getNumericValue( params.get(1 + offset).evalValue(c)).getLong();
+            int zpos = (int) Expression.getNumericValue( params.get(2 + offset).evalValue(c)).getLong();
             return new LocatorResult(
                     new BlockValue(
                             null,
@@ -95,7 +143,7 @@ public class BlockValue extends Value
         }
         catch (IndexOutOfBoundsException e)
         {
-            throw new Expression.InternalExpressionException("position should be defined either by three coordinates, or a block value");
+            throw new Expression.InternalExpressionException("Position should be defined either by three coordinates, or a block value");
         }
     }
 

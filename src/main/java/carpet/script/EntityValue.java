@@ -2,27 +2,36 @@ package carpet.script;
 
 import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import javafx.util.Pair;
+import net.minecraft.command.CommandSource;
+import net.minecraft.command.arguments.EntitySelector;
+import net.minecraft.command.arguments.EntitySelectorParser;
 import net.minecraft.command.arguments.NBTPathArgument;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityCreature;
+import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.ai.EntityAIBase;
+import net.minecraft.entity.ai.EntityAIMoveTowardsRestriction;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.inventory.EntityEquipmentSlot;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.INBTBase;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.network.play.server.SPacketEntityTeleport;
+import net.minecraft.network.play.server.SPacketEntityVelocity;
 import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionEffect;
 import net.minecraft.util.EntitySelectors;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.registry.IRegistry;
 import net.minecraft.util.text.TextComponentString;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
@@ -38,6 +47,27 @@ public class EntityValue extends Value
     {
         entity = e;
     }
+
+    private static Map<String, EntitySelector> selectorCache = new HashMap<>();
+    public static Collection<? extends Entity > getEntitiesFromSelector(CommandSource source, String selector)
+    {
+        try
+        {
+            EntitySelector entitySelector = selectorCache.get(selector);
+            if (entitySelector != null)
+            {
+                return entitySelector.select(source);
+            }
+            entitySelector = new EntitySelectorParser(new StringReader(selector), true).parse();
+            selectorCache.put(selector, entitySelector);
+            return entitySelector.select(source);
+        }
+        catch (CommandSyntaxException e)
+        {
+            throw new Expression.InternalExpressionException("Cannot select entities from "+selector);
+        }
+    }
+
     public Entity getEntity()
     {
         return entity;
@@ -55,11 +85,38 @@ public class EntityValue extends Value
         return true;
     }
 
-    public static Map<String, Pair<Class<? extends Entity>, Predicate<? super Entity>>> entityPredicates =
+    @Override
+    public boolean equals(Value v)
+    {
+        if (v instanceof EntityValue)
+        {
+            return entity.getEntityId()==((EntityValue) v).entity.getEntityId();
+        }
+        return super.equals(v);
+    }
+
+    @Override
+    public Value in(Value v)
+    {
+        String what = v.getString();
+        return this.get(what, null);
+    }
+
+    public static Pair<Class<? extends Entity>, Predicate<? super Entity>> getPredicate(String who)
+    {
+        Pair<Class<? extends Entity>, Predicate<? super Entity>> res = entityPredicates.get(who);
+        if (res != null) return res;
+        return res; //TODO add more here like search by tags, or type
+        //if (who.startsWith('tag:'))
+    }
+    private static Map<String, Pair<Class<? extends Entity>, Predicate<? super Entity>>> entityPredicates =
             new HashMap<String, Pair<Class<? extends Entity>, Predicate<? super Entity>>>()
     {{
-        put("all", new Pair<>(Entity.class, EntitySelectors.IS_ALIVE));
-        put("items", new Pair<>(EntityItem.class, EntitySelectors.IS_ALIVE));
+        put("*", Pair.of(Entity.class, EntitySelectors.IS_ALIVE));
+        put("living", Pair.of(EntityLivingBase.class, EntitySelectors.IS_ALIVE));
+        put("items", Pair.of(EntityItem.class, EntitySelectors.IS_ALIVE));
+        put("players", Pair.of(EntityPlayer.class, EntitySelectors.IS_ALIVE));
+        put("!players", Pair.of(Entity.class, (e) -> !(e instanceof EntityPlayer) ));
     }};
     public Value get(String what, Value arg)
     {
@@ -76,33 +133,36 @@ public class EntityValue extends Value
         put("feet", EntityEquipmentSlot.FEET);
     }};
     private static Map<String, BiFunction<Entity, Value, Value>> featureAccessors = new HashMap<String, BiFunction<Entity, Value, Value>>() {{
+        put("removed", (entity, arg) -> new NumericValue(entity.removed));
+        put("uuid",(e, a) -> new StringValue(e.getCachedUniqueIdString()));
+        put("id",(e, a) -> new NumericValue(e.getEntityId()));
         put("pos", (e, a) -> ListValue.of(new NumericValue(e.posX), new NumericValue(e.posY), new NumericValue(e.posZ)));
         put("x", (e, a) -> new NumericValue(e.posX));
         put("y", (e, a) -> new NumericValue(e.posY));
         put("z", (e, a) -> new NumericValue(e.posZ));
         put("motion", (e, a) -> ListValue.of(new NumericValue(e.motionX), new NumericValue(e.motionY), new NumericValue(e.motionZ)));
-        put("motionx", (e, a) -> new NumericValue(e.motionX));
-        put("motiony", (e, a) -> new NumericValue(e.motionY));
-        put("motionz", (e, a) -> new NumericValue(e.motionZ));
-        put("name", (e, a) -> new StringValue(e.getName().getString()));
-        put("custom_name", (e, a) -> new StringValue(e.hasCustomName()?e.getCustomName().getString():""));
-        put("type", (e, a) -> new StringValue(e.getType().func_212546_e().getString()));
+        put("motion_x", (e, a) -> new NumericValue(e.motionX));
+        put("motion_y", (e, a) -> new NumericValue(e.motionY));
+        put("motion_z", (e, a) -> new NumericValue(e.motionZ));
+        put("name", (e, a) -> new StringValue(e.getDisplayName().getString()));
+        put("custom_name", (e, a) -> e.hasCustomName()?new StringValue(e.getCustomName().getString()):Value.NULL);
+        put("type", (e, a) -> new StringValue(e.getType().getTranslationKey().replaceFirst("entity\\.minecraft\\.","")));
         put("is_riding", (e, a) -> new NumericValue(e.isPassenger()));
         put("is_ridden", (e, a) -> new NumericValue(e.isBeingRidden()));
         put("passengers", (e, a) -> ListValue.wrap(e.getPassengers().stream().map(EntityValue::new).collect(Collectors.toList())));
         put("mount", (e, a) -> (e.getRidingEntity()!=null)?new EntityValue(e.getRidingEntity()):Value.NULL);
         put("tags", (e, a) -> ListValue.wrap(e.getTags().stream().map(StringValue::new).collect(Collectors.toList())));
-        put("tag", (e, a) -> new NumericValue(e.getTags().contains(a.getString())));
-        put("rotation_yaw", (e, a)-> new NumericValue(e.rotationYaw));
-        put("rotation_pitch", (e, a)-> new NumericValue(e.rotationPitch));
+        put("has_tag", (e, a) -> new NumericValue(e.getTags().contains(a.getString())));
+        put("yaw", (e, a)-> new NumericValue(e.rotationYaw));
+        put("pitch", (e, a)-> new NumericValue(e.rotationPitch));
         put("is_burning", (e, a) -> new NumericValue(e.getFire()>0));
         put("fire", (e, a) -> new NumericValue(e.getFire()));
         put("silent", (e, a)-> new NumericValue(e.isSilent()));
         put("gravity", (e, a) -> new NumericValue(!e.hasNoGravity()));
         put("immune_to_fire", (e, a) -> new NumericValue(e.isImmuneToFire()));
-        put("UUID",(e, a) -> new StringValue(e.getCachedUniqueIdString()));
+
         put("invulnerable", (e, a) -> new NumericValue(e.isInvulnerable()));
-        put("dimension", (e, a) -> new StringValue(e.dimension.getSuffix()));
+        put("dimension", (e, a) -> new StringValue(e.dimension.toString().replaceFirst("minecraft:","")));
         put("height", (e, a) -> new NumericValue(e.height));
         put("width", (e, a) -> new NumericValue(e.width));
         put("eye_height", (e, a) -> new NumericValue(e.getEyeHeight()));
@@ -111,6 +171,61 @@ public class EntityValue extends Value
         put("count", (e, a) -> (e instanceof EntityItem)?new NumericValue(((EntityItem) e).getItem().getCount()):Value.NULL);
         // EntityItem -> despawn timer via ssGetAge
         put("is_baby", (e, a) -> (e instanceof EntityLivingBase)?new NumericValue(((EntityLivingBase) e).isChild()):Value.NULL);
+        put("target", (e, a) -> {
+            if (e instanceof EntityLiving)
+            {
+                EntityLivingBase target = ((EntityLiving) e).getAttackTarget();
+                if (target != null)
+                {
+                    return new EntityValue(target);
+                }
+            }
+            return Value.NULL;
+        });
+        put("home", (e, a) -> {
+            if (e instanceof EntityCreature)
+            {
+                return ((EntityCreature) e).hasHome()?new BlockValue(null, e.getEntityWorld(), ((EntityCreature) e).getHomePosition()):Value.FALSE;
+            }
+            return Value.NULL;
+        });
+        put("sneaking", (e, a) -> {
+            if (e instanceof EntityPlayer)
+            {
+                return e.isSneaking()?Value.TRUE:Value.FALSE;
+            }
+            return Value.NULL;
+        });
+        put("sprinting", (e, a) -> {
+            if (e instanceof EntityPlayer)
+            {
+                return e.isSprinting()?Value.TRUE:Value.FALSE;
+            }
+            return Value.NULL;
+        });
+        put("swimming", (e, a) -> {
+            if (e instanceof EntityPlayer)
+            {
+                return e.isSwimming()?Value.TRUE:Value.FALSE;
+            }
+            return Value.NULL;
+        });
+        put("gamemode", (e, a) -> {
+            if (e instanceof  EntityPlayerMP)
+            {
+                return new StringValue(((EntityPlayerMP) e).interactionManager.getGameType().getName());
+            }
+            return Value.NULL;
+        });
+        put("gamemode_id", (e, a) -> {
+            if (e instanceof  EntityPlayerMP)
+            {
+                return new NumericValue(((EntityPlayerMP) e).interactionManager.getGameType().getID());
+            }
+            return Value.NULL;
+        });
+        //spectating_entity
+        // isGlowing
         put("effect", (e, a) ->
         {
             if (!(e instanceof EntityLivingBase))
@@ -195,15 +310,29 @@ public class EntityValue extends Value
             return new StringValue(res);
         });
     }};
+    private static <Req extends Entity> Req assertEntityArgType(Class<Req> klass, Value arg)
+    {
+        if (!(arg instanceof EntityValue))
+        {
+            return null;
+        }
+        Entity e = ((EntityValue) arg).getEntity();
+        if (!(klass.isAssignableFrom(e.getClass())))
+        {
+            return null;
+        }
+        return (Req)e;
+    }
 
     public void set(String what, Value toWhat)
     {
         if (!(featureModifiers.containsKey(what)))
-            throw new Expression.InternalExpressionException("unknown action on entity: "+what);
+            throw new Expression.InternalExpressionException("unknown action on entity: " + what);
         featureModifiers.get(what).accept(entity, toWhat);
     }
 
     private static Map<String, BiConsumer<Entity, Value>> featureModifiers = new HashMap<String, BiConsumer<Entity, Value>>() {{
+        put("remove", (entity, value) -> entity.remove());
         put("health", (e, v) -> { if (e instanceof EntityLivingBase) ((EntityLivingBase) e).setHealth((float)Expression.getNumericValue(v).getDouble()); });
         put("kill", (e, v) -> e.onKillCommand());
         put("pos", (e, v) ->
@@ -216,15 +345,48 @@ public class EntityValue extends Value
             e.posX = Expression.getNumericValue(coords.get(0)).getDouble();
             e.posY = Expression.getNumericValue(coords.get(1)).getDouble();
             e.posZ = Expression.getNumericValue(coords.get(2)).getDouble();
+            e.setPosition(e.posX, e.posY, e.posZ);
+            if (e instanceof EntityPlayerMP)
+                ((EntityPlayerMP)e).connection.setPlayerLocation(e.posX, e.posY, e.posZ, e.rotationYaw, e.rotationPitch);
         });
-        put("x", (e, v) -> e.posX = Expression.getNumericValue(v).getDouble());
-        put("y", (e, v) -> e.posY = Expression.getNumericValue(v).getDouble());
-        put("z", (e, v) -> e.posZ = Expression.getNumericValue(v).getDouble());
-        put("pitch", (e, v) -> e.rotationPitch = (float)Expression.getNumericValue(v).getDouble());
-        put("yaw", (e, v) -> e.rotationYaw = (float)Expression.getNumericValue(v).getDouble());
-        //                        "look"
-        //                        "turn"
-        //                                "nod"
+        put("x", (e, v) ->
+        {
+            e.posX = Expression.getNumericValue(v).getDouble();
+            e.setPosition(e.posX, e.posY, e.posZ);
+            if (e instanceof EntityPlayerMP)
+                ((EntityPlayerMP)e).connection.setPlayerLocation(e.posX, e.posY, e.posZ, e.rotationYaw, e.rotationPitch);
+        });
+        put("y", (e, v) ->
+        {
+            e.posY = Expression.getNumericValue(v).getDouble();
+            e.setPosition(e.posX, e.posY, e.posZ);
+            if (e instanceof EntityPlayerMP)
+                ((EntityPlayerMP)e).connection.setPlayerLocation(e.posX, e.posY, e.posZ, e.rotationYaw, e.rotationPitch);
+        });
+        put("z", (e, v) ->
+        {
+            e.posZ = Expression.getNumericValue(v).getDouble();
+            e.setPosition(e.posX, e.posY, e.posZ);
+            if (e instanceof EntityPlayerMP)
+                ((EntityPlayerMP)e).connection.setPlayerLocation(e.posX, e.posY, e.posZ, e.rotationYaw, e.rotationPitch);
+        });
+        put("pitch", (e, v) ->
+        {
+            e.rotationPitch = (float) Expression.getNumericValue(v).getDouble();
+            e.prevRotationPitch = e.rotationPitch;
+            if (e instanceof EntityPlayerMP)
+                ((EntityPlayerMP)e).connection.setPlayerLocation(e.posX, e.posY, e.posZ, e.rotationYaw, e.rotationPitch);
+        });
+        put("yaw", (e, v) ->
+        {
+            e.rotationYaw = (float) Expression.getNumericValue(v).getDouble();
+            e.prevRotationYaw = e.rotationYaw;
+            if (e instanceof EntityPlayerMP)
+                ((EntityPlayerMP)e).connection.setPlayerLocation(e.posX, e.posY, e.posZ, e.rotationYaw, e.rotationPitch);
+        });
+        //"look"
+        //"turn"
+        //"nod"
 
         put("move", (e, v) ->
         {
@@ -236,8 +398,10 @@ public class EntityValue extends Value
             e.posX += Expression.getNumericValue(coords.get(0)).getDouble();
             e.posY += Expression.getNumericValue(coords.get(1)).getDouble();
             e.posZ += Expression.getNumericValue(coords.get(2)).getDouble();
+            e.setPosition(e.posX, e.posY, e.posZ);
+            if (e instanceof EntityPlayerMP)
+                ((EntityPlayerMP)e).connection.setPlayerLocation(e.posX, e.posY, e.posZ, e.rotationYaw, e.rotationPitch);
         });
-
 
         put("motion", (e, v) ->
         {
@@ -249,10 +413,27 @@ public class EntityValue extends Value
             e.motionX = Expression.getNumericValue(coords.get(0)).getDouble();
             e.motionY = Expression.getNumericValue(coords.get(1)).getDouble();
             e.motionZ = Expression.getNumericValue(coords.get(2)).getDouble();
+            if (e instanceof EntityPlayerMP)
+                ((EntityPlayerMP)e).connection.sendPacket(new SPacketEntityVelocity(e));
         });
-        put("motionx", (e, v) -> e.motionX = Expression.getNumericValue(v).getDouble());
-        put("motiony", (e, v) -> e.motionY = Expression.getNumericValue(v).getDouble());
-        put("motionz", (e, v) -> e.motionZ = Expression.getNumericValue(v).getDouble());
+        put("motion_x", (e, v) ->
+        {
+            e.motionX = Expression.getNumericValue(v).getDouble();
+            if (e instanceof EntityPlayerMP)
+                ((EntityPlayerMP)e).connection.sendPacket(new SPacketEntityVelocity(e));
+        });
+        put("motion_y", (e, v) ->
+        {
+            e.motionY = Expression.getNumericValue(v).getDouble();
+            if (e instanceof EntityPlayerMP)
+                ((EntityPlayerMP)e).connection.sendPacket(new SPacketEntityVelocity(e));
+        });
+        put("motion_z", (e, v) ->
+        {
+            e.motionZ = Expression.getNumericValue(v).getDouble();
+            if (e instanceof EntityPlayerMP)
+                ((EntityPlayerMP)e).connection.sendPacket(new SPacketEntityVelocity(e));
+        });
 
         put("accelerate", (e, v) ->
         {
@@ -266,6 +447,9 @@ public class EntityValue extends Value
                     Expression.getNumericValue(coords.get(1)).getDouble(),
                     Expression.getNumericValue(coords.get(2)).getDouble()
             );
+            if (e instanceof EntityPlayerMP)
+                ((EntityPlayerMP)e).connection.sendPacket(new SPacketEntityVelocity(e));
+
         });
         put("custom_name", (e, v) -> {
             String name = v.getString();
@@ -307,20 +491,93 @@ public class EntityValue extends Value
             else
                 e.removeTag(v.getString());
         });
+        //put("target", (e, v) -> {
+        //    // attacks indefinitely - might need to do it through tasks
+        //    if (e instanceof EntityLiving)
+        //    {
+        //        EntityLivingBase elb = assertEntityArgType(EntityLivingBase.class, v);
+        //        ((EntityLiving) e).setAttackTarget(elb);
+        //    }
+        //});
+        put("talk", (e, v) -> {
+            // attacks indefinitely
+            if (e instanceof EntityLiving)
+            {
+                ((EntityLiving) e).playAmbientSound();
+            }
+        });
+        put("home", (e, v) -> {
+            if (!(e instanceof EntityCreature))
+                return;
+            EntityCreature ec = (EntityCreature)e;
+            if (v == null)
+                throw new Expression.InternalExpressionException("home requires at least one position argument, and optional distance, or null to cancel");
+            if (v instanceof NullValue)
+            {
+                ec.detachHome();
+                ec.getAI(false).removeTask(ec.temporaryTasks.get("home"));
+                ec.temporaryTasks.remove("home");
+                return;
+            }
 
-        //                                        "fire"
-        //                                                "extinguish"
-        //                                                        "silent"
-        //                                                                "gravity"
-        //                                                                        "invulnerable"
-        //                                                                                "dimension"
-        //                                                                                        "item"
-        //                                                                                                "count",
-        //"age",
-        //"effect_"name
-        //"hold"
-        //        "hold_offhand"
-        //                "jump"
-        //"nbt"
+            BlockPos pos;
+            int distance = 16;
+
+            if (v instanceof BlockValue)
+            {
+                pos = ((BlockValue) v).getPos();
+                if (pos == null) throw new Expression.InternalExpressionException("block is not positioned in the world");
+            }
+            else if (v instanceof ListValue)
+            {
+                List<Value> lv = ((ListValue) v).getItems();
+                if (lv.get(0) instanceof BlockValue)
+                {
+                    pos = ((BlockValue) lv.get(0)).getPos();
+                    if (lv.size()>1)
+                    {
+                        distance = (int)Expression.getNumericValue(lv.get(1)).getLong();
+                    }
+                }
+                else if (lv.size()>=3)
+                {
+                    pos = new BlockPos(Expression.getNumericValue(lv.get(0)).getLong(),
+                            Expression.getNumericValue(lv.get(1)).getLong(),
+                            Expression.getNumericValue(lv.get(2)).getLong());
+                    if (lv.size()>3)
+                    {
+                        distance = (int)Expression.getNumericValue(lv.get(4)).getLong();
+                    }
+                }
+                else throw new Expression.InternalExpressionException("home requires at least one position argument, and optional distance");
+
+            }
+            else throw new Expression.InternalExpressionException("home requires at least one position argument, and optional distance");
+
+            ec.setHomePosAndDistance(pos, distance);
+            if (!ec.temporaryTasks.containsKey("home"))
+            {
+                EntityAIBase task = new EntityAIMoveTowardsRestriction(ec, 1.0D);
+                ec.temporaryTasks.put("home", task);
+                ec.getAI(false).addTask(10, task);
+            }
+        });
+
+        // gamemode
+        // spectate
+        // "fire"
+        // "extinguish"
+        // "silent"
+        // "gravity"
+        // "invulnerable"
+        // "dimension"
+        // "item"
+        // "count",
+        // "age",
+        // "effect_"name
+        // "hold"
+        // "hold_offhand"
+        // "jump"
+        // "nbt" <-big one, for now use run('data merge entity ...
     }};
 }

@@ -41,11 +41,6 @@ public class ExpressionInspector
         return Expression.getExpressionSnippet(token, expr);
     }
 
-    public static void CarpetExpression_setLogOutput(CarpetExpression ex, boolean b)
-    {
-        ex.setLogOutput(b);
-    }
-
     public static void CarpetExpression_setChatErrorSnooper(CommandSource source)
     {
         CarpetExpression.setChatErrorSnooper(source);
@@ -64,4 +59,5 @@ public class ExpressionInspector
             super(message);
         }
     }
+    public static void CarpetExpression_resetExpressionEngine() { CarpetExpression.resetExpressionEngine(); }
 }

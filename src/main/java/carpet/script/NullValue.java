@@ -1,12 +1,11 @@
 package carpet.script;
 
-public class NullValue extends NumericValue
+public class NullValue extends NumericValue // TODO check nonsingleton code
 {
-    private static NullValue singleton = new NullValue();
     @Override
     public String getString()
     {
-        return "";
+        return "null";
     }
 
     @Override
@@ -18,9 +17,19 @@ public class NullValue extends NumericValue
     @Override
     public Value clone()
     {
-        return singleton;
+        return new NullValue();
     }
-    private NullValue() {super(0.0D);}
-    public static NullValue getInstance() {return singleton;}
+    public NullValue() {super(0.0D);}
 
+    @Override
+    public boolean equals(final Value o)
+    {
+        return o instanceof NullValue;
+    }
+
+    @Override
+    public int compareTo(Value o)
+    {
+        return  o instanceof NullValue ? 0 : -1;
+    }
 }

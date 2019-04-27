@@ -133,7 +133,7 @@ public class BlockInfo
         put(Material.PISTON         , "piston"       );
         put(Material.CORAL          , "coral"        );
         put(Material.GOURD          , "gourd"        );
-        put(Material.DRAGON_EGG     , "gragon_egg"   );
+        put(Material.DRAGON_EGG     , "dragon_egg"   );
         put(Material.CAKE           , "cake"         );
     }};
 

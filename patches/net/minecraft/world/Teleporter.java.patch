@@ -72,7 +72,46 @@
              double d5 = (double)blockpos.getX() + 0.5D;
              double d7 = (double)blockpos.getZ() + 0.5D;
              BlockPattern.PatternHelper blockpattern$patternhelper = BLOCK_NETHER_PORTAL.createPatternHelper(this.world, blockpos);
-@@ -394,6 +422,13 @@
+@@ -139,14 +167,35 @@
+             {
+                 ++d2;
+             }
+-
++    
++            // [CM] portalSuffocationFix - removed offset calculation outside of the if statement
++            double offset = (1.0D - entityIn.getLastPortalVec().x) * (double)blockpattern$patternhelper.getWidth() * (double)blockpattern$patternhelper.getForwards().rotateY().getAxisDirection().getOffset();
++            if (CarpetSettings.getBool("portalSuffocationFix"))
++            {
++                double entity_corrected_radius = 1.02*(double)entityIn.width/2;
++                if (entity_corrected_radius >= (double)blockpattern$patternhelper.getWidth()-entity_corrected_radius)
++                {
++                    //entity is wider than portal, so will suffocate anyways, so place it directly in the middle
++                    entity_corrected_radius = (double)blockpattern$patternhelper.getWidth()/2-0.001;
++                }
++        
++                if (offset >= 0)
++                {
++                    offset = MathHelper.clamp(offset, entity_corrected_radius, (double)blockpattern$patternhelper.getWidth()-entity_corrected_radius);
++                }
++                else
++                {
++                    offset = MathHelper.clamp(offset, -(double)blockpattern$patternhelper.getWidth()+entity_corrected_radius, -entity_corrected_radius);
++                }
++            }
++            
+             if (blockpattern$patternhelper.getForwards().getAxis() == EnumFacing.Axis.X)
+             {
+-                d7 = d2 + (1.0D - entityIn.getLastPortalVec().x) * (double)blockpattern$patternhelper.getWidth() * (double)blockpattern$patternhelper.getForwards().rotateY().getAxisDirection().getOffset();
++                d7 = d2 + offset;
+             }
+             else
+             {
+-                d5 = d2 + (1.0D - entityIn.getLastPortalVec().x) * (double)blockpattern$patternhelper.getWidth() * (double)blockpattern$patternhelper.getForwards().rotateY().getAxisDirection().getOffset();
++                d5 = d2 + offset;
+             }
+ 
+             float f = 0.0F;
+@@ -394,6 +443,13 @@
              }
          }
  
@@ -86,7 +125,7 @@
          return true;
      }
  
-@@ -413,9 +448,31 @@
+@@ -413,9 +469,31 @@
                      objectiterator.remove();
                  }
              }

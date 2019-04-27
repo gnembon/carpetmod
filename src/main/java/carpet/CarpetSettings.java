@@ -40,7 +40,7 @@ import net.minecraft.server.MinecraftServer;
 public class CarpetSettings
 {
     public static boolean locked = false;
-    public static final String carpetVersion = "v19_02_14";
+    public static final String carpetVersion = "v19_04_20";
 
     public static final Logger LOG = LogManager.getLogger();
     private static final Map<String, CarpetSettingEntry> settings_store;
@@ -59,11 +59,13 @@ public class CarpetSettings
     public static int n_pushLimit = 12;
     public static boolean b_hopperCounters = false;
     public static int n_mobSpawningAlgorithm = 113;
+    public static boolean b_shulkerSpawningInEndCities = false;
     public static int clientViewDistance = 0; // Used for Client Only
     public static boolean b_fastRedstoneDust = false;
     public static int railPowerLimitAdjusted = 8;
     public static boolean b_disableSpawnChunks = false;
     public static boolean b_movableTileEntities = false;
+    public static boolean b_huskSpawningInTemples = false;
 
     /*
     public static boolean extendedConnectivity = false;
@@ -109,8 +111,8 @@ public class CarpetSettings
   //!rule("extendedConnectivity",  "experimental", "Quasi Connectivity doesn't require block updates.")
   //                              .extraInfo("All redstone components will send extra updates downwards",
   //                                         "Affects hoppers, droppers and dispensers"),
-  //!rule("portalSuffocationFix",  "fix", "Nether portals correctly place entities going through")
-  //                              .extraInfo("Entities shouldn't suffocate in obsidian"),
+  rule("portalSuffocationFix",  "fix", "Nether portals correctly place entities going through")
+                                .extraInfo("Entities shouldn't suffocate in obsidian"),
   //!rule("superSecretSetting",    "experimental","Gbhs sgnf sadsgras fhskdpri!"),
   /////rule("portalTeleportationFix", "fix", "Nether portals won't teleport you on occasion to 8x coordinates")
   //                              .extraInfo("It also prevents from taking random fire damage when going through portals"),
@@ -141,8 +143,8 @@ public class CarpetSettings
   //<with modified protocol> rule("accurateBlockPlacement", "creative", "Allows to place blocks in different orientations. Requires Carpet Client")
   //                              .extraInfo("Also prevents rotations upon placement of dispensers and furnaces","when placed into a world by commands"),
   /////rule("optimizedTNT",          "tnt", "TNT causes less lag when exploding in the same spot and in liquids"),
-  /////rule("huskSpawningInTemples", "experimental feature", "Only husks spawn in desert temples"),
-  /////rule("shulkerSpawningInEndCities", "feature experimental", "Shulkers will respawn in end cities"),
+  rule("huskSpawningInTemples", "experimental feature", "Only husks spawn in desert temples").boolAccelerate(),
+  rule("shulkerSpawningInEndCities", "feature experimental", "Shulkers will respawn in end cities").boolAccelerate(),
   //!rule("wirelessRedstone",      "creative", "Repeater pointing from and to wool blocks transfer signals wirelessly")
   //                              .extraInfo("Temporary feature - repeaters need an update when reloaded",
   //                                         "By Narcoleptic Frog"),
@@ -166,7 +168,7 @@ public class CarpetSettings
                                            "Counters are global and shared between players, 16 channels available",
                                            "Items counted are destroyed, count up to one stack per tick per hopper")
                                 .isACommand().boolAccelerate().defaultFalse(),
-  //! rename rule("renewableElderGuardians", "experimental feature", "Guardians turn into Elder Guardian when struck by lightning"),
+  rule("renewableSponges",      "experimental feature", "Guardians turn into Elder Guardian when struck by lightning"),
   //rule("optimizedDespawnRange", "optimizations", "Spawned mobs that would otherwise despawn immediately, won't be placed in world"), // use 1.14 spawning instead
   //???rule("redstoneMultimeter",    "creative survival", "Enables integration with redstone multimeter mod")
   //                              .extraInfo("Required clients with RSMM Mod by Narcoleptic Frog. Enables multiplayer experience with RSMM Mod"),
@@ -174,7 +176,7 @@ public class CarpetSettings
   //!rule("displayMobAI",          "creative", "Uses nametags to display current mobs AI tasks"),
   //???rule("fastMovingEntityOptimization", "experimental", "Optimized movement calculation or very fast moving entities"),
   //???rule("blockCollisionsOptimization", "experimental", "Optimized entity-block collision calculations. By masa"),
-  //!rule("desertShrubs",          "feature", "Saplings turn into dead shrubs in hot climates and no water access when it attempts to grow into a tree"),
+  rule("desertShrubs",          "feature", "Saplings turn into dead shrubs in hot climates and no water access when it attempts to grow into a tree"),
   /////rule("nitwitCrafter",         "experimental", "Nitwit villagers will have 3 hidden crafting recipes they can craft")
   //                              .extraInfo("They require food for crafting and prefer a specific food type to craft faster.",
   //                                         "They have one crafting recipe to start out and unlock there higher recipes as they craft",
@@ -193,7 +195,7 @@ public class CarpetSettings
   rule("silverFishDropGravel",  "experimental", "Silverfish drop a gravel item when breaking out of a block"),
   /////rule("renewablePackedIce",    "experimental", "Multiple ice crushed by falling anvils make packed ice"),
   /////rule("renewableDragonEggs",   "experimental", "Dragon eggs when fed meet items spawn more eggs"),
-  //!rule("summonNaturalLightning","creative", "summoning a lightning bolt has all the side effects of natural lightning"),
+  rule("summonNaturalLightning","creative", "summoning a lightning bolt has all the side effects of natural lightning"),
   rule("commandSpawn",          "commands", "Enables /spawn command for spawn tracking").isACommand(),
   rule("commandTick",           "commands", "Enables /tick command to control game speed").isACommand(),
   rule("commandLog",            "commands", "Enables /log command to monitor events in the game via chat and overlays").isACommand(),
@@ -250,8 +252,8 @@ public class CarpetSettings
                                     railPowerLimitAdjusted = CarpetSettings.getInt("railPowerLimit") - 1),
   rule("fillLimit",             "creative","Customizable fill/clone volume limit")
                                 .choices("32768","32768 250000 1000000").setNotStrict(),
-  //!rule("maxEntityCollisions",   "optimizations", "Customizable maximal entity collision limits, 0 for no limits")
-  //                              .choices("0","0 1 20").setNotStrict(),
+  rule("maxEntityCollisions",   "optimizations", "Customizable maximal entity collision limits, 0 for no limits")
+                                .choices("0","0 1 20").setNotStrict(),
   //???rule("pistonGhostBlocksFix",  "fix", "Fix for piston ghost blocks")
   //                              .extraInfo("true(serverOnly) option works with all clients, including vanilla",
   //                              "clientAndServer option requires compatible carpet clients and messes up flying machines")
@@ -347,6 +349,8 @@ public class CarpetSettings
                                   .choices("25", "0 2 25").setNotStrict(),
   rule("renewableCoral",          "feature", "Coral structures will grow with bonemeal from coral plants"),
   rule("placementRotationFix",    "fix", "fixes block placement rotation issue when player rotates quickly while placing blocks"),
+  rule("endCitySavingFix",        "fix", "Fixes the saving of end cities.")
+                                  .extraInfo("Every End city that got saved once was invalidated on a server restart."),
         };
         for (CarpetSettingEntry rule: RuleList)
         {
