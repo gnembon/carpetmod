@@ -64,6 +64,7 @@ public class CarpetSettings
     public static boolean b_fastRedstoneDust = false;
     public static int railPowerLimitAdjusted = 8;
     public static boolean b_disableSpawnChunks = false;
+    public static boolean b_huskSpawningInTemples = false;
 
     /*
     public static boolean extendedConnectivity = false;
@@ -141,7 +142,7 @@ public class CarpetSettings
   //<with modified protocol> rule("accurateBlockPlacement", "creative", "Allows to place blocks in different orientations. Requires Carpet Client")
   //                              .extraInfo("Also prevents rotations upon placement of dispensers and furnaces","when placed into a world by commands"),
   /////rule("optimizedTNT",          "tnt", "TNT causes less lag when exploding in the same spot and in liquids"),
-  /////rule("huskSpawningInTemples", "experimental feature", "Only husks spawn in desert temples"),
+  rule("huskSpawningInTemples", "experimental feature", "Only husks spawn in desert temples").boolAccelerate(),
   rule("shulkerSpawningInEndCities", "feature experimental", "Shulkers will respawn in end cities").boolAccelerate(),
   //!rule("wirelessRedstone",      "creative", "Repeater pointing from and to wool blocks transfer signals wirelessly")
   //                              .extraInfo("Temporary feature - repeaters need an update when reloaded",

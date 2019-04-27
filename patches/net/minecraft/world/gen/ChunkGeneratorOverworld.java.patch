@@ -1,0 +1,23 @@
+--- a/net/minecraft/world/gen/ChunkGeneratorOverworld.java
++++ b/net/minecraft/world/gen/ChunkGeneratorOverworld.java
+@@ -1,6 +1,8 @@
+ package net.minecraft.world.gen;
+ 
+ import java.util.List;
++
++import carpet.CarpetSettings;
+ import net.minecraft.block.state.IBlockState;
+ import net.minecraft.entity.EnumCreatureType;
+ import net.minecraft.util.SharedSeedRandom;
+@@ -289,6 +291,11 @@
+         {
+             return Feature.SWAMP_HUT.getSpawnList();
+         }
++        //[CM] Add husks to the list of spawnable creatures
++        else if (CarpetSettings.b_huskSpawningInTemples && creatureType == EnumCreatureType.MONSTER && Feature.DESERT_PYRAMID.isPositionInsideStructure(this.world, pos))
++        {
++            return Feature.DESERT_PYRAMID.getSpawnList();
++        }
+         else
+         {
+             return creatureType == EnumCreatureType.MONSTER && Feature.OCEAN_MONUMENT.isPositionInStructure(this.world, pos) ? Feature.OCEAN_MONUMENT.getSpawnList() : biome.getSpawns(creatureType);
