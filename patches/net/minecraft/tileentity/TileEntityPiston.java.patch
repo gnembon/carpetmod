@@ -102,12 +102,12 @@
          this.shouldHeadBeRendered = compound.getBoolean("source");
 +    
 +        // [CM] Movable TE's CARPET-DeadlyMC
-+        if(CarpetSettings.b_movableTileEntities && compound.contains("carriedTileEntity", 10))
++        if(CarpetSettings.b_movableTileEntities && compound.contains("carriedTileEntityCM", 10))
 +        {
 +            if(this.pistonState.getBlock() instanceof ITileEntityProvider)
 +                this.carriedTileEntity = ((ITileEntityProvider)(this.pistonState.getBlock())).createNewTileEntity(this.world);
 +            if(carriedTileEntity != null) // Can actually be null, as BlockPistonMoving.createNewTileEntity(...) returns null
-+                this.carriedTileEntity.read(compound.getCompound("carriedTileEntity"));
++                this.carriedTileEntity.read(compound.getCompound("carriedTileEntityCM"));
 +        }
      }
  
@@ -120,7 +120,7 @@
 +        // [CM] Movable TE's CARPET-DeadlyMC
 +        if(CarpetSettings.b_movableTileEntities && this.carriedTileEntity != null)
 +        {
-+            compound.setTag("carriedTileEntity", this.carriedTileEntity.write(new NBTTagCompound()));
++            compound.setTag("carriedTileEntityCM", this.carriedTileEntity.write(new NBTTagCompound()));
 +        }
 +        
          return compound;
