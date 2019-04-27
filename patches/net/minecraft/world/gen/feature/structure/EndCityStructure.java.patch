@@ -37,32 +37,3 @@
      private static int getYPosForStructure(int chunkX, int chunkY, IChunkGenerator<?> generatorIn)
      {
          Random random = new Random((long)(chunkX + chunkY * 10387313));
-@@ -140,5 +155,28 @@
-             {
-                 return this.isSizeable;
-             }
-+
-+            // [CM] Fix EndCity saving
-+            @Override
-+            public void writeAdditional(NBTTagCompound tagCompound)
-+            {
-+                super.writeAdditional(tagCompound);
-+                if (CarpetSettings.getBool("endCitySavingFix"))
-+                {
-+                    // Called the tag Valid because it is called Valid in the VillageStructure too
-+                    // and it is used to invalidate the Structure
-+                    tagCompound.setBoolean("Valid", this.isSizeable);
-+                }
-+            }
-+
-+            @Override
-+            public void readAdditional(NBTTagCompound tagCompound)
-+            {
-+                super.readAdditional(tagCompound);
-+                if (CarpetSettings.getBool("endCitySavingFix") && tagCompound.hasKey("Valid"))
-+                {
-+                    isSizeable = tagCompound.getBoolean("Valid");
-+                }
-+            }
-         }
- }
