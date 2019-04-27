@@ -64,6 +64,7 @@ public class CarpetSettings
     public static boolean b_fastRedstoneDust = false;
     public static int railPowerLimitAdjusted = 8;
     public static boolean b_disableSpawnChunks = false;
+    public static boolean b_movableTileEntities = false;
     public static boolean b_huskSpawningInTemples = false;
 
     /*
@@ -171,7 +172,7 @@ public class CarpetSettings
   //rule("optimizedDespawnRange", "optimizations", "Spawned mobs that would otherwise despawn immediately, won't be placed in world"), // use 1.14 spawning instead
   //???rule("redstoneMultimeter",    "creative survival", "Enables integration with redstone multimeter mod")
   //                              .extraInfo("Required clients with RSMM Mod by Narcoleptic Frog. Enables multiplayer experience with RSMM Mod"),
-  //! will try rule("movableTileEntities",   "experimental", "Pistons can push tile entities, like hoppers, chests etc."),
+  rule("movableTileEntities",   "experimental", "Pistons can push tile entities, like hoppers, chests etc.").boolAccelerate(),
   //!rule("displayMobAI",          "creative", "Uses nametags to display current mobs AI tasks"),
   //???rule("fastMovingEntityOptimization", "experimental", "Optimized movement calculation or very fast moving entities"),
   //???rule("blockCollisionsOptimization", "experimental", "Optimized entity-block collision calculations. By masa"),

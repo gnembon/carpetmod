@@ -1,6 +1,6 @@
 --- a/net/minecraft/tileentity/TileEntityPiston.java
 +++ b/net/minecraft/tileentity/TileEntityPiston.java
-@@ -1,6 +1,8 @@
+@@ -1,9 +1,12 @@
  package net.minecraft.tileentity;
  
  import java.util.List;
@@ -9,7 +9,20 @@
  import net.minecraft.block.Block;
  import net.minecraft.block.BlockPistonBase;
  import net.minecraft.block.BlockPistonExtension;
-@@ -40,6 +42,11 @@
++import net.minecraft.block.ITileEntityProvider;
+ import net.minecraft.block.material.EnumPushReaction;
+ import net.minecraft.block.state.IBlockState;
+ import net.minecraft.entity.Entity;
+@@ -29,6 +32,8 @@
+     private EnumFacing pistonFacing;
+     private boolean extending;
+     private boolean shouldHeadBeRendered;
++    // [CM] Movable TE's - new var
++    private TileEntity carriedTileEntity;
+     private static final ThreadLocal<EnumFacing> MOVING_ENTITY = new ThreadLocal<EnumFacing>()
+     {
+         protected EnumFacing initialValue()
+@@ -40,6 +45,11 @@
      private float lastProgress;
      private long lastTicked;
  
@@ -21,7 +34,7 @@
      public TileEntityPiston()
      {
          super(TileEntityType.PISTON);
-@@ -178,6 +185,13 @@
+@@ -178,6 +188,13 @@
                              {
                                  this.fixEntityWithinPistonBase(entity, enumfacing, d0);
                              }
@@ -35,3 +48,119 @@
                          }
                      }
                  }
+@@ -318,10 +335,26 @@
+                 {
+                     iblockstate = Block.getValidBlockForPosition(this.pistonState, this.world, this.pos);
+                 }
+-
+-                this.world.setBlockState(this.pos, iblockstate, 3);
+-                this.world.neighborChanged(this.pos, iblockstate.getBlock(), this.pos);
++    
++                // [CM] Movable TE's CARPET-DeadlyMC
++                if (!CarpetSettings.b_movableTileEntities)
++                {
++                    this.world.setBlockState(this.pos, iblockstate, 3);
++                    this.world.neighborChanged(this.pos, iblockstate.getBlock(), this.pos);
++                }
++                else
++                {
++                    this.placeBlock();
++                }
+             }
++            // [CM] Movable TE's CARPET-DeadlyMC
++            else if (CarpetSettings.b_movableTileEntities)
++            {
++                if (this.carriedTileEntity != null && this.world.getBlockState(this.pos).getBlock() == Blocks.AIR) {
++                    this.placeBlock();
++                    this.world.removeBlock(this.pos);
++                }
++            }
+         }
+     }
+ 
+@@ -351,8 +384,15 @@
+                         iblockstate = iblockstate.with(BlockStateProperties.WATERLOGGED, Boolean.valueOf(false));
+                     }
+ 
+-                    this.world.setBlockState(this.pos, iblockstate, 67);
+-                    this.world.neighborChanged(this.pos, iblockstate.getBlock(), this.pos);
++                    if (!CarpetSettings.b_movableTileEntities)
++                    {
++                        this.world.setBlockState(this.pos, iblockstate, 67);
++                        this.world.neighborChanged(this.pos, iblockstate.getBlock(), this.pos);
++                    }
++                    else
++                    {
++                        this.placeBlock();
++                    }
+                 }
+             }
+         }
+@@ -378,6 +418,15 @@
+         this.lastProgress = this.progress;
+         this.extending = compound.getBoolean("extending");
+         this.shouldHeadBeRendered = compound.getBoolean("source");
++    
++        // [CM] Movable TE's CARPET-DeadlyMC
++        if(CarpetSettings.b_movableTileEntities && compound.contains("carriedTileEntityCM", 10))
++        {
++            if(this.pistonState.getBlock() instanceof ITileEntityProvider)
++                this.carriedTileEntity = ((ITileEntityProvider)(this.pistonState.getBlock())).createNewTileEntity(this.world);
++            if(carriedTileEntity != null) // Can actually be null, as BlockPistonMoving.createNewTileEntity(...) returns null
++                this.carriedTileEntity.read(compound.getCompound("carriedTileEntityCM"));
++        }
+     }
+ 
+     public NBTTagCompound write(NBTTagCompound compound)
+@@ -388,6 +437,13 @@
+         compound.setFloat("progress", this.lastProgress);
+         compound.setBoolean("extending", this.extending);
+         compound.setBoolean("source", this.shouldHeadBeRendered);
++    
++        // [CM] Movable TE's CARPET-DeadlyMC
++        if(CarpetSettings.b_movableTileEntities && this.carriedTileEntity != null)
++        {
++            compound.setTag("carriedTileEntityCM", this.carriedTileEntity.write(new NBTTagCompound()));
++        }
++        
+         return compound;
+     }
+ 
+@@ -435,4 +491,37 @@
+     {
+         return this.lastTicked;
+     }
++    
++    // [CM] Movable TE's - helper method
++    public void setCarriedTileEntity(TileEntity tileEntity)
++    {
++        this.carriedTileEntity = tileEntity;
++    }
++    
++    // [CM] Movable TE's - helper method
++    private void placeBlock()
++    {
++        this.world.setBlockState(this.pos, this.pistonState, 18); //Flag 18 => No block updates, TileEntity has to be placed first
++        
++        if(!this.world.isRemote)
++        {
++            if(carriedTileEntity != null)
++            {
++                this.world.removeTileEntity(this.pos);
++                carriedTileEntity.validate();
++                this.world.setTileEntity(this.pos, carriedTileEntity);
++            }
++            
++            //Update neighbors, comparators and observers now (same order as setBlockState would have if flag was set to 3 (default))
++            //This should not change piston behavior for vanilla-pushable blocks at all
++            
++            this.world.notifyNeighbors(pos, Blocks.MOVING_PISTON);
++            if (this.pistonState.hasComparatorInputOverride())
++            {
++                this.world.updateComparatorOutputLevel(pos, this.pistonState.getBlock());
++            }
++            this.world.notifyNeighborsOfStateChange(pos, this.pistonState.getBlock());
++        }
++        this.world.neighborChanged(this.pos, this.pistonState.getBlock(), this.pos);
++    }
+ }

@@ -1,6 +1,13 @@
 --- a/net/minecraft/world/chunk/Chunk.java
 +++ b/net/minecraft/world/chunk/Chunk.java
-@@ -489,9 +489,16 @@
+@@ -1,5 +1,6 @@
+ package net.minecraft.world.chunk;
+ 
++import carpet.CarpetSettings;
+ import com.google.common.collect.Maps;
+ import com.google.common.collect.Queues;
+ import com.google.common.collect.Sets;
+@@ -489,9 +490,16 @@
          }
      }
  
@@ -17,7 +24,7 @@
          int i = pos.getX() & 15;
          int j = pos.getY();
          int k = pos.getZ() & 15;
-@@ -568,7 +575,8 @@
+@@ -568,14 +576,26 @@
                      }
                  }
  
@@ -27,3 +34,22 @@
                  {
                      state.onBlockAdded(this.world, pos, iblockstate);
                  }
+ 
+                 if (block instanceof ITileEntityProvider)
+                 {
+-                    TileEntity tileentity1 = this.getTileEntity(pos, Chunk.EnumCreateEntityType.CHECK);
++                    // [CM] Movable TE's CARPET-DeadlyMC
++                    TileEntity tileentity1; // = this.getTileEntity(pos, Chunk.EnumCreateEntityType.CHECK);
++    
++                    // [CM] Movable TE's CARPET-DeadlyMC
++                    if(CarpetSettings.b_movableTileEntities)
++                    {  //this.getTileEntity(...) doesn't check pending TileEntities
++                        tileentity1 = this.world.getTileEntity(pos);
++                    }
++                    else
++                    { // vanilla
++                        tileentity1 = this.getTileEntity(pos, Chunk.EnumCreateEntityType.CHECK);
++                    }
+ 
+                     if (tileentity1 == null)
+                     {
