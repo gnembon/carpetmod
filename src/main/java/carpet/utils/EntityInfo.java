@@ -156,7 +156,7 @@ public class EntityInfo
             ItemStack stack = ei.getItem();// getEntityItem();
             String stackname = stack.getCount()>1?String.format("%dx%s",stack.getCount(), stack.getDisplayName().getString()):stack.getDisplayName().getString();
             lst.add(Messenger.c("w  - Content: ", "wb "+stackname));
-            lst.add(Messenger.c("w  - Despawn Timer: ", "wb "+makeTime(ei.getAge())));
+            lst.add(Messenger.c("w  - Despawn Timer: ", "wb "+makeTime(ei.ssGetAge())));
         }
         if (e instanceof EntityXPOrb)
         {

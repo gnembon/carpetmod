@@ -15,7 +15,14 @@ public class NumericValue extends Value
     @Override
     public String getString()
     {
-        return new BigDecimal(value).stripTrailingZeros().toPlainString();
+        try
+        {
+            return BigDecimal.valueOf(value).stripTrailingZeros().toPlainString();
+        }
+        catch (NumberFormatException exc)
+        {
+            throw new ArithmeticException("Incorrect number format for "+value);
+        }
     }
 
     @Override
@@ -37,14 +44,14 @@ public class NumericValue extends Value
     {  // TODO test if definintn add(NumericVlaue) woud solve the casting
         if (v instanceof NumericValue)
         {
-            return new NumericValue(value + ((NumericValue) v).getDouble() );
+            return new NumericValue(getDouble() + ((NumericValue) v).getDouble() );
         }
         return super.add(v);
     }
     public Value subtract(Value v) {  // TODO test if definintn add(NumericVlaue) woud solve the casting
         if (v instanceof NumericValue)
         {
-            return new NumericValue(value - (((NumericValue) v).getDouble()));
+            return new NumericValue(getDouble() - (((NumericValue) v).getDouble()));
         }
         return super.subtract(v);
     }
@@ -52,15 +59,19 @@ public class NumericValue extends Value
     {
         if (v instanceof NumericValue)
         {
-            return new NumericValue(value * ((NumericValue) v).getDouble() );
+            return new NumericValue(getDouble() * ((NumericValue) v).getDouble() );
         }
-        return new StringValue(StringUtils.repeat(v.getString(), value.intValue()));
+        if (v instanceof ListValue)
+        {
+            return v.multiply(this);
+        }
+        return new StringValue(StringUtils.repeat(v.getString(), (int) getLong()));
     }
     public Value divide(Value v)
     {
         if (v instanceof NumericValue)
         {
-            return new NumericValue(value / ((NumericValue) v).getDouble() );
+            return new NumericValue(getDouble() / ((NumericValue) v).getDouble() );
         }
         return super.divide(v);
     }
@@ -76,6 +87,10 @@ public class NumericValue extends Value
     @Override
     public int compareTo(Value o)
     {
+        if (o instanceof NullValue)
+        {
+            return -o.compareTo(this);
+        }
         if (o instanceof NumericValue)
         {
             return value.compareTo(((NumericValue) o).getDouble());
@@ -85,6 +100,10 @@ public class NumericValue extends Value
     @Override
     public boolean equals(Value o)
     {
+        if (o instanceof NullValue)
+        {
+            return o.equals(this);
+        }
         if (o instanceof NumericValue)
         {
             return !this.subtract(o).getBoolean();
@@ -109,9 +128,22 @@ public class NumericValue extends Value
         this(boolval?1.0D:0.0D);
     }
 
-    //public BigDecimal getNumber()
-    //{
-    //    return value;
-    //}
+    @Override
+    public int length()
+    {
+        return Integer.toString(value.intValue()).length();
+    }
+
+    @Override
+    public double readNumber()
+    {
+        return value;
+    }
+
+    @Override
+    public long readInteger()
+    {
+        return getLong();
+    }
 
 }

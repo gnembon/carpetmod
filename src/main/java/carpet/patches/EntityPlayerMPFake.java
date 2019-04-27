@@ -49,7 +49,7 @@ public class EntityPlayerMPFake extends EntityPlayerMP
             instance.removed = false;
             worldIn.spawnEntity(instance);
             instance.setWorld(worldIn);
-            server.getPlayerList().preparePlayer(instance, worldIn);
+            server.getPlayerList().preparePlayer(instance, old_world);
             instance.connection.setPlayerLocation(d0, d1, d2, (float)yaw, (float)pitch);
             instance.interactionManager.setWorld(worldIn);
         }

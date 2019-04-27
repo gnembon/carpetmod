@@ -40,7 +40,7 @@ import net.minecraft.server.MinecraftServer;
 public class CarpetSettings
 {
     public static boolean locked = false;
-    public static final String carpetVersion = "v19_02_14";
+    public static final String carpetVersion = "v19_04_20";
 
     public static final Logger LOG = LogManager.getLogger();
     private static final Map<String, CarpetSettingEntry> settings_store;
@@ -59,6 +59,7 @@ public class CarpetSettings
     public static int n_pushLimit = 12;
     public static boolean b_hopperCounters = false;
     public static int n_mobSpawningAlgorithm = 113;
+    public static boolean b_shulkerSpawningInEndCities = false;
     public static int clientViewDistance = 0; // Used for Client Only
     public static boolean b_fastRedstoneDust = false;
     public static int railPowerLimitAdjusted = 8;
@@ -142,7 +143,7 @@ public class CarpetSettings
   //                              .extraInfo("Also prevents rotations upon placement of dispensers and furnaces","when placed into a world by commands"),
   /////rule("optimizedTNT",          "tnt", "TNT causes less lag when exploding in the same spot and in liquids"),
   rule("huskSpawningInTemples", "experimental feature", "Only husks spawn in desert temples").boolAccelerate(),
-  /////rule("shulkerSpawningInEndCities", "feature experimental", "Shulkers will respawn in end cities"),
+  rule("shulkerSpawningInEndCities", "feature experimental", "Shulkers will respawn in end cities").boolAccelerate(),
   //!rule("wirelessRedstone",      "creative", "Repeater pointing from and to wool blocks transfer signals wirelessly")
   //                              .extraInfo("Temporary feature - repeaters need an update when reloaded",
   //                                         "By Narcoleptic Frog"),
@@ -193,7 +194,7 @@ public class CarpetSettings
   rule("silverFishDropGravel",  "experimental", "Silverfish drop a gravel item when breaking out of a block"),
   /////rule("renewablePackedIce",    "experimental", "Multiple ice crushed by falling anvils make packed ice"),
   /////rule("renewableDragonEggs",   "experimental", "Dragon eggs when fed meet items spawn more eggs"),
-  //!rule("summonNaturalLightning","creative", "summoning a lightning bolt has all the side effects of natural lightning"),
+  rule("summonNaturalLightning","creative", "summoning a lightning bolt has all the side effects of natural lightning"),
   rule("commandSpawn",          "commands", "Enables /spawn command for spawn tracking").isACommand(),
   rule("commandTick",           "commands", "Enables /tick command to control game speed").isACommand(),
   rule("commandLog",            "commands", "Enables /log command to monitor events in the game via chat and overlays").isACommand(),
@@ -250,8 +251,8 @@ public class CarpetSettings
                                     railPowerLimitAdjusted = CarpetSettings.getInt("railPowerLimit") - 1),
   rule("fillLimit",             "creative","Customizable fill/clone volume limit")
                                 .choices("32768","32768 250000 1000000").setNotStrict(),
-  //!rule("maxEntityCollisions",   "optimizations", "Customizable maximal entity collision limits, 0 for no limits")
-  //                              .choices("0","0 1 20").setNotStrict(),
+  rule("maxEntityCollisions",   "optimizations", "Customizable maximal entity collision limits, 0 for no limits")
+                                .choices("0","0 1 20").setNotStrict(),
   //???rule("pistonGhostBlocksFix",  "fix", "Fix for piston ghost blocks")
   //                              .extraInfo("true(serverOnly) option works with all clients, including vanilla",
   //                              "clientAndServer option requires compatible carpet clients and messes up flying machines")
@@ -347,6 +348,8 @@ public class CarpetSettings
                                   .choices("25", "0 2 25").setNotStrict(),
   rule("renewableCoral",          "feature", "Coral structures will grow with bonemeal from coral plants"),
   rule("placementRotationFix",    "fix", "fixes block placement rotation issue when player rotates quickly while placing blocks"),
+  rule("endCitySavingFix",        "fix", "Fixes the saving of end cities.")
+                                  .extraInfo("Every End city that got saved once was invalidated on a server restart."),
         };
         for (CarpetSettingEntry rule: RuleList)
         {

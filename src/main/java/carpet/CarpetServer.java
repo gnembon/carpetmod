@@ -18,6 +18,7 @@ import carpet.commands.SpawnCommand;
 import carpet.commands.TestCommand;
 import carpet.commands.TickCommand;
 import carpet.logging.LoggerRegistry;
+import carpet.script.ExpressionInspector;
 import carpet.utils.HUDController;
 
 import java.util.Random;
@@ -50,6 +51,7 @@ public class CarpetServer // static for now - easier to handle all around the co
     public static void onServerLoaded(MinecraftServer server)
     {
         CarpetSettings.apply_settings_from_conf(server);
+        ExpressionInspector.CarpetExpression_resetExpressionEngine();
         //CarpetSettings.reload_all_statics(); // not needed anymore due to validators
     }
     // Separate from onServerLoaded, because a server can be loaded multiple times in singleplayer

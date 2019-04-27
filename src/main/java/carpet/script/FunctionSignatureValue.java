@@ -6,6 +6,7 @@ public class FunctionSignatureValue extends Value
 {
     private String identifier;
     private List<String> arguments;
+    private List<String> globals;
 
     @Override
     public String getString()
@@ -24,10 +25,11 @@ public class FunctionSignatureValue extends Value
     {
         throw new Expression.ExpressionException("Function "+identifier+" is not defined yet");
     }
-    public FunctionSignatureValue(String name, List<String> args)
+    public FunctionSignatureValue(String name, List<String> args, List<String> globals)
     {
         this.identifier = name;
         this.arguments = args;
+        this.globals = globals;
     }
     public String getName()
     {
@@ -37,6 +39,7 @@ public class FunctionSignatureValue extends Value
     {
         return arguments;
     }
+    public List<String> getGlobals() {return globals;}
 
 
 }

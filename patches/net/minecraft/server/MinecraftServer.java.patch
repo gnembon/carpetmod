@@ -132,3 +132,16 @@
          this.profiler.endStartSection("tickables");
  
          for (int j = 0; j < this.tickables.size(); ++j)
+@@ -1605,6 +1650,12 @@
+     {
+         return this.serverTime;
+     }
++    public void dontPanic()
++    {
++        this.serverTime = Util.milliTime();
++        this.actualServerTime = Util.milliTime();
++        this.serverIsRunning = true;
++    }
+ 
+     public Thread getServerThread()
+     {

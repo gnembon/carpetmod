@@ -1,0 +1,12 @@
+--- a/net/minecraft/entity/EntitySpawnPlacementRegistry.java
++++ b/net/minecraft/entity/EntitySpawnPlacementRegistry.java
+@@ -102,6 +102,9 @@
+         register(EntityType.ZOMBIE_HORSE, EntitySpawnPlacementRegistry.SpawnPlacementType.ON_GROUND, Heightmap.Type.MOTION_BLOCKING_NO_LEAVES);
+         register(EntityType.ZOMBIE_PIGMAN, EntitySpawnPlacementRegistry.SpawnPlacementType.ON_GROUND, Heightmap.Type.MOTION_BLOCKING_NO_LEAVES);
+         register(EntityType.ZOMBIE_VILLAGER, EntitySpawnPlacementRegistry.SpawnPlacementType.ON_GROUND, Heightmap.Type.MOTION_BLOCKING_NO_LEAVES);
++
++        // [CM] added Shulkers here as EntitySpawnPlacementRegistry is not allowed to be null in worldEntitySpawner
++        register(EntityType.SHULKER, SpawnPlacementType.ON_GROUND, Heightmap.Type.MOTION_BLOCKING_NO_LEAVES);
+     }
+ 
+     static class Entry

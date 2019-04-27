@@ -2,7 +2,8 @@ package carpet.commands;
 
 import carpet.CarpetSettings;
 import carpet.script.CarpetExpression;
-import carpet.script.Expression;
+import carpet.script.ExpressionInspector;
+import carpet.script.Tokenizer;
 import carpet.utils.Messenger;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -20,11 +21,17 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MutableBoundingBox;
 import net.minecraft.world.WorldServer;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static net.minecraft.command.Commands.argument;
 import static net.minecraft.command.Commands.literal;
+import static net.minecraft.command.ISuggestionProvider.suggest;
 
 public class ScriptCommand
 {
@@ -33,17 +40,74 @@ public class ScriptCommand
         LiteralArgumentBuilder<CommandSource> command = literal("script").
                 requires((player) -> CarpetSettings.getBool("commandScript")).
                 then(literal("globals").executes( (c) -> listGlobals(c.getSource()))).
-                then(literal("run").
+                then(literal("stop").executes( (c) -> { CarpetExpression.BreakExecutionOfAllScriptsWithCommands(true); return 1;})).
+                then(literal("resume").executes( (c) -> { CarpetExpression.BreakExecutionOfAllScriptsWithCommands(false); return 1;})).
+                then(literal("run").requires((player) -> player.hasPermissionLevel(2)).
                         then(argument("expr", StringArgumentType.greedyString()).
                                 executes((c) -> compute(
                                         c.getSource(),
                                         StringArgumentType.getString(c, "expr")
                                 )))).
-                then(literal("scan").
+
+                then(literal("invoke").
+                        then(argument("call", StringArgumentType.word()).suggests( (c, b)->suggest(getGlobalCalls(),b)).
+                                executes( (c) -> invoke(
+                                        c.getSource(),
+                                        StringArgumentType.getString(c, "call"),
+                                        null,
+                                        null,
+                                        ""
+                                )).
+                                then(argument("arguments", StringArgumentType.greedyString()).
+                                        executes( (c) -> invoke(
+                                                c.getSource(),
+                                                StringArgumentType.getString(c, "call"),
+                                                null,
+                                                null,
+                                                StringArgumentType.getString(c, "arguments")
+                                        ))))).
+                then(literal("invokepoint").
+                        then(argument("call", StringArgumentType.word()).suggests( (c, b)->suggest(getGlobalCalls(),b)).
+                                then(argument("origin", BlockPosArgument.blockPos()).
+                                        executes( (c) -> invoke(
+                                                c.getSource(),
+                                                StringArgumentType.getString(c, "call"),
+                                                BlockPosArgument.getBlockPos(c, "origin"),
+                                                null,
+                                                ""
+                                        )).
+                                        then(argument("arguments", StringArgumentType.greedyString()).
+                                                executes( (c) -> invoke(
+                                                        c.getSource(),
+                                                        StringArgumentType.getString(c, "call"),
+                                                        BlockPosArgument.getBlockPos(c, "origin"),
+                                                        null,
+                                                        StringArgumentType.getString(c, "arguments")
+                                                )))))).
+                then(literal("invokearea").
+                        then(argument("call", StringArgumentType.word()).suggests( (c, b)->suggest(getGlobalCalls(),b)).
+                                then(argument("from", BlockPosArgument.blockPos()).
+                                        then(argument("to", BlockPosArgument.blockPos()).
+                                                executes( (c) -> invoke(
+                                                        c.getSource(),
+                                                        StringArgumentType.getString(c, "call"),
+                                                        BlockPosArgument.getBlockPos(c, "from"),
+                                                        BlockPosArgument.getBlockPos(c, "to"),
+                                                        ""
+                                                )).
+                                                then(argument("arguments", StringArgumentType.greedyString()).
+                                                        executes( (c) -> invoke(
+                                                                c.getSource(),
+                                                                StringArgumentType.getString(c, "call"),
+                                                                BlockPosArgument.getBlockPos(c, "from"),
+                                                                BlockPosArgument.getBlockPos(c, "to"),
+                                                                StringArgumentType.getString(c, "arguments")
+                                                        ))))))).
+                then(literal("scan").requires((player) -> player.hasPermissionLevel(2)).
                         then(argument("origin", BlockPosArgument.blockPos()).
                                 then(argument("from", BlockPosArgument.blockPos()).
                                         then(argument("to", BlockPosArgument.blockPos()).
-                                                then(argument("expr", StringArgumentType.string()).
+                                                then(argument("expr", StringArgumentType.greedyString()).
                                                         executes( (c) -> scriptScan(
                                                                 c.getSource(),
                                                                 BlockPosArgument.getBlockPos(c, "origin"),
@@ -51,7 +115,7 @@ public class ScriptCommand
                                                                 BlockPosArgument.getBlockPos(c, "to"),
                                                                 StringArgumentType.getString(c, "expr")
                                                         ))))))).
-                then(literal("fill").
+                then(literal("fill").requires((player) -> player.hasPermissionLevel(2)).
                         then(argument("origin", BlockPosArgument.blockPos()).
                                 then(argument("from", BlockPosArgument.blockPos()).
                                         then(argument("to", BlockPosArgument.blockPos()).
@@ -78,7 +142,7 @@ public class ScriptCommand
                                                                                 BlockPredicateArgument.getBlockPredicate(c, "filter"),
                                                                                 "solid"
                                                                         )))))))))).
-                then(literal("outline").
+                then(literal("outline").requires((player) -> player.hasPermissionLevel(2)).
                         then(argument("origin", BlockPosArgument.blockPos()).
                                 then(argument("from", BlockPosArgument.blockPos()).
                                         then(argument("to", BlockPosArgument.blockPos()).
@@ -108,63 +172,96 @@ public class ScriptCommand
 
         dispatcher.register(command);
     }
+    private static Set<String> getGlobalCalls()
+    {
+        return ExpressionInspector.Expression_globalFunctions().keySet().stream().filter((s) -> !s.startsWith("_")).collect(Collectors.toSet());
+    }
     private static int listGlobals(CommandSource source)
     {
         Messenger.m(source, "w Global functions:");
-        String code = "";
-        for (String fname : Expression.global_functions.keySet())
+        for (String fname : getGlobalCalls())
         {
-            Expression.AbstractContextFunction acf = Expression.global_functions.get(fname);
-
-            String expr = acf.getExpression().getCodeString();
-            Expression.Token tok = acf.getToken();
-            List<String> snippet = Expression.getExpressionSnippet(tok, expr);
+            String expr = ExpressionInspector.Expression_getCodeString(ExpressionInspector.Expression_globalFunctions_get_getExpression(fname));
+            Tokenizer.Token tok = ExpressionInspector.Expression_globalFunctions_get_getToken(fname);
+            List<String> snippet = ExpressionInspector.Expression_getExpressionSnippet(tok, expr);
             Messenger.m(source, "w Function "+fname+" defined at: line "+(tok.lineno+1)+" pos "+(tok.linepos+1));
             for (String snippetLine: snippet)
             {
-                Messenger.m(source, "w "+snippetLine);
+                Messenger.m(source, "li "+snippetLine);
             }
             Messenger.m(source, "gi ----------------");
-            code = acf.getExpression().getCodeString();
         }
         //Messenger.m(source, "w "+code);
         Messenger.m(source, "w Global Variables:");
 
-        for (String vname : Expression.global_variables.keySet())
+        for (String vname : ExpressionInspector.Expression_globalVariables().keySet())
         {
-            Messenger.m(source, "w Variable "+vname+": ", "wb "+Expression.global_variables.get(vname).evalValue(null).getString());
+            Messenger.m(source, "w Variable "+vname+": ", "wb "+ExpressionInspector.Expression_globalVariables().get(vname).evalValue(null).getString());
         }
         return 1;
     }
-    private static int compute(CommandSource source, String expr)
+
+    private static void handleCall(CommandSource source, Supplier<String> call)
     {
-        BlockPos pos = new BlockPos(source.getPos());
         try
         {
-            CarpetExpression.setChatErrorSnooper(source);
-            CarpetExpression ex = new CarpetExpression(expr, source, new BlockPos(0, 0, 0));
-            if (source.getWorld().getGameRules().getBoolean("commandBlockOutput"))
-                ex.setLogOutput(true);
+            ExpressionInspector.CarpetExpression_setChatErrorSnooper(source);
             long start = System.nanoTime();
-            String result = ex.eval(pos);
-            int time = (int)((System.nanoTime()-start)/1000);
+            String result = call.get();
+            long time = ((System.nanoTime()-start)/1000);
             String metric = "\u00B5s";
-            if (time > 2000)
+            if (time > 5000)
             {
                 time /= 1000;
                 metric = "ms";
             }
-            Messenger.m(source, "wi "+expr,"wi  = ", "wb "+result, "gi  ("+time+metric+")");
+            if (time > 10000)
+            {
+                time /= 1000;
+                metric = "s";
+            }
+            Messenger.m(source, "wi  = ", "wb "+result, "gi  ("+time+metric+")");
         }
-        catch (CarpetExpression.CarpetExpressionException e)
+        catch (ExpressionInspector.CarpetExpressionException e)
         {
-            Messenger.m(source, "r Exception white evaluating expression at "+pos+": "+e.getMessage());
+            Messenger.m(source, "r Exception white evaluating expression at "+new BlockPos(source.getPos())+": "+e.getMessage());
         }
-        //catch (ArithmeticException e)
-        //{
-        //    Messenger.m(source, "r Your math is wrong, sorry: "+e.getMessage());
-        //}
-        CarpetExpression.resetErrorSnooper();
+        ExpressionInspector.CarpetExpression_resetErrorSnooper();
+    }
+
+    private static int invoke(CommandSource source, String call, BlockPos pos1, BlockPos pos2,  String args)
+    {
+        if (call.startsWith("__"))
+        {
+            Messenger.m(source, "r Hidden functions are only callable in scripts");
+            return 0;
+        }
+        List<Integer> positions = new ArrayList<>();
+        if (pos1 != null)
+        {
+            positions.add(pos1.getX());
+            positions.add(pos1.getY());
+            positions.add(pos1.getZ());
+        }
+        if (pos2 != null)
+        {
+            positions.add(pos2.getX());
+            positions.add(pos2.getY());
+            positions.add(pos2.getZ());
+        }
+        //if (!(args.trim().isEmpty()))
+        //    arguments.addAll(Arrays.asList(args.trim().split("\\s+")));
+        handleCall(source, () -> CarpetExpression.invokeGlobalFunctionCommand(source, call,positions, args.trim()));
+        return 1;
+    }
+
+
+    private static int compute(CommandSource source, String expr)
+    {
+        handleCall(source, () -> {
+            CarpetExpression ex = new CarpetExpression(expr, source, new BlockPos(0, 0, 0));
+            return ex.scriptRunCommand(new BlockPos(source.getPos()));
+        });
         return 1;
     }
 
@@ -188,7 +285,7 @@ public class ScriptCommand
                     {
                         try
                         {
-                            if (cexpr.test(x, y, z)) successCount++;
+                            if (cexpr.fillAndScanCommand(x, y, z)) successCount++;
                         }
                         catch (ArithmeticException ignored)
                         {
@@ -197,7 +294,7 @@ public class ScriptCommand
                 }
             }
         }
-        catch (CarpetExpression.CarpetExpressionException exc)
+        catch (ExpressionInspector.CarpetExpressionException exc)
         {
             Messenger.m(source, "r Error while processing command: "+exc);
             return 0;
@@ -233,14 +330,14 @@ public class ScriptCommand
                 {
                     try
                     {
-                        if (cexpr.test(x, y, z))
+                        if (cexpr.fillAndScanCommand(x, y, z))
                         {
                             volume[x-area.minX][y-area.minY][z-area.minZ]=true;
                         }
                     }
-                    catch (CarpetExpression.CarpetExpressionException e)
+                    catch (ExpressionInspector.CarpetExpressionException e)
                     {
-                        CarpetSettings.LOG.error("Exception: "+e);
+                        Messenger.m(source, "r Exception while filling the area:\n","l "+e.getMessage());
                         return 0;
                     }
                     catch (ArithmeticException e)
@@ -252,7 +349,7 @@ public class ScriptCommand
         final int maxx = area.getXSize()-1;
         final int maxy = area.getYSize()-1;
         final int maxz = area.getZSize()-1;
-        if ("edge".equalsIgnoreCase(mode))
+        if ("outline".equalsIgnoreCase(mode))
         {
             boolean[][][] newVolume = new boolean[area.getXSize()][area.getYSize()][area.getZSize()];
             for (int x = 0; x <= maxx; x++)

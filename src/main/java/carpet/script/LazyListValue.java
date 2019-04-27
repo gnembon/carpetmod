@@ -1,83 +1,101 @@
 package carpet.script;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 
-public abstract class LazyListValue extends ListValue
+public abstract class LazyListValue extends ListValue implements Iterator<Value>
 {
-    int current_elements;
-
-    public static LazyListValue range(int range_limit)
+    public static LazyListValue range(long from, long to, long step)
     {
-        return new LazyListValue(0)
+        return new LazyListValue()
         {
             {
-                this.limit = range_limit;
+                if (step == 0)
+                    throw new Expression.InternalExpressionException("range will never end with zero step");
+                this.current = from;
+                this.limit = to;
+                this.stepp = step;
             }
-            private int current;
-            private int limit;
+            private long current;
+            private long limit;
+            private long stepp;
             @Override
-            protected Value nextElement()
+            public Value next()
             {
-                return new NumericValue(current++);
+                Value val = new NumericValue(current);
+                current += stepp;
+                return val;
             }
 
             @Override
             public boolean hasNext()
             {
-                return current < limit;
+                return stepp > 0?(current < limit):(current > limit);
             }
         };
     }
 
-    public LazyListValue(int precompute)
+    public LazyListValue()
     {
         super(Collections.emptyList());
-        this.current_elements = 0;
-        while (precompute-- > 0)
-        {
-            next();
-        }
-        start();
     }
 
     @Override
     public String getString()
     {
-        return null;
+        return "[...]";
     }
 
     @Override
     public boolean getBoolean()
     {
-        return items.isEmpty() && !hasNext();
+        return hasNext();
     }
-    protected abstract Value nextElement();
     public abstract boolean hasNext();
 
-    public Value next()
-    {
-        if (items.size() < current_elements)
-        {
-            return items.get(current_elements++);
-        }
-        Value v = nextElement();
-        items.add(v);
-        current_elements++;
-        return v;
-    }
-
-
-    public void start()
-    {
-        current_elements = 0;
-    }
-
+    public abstract Value next();
 
     @Override
-    public Value clone()
+    public Iterator<Value> iterator() {return this;}
+
+    public List<Value> unroll()
     {
-        LazyListValue el = (LazyListValue)super.clone();
-        el.current_elements = this.current_elements;
-        return el;
+        List<Value> result = new ArrayList<>();
+        this.forEachRemaining(result::add);
+        return result;
     }
+
+    @Override
+    public Value slice(long from, long to)
+    {
+        if (to < 0) to = Integer.MAX_VALUE;
+        if (from < 0) from = 0;
+        if (from > to)
+            return ListValue.of();
+        List<Value> result = new ArrayList<>();
+        int i;
+        for (i = 0; i < from; i++)
+        {
+            if (hasNext())
+                next();
+            else
+                return ListValue.wrap(result);
+        }
+        for (i = (int)from; i < to; i++)
+        {
+            if (hasNext())
+                result.add(next());
+            else
+                return ListValue.wrap(result);
+        }
+        return ListValue.wrap(result);
+    }
+    @Override
+    public Value add(Value other)
+    {
+        throw new Expression.InternalExpressionException("Cannot add to iterators");
+    }
+
 }

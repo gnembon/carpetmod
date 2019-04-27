@@ -13,3 +13,15 @@ To install on Windows:
 To install on Linux:
  - Work in progress...
  - Use patches provided with windows installation and patch them using windows instructions as a guide
+
+ To install on MacOS:
+ - Singleplayer
+   - make sure you played 1.13.2 at least once. Close your game
+   - make the installer executable with `chmod +x mac_install_singleplayer.sh`
+   - run the installer with `./mac_install_singleplayer.sh`
+   - In launcher - add a profile for 1.13.2-carpet, you should be able to see 1.13.2-carpet as one of the available versions to play.
+ - Server
+   - place 'server.jar' in this directory, version 1.13.2, download it from Mojang
+   - make the installer executable with `chmod +x mac_install_server.sh`
+   - run the installer with `./mac_install_server.sh`
+   - it should create patched server file next to it
