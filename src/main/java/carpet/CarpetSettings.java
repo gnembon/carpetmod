@@ -59,6 +59,7 @@ public class CarpetSettings
     public static int n_pushLimit = 12;
     public static boolean b_hopperCounters = false;
     public static int n_mobSpawningAlgorithm = 113;
+    public static boolean b_shulkerSpawningInEndCities = false;
     public static int clientViewDistance = 0; // Used for Client Only
     public static boolean b_fastRedstoneDust = false;
     public static int railPowerLimitAdjusted = 8;
@@ -141,7 +142,7 @@ public class CarpetSettings
   //                              .extraInfo("Also prevents rotations upon placement of dispensers and furnaces","when placed into a world by commands"),
   /////rule("optimizedTNT",          "tnt", "TNT causes less lag when exploding in the same spot and in liquids"),
   /////rule("huskSpawningInTemples", "experimental feature", "Only husks spawn in desert temples"),
-  /////rule("shulkerSpawningInEndCities", "feature experimental", "Shulkers will respawn in end cities"),
+  rule("shulkerSpawningInEndCities", "feature experimental", "Shulkers will respawn in end cities").boolAccelerate(),
   //!rule("wirelessRedstone",      "creative", "Repeater pointing from and to wool blocks transfer signals wirelessly")
   //                              .extraInfo("Temporary feature - repeaters need an update when reloaded",
   //                                         "By Narcoleptic Frog"),
@@ -346,6 +347,8 @@ public class CarpetSettings
                                   .choices("25", "0 2 25").setNotStrict(),
   rule("renewableCoral",          "feature", "Coral structures will grow with bonemeal from coral plants"),
   rule("placementRotationFix",    "fix", "fixes block placement rotation issue when player rotates quickly while placing blocks"),
+  rule("endCitySavingFix",        "fix", "Fixes the saving of end cities.")
+                                  .extraInfo("Every End city that got saved once was invalidated on a server restart."),
         };
         for (CarpetSettingEntry rule: RuleList)
         {
