@@ -4,6 +4,10 @@ The most comprehensive and convoluted mod for carpets evar. Built based on jarmo
 ## Gimme, gimme, I just wanna play
 - Then go get the install package (zip folder) for your system from https://github.com/gnembon/carpetmod/releases , and follow the README that is inside of the zip package. Each installer contains patches for both server and singleplayer versions, and (the best case scenario) should require you to just doubleclick (running) on one patching script.
 
+## I installed it. Need help
+- Run `/carpet list` to see all the togglable options with description
+- Click on a feature in the list in chat, or type `/carpet <featureName>` to get detailed help about each feature.
+
 ## tl;dr (to help us develop carpet mod)
 - Have Java SDK and git installed (prefferably, or download zipped repo to a folder)
 - open command prompt  
