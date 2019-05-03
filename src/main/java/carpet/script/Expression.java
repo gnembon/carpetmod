@@ -1107,7 +1107,7 @@ public class Expression implements Cloneable
      * <p>Allows to add the results of two expressions. If the operands resolve to numbers, the result is
      * arithmetic operation.
      * In case of strings, adding or subtracting from a string results in string concatenation and
-     * removal os substrings from that string. Multiplication of strings and numbers results in repeating the
+     * removal of substrings from that string. Multiplication of strings and numbers results in repeating the
      * string N times and division results in taking the first k'th part of the string, so that <code>str*n/n ~ str</code>
      * In case first operand is a list, either it results in a new list
      * with all elements modified one by one with the other operand, or if the operand is a list with the same number of
@@ -1224,7 +1224,7 @@ public class Expression implements Cloneable
      * a = l(1,2,3,4); a = filter(a,_!=2)  =&gt; [1,3,4]
      * </pre>
      * <h3><code>Unary Operators  -  +</code></h3>
-     * <p>Require a number, flips the sign. One way to assert its a number by crashing the script. gg.</p>
+     * <p>Require a number, flips the sign. One way to assert it's a number is by crashing the script. gg.</p>
      * <pre>
      * -4  =&gt; -4
      * +4  =&gt; 4
@@ -1232,7 +1232,7 @@ public class Expression implements Cloneable
      * </pre>
      *
      * <h3><code>Negation Operator  !</code></h3>
-     * <p>flops boolean condition of the expression. Equivalent of <code>bool(expr)==false</code></p>
+     * <p>flips boolean condition of the expression. Equivalent of <code>bool(expr)==false</code></p>
      * <pre>
      * !true  =&gt; 0
      * !false  =&gt; 1
@@ -1675,7 +1675,7 @@ public class Expression implements Cloneable
      * </pre>
      *
      * <h3><code>put(list, index, values ...), put(list, null, values ...)</code></h3>
-     * <p>Modifies the list by replacing values startign from <code>index</code> with <code>values</code>.
+     * <p>Modifies the list by replacing values starting from <code>index</code> with <code>values</code>.
      * use negative numbers to reach elements from the end of the list. <code>put</code>
      * call will always be able to find the index. In case there is few items, it will loop over. In case end
      * of the list is reached before <code>values</code> run out, list is extended to accomodate for more values. in case you
@@ -1733,7 +1733,7 @@ public class Expression implements Cloneable
      * </pre>
      *
      * <h3><code>first(list,expr(_,_i))</code></h3>
-     * <p>Finds and returns the first item in the list that satisfies <code>expr</code>. If sets <code>_</code> for current element value,
+     * <p>Finds and returns the first item in the list that satisfies <code>expr</code>. It sets <code>_</code> for current element value,
      * and <code>_i</code> for index of that element</p>
      * <pre>
      *     first(range(1000,10000), n=_; !first( range(2, sqrt(n)+1), !(n % _) ) )  =&gt; 1009 // first prime after 1000
@@ -2328,7 +2328,7 @@ public class Expression implements Cloneable
      *
      * <h3><code>print(expr)</code></h3>
      * <p>prints the value of the expression to chat.
-     * Passes the result of the argument to the output unchanged, so <code>print</code>statements can
+     * Passes the result of the argument to the output unchanged, so <code>print</code>-statements can
      * be weaved in code to debug programming issues</p>
      * <pre>
      *     print('foo') =&gt; results in foo, prints: foo
