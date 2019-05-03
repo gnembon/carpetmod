@@ -1623,9 +1623,10 @@ public class Expression implements Cloneable
      * <p>extracts a substring, or sublist (based on the type of the result of the expression under expr with starting index
      * of <code>from</code>, and ending at <code>to</code> if provided, or the end, if omitted</p>
      * <pre>
-     *     split('',foo)  =&gt; [f, o, o]
-     *     split('.','foo.bar')  =&gt; []
-     *     split('\\.','foo.bar')  =&gt; [foo, bar]
+     *     slice('foobar', 0, 0)  =&gt; 'f'
+     *     slice('foobar', 3)  =&gt; 'bar'
+     *     slice(range(10), 3, 5)  =&gt; [3, 4, 5]
+     *     slice(range(10), 5)  =&gt; [5, 6, 7, 8, 9]
      * </pre>
      *
      *
@@ -1649,10 +1650,10 @@ public class Expression implements Cloneable
      * </pre>
      *
      * <h3><code>range(to), range(from, to), range(from, to, step)</code></h3>
-     * <p>Creates a range of numbers from <code>from</code>, no greater/larger than <code>limit</code>.
+     * <p>Creates a range of numbers from <code>from</code>, no greater/larger than <code>to</code>.
      * The <code>step</code> parameter dictates not only the increment size, but also direction (can be negative).
      * The returned value is not a proper list, just the iterator
-     * but if for whatever reason you need a proper list with all items evaluated, use <code>l(range(limit))</code>.
+     * but if for whatever reason you need a proper list with all items evaluated, use <code>l(range(to))</code>.
      * Primarily to be used in higher order functions</p>
      * <pre>
      *     range(10)  =&gt; [...]
@@ -1698,8 +1699,8 @@ public class Expression implements Cloneable
      *
      * <h3><code>loop(num,expr(_),exit(_)?)</code></h3>
      * <p>Evaluates expression <code>expr</code>, <code>num</code> number of times. Optionally,
-     * if <code>cond</code> condition is present, stops the execution if the condition becomes true.
-     * Both <code>expr</code> and <code>cond</code> receive <code>_</code> system variable indicating the iteration</p>
+     * if <code>exit</code> condition is present, stops the execution if the condition becomes true.
+     * Both <code>expr</code> and <code>exit</code> receive <code>_</code> system variable indicating the iteration</p>
      * <pre>
      *     loop(5, tick())  =&gt; repeat tick 5 times
      *     list = l(); loop(5, x = _; loop(5, list += l(x, _) ) ); list
@@ -1774,8 +1775,8 @@ public class Expression implements Cloneable
      * Consecutive calls to <code>expr</code> can access that value to apply more values. You also need to specify
      * the initial value to apply for the accumulator</p>
      * <pre>
-     *     reduce([1,2,3,4],_+_,0)  =&gt; 10
-     *     reduce([1,2,3,4],_*_,1)  =&gt; 24
+     *     reduce([1,2,3,4],_a+_,0)  =&gt; 10
+     *     reduce([1,2,3,4],_a*_,1)  =&gt; 24
      * </pre>
      * </div>
      */
@@ -2296,7 +2297,7 @@ public class Expression implements Cloneable
      * str('foo') =&gt; null
      * str('3bar') =&gt; null
      * str(2)+str(2) =&gt; 22
-     * str('pi: %.2f',pi) =&gt; 3.14
+     * str('pi: %.2f',pi) =&gt; 'pi: 3.14'
      * </pre>
      *
      * <hr>
@@ -2319,7 +2320,8 @@ public class Expression implements Cloneable
      * <p>returns a random number from <code>0.0</code>
      * (inclusive) to <code>expr</code> (exclusive).
      * In boolean context (in conditions, boolean functions, or <code>bool</code>), returns
-     * false if the randomly selected value is less than 0</p>
+     * false if the randomly selected value is less than 1. This means that <code>rand(2)</code> returns true half
+     * of the time and <code>rand(5)</code> returns true for 80% (4/5) of the time</p>
      * <pre>
      * map(range(10), floor(rand(10))) =&gt; [5, 8, 0, 6, 9, 3, 9, 9, 1, 8]
      * map(range(10), bool(rand(2))) =&gt; [1, 1, 1, 0, 0, 1, 1, 0, 0, 0]
