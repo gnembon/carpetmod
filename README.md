@@ -22,6 +22,9 @@ The most comprehensive and convoluted mod for carpets evar. Built based on jarmo
 - - have commandline 7za installed
 - - `patch_server.cmd`
 - - your server should be running in your saves folder already. Connect to `localhost`
+- optionally: create installers (depending on the host OS and target OS)
+- - `cd installer`
+- - `create_installer_<win|mac|ux>.<cmd|sh>
  
 
 ## Requirements
