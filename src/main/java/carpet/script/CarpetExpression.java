@@ -1825,11 +1825,7 @@ public class CarpetExpression
 
 
         this.expr.addLazyFunction("run", 1, (c, t, lv) -> {
-            BlockPos target = BlockValue.locateBlockPos((CarpetContext) c,
-                    (int)Expression.getNumericValue(c.getVariable("x").evalValue(c)).getLong(),
-                    (int)Expression.getNumericValue(c.getVariable("y").evalValue(c)).getLong(),
-                    (int)Expression.getNumericValue(c.getVariable("z").evalValue(c)).getLong()
-            );
+            BlockPos target = ((CarpetContext)c).origin;
             Vec3d posf = new Vec3d((double)target.getX()+0.5D,(double)target.getY(),(double)target.getZ()+0.5D);
             CommandSource s = ((CarpetContext)c).s;
             Value retval = new NumericValue(s.getServer().getCommandManager().handleCommand(
