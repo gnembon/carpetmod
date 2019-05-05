@@ -2505,7 +2505,7 @@ public class Expression implements Cloneable
                 Value retval = rv<1.0D?Value.FALSE:Value.TRUE;
                 return (cc, tt) -> retval;
             }
-            Value retval = new NumericValue(getNumericValue(argument).getDouble()*randomizer.nextFloat());
+            Value retval = new NumericValue(getNumericValue(argument).getDouble()*randomizer.nextDouble());
             return (cc, tt) -> retval;
         });
 
