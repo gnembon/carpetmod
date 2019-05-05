@@ -1623,7 +1623,8 @@ public class Expression implements Cloneable
      * <p>extracts a substring, or sublist (based on the type of the result of the expression under expr with starting index
      * of <code>from</code>, and ending at <code>to</code> if provided, or the end, if omitted</p>
      * <pre>
-     *     slice('foobar', 0, 0)  =&gt; 'f'
+     *     slice(l(0,1,2,3,4,5), 1, 3)  =&gt; [1, 2, 3] 
+     *     slice('foobar', 0, 1)  =&gt; 'f'
      *     slice('foobar', 3)  =&gt; 'bar'
      *     slice(range(10), 3, 5)  =&gt; [3, 4, 5]
      *     slice(range(10), 5)  =&gt; [5, 6, 7, 8, 9]
