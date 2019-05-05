@@ -1107,7 +1107,7 @@ public class Expression implements Cloneable
      * <p>Allows to add the results of two expressions. If the operands resolve to numbers, the result is
      * arithmetic operation.
      * In case of strings, adding or subtracting from a string results in string concatenation and
-     * removal os substrings from that string. Multiplication of strings and numbers results in repeating the
+     * removal of substrings from that string. Multiplication of strings and numbers results in repeating the
      * string N times and division results in taking the first k'th part of the string, so that <code>str*n/n ~ str</code>
      * In case first operand is a list, either it results in a new list
      * with all elements modified one by one with the other operand, or if the operand is a list with the same number of
@@ -1224,7 +1224,7 @@ public class Expression implements Cloneable
      * a = l(1,2,3,4); a = filter(a,_!=2)  =&gt; [1,3,4]
      * </pre>
      * <h3><code>Unary Operators  -  +</code></h3>
-     * <p>Require a number, flips the sign. One way to assert its a number by crashing the script. gg.</p>
+     * <p>Require a number, flips the sign. One way to assert it's a number is by crashing the script. gg.</p>
      * <pre>
      * -4  =&gt; -4
      * +4  =&gt; 4
@@ -1232,7 +1232,7 @@ public class Expression implements Cloneable
      * </pre>
      *
      * <h3><code>Negation Operator  !</code></h3>
-     * <p>flops boolean condition of the expression. Equivalent of <code>bool(expr)==false</code></p>
+     * <p>flips boolean condition of the expression. Equivalent of <code>bool(expr)==false</code></p>
      * <pre>
      * !true  =&gt; 0
      * !false  =&gt; 1
@@ -1623,9 +1623,11 @@ public class Expression implements Cloneable
      * <p>extracts a substring, or sublist (based on the type of the result of the expression under expr with starting index
      * of <code>from</code>, and ending at <code>to</code> if provided, or the end, if omitted</p>
      * <pre>
-     *     split('',foo)  =&gt; [f, o, o]
-     *     split('.','foo.bar')  =&gt; []
-     *     split('\\.','foo.bar')  =&gt; [foo, bar]
+     *     slice(l(0,1,2,3,4,5), 1, 3)  =&gt; [1, 2, 3] 
+     *     slice('foobar', 0, 1)  =&gt; 'f'
+     *     slice('foobar', 3)  =&gt; 'bar'
+     *     slice(range(10), 3, 5)  =&gt; [3, 4, 5]
+     *     slice(range(10), 5)  =&gt; [5, 6, 7, 8, 9]
      * </pre>
      *
      *
@@ -1649,10 +1651,10 @@ public class Expression implements Cloneable
      * </pre>
      *
      * <h3><code>range(to), range(from, to), range(from, to, step)</code></h3>
-     * <p>Creates a range of numbers from <code>from</code>, no greater/larger than <code>limit</code>.
+     * <p>Creates a range of numbers from <code>from</code>, no greater/larger than <code>to</code>.
      * The <code>step</code> parameter dictates not only the increment size, but also direction (can be negative).
      * The returned value is not a proper list, just the iterator
-     * but if for whatever reason you need a proper list with all items evaluated, use <code>l(range(limit))</code>.
+     * but if for whatever reason you need a proper list with all items evaluated, use <code>l(range(to))</code>.
      * Primarily to be used in higher order functions</p>
      * <pre>
      *     range(10)  =&gt; [...]
@@ -1675,7 +1677,7 @@ public class Expression implements Cloneable
      * </pre>
      *
      * <h3><code>put(list, index, values ...), put(list, null, values ...)</code></h3>
-     * <p>Modifies the list by replacing values startign from <code>index</code> with <code>values</code>.
+     * <p>Modifies the list by replacing values starting from <code>index</code> with <code>values</code>.
      * use negative numbers to reach elements from the end of the list. <code>put</code>
      * call will always be able to find the index. In case there is few items, it will loop over. In case end
      * of the list is reached before <code>values</code> run out, list is extended to accomodate for more values. in case you
@@ -1698,8 +1700,8 @@ public class Expression implements Cloneable
      *
      * <h3><code>loop(num,expr(_),exit(_)?)</code></h3>
      * <p>Evaluates expression <code>expr</code>, <code>num</code> number of times. Optionally,
-     * if <code>cond</code> condition is present, stops the execution if the condition becomes true.
-     * Both <code>expr</code> and <code>cond</code> receive <code>_</code> system variable indicating the iteration</p>
+     * if <code>exit</code> condition is present, stops the execution if the condition becomes true.
+     * Both <code>expr</code> and <code>exit</code> receive <code>_</code> system variable indicating the iteration</p>
      * <pre>
      *     loop(5, tick())  =&gt; repeat tick 5 times
      *     list = l(); loop(5, x = _; loop(5, list += l(x, _) ) ); list
@@ -1733,7 +1735,7 @@ public class Expression implements Cloneable
      * </pre>
      *
      * <h3><code>first(list,expr(_,_i))</code></h3>
-     * <p>Finds and returns the first item in the list that satisfies <code>expr</code>. If sets <code>_</code> for current element value,
+     * <p>Finds and returns the first item in the list that satisfies <code>expr</code>. It sets <code>_</code> for current element value,
      * and <code>_i</code> for index of that element</p>
      * <pre>
      *     first(range(1000,10000), n=_; !first( range(2, sqrt(n)+1), !(n % _) ) )  =&gt; 1009 // first prime after 1000
@@ -1774,8 +1776,8 @@ public class Expression implements Cloneable
      * Consecutive calls to <code>expr</code> can access that value to apply more values. You also need to specify
      * the initial value to apply for the accumulator</p>
      * <pre>
-     *     reduce([1,2,3,4],_+_,0)  =&gt; 10
-     *     reduce([1,2,3,4],_*_,1)  =&gt; 24
+     *     reduce([1,2,3,4],_a+_,0)  =&gt; 10
+     *     reduce([1,2,3,4],_a*_,1)  =&gt; 24
      * </pre>
      * </div>
      */
@@ -2296,7 +2298,7 @@ public class Expression implements Cloneable
      * str('foo') =&gt; null
      * str('3bar') =&gt; null
      * str(2)+str(2) =&gt; 22
-     * str('pi: %.2f',pi) =&gt; 3.14
+     * str('pi: %.2f',pi) =&gt; 'pi: 3.14'
      * </pre>
      *
      * <hr>
@@ -2319,7 +2321,8 @@ public class Expression implements Cloneable
      * <p>returns a random number from <code>0.0</code>
      * (inclusive) to <code>expr</code> (exclusive).
      * In boolean context (in conditions, boolean functions, or <code>bool</code>), returns
-     * false if the randomly selected value is less than 0</p>
+     * false if the randomly selected value is less than 1. This means that <code>rand(2)</code> returns true half
+     * of the time and <code>rand(5)</code> returns true for 80% (4/5) of the time</p>
      * <pre>
      * map(range(10), floor(rand(10))) =&gt; [5, 8, 0, 6, 9, 3, 9, 9, 1, 8]
      * map(range(10), bool(rand(2))) =&gt; [1, 1, 1, 0, 0, 1, 1, 0, 0, 0]
@@ -2328,7 +2331,7 @@ public class Expression implements Cloneable
      *
      * <h3><code>print(expr)</code></h3>
      * <p>prints the value of the expression to chat.
-     * Passes the result of the argument to the output unchanged, so <code>print</code>statements can
+     * Passes the result of the argument to the output unchanged, so <code>print</code>-statements can
      * be weaved in code to debug programming issues</p>
      * <pre>
      *     print('foo') =&gt; results in foo, prints: foo
