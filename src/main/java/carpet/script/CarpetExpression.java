@@ -1157,7 +1157,7 @@ public class CarpetExpression
      * negative offset, and <code>p</code> for positive.</p>
      * <h3><code>diamond(cx, cy, cz, radius?, height?)</code></h3>
      * <p>Iterates over a diamond like area of blocks. With no radius and height, its 7 blocks centered around the middle
-     * (block + neighbours). With radius it expands shape on x and z coords, and wit custom height, on y. Any of these can be
+     * (block + neighbours). With a radius specified, it expands shape on x and z coords, and with a custom height, on y. Any of these can be
      * zero as well. radius of 0 makes a stick, height of 0 makes a diamond shape pad.</p>
      * </div>
      */
