@@ -57,7 +57,7 @@
  
 -            if (!entity2.removed && !(entity2 instanceof EntityPlayerMP))
 +            // [CM] Tick Freeze
-+            if (!entity2.removed && !(entity2 instanceof EntityPlayerMP) && TickSpeed.process_entities)
++            if (!entity2.removed && !(entity2 instanceof EntityPlayerMP) && (TickSpeed.process_entities || entity2 instanceof EntityPlayer))
              {
                  try
                  {
