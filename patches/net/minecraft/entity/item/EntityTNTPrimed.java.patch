@@ -11,22 +11,18 @@
  import net.minecraft.entity.Entity;
  import net.minecraft.entity.EntityLivingBase;
  import net.minecraft.entity.EntityType;
-@@ -19,6 +23,14 @@
+@@ -19,6 +23,10 @@
      private EntityLivingBase tntPlacedBy;
      private int fuse = 80;
  
 +    // ----- Carpet Start ----- //
 +    private TNTLogHelper logHelper = null;
-+    //CM
-+    @Override
-+    public String cm_name() { return "Primed TNT"; }
-+
 +    //end
 +
      public EntityTNTPrimed(World worldIn)
      {
          super(EntityType.TNT, worldIn);
-@@ -31,10 +43,21 @@
+@@ -31,10 +39,21 @@
      {
          this(worldIn);
          this.setPosition(x, y, z);
@@ -52,7 +48,7 @@
          this.setFuse(80);
          this.prevPosX = x;
          this.prevPosY = y;
-@@ -100,6 +123,10 @@
+@@ -100,6 +119,10 @@
  
      private void explode()
      {

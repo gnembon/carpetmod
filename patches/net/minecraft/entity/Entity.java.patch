@@ -16,20 +16,7 @@
      protected boolean inWater;
      protected double submergedHeight;
      protected boolean eyesInWater;
-@@ -192,6 +195,12 @@
-     private final double[] pistonDeltas;
-     private long pistonDeltasGameTime;
- 
-+    // CM for profiler
-+    public String cm_name()
-+    {
-+        return "Other Entity";
-+    }
-+
-     public Entity(EntityType<?> entityTypeIn, World worldIn)
-     {
-         this.entityId = nextEntityID++;
-@@ -344,7 +353,7 @@
+@@ -344,7 +347,7 @@
          }
      }
  
@@ -38,7 +25,7 @@
      {
          this.rotationYaw = yaw % 360.0F;
          this.rotationPitch = pitch % 360.0F;
-@@ -1566,6 +1575,13 @@
+@@ -1566,6 +1569,13 @@
          return partialTicks == 1.0F ? this.rotationYaw : this.prevRotationYaw + (this.rotationYaw - this.prevRotationYaw) * partialTicks;
      }
  
@@ -52,7 +39,7 @@
      protected final Vec3d getVectorForRotation(float pitch, float yaw)
      {
          float f = pitch * ((float)Math.PI / 180F);
-@@ -1859,7 +1875,7 @@
+@@ -1859,7 +1869,7 @@
      }
  
      @Nullable
@@ -61,7 +48,7 @@
      {
          EntityType<?> entitytype = this.getType();
          ResourceLocation resourcelocation = EntityType.getId(entitytype);
-@@ -2821,6 +2837,10 @@
+@@ -2821,6 +2831,10 @@
  
      public EnumFacing getHorizontalFacing()
      {

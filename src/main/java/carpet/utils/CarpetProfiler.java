@@ -4,6 +4,8 @@ import carpet.CarpetSettings;
 import net.minecraft.entity.Entity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.tileentity.TileEntityType;
+import net.minecraft.util.registry.IRegistry;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -86,7 +88,7 @@ public class CarpetProfiler
         {
             end_current_section();
         }
-        current_section = dimension+"."+e.cm_name();
+        current_section = dimension+"."+ IRegistry.field_212629_r.getKey(e.getType()).toString().replaceFirst("minecraft:","");
         current_section_start = System.nanoTime();
     }
 
@@ -104,7 +106,7 @@ public class CarpetProfiler
         {
             end_current_section();
         }
-        current_section = dimension+"."+e.cm_name();
+        current_section = dimension+"."+ TileEntityType.getId(e.getType()).toString().replaceFirst("minecraft:","");
         current_section_start = System.nanoTime();
     }
 
@@ -143,7 +145,7 @@ public class CarpetProfiler
         }
         if (current_section == null)
         {
-            CarpetSettings.LOG.error("finishing section that hasn't started");
+            CarpetSettings.LOG.error("finishing entity/TE section that hasn't started");
             return;
         }
         //CarpetSettings.LOG.error("finishing section "+current_section);

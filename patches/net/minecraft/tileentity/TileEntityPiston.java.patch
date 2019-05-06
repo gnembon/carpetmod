@@ -22,19 +22,7 @@
      private static final ThreadLocal<EnumFacing> MOVING_ENTITY = new ThreadLocal<EnumFacing>()
      {
          protected EnumFacing initialValue()
-@@ -40,6 +45,11 @@
-     private float lastProgress;
-     private long lastTicked;
- 
-+    //CM
-+    @Override
-+    public String cm_name() { return "Moving Piston"; }
-+
-+
-     public TileEntityPiston()
-     {
-         super(TileEntityType.PISTON);
-@@ -178,6 +188,13 @@
+@@ -178,6 +183,13 @@
                              {
                                  this.fixEntityWithinPistonBase(entity, enumfacing, d0);
                              }
@@ -48,7 +36,7 @@
                          }
                      }
                  }
-@@ -318,10 +335,26 @@
+@@ -318,10 +330,26 @@
                  {
                      iblockstate = Block.getValidBlockForPosition(this.pistonState, this.world, this.pos);
                  }
@@ -78,7 +66,7 @@
          }
      }
  
-@@ -351,8 +384,15 @@
+@@ -351,8 +379,15 @@
                          iblockstate = iblockstate.with(BlockStateProperties.WATERLOGGED, Boolean.valueOf(false));
                      }
  
@@ -96,7 +84,7 @@
                  }
              }
          }
-@@ -378,6 +418,15 @@
+@@ -378,6 +413,15 @@
          this.lastProgress = this.progress;
          this.extending = compound.getBoolean("extending");
          this.shouldHeadBeRendered = compound.getBoolean("source");
@@ -112,7 +100,7 @@
      }
  
      public NBTTagCompound write(NBTTagCompound compound)
-@@ -388,6 +437,13 @@
+@@ -388,6 +432,13 @@
          compound.setFloat("progress", this.lastProgress);
          compound.setBoolean("extending", this.extending);
          compound.setBoolean("source", this.shouldHeadBeRendered);
@@ -126,7 +114,7 @@
          return compound;
      }
  
-@@ -435,4 +491,37 @@
+@@ -435,4 +486,37 @@
      {
          return this.lastTicked;
      }

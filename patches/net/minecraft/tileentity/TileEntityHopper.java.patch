@@ -19,19 +19,7 @@
  import net.minecraft.item.ItemStack;
  import net.minecraft.nbt.NBTTagCompound;
  import net.minecraft.util.EntitySelectors;
-@@ -37,6 +42,11 @@
-     private int transferCooldown = -1;
-     private long tickedGameTime;
- 
-+    //CM
-+    @Override
-+    public String cm_name() { return "Hopper"; }
-+
-+
-     public TileEntityHopper()
-     {
-         super(TileEntityType.HOPPER);
-@@ -197,6 +207,30 @@
+@@ -197,6 +202,30 @@
  
      private boolean transferItemsOut()
      {
