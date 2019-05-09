@@ -25,26 +25,3 @@
          this.loadAllWorlds(this.getFolderName(), this.getWorldName(), this.worldSettings.getSeed(), this.worldSettings.getTerrainType(), this.worldSettings.getGeneratorOptions());
          this.setMOTD(this.getServerOwner() + " - " + this.getWorld(DimensionType.OVERWORLD).getWorldInfo().getWorldName());
          return true;
-@@ -131,10 +136,19 @@
-         {
-             super.tick(p_71217_1_);
- 
--            if (this.mc.gameSettings.renderDistanceChunks != this.getPlayerList().getViewDistance())
-+            //[CM] viewDistance override
-+            int viewDistance;
-+            if (CarpetSettings.clientViewDistance == 0)
-+                viewDistance = this.mc.gameSettings.renderDistanceChunks;
-+            else {
-+                viewDistance = CarpetSettings.clientViewDistance;
-+            }
-+
-+            //[CM] replaced this.mc.gameSettings.renderDistanceChunks with viewDistance
-+            if (viewDistance != this.getPlayerList().getViewDistance())
-             {
--                LOGGER.info("Changing view distance to {}, from {}", this.mc.gameSettings.renderDistanceChunks, this.getPlayerList().getViewDistance());
--                this.getPlayerList().setViewDistance(this.mc.gameSettings.renderDistanceChunks);
-+                LOGGER.info("Changing view distance to {}, from {}", viewDistance, this.getPlayerList().getViewDistance());
-+                this.getPlayerList().setViewDistance(viewDistance);
-             }
- 
-             if (this.mc.world != null)

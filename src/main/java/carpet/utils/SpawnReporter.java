@@ -9,6 +9,7 @@ import java.util.HashMap;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.EntitySelectors;
 import net.minecraft.util.Tuple;
+import net.minecraft.util.registry.IRegistry;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.world.World;
 import net.minecraft.util.math.BlockPos;
@@ -458,7 +459,7 @@ public class SpawnReporter
                         }
                     }
                     
-                    String creature_name = entityliving.getEntityString();
+                    String creature_name = IRegistry.field_212629_r.getKey(entityliving.getType()).toString().replaceFirst("minecraft:","");
                     String pack_size = String.format("%d", entityliving.getMaxSpawnedInChunk());//String.format("%d-%d", animal.minGroupCount, animal.maxGroupCount);
                     int weight = animal.getItemWeight();
                     if (canspawn)

@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.io.FileNotFoundException;
 
 import carpet.helpers.SpawnChunks;
+import carpet.utils.Messenger;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.dedicated.DedicatedServer;
 import net.minecraft.util.math.ChunkPos;
@@ -60,7 +61,6 @@ public class CarpetSettings
     public static boolean b_hopperCounters = false;
     public static int n_mobSpawningAlgorithm = 113;
     public static boolean b_shulkerSpawningInEndCities = false;
-    public static int clientViewDistance = 0; // Used for Client Only
     public static boolean b_fastRedstoneDust = false;
     public static int railPowerLimitAdjusted = 8;
     public static boolean b_disableSpawnChunks = false;
@@ -113,18 +113,12 @@ public class CarpetSettings
   //                                         "Affects hoppers, droppers and dispensers"),
   rule("portalSuffocationFix",  "fix", "Nether portals correctly place entities going through")
                                 .extraInfo("Entities shouldn't suffocate in obsidian"),
-  //!rule("superSecretSetting",    "experimental","Gbhs sgnf sadsgras fhskdpri!"),
-  /////rule("portalTeleportationFix", "fix", "Nether portals won't teleport you on occasion to 8x coordinates")
-  //                              .extraInfo("It also prevents from taking random fire damage when going through portals"),
-  //???rule("llamaOverfeedingFix",   "fix", "Prevents llamas from taking player food while breeding"),
+  rule("superSecretSetting",    "experimental","Gbhs sgnf sadsgras fhskdpri!"),
   rule("invisibilityFix",       "fix", "Guardians honor players' invisibility effect"),
-  rule("portalCreativeDelay",   "creative",  "Portals won't let a creative player go through instantly"),
-  //                              .extraInfo("Holding obsidian in either hand won't let you through at all"),
-  // !? rule("potionsDespawnFix",     "fix", "Allows mobs with potion effects to despawn outside of player range")
-  //                              .extraInfo("Specifically effective to let witches drinking their own stuffs despawn"),
+  rule("portalCreativeDelay",   "creative",  "Portals won't let a creative player go through instantly")
+                                .extraInfo("Holding obsidian in either hand won't let you through at all"),
   rule("ctrlQCraftingFix",      "fix survival", "Dropping entire stacks works also from on the crafting UI result slot"),
   rule("persistentParrots",     "survival feature", "Parrots don't get of your shoulders until you receive damage"),
-  //???rule("breedingMountingDisabled", "fix", "Prevents players from mounting animals when holding breeding food"),
   //!rule("growingUpWallJump",     "fix", "Mobs growing up won't glitch into walls or go through fences"),
   //!rule("reloadSuffocationFix",  "fix experimental", "Won't let mobs glitch into blocks when reloaded.")
   //                              .extraInfo("Can cause slight differences in mobs behaviour"),
@@ -132,27 +126,12 @@ public class CarpetSettings
   rule("combineXPOrbs",         "creative", "XP orbs combine with other into bigger orbs"),
   rule("stackableShulkerBoxes", "survival", "Empty shulker boxes can stack to 64 when dropped on the ground")
                                 .extraInfo("To move them around between inventories, use shift click to move entire stacks"),
-  //!rule("rideableGhasts",        "survival feature", "Named ghasts won't attack players and allow to be ridden and controlled")
-  //                              .extraInfo("Hold a ghast tear to bring a tamed ghast close to you",
-  //                                         "Use fire charges when riding to shoot fireballs",
-  //                                         "Requires flying to be enabled on the server"),
   rule("explosionNoBlockDamage", "tnt", "Explosions won't destroy blocks"),
   rule("tntPrimerMomentumRemoved", "tnt", "Removes random TNT momentum when primed"),
   rule("fastRedstoneDust",      "experimental optimizations", "Lag optimizations for redstone dust")
                                 .extraInfo("by Theosib").boolAccelerate().defaultFalse(),
-  //<with modified protocol> rule("accurateBlockPlacement", "creative", "Allows to place blocks in different orientations. Requires Carpet Client")
-  //                              .extraInfo("Also prevents rotations upon placement of dispensers and furnaces","when placed into a world by commands"),
-  /////rule("optimizedTNT",          "tnt", "TNT causes less lag when exploding in the same spot and in liquids"),
   rule("huskSpawningInTemples", "experimental feature", "Only husks spawn in desert temples").boolAccelerate(),
   rule("shulkerSpawningInEndCities", "feature experimental", "Shulkers will respawn in end cities").boolAccelerate(),
-  //!rule("wirelessRedstone",      "creative", "Repeater pointing from and to wool blocks transfer signals wirelessly")
-  //                              .extraInfo("Temporary feature - repeaters need an update when reloaded",
-  //                                         "By Narcoleptic Frog"),
-  //???rule("optimizedTileEntities", "experimental", "Reduces the lag caused by tile entities.")
-  //                              .extraInfo("By PallaPalla"),
-  /////rule("mergeTNT",              "tnt", "Merges stationary primed TNT entities"),
-  //???<no block data anymore> rule("repeaterPoweredTerracota", "experimental creative", "Repeater delays depends on stained hardened clay aka terracotta on which they are placed")
-  //                              .extraInfo("1 to 15 gt per delay added (1-15 block data), 0 (white) adds 100gt per tick"),
   rule("unloadedEntityFix",     "experimental creative", "Entities pushed or moved into unloaded chunks no longer disappear"),
   rule("TNTDoNotUpdate",        "tnt", "TNT doesn't update when placed against a power source"),
   rule("antiCheatSpeed",        "creative surival", "Prevents players from rubberbanding when moving too fast"),
@@ -169,32 +148,9 @@ public class CarpetSettings
                                            "Items counted are destroyed, count up to one stack per tick per hopper")
                                 .isACommand().boolAccelerate().defaultFalse(),
   rule("renewableSponges",      "experimental feature", "Guardians turn into Elder Guardian when struck by lightning"),
-  //rule("optimizedDespawnRange", "optimizations", "Spawned mobs that would otherwise despawn immediately, won't be placed in world"), // use 1.14 spawning instead
-  //???rule("redstoneMultimeter",    "creative survival", "Enables integration with redstone multimeter mod")
-  //                              .extraInfo("Required clients with RSMM Mod by Narcoleptic Frog. Enables multiplayer experience with RSMM Mod"),
   rule("movableTileEntities",   "experimental", "Pistons can push tile entities, like hoppers, chests etc.").boolAccelerate(),
-  //!rule("displayMobAI",          "creative", "Uses nametags to display current mobs AI tasks"),
-  //???rule("fastMovingEntityOptimization", "experimental", "Optimized movement calculation or very fast moving entities"),
-  //???rule("blockCollisionsOptimization", "experimental", "Optimized entity-block collision calculations. By masa"),
   rule("desertShrubs",          "feature", "Saplings turn into dead shrubs in hot climates and no water access when it attempts to grow into a tree"),
-  /////rule("nitwitCrafter",         "experimental", "Nitwit villagers will have 3 hidden crafting recipes they can craft")
-  //                              .extraInfo("They require food for crafting and prefer a specific food type to craft faster.",
-  //                                         "They have one crafting recipe to start out and unlock there higher recipes as they craft",
-  //                                         "The nitwits will craft faster as they progress",
-  //                                         "When a crafting table is nearby they will throw the product towards it",
-  //                                         "They need a crafting table to craft tier 2 and higher recipes"),
-  //???rule("boundingBoxFix",        "fix", "Structure bounding boxes (i.e. witch huts) will generate correctly")
-  //                              .extraInfo("Fixes spawning issues due to incorrect bounding boxes"),
-  /////rule("movingBlockLightOptimization", "optimizations", "Blocks inherit the original light opacity and light values while being pushed with a piston"),
-  /////rule("noteBlockImitationOf1.13", "experimental", "Note blocks have update capabilities behaviour from 1.13"),
-  /////rule("hopperDuplicationFix",  "fix", "Hopper duplication fix by Theosib. Fixed in 1.12.2").defaultTrue(),
-  //??? check vanilla first rule("entityDuplicationFix",  "fix", "Chunk saving issues that causes entites and blocks to duplicate or dissapear")
-  //                              .extraInfo("By Theosib"),
-  /////rule("itemFrameDuplicationFix", "fix", "Fixes duplication of items when using item frames"),
-  /////rule("craftingWindowDuplicationFix", "fix", "Fixes the recipe book duplication caused by clicking to fast while crafting"),
   rule("silverFishDropGravel",  "experimental", "Silverfish drop a gravel item when breaking out of a block"),
-  /////rule("renewablePackedIce",    "experimental", "Multiple ice crushed by falling anvils make packed ice"),
-  /////rule("renewableDragonEggs",   "experimental", "Dragon eggs when fed meet items spawn more eggs"),
   rule("summonNaturalLightning","creative", "summoning a lightning bolt has all the side effects of natural lightning"),
   rule("commandSpawn",          "commands", "Enables /spawn command for spawn tracking").isACommand(),
   rule("commandTick",           "commands", "Enables /tick command to control game speed").isACommand(),
@@ -204,7 +160,6 @@ public class CarpetSettings
   rule("commandInfo",           "commands", "Enables /info command for blocks and entities").isACommand()
                                 .extraInfo("Also enables gray carpet placement action ")
                                 .extraInfo("and yellow carpet placement action for entities if 'carpets' rule is turned on as well"),
-  ////rule("commandUnload",         "commands", "Enables /unload command to control game speed").defaultTrue(),
   rule("commandCameramode",     "commands", "Enables /c and /s commands to quickly switch between camera and survival modes").isACommand()
                                 .extraInfo("/c and /s commands are available to all players regardless of their permission levels"),
   rule("commandPerimeterInfo",  "commands", "Enables /perimeterinfo command").isACommand()
@@ -214,8 +169,6 @@ public class CarpetSettings
   rule("commandScript",  "commands", "Enables /script command").isACommand()
                                 .extraInfo("a powerful in-game scripting API"),
   rule("commandPlayer",         "commands", "Enables /player command to control/spawn players").isACommand(),
-  ////rule("commandRNG",            "commands", "Enables /rng command to manipulate and query rng").defaultTrue(),
-  ////rule("newLight",              "optimizations", "Uses alternative lighting engine by PhiPros. AKA NewLight mod"),
   rule("carpets",               "survival", "Placing carpets may issue carpet commands for non-op players"),
   rule("missingTools",          "survival", "Pistons, Glass and Sponge can be broken faster with their appropriate tools"),
   rule("mobSpawningAlgorithm","experimental","Using version appropriate spawning rules: ")
@@ -239,10 +192,8 @@ public class CarpetSettings
                                             break;
                                     }
                                 }),
-  /////rule("pocketPushing",         "experimental", "Reintroduces piston warping/translocation bug"),
   rule("portalCaching",         "survival experimental", "Alternative, persistent caching strategy for nether portals"),
   rule("calmNetherFires",       "experimental", "Permanent fires don't schedule random updates"),
-  /////rule("observersDoNonUpdate",  "creative", "Observers don't pulse when placed"),
   //!rule("flyingMachineTransparent", "creative", "Transparent observers, TNT and redstone blocks. May cause lighting artifacts"),
   rule("fillUpdates",           "creative", "fill/clone/setblock and structure blocks cause block updates").defaultTrue(),
   rule("pushLimit",             "creative","Customizable piston push limit")
@@ -260,30 +211,15 @@ public class CarpetSettings
   //                              .choices("false","false true clientAndServer"),
   //???rule("waterFlow",             "optimizations", "fixes water flowing issues")
   //                              .choices("vanilla","vanilla optimized correct"),
-  /////rule("hardcodeTNTangle",      "tnt", "Sets the horizontal random angle on TNT for debugging of TNT contraptions")
-  //                              .extraInfo("Set to -1 for default behaviour")
-  //                              .choices("-1","-1")
-  //                              .setFloat(),
-  /////rule("tntRandomRange",        "tnt", "Sets the tnt random explosion range to a fixed value")
-  //                              .extraInfo("Set to -1 for default behaviour")
-  //                              .choices("-1","-1")
-  //                              .setFloat(),
   rule("sleepingThreshold",     "experimental", "The percentage of required sleeping players to skip the night")
                                 .extraInfo("Use values from 0 to 100, 100 for default (all players needed)")
                                 .choices("100","0 10 50 100").setNotStrict(),
-  //???rule("spongeRandom",          "experimental feature", "sponge responds to random ticks"),
   rule("customMOTD",            "creative","Sets a different motd message on client trying to connect to the server")
                                 .extraInfo("use '_' to use the startup setting from server.properties")
                                 .choices("_","_").setNotStrict(),
-  /////rule("doubleRetraction",      "experimental", "1.8 double retraction from pistons.")
-  //                              .extraInfo("Gives pistons the ability to double retract without side effects."),
   rule("rotatorBlock",          "experimental", "Cactus in dispensers rotates blocks.")
                                 .extraInfo("Cactus in a dispenser gives the dispenser the ability to rotate the blocks " +
                                            "that are in front of it anti-clockwise if possible."),
-  /////rule("netherRNG",             "creative", "Turning nether RNG manipulation on or off.")
-  //                              .extraInfo("Turning nether RNG manipulation on or off."),
-  /////rule("endRNG",                "creative", "Turning end RNG manipulation on or off.")
-  //                              .extraInfo("Turning end RNG manipulation on or off."),
   rule("viewDistance",          "creative", "Changes the view distance of the server.")
                                 .extraInfo("Set to 0 to not override the value in server settings.")
                                 .choices("0", "0 12 16 32 64").setNotStrict()
@@ -304,20 +240,10 @@ public class CarpetSettings
                                     }
                                     else
                                     {
-                                        if (viewDistance < 2)
-                                        {
-                                            viewDistance = 0;
-                                        }
-                                        if (viewDistance > 64)
-                                        {
-                                            viewDistance = 64;
-                                        }
-                                        clientViewDistance = viewDistance;
+                                        CarpetSettings.get(s).setForce("0");
+                                        Messenger.print_server_message(CarpetServer.minecraft_server, "view distance can only be changed on a server");
                                     }
                                 }),
-  /////rule("tickingAreas",          "creative", "Enable use of ticking areas.")
-  //                              .extraInfo("As set by the /tickingarea comamnd.",
-  //                              "Ticking areas work as if they are the spawn chunks."),
   rule("disableSpawnChunks",      "creative", "Removes the spawn chunks.")
                                   .validate((s) -> {
                                       if (!CarpetSettings.getBool("disableSpawnChunks")) {
@@ -349,8 +275,6 @@ public class CarpetSettings
                                   .choices("25", "0 2 25").setNotStrict(),
   rule("renewableCoral",          "feature", "Coral structures will grow with bonemeal from coral plants"),
   rule("placementRotationFix",    "fix", "fixes block placement rotation issue when player rotates quickly while placing blocks"),
-  rule("endCitySavingFix",        "fix", "Fixes the saving of end cities.")
-                                  .extraInfo("Every End city that got saved once was invalidated on a server restart."),
   rule("leadFix",                 "fix", "Fixes leads breaking/becoming invisible in unloaded chunks")
                                   .extraInfo("You may still get visibly broken leash links on the client side, but server side the link is still there."),
         };
@@ -360,174 +284,6 @@ public class CarpetSettings
         }
     }
 
-    /* should not be needed
-    public static void reload_all_statics()
-    {
-        for (String rule: settings_store.keySet())
-        {
-            reload_stat(rule);
-        }
-    }
-    */
-
-    /* should not be needed due to validators
-    public static void reload_stat(String rule)
-    {
-    }
-
-        extendedConnectivity = CarpetSettings.getBool("extendedConnectivity");
-        quasiConnectivity = CarpetSettings.getBool("quasiConnectivity");
-        hopperCounters = CarpetSettings.getBool("hopperCounters");
-        fastRedstoneDust = CarpetSettings.getBool("fastRedstoneDust");
-        wirelessRedstone = CarpetSettings.getBool("wirelessRedstone");
-        unloadedEntityFix = CarpetSettings.getBool("unloadedEntityFix");
-        optimizedTileEntities = CarpetSettings.getBool("optimizedTileEntities");
-        hardcodeTNTangle = CarpetSettings.getFloat("hardcodeTNTangle");
-        tntRandomRange = CarpetSettings.getFloat("tntRandomRange");
-        antiCheat = CarpetSettings.getBool("antiCheatSpeed");
-        optimizedTNT = CarpetSettings.getBool("optimizedTNT");
-        huskSpawningInTemples = CarpetSettings.getBool("huskSpawningInTemples");
-        redstoneMultimeter = CarpetSettings.getBool("redstoneMultimeter");
-        movableTileEntities = CarpetSettings.getBool("movableTileEntities");
-        fastMovingEntityOptimization = CarpetSettings.getBool("fastMovingEntityOptimization");
-        blockCollisionsOptimization = CarpetSettings.getBool("blockCollisionsOptimization");
-        explosionNoBlockDamage = CarpetSettings.getBool("explosionNoBlockDamage");
-        movingBlockLightOptimization = CarpetSettings.getBool("movingBlockLightOptimization");
-        noteBlockImitation = CarpetSettings.getBool("noteBlockImitationOf1.13");
-        displayMobAI = CarpetSettings.getBool("displayMobAI");
-        newLight = CarpetSettings.getBool("newLight");
-        doubleRetraction = CarpetSettings.getBool("doubleRetraction");
-        netherRNG = CarpetSettings.getBool("netherRNG");
-        endRNG = CarpetSettings.getBool("endRNG");
-
-        if ("pistonGhostBlocksFix".equalsIgnoreCase(rule))
-        {
-            pistonGhostBlocksFix = 0;
-            if("true".equalsIgnoreCase(CarpetSettings.getString("pistonGhostBlocksFix")))
-            {
-                pistonGhostBlocksFix = 1;
-            }
-            if("clientAndServer".equalsIgnoreCase(CarpetSettings.getString("pistonGhostBlocksFix")))
-            {
-                pistonGhostBlocksFix = 2;
-            }
-        }
-        else if ("flyingMachineTransparent".equalsIgnoreCase(rule))
-        {
-            if(CarpetSettings.getBool("flyingMachineTransparent"))
-            {
-                Blocks.OBSERVER.setLightOpacity(0);
-                Blocks.REDSTONE_BLOCK.setLightOpacity(0);
-                Blocks.TNT.setLightOpacity(0);
-            }
-            else
-            {
-                Blocks.OBSERVER.setLightOpacity(255);
-                Blocks.REDSTONE_BLOCK.setLightOpacity(255);
-                Blocks.TNT.setLightOpacity(255);
-            }
-        }
-        else if ("liquidsNotRandom".equalsIgnoreCase(rule))
-        {
-            if(CarpetSettings.getBool("liquidsNotRandom"))
-            {
-                worldGenBug = true;
-                Blocks.FLOWING_WATER.setTickRandomly(false);
-                Blocks.FLOWING_LAVA.setTickRandomly(false);
-            }
-            else
-            {
-                worldGenBug = false;
-                Blocks.FLOWING_WATER.setTickRandomly(true);
-                Blocks.FLOWING_LAVA.setTickRandomly(true);
-            }
-        }
-        else if ("spongeRandom".equalsIgnoreCase(rule))
-        {
-            if(CarpetSettings.getBool("spongeRandom"))
-            {
-                Blocks.SPONGE.setTickRandomly(true);
-            }
-            else
-            {
-                Blocks.SPONGE.setTickRandomly(false);
-            }
-        }
-        else if ("reloadSuffocationFix".equalsIgnoreCase(rule))
-        {
-            if(CarpetSettings.getBool("reloadSuffocationFix"))
-            {
-                AxisAlignedBB.margin = 1.0 / (1L<<27);
-            }
-            else
-            {
-                AxisAlignedBB.margin = 0;
-            }
-        }
-        else if("pushLimit".equalsIgnoreCase(rule))
-        {
-            pushLimit = getInt("pushLimit");
-        }
-        else if("railPowerLimit".equalsIgnoreCase(rule))
-        {
-            // Rail limit -1 because 8 is the code default. But counted to 9 including the source in human terms.
-            railPowerLimit = getInt("railPowerLimit") - 1;
-        }
-        else if("waterFlow".equalsIgnoreCase(rule))
-        {
-            waterFlow = 0;
-            if ("optimized".equalsIgnoreCase(getString("waterFlow")))
-            {
-                waterFlow = 3;
-            }
-            if ("correct".equalsIgnoreCase(getString("waterFlow")))
-            {
-                waterFlow = 1;
-            }
-        }
-        else if("shulkerSpawningInEndCities".equalsIgnoreCase(rule))
-        {
-            if(CarpetSettings.getBool("shulkerSpawningInEndCities"))
-            {
-                net.minecraft.world.gen.structure.MapGenEndCity.shulkerSpawning(true);
-                shulkerSpawningInEndCities = true;
-            }
-            else
-            {
-                net.minecraft.world.gen.structure.MapGenEndCity.shulkerSpawning(false);
-                shulkerSpawningInEndCities = false;
-            }
-        }
-        else if ("viewDistance".equalsIgnoreCase(rule))
-        {
-            int viewDistance = getInt("viewDistance");
-            if (viewDistance < 2)
-                viewDistance = ((DedicatedServer) CarpetServer.minecraft_server).getIntProperty("view-distance", 10);
-            if (viewDistance > 64)
-                viewDistance = 64;
-            if (viewDistance != CarpetServer.minecraft_server.getPlayerList().getViewDistance())
-                CarpetServer.minecraft_server.getPlayerList().setViewDistance(viewDistance);
-        }
-        else if ("tickingAreas".equalsIgnoreCase(rule))
-        {
-            if (CarpetSettings.getBool("tickingAreas") && CarpetServer.minecraft_server.worlds != null)
-            {
-                TickingArea.initialChunkLoad(CarpetServer.minecraft_server, false);
-            }
-        }
-        else if ("disableSpawnChunks".equalsIgnoreCase(rule))
-        {
-            if (!CarpetSettings.getBool("disableSpawnChunks") && CarpetServer.minecraft_server.worlds != null)
-            {
-                World overworld = CarpetServer.minecraft_server.worlds[0];
-                for (ChunkPos chunk : new TickingArea.SpawnChunks().listIncludedChunks(overworld))
-                {
-                    overworld.getChunkProvider().provideChunk(chunk.x, chunk.z);
-                }
-            }
-        }
-    }
-    */
     private static void notifyPlayersCommandsChanged()
     {
         if (CarpetServer.minecraft_server == null)
@@ -957,6 +713,14 @@ public class CarpetSettings
 
         private void set(String unparsed)
         {
+            setForce(unparsed);
+            if (validators != null)
+            {
+                validators.forEach((r) -> r.accept(this.getName()));
+            }
+        }
+        private void setForce(String unparsed)
+        {
             string = unparsed;
             try
             {
@@ -974,11 +738,7 @@ public class CarpetSettings
             {
                 flt = 0.0F;
             }
-            bool = (integer > 0)?true:Boolean.parseBoolean(unparsed);
-            if (validators != null)
-            {
-                validators.forEach((r) -> r.accept(this.getName()));
-            }
+            bool = (integer > 0) || Boolean.parseBoolean(unparsed);
         }
 
         //accessors

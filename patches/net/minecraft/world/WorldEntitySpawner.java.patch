@@ -8,7 +8,7 @@
  import com.google.common.collect.Sets;
  import java.util.List;
  import java.util.Random;
-@@ -20,6 +22,7 @@
+@@ -20,10 +22,12 @@
  import net.minecraft.server.management.PlayerChunkMapEntry;
  import net.minecraft.tags.BlockTags;
  import net.minecraft.tags.FluidTags;
@@ -16,18 +16,12 @@
  import net.minecraft.util.WeightedRandom;
  import net.minecraft.util.math.BlockPos;
  import net.minecraft.util.math.ChunkPos;
-@@ -81,19 +84,58 @@
-                 }
-             }
- 
-+            //CM start
-+            boolean optimizedDespawnRange = CarpetSettings.getBool("optimizedDespawnRange");
-+            if (i==0 && optimizedDespawnRange) // worlds without valid chunks are skipped.
-+            {
-+                return 0;
-+            }
-+            //CM end
-+
+ import net.minecraft.util.math.MathHelper;
++import net.minecraft.util.registry.IRegistry;
+ import net.minecraft.world.biome.Biome;
+ import net.minecraft.world.chunk.Chunk;
+ import net.minecraft.world.gen.Heightmap;
+@@ -84,16 +88,47 @@
              int k4 = 0;
              BlockPos blockpos1 = worldServerIn.getSpawnPoint();
  
@@ -77,7 +71,7 @@
                          label158:
  
                          for (ChunkPos chunkpos1 : this.eligibleChunksForSpawning)
-@@ -117,6 +159,10 @@
+@@ -117,6 +152,10 @@
                                      Biome.SpawnListEntry biome$spawnlistentry = null;
                                      IEntityLivingData ientitylivingdata = null;
                                      int l3 = MathHelper.ceil(Math.random() * 4.0D);
@@ -88,7 +82,7 @@
                                      int i4 = 0;
  
                                      for (int j4 = 0; j4 < l3; ++j4)
-@@ -144,6 +190,7 @@
+@@ -144,6 +183,7 @@
                                                          break;
                                                      }
  
@@ -96,7 +90,7 @@
                                                      l3 = biome$spawnlistentry.minGroupCount + worldServerIn.rand.nextInt(1 + biome$spawnlistentry.maxGroupCount - biome$spawnlistentry.minGroupCount);
                                                  }
  
-@@ -175,8 +222,22 @@
+@@ -175,8 +215,22 @@
                                                              {
                                                                  ++j2;
                                                                  ++i4;
@@ -104,7 +98,7 @@
 +                                                            ++local_spawns;
 +                                                            if (SpawnReporter.track_spawns > 0L)
 +                                                            {
-+                                                                String species = entityliving.getEntityString();
++                                                                String species = IRegistry.field_212629_r.getKey(entityliving.getType()).toString().replaceFirst("minecraft:","");
 +                                                                SpawnReporter.registerSpawn(entityliving, type_code, species, blockpos$mutableblockpos);
 +                                                            }
 +                                                            if (SpawnReporter.mock_spawns)
@@ -119,7 +113,7 @@
                                                              else
                                                              {
                                                                  entityliving.remove();
-@@ -202,7 +263,30 @@
+@@ -202,7 +256,30 @@
                                  }
                              }
                          }
@@ -150,7 +144,7 @@
                  }
              }
  
-@@ -216,6 +300,10 @@
+@@ -216,6 +293,10 @@
          int i = x * 16 + worldIn.rand.nextInt(16);
          int j = z * 16 + worldIn.rand.nextInt(16);
          int k = chunk.getTopBlockY(Heightmap.Type.LIGHT_BLOCKING, i, j) + 1;

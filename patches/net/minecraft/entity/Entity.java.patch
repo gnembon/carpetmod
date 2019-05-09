@@ -16,20 +16,11 @@
      protected boolean inWater;
      protected double submergedHeight;
      protected boolean eyesInWater;
-@@ -344,7 +347,7 @@
-         }
-     }
- 
--    protected void setRotation(float yaw, float pitch)
-+    public void setRotation(float yaw, float pitch) //CM changed from protected to set in player action pack
-     {
-         this.rotationYaw = yaw % 360.0F;
-         this.rotationPitch = pitch % 360.0F;
 @@ -1566,6 +1569,13 @@
          return partialTicks == 1.0F ? this.rotationYaw : this.prevRotationYaw + (this.rotationYaw - this.prevRotationYaw) * partialTicks;
      }
  
-+    // [CM] start useMainYaw fix
++    // [CM] start useMainYaw fix for placementRotationFix
 +    public float getMainYaw(float partialTicks)
 +    {
 +        return partialTicks == 1.0F ? this.rotationYaw : this.prevRotationYaw + (this.rotationYaw - this.prevRotationYaw) * partialTicks;
@@ -39,15 +30,6 @@
      protected final Vec3d getVectorForRotation(float pitch, float yaw)
      {
          float f = pitch * ((float)Math.PI / 180F);
-@@ -1859,7 +1869,7 @@
-     }
- 
-     @Nullable
--    protected final String getEntityString()
-+    public final String getEntityString() // CM changed from protected to public
-     {
-         EntityType<?> entitytype = this.getType();
-         ResourceLocation resourcelocation = EntityType.getId(entitytype);
 @@ -2821,6 +2831,10 @@
  
      public EnumFacing getHorizontalFacing()

@@ -194,7 +194,7 @@ public class EntityPlayerActionPack
     }
     public EntityPlayerActionPack look(float yaw, float pitch)
     {
-        player.setRotation(yaw, MathHelper.clamp(pitch,-90.0F, 90.0F));
+        player.setPositionAndRotation(player.posX, player.posY, player.posZ, yaw, MathHelper.clamp(pitch,-90.0F, 90.0F));
         return this;
     }
     public boolean turn(String where)
@@ -216,7 +216,7 @@ public class EntityPlayerActionPack
     }
     public EntityPlayerActionPack turn(float yaw, float pitch)
     {
-        player.setRotation(player.rotationYaw+yaw,MathHelper.clamp(player.rotationPitch+pitch,-90.0F, 90.0F));
+        player.setPositionAndRotation(player.posX, player.posY, player.posZ, player.rotationYaw+yaw,MathHelper.clamp(player.rotationPitch+pitch,-90.0F, 90.0F));
         return  this;
     }
 

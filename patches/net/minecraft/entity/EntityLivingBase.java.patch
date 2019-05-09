@@ -12,7 +12,7 @@
      protected int scoreValue;
      protected float lastDamage;
      protected boolean isJumping;
-+    //CM public for ghast helper
++    //CM public for scarpet
 +    public boolean getJumping() { return isJumping; }
      public float moveStrafing;
      public float moveVertical;
