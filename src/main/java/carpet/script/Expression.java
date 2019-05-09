@@ -296,10 +296,10 @@ public class Expression implements Cloneable
     }};
     protected static final Random randomizer = new Random();
 
-    private static final Value PI = new NumericValue(
+    static final Value PI = new NumericValue(
             "3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679");
 
-    private static final Value euler = new NumericValue(
+    static final Value euler = new NumericValue(
             "2.71828182845904523536028747135266249775724709369995957496696762772407663");
 
     // %[argument_index$][flags][width][.precision][t]conversion
@@ -326,10 +326,11 @@ public class Expression implements Cloneable
 
     private Map<String, ILazyFunction> functions = new HashMap<>();
 
-    static final Map<String, UserDefinedFunction> globalFunctions = new HashMap<>();
+    //static final Map<String, UserDefinedFunction> globalFunctions = new HashMap<>();
 
-    static final Map<String, LazyValue> globalVariables = new HashMap<>();
-    static
+    //static final Map<String, LazyValue> globalVariables = new HashMap<>();
+
+    /*static
     {
         setGlobals();
     }
@@ -346,6 +347,7 @@ public class Expression implements Cloneable
         globalVariables.put("_i", (c, t) -> Value.ZERO);
         globalVariables.put("_a", (c, t) -> Value.ZERO);
     }
+    */
 
     @Override
     protected Expression clone() throws CloneNotSupportedException
@@ -706,7 +708,7 @@ public class Expression implements Cloneable
             }
         });
     }
-    private void addContextFunction(String name, Expression expr, Tokenizer.Token token, List<String> arguments, List<String> globals, LazyValue code)
+    private void addContextFunction(Context context, String name, Expression expr, Tokenizer.Token token, List<String> arguments, List<String> globals, LazyValue code)
     {
         name = name.toLowerCase(Locale.ROOT);
         if (functions.containsKey(name))
@@ -722,7 +724,7 @@ public class Expression implements Cloneable
             throw new ExpressionException(expr, token, "Problems in allocating global function "+name);
         }
 
-        globalFunctions.put(name, new UserDefinedFunction(arguments, function_context, token)
+        context.host.globalFunctions.put(name, new UserDefinedFunction(arguments, function_context, token)
         {
             @Override
             public LazyValue lazyEval(Context c, Integer type, Expression e, Tokenizer.Token t, List<LazyValue> lazyParams)
@@ -945,10 +947,10 @@ public class Expression implements Cloneable
         // artificial construct to handle user defined functions and function definitions
         addLazyFunction(".",-1, (c, t, lv) -> { // adjust based on c
             String name = lv.get(lv.size()-1).evalValue(c).getString();
-            //lv.remove(lv.size()-1); // aint gonna cut it
+            //lv.remove(lv.size()-1); // aint gonna cut it // maybe it will because of the eager eval changes
             if (t != Context.SIGNATURE) // just call the function
             {
-                if (!globalFunctions.containsKey(name))
+                if (!c.host.globalFunctions.containsKey(name))
                 {
                     throw new InternalExpressionException("Function "+name+" is not defined yet");
                 }
@@ -957,7 +959,7 @@ public class Expression implements Cloneable
                 {
                     lvargs.add(lv.get(i));
                 }
-                UserDefinedFunction acf = globalFunctions.get(name);
+                UserDefinedFunction acf = c.host.globalFunctions.get(name);
                 Value retval = acf.lazyEval(c, t, acf.expression, acf.token, lvargs).evalValue(c);
                 return (cc, tt) -> retval; ///!!!! dono might need to store expr and token in statics? (e? t?)
             }
@@ -1003,7 +1005,7 @@ public class Expression implements Cloneable
             if (v1 instanceof FunctionSignatureValue)
             {
                 FunctionSignatureValue sign = (FunctionSignatureValue) v1;
-                addContextFunction(sign.getName(), e, t, sign.getArgs(), sign.getGlobals(), lv2);
+                addContextFunction(c, sign.getName(), e, t, sign.getArgs(), sign.getGlobals(), lv2);
             }
             else
             {
@@ -2549,20 +2551,19 @@ public class Expression implements Cloneable
             if (varname.endsWith("*"))
             {
                 varname = varname.replaceAll("\\*+$", "");
-                for (String key: globalFunctions.keySet())
+                for (String key: c.host.globalFunctions.keySet())
                 {
-                    if (key.startsWith(varname)) globalFunctions.remove(key);
+                    if (key.startsWith(varname)) c.host.globalFunctions.remove(key);
                 }
-                for (String key: globalVariables.keySet())
+                for (String key: c.host.globalVariables.keySet())
                 {
-                    if (key.startsWith(varname)) globalVariables.remove(key);
+                    if (key.startsWith(varname)) c.host.globalVariables.remove(key);
                 }
                 c.clearAll(varname);
             }
             else
             {
-                globalFunctions.remove(varname);
-                globalVariables.remove(varname);
+                c.host.globalFunctions.remove(varname);
                 c.delVariable(varname);
             }
             return (cc, tt) -> Value.NULL;
@@ -2574,7 +2575,7 @@ public class Expression implements Cloneable
             List<Value> values = new ArrayList<>();
             if (prefix.startsWith("global"))
             {
-                for (String k: globalVariables.keySet())
+                for (String k: c.host.globalVariables.keySet())
                 {
                     if (k.startsWith(prefix))
                         values.add(new StringValue(k));

@@ -19,9 +19,13 @@ public class Context
 
     private Map<String, LazyValue> variables = new HashMap<>();
 
-    Context()
+    protected ScriptHost host;
+
+    Context(ScriptHost host)
     {
+        this.host = host;
     }
+
 
     LazyValue getVariable(String name)
     {
@@ -29,14 +33,14 @@ public class Context
         {
             return variables.get(name);
         }
-        return Expression.globalVariables.get(name);
+        return host.globalVariables.get(name);
     }
 
     void setVariable(String name, LazyValue lv)
     {
         if (name.startsWith("global_"))
         {
-            Expression.globalVariables.put(name, lv);
+            host.globalVariables.put(name, lv);
             return;
         }
         variables.put(name, lv);
@@ -45,7 +49,7 @@ public class Context
 
     boolean isAVariable(String name)
     {
-        return variables.containsKey(name) || Expression.globalVariables.containsKey(name);
+        return variables.containsKey(name) || host.globalVariables.containsKey(name);
     }
 
 
@@ -53,7 +57,7 @@ public class Context
     {
         if (variable.startsWith("global_"))
         {
-            Expression.globalVariables.remove(variable);
+            host.globalVariables.remove(variable);
             return;
         }
         variables.remove(variable);
@@ -62,7 +66,7 @@ public class Context
     {
         if (variable.startsWith("global_"))
         {
-            Expression.globalVariables.remove(variable);
+            host.globalVariables.remove(variable);
             return;
         }
         variables.remove(variable);
@@ -81,6 +85,6 @@ public class Context
 
     public Context recreate()
     {
-        return new Context();
+        return new Context(this.host);
     }
 }

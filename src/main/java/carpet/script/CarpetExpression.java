@@ -116,9 +116,9 @@ public class CarpetExpression
     {
         public CommandSource s;
         public BlockPos origin;
-        CarpetContext(CommandSource source, BlockPos origin)
+        CarpetContext(ScriptHost host, CommandSource source, BlockPos origin)
         {
-            super();
+            super(host);
             s = source;
             this.origin = origin;
         }
@@ -126,7 +126,7 @@ public class CarpetExpression
         @Override
         public Context recreate()
         {
-            return new CarpetContext(this.s, this.origin);
+            return new CarpetContext(this.host, this.s, this.origin);
         }
 
     }
@@ -875,6 +875,8 @@ public class CarpetExpression
      * <p>Boolean, true if entity is sprinting.</p>
      * <h3><code>query(e,'swimming')</code></h3>
      * <p>Boolean, true if entity is swimming.</p>
+     * <h3><code>query(e,'jumping')</code></h3>
+     * <p>Boolean, true if entity is jumping.</p>
      * <h3><code>query(e,'gamemode')</code></h3>
      * <p>String with gamemode, or <code>null</code> if not a player.</p>
      * <h3><code>query(e,'gamemode_id')</code></h3>
@@ -1904,20 +1906,17 @@ public class CarpetExpression
     }
     static void setGlobals()
     {
-        Expression.globalVariables.put("_x", (c, t) -> Value.ZERO);
-        Expression.globalVariables.put("_y", (c, t) -> Value.ZERO);
-        Expression.globalVariables.put("_z", (c, t) -> Value.ZERO);
+        ScriptHost.globalHost.globalVariables.put("_x", (c, t) -> Value.ZERO);
+        ScriptHost.globalHost.globalVariables.put("_y", (c, t) -> Value.ZERO);
+        ScriptHost.globalHost.globalVariables.put("_z", (c, t) -> Value.ZERO);
     }
     static void resetExpressionEngine()
     {
-        Expression.globalFunctions.clear();
-        Expression.globalVariables.clear();
-        Expression.setGlobals();
+        ScriptHost.globalHost = new ScriptHost();
         CarpetExpression.setGlobals();
         CarpetExpression.tickStart = 0L;
         CarpetExpression.stopAll = false;
         CarpetExpression.resetErrorSnooper();
-
     }
 
 
@@ -1987,7 +1986,7 @@ public class CarpetExpression
             return false;
         try
         {
-            Context context = new CarpetContext(source, origin).
+            Context context = new CarpetContext(ScriptHost.globalHost, source, origin).
                     with("x", (c, t) -> new NumericValue(x - origin.getX()).bindTo("x")).
                     with("y", (c, t) -> new NumericValue(y - origin.getY()).bindTo("y")).
                     with("z", (c, t) -> new NumericValue(z - origin.getZ()).bindTo("z")).
@@ -2033,7 +2032,7 @@ public class CarpetExpression
             return "SCRIPTING PAUSED";
         try
         {
-            Context context = new CarpetContext(source, origin).
+            Context context = new CarpetContext(ScriptHost.globalHost, source, origin).
                     with("x", (c, t) -> new NumericValue(pos.getX() - origin.getX()).bindTo("x")).
                     with("y", (c, t) -> new NumericValue(pos.getY() - origin.getY()).bindTo("y")).
                     with("z", (c, t) -> new NumericValue(pos.getZ() - origin.getZ()).bindTo("z"));
@@ -2104,9 +2103,11 @@ public class CarpetExpression
 
     public static String invokeGlobalFunctionCommand(CommandSource source, String call, List<Integer> coords, String arg)
     {
+        //will set a custom host when we have the other bits.
+        ScriptHost host = ScriptHost.globalHost;
         if (stopAll)
             return "SCRIPTING PAUSED";
-        Expression.UserDefinedFunction acf = Expression.globalFunctions.get(call);
+        Expression.UserDefinedFunction acf = host.globalFunctions.get(call);
         if (acf == null)
             return "UNDEFINED";
         List<LazyValue> argv = new ArrayList<>();
@@ -2118,9 +2119,9 @@ public class CarpetExpression
             switch (tok.type)
             {
                 case VARIABLE:
-                    if (Expression.globalVariables.containsKey(tok.surface.toLowerCase(Locale.ROOT)))
+                    if (host.globalVariables.containsKey(tok.surface.toLowerCase(Locale.ROOT)))
                     {
-                        argv.add(Expression.globalVariables.get(tok.surface.toLowerCase(Locale.ROOT)));
+                        argv.add(host.globalVariables.get(tok.surface.toLowerCase(Locale.ROOT)));
                         break;
                     }
                 case STRINGPARAM:
@@ -2183,7 +2184,8 @@ public class CarpetExpression
         }
         try
         {
-            Context context = new CarpetContext(source, BlockPos.ORIGIN);
+            // TODO: this is just for now - invoke would be able to invoke other hosts scripts
+            Context context = new CarpetContext(host, source, BlockPos.ORIGIN);
             return Expression.evalValue(
                     () -> acf.lazyEval(context, Context.VOID, acf.expression, acf.token, argv),
                     context,

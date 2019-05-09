@@ -3,6 +3,7 @@ package carpet.commands;
 import carpet.CarpetSettings;
 import carpet.script.CarpetExpression;
 import carpet.script.ExpressionInspector;
+import carpet.script.ScriptHost;
 import carpet.script.Tokenizer;
 import carpet.utils.Messenger;
 import com.mojang.brigadier.CommandDispatcher;
@@ -174,7 +175,7 @@ public class ScriptCommand
     }
     private static Set<String> getGlobalCalls()
     {
-        return ExpressionInspector.Expression_globalFunctions().keySet().stream().filter((s) -> !s.startsWith("_")).collect(Collectors.toSet());
+        return ScriptHost.globalHost.globalFunctions.keySet().stream().filter((s) -> !s.startsWith("_")).collect(Collectors.toSet());
     }
     private static int listGlobals(CommandSource source)
     {
@@ -194,9 +195,9 @@ public class ScriptCommand
         //Messenger.m(source, "w "+code);
         Messenger.m(source, "w Global Variables:");
 
-        for (String vname : ExpressionInspector.Expression_globalVariables().keySet())
+        for (String vname : ScriptHost.globalHost.globalVariables.keySet())
         {
-            Messenger.m(source, "w Variable "+vname+": ", "wb "+ExpressionInspector.Expression_globalVariables().get(vname).evalValue(null).getString());
+            Messenger.m(source, "w Variable "+vname+": ", "wb "+ScriptHost.globalHost.globalVariables.get(vname).evalValue(null).getString());
         }
         return 1;
     }

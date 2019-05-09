@@ -16,24 +16,14 @@ public class ExpressionInspector
         return e.getCodeString();
     }
 
-    public static Map<String, Expression.UserDefinedFunction> Expression_globalFunctions()
-    {
-        return Expression.globalFunctions;
-    }
-
     public static Expression Expression_globalFunctions_get_getExpression(String name)
     {
-        return Expression.globalFunctions.get(name).getExpression();
+        return ScriptHost.globalHost.globalFunctions.get(name).getExpression();
     }
 
     public static Tokenizer.Token Expression_globalFunctions_get_getToken(String name)
     {
-        return Expression.globalFunctions.get(name).getToken();
-    }
-
-    public static Map<String, LazyValue> Expression_globalVariables()
-    {
-        return Expression.globalVariables;
+        return ScriptHost.globalHost.globalFunctions.get(name).getToken();
     }
 
     public static List<String> Expression_getExpressionSnippet(Tokenizer.Token token, String expr)
