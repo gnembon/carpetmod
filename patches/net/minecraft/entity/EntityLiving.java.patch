@@ -56,15 +56,6 @@
  
          compound.setBoolean("LeftHanded", this.isLeftHanded());
  
-@@ -836,7 +856,7 @@
- 
-     public boolean isNotColliding(IWorldReaderBase worldIn)
-     {
--        return !worldIn.containsAnyLiquid(this.getBoundingBox()) && worldIn.isCollisionBoxesEmpty(this, this.getBoundingBox()) && worldIn.checkNoEntityCollision(this, this.getBoundingBox());
-+        return !worldIn.containsAnyLiquid(this.getBoundingBox()) && worldIn.isCollisionBoxesEmpty(this, this.getBoundingBox()) && (CarpetSettings.n_mobSpawningAlgorithm == 112 || worldIn.checkNoEntityCollision(this, this.getBoundingBox()));
-     }
- 
-     @OnlyIn(Dist.CLIENT)
 @@ -1447,10 +1467,16 @@
          float f = (float)this.getAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).getValue();
          int i = 0;
