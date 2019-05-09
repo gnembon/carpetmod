@@ -1,7 +1,11 @@
 package carpet;
 
 import java.lang.reflect.Field;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -27,16 +31,7 @@ import net.minecraft.world.dimension.DimensionType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-//import carpet.carpetclient.CarpetClientRuleChanger;
-//import carpet.utils.TickingArea;
 import net.minecraft.server.MinecraftServer;
-
-// /s /c commands tp players back where they started
-// discuss xcom accurateBlockPlacement -> flexible or alternate block placement
-// world.chunk.storage.Anvil Chunk Loader check again code on diff.
-// check why 'test' world doesn't respond to commands while warping
-// death counter
-//unify command meter with other carpet commmands
 
 public class CarpetSettings
 {
@@ -67,50 +62,13 @@ public class CarpetSettings
     public static boolean b_movableTileEntities = false;
     public static boolean b_huskSpawningInTemples = false;
 
-    /*
-    public static boolean extendedConnectivity = false;
-    public static int pistonGhostBlocksFix = 0;
-    public static boolean quasiConnectivity = true;
-
-    public static float tntRandomRange = -1;
-
-    public static int waterFlow = 0;
-    public static boolean wirelessRedstone;
-    public static boolean optimizedTileEntities = false;
-    public static boolean mergeTNT = false;
-    public static boolean unloadedEntityFix = false;
-    public static float hardcodeTNTangle = -1;
-    public static boolean worldGenBug = false;
-    public static boolean antiCheat = false;
-    public static boolean optimizedTNT = false;
-    public static boolean huskSpawningInTemples = false;
-    public static boolean shulkerSpawningInEndCities = false;
-    public static boolean redstoneMultimeter = false;
-    public static boolean movableTileEntities = false;
-    public static boolean fastMovingEntityOptimization = false;
-    public static boolean blockCollisionsOptimization = false;
-    public static boolean explosionNoBlockDamage = false;
-    public static boolean movingBlockLightOptimization = false;
-    public static boolean noteBlockImitation = false;
-    public static boolean displayMobAI = false;
-    public static boolean newLight = false;
-    public static boolean doubleRetraction = false;
-    public static boolean netherRNG = false;
-    public static boolean endRNG = false;
-
-    public static long setSeed = 0;
-    */
-
     private static CarpetSettingEntry rule(String s1, String s2, String s3) { return CarpetSettingEntry.create(s1,s2,s3);}
     
     private static void set_defaults()
     {
         CarpetSettingEntry[] RuleList = new CarpetSettingEntry[] {
-    rule("watchdogCrashFix", "fix", "Fixes server crashing supposedly on falling behind 60s in ONE tick, yeah bs.").
+  rule("watchdogCrashFix", "fix", "Fixes server crashing supposedly on falling behind 60s in ONE tick, yeah bs.").
                                    extraInfo("Fixed 1.12 watchdog crash in 1.13 pre-releases, reintroduced with 1.13, GG."),
-  //!rule("extendedConnectivity",  "experimental", "Quasi Connectivity doesn't require block updates.")
-  //                              .extraInfo("All redstone components will send extra updates downwards",
-  //                                         "Affects hoppers, droppers and dispensers"),
   rule("portalSuffocationFix",  "fix", "Nether portals correctly place entities going through")
                                 .extraInfo("Entities shouldn't suffocate in obsidian"),
   rule("superSecretSetting",    "experimental","Gbhs sgnf sadsgras fhskdpri!"),
@@ -194,7 +152,6 @@ public class CarpetSettings
                                 }),
   rule("portalCaching",         "survival experimental", "Alternative, persistent caching strategy for nether portals"),
   rule("calmNetherFires",       "experimental", "Permanent fires don't schedule random updates"),
-  //!rule("flyingMachineTransparent", "creative", "Transparent observers, TNT and redstone blocks. May cause lighting artifacts"),
   rule("fillUpdates",           "creative", "fill/clone/setblock and structure blocks cause block updates").defaultTrue(),
   rule("pushLimit",             "creative","Customizable piston push limit")
                                 .choices("12","10 12 14 100").setNotStrict().numAccelerate(),
