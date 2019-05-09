@@ -54,7 +54,6 @@ public class CarpetSettings
     //static store
     public static int n_pushLimit = 12;
     public static boolean b_hopperCounters = false;
-    public static int n_mobSpawningAlgorithm = 113;
     public static boolean b_shulkerSpawningInEndCities = false;
     public static boolean b_fastRedstoneDust = false;
     public static int railPowerLimitAdjusted = 8;
@@ -129,27 +128,6 @@ public class CarpetSettings
   rule("commandPlayer",         "commands", "Enables /player command to control/spawn players").isACommand(),
   rule("carpets",               "survival", "Placing carpets may issue carpet commands for non-op players"),
   rule("missingTools",          "survival", "Pistons, Glass and Sponge can be broken faster with their appropriate tools"),
-  rule("mobSpawningAlgorithm","experimental","Using version appropriate spawning rules: ")
-                                .extraInfo(" - 1.8 : fixed 4 mobs per pack for all mobs, 'subchunk' rule",
-                                           " - 1.12 : fixed 1 to 4 pack size, ignoring entity collisions, subchunk rule",
-                                           " - 1.13 : vanilla (per 1.13.2) mobs don't spawn outside of 128 sphere around players")
-                                .choices("1.13","1.8 1.12 1.13")
-                                .validate( (s) -> {
-                                    String value = CarpetSettings.getString("mobSpawningAlgorithm");
-                                    CarpetSettings.n_mobSpawningAlgorithm = 113;
-                                    switch (value)
-                                    {
-                                        case "1.8":
-                                            CarpetSettings.n_mobSpawningAlgorithm = 18;
-                                            break;
-                                        case "1.9":
-                                        case "1.10":
-                                        case "1.11":
-                                        case "1.12":
-                                            CarpetSettings.n_mobSpawningAlgorithm = 112;
-                                            break;
-                                    }
-                                }),
   rule("portalCaching",         "survival experimental", "Alternative, persistent caching strategy for nether portals"),
   rule("calmNetherFires",       "experimental", "Permanent fires don't schedule random updates"),
   rule("fillUpdates",           "creative", "fill/clone/setblock and structure blocks cause block updates").defaultTrue(),

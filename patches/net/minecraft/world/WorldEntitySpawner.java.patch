@@ -71,26 +71,7 @@
                          label158:
  
                          for (ChunkPos chunkpos1 : this.eligibleChunksForSpawning)
-@@ -117,6 +152,10 @@
-                                     Biome.SpawnListEntry biome$spawnlistentry = null;
-                                     IEntityLivingData ientitylivingdata = null;
-                                     int l3 = MathHelper.ceil(Math.random() * 4.0D);
-+                                    if (CarpetSettings.n_mobSpawningAlgorithm < 19)
-+                                    {
-+                                        l3 = 4;
-+                                    }
-                                     int i4 = 0;
- 
-                                     for (int j4 = 0; j4 < l3; ++j4)
-@@ -144,6 +183,7 @@
-                                                         break;
-                                                     }
- 
-+                                                if (CarpetSettings.n_mobSpawningAlgorithm >= 113)
-                                                     l3 = biome$spawnlistentry.minGroupCount + worldServerIn.rand.nextInt(1 + biome$spawnlistentry.maxGroupCount - biome$spawnlistentry.minGroupCount);
-                                                 }
- 
-@@ -175,8 +215,22 @@
+@@ -175,8 +210,22 @@
                                                              {
                                                                  ++j2;
                                                                  ++i4;
@@ -113,7 +94,7 @@
                                                              else
                                                              {
                                                                  entityliving.remove();
-@@ -202,7 +256,30 @@
+@@ -202,7 +251,30 @@
                                  }
                              }
                          }
@@ -144,14 +125,3 @@
                  }
              }
  
-@@ -216,6 +293,10 @@
-         int i = x * 16 + worldIn.rand.nextInt(16);
-         int j = z * 16 + worldIn.rand.nextInt(16);
-         int k = chunk.getTopBlockY(Heightmap.Type.LIGHT_BLOCKING, i, j) + 1;
-+        if (CarpetSettings.n_mobSpawningAlgorithm < 113)
-+        {
-+            k = MathHelper.roundUp(k, 16);
-+        }
-         int l = worldIn.rand.nextInt(k + 1);
-         return new BlockPos(i, l, j);
-     }
