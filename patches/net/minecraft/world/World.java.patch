@@ -36,7 +36,7 @@
 +        /// CM profiler
 +        int did = this.dimension.getType().getId();
 +        String world_name = (did==0)?"Overworld":((did<0?"The Nether":"The End"));
-+        CarpetProfiler.start_section(world_name, "Entities");
++        CarpetProfiler.ProfilerToken tok_entities = CarpetProfiler.start_section_concurrent(world_name, "Entities", this.isRemote);
 +        // end
  
 +
@@ -47,7 +47,7 @@
          for (int i1 = 0; i1 < this.loadedEntityList.size(); ++i1)
          {
              Entity entity2 = this.loadedEntityList.get(i1);
-+            CarpetProfiler.start_entity_section(world_name, entity2);
++            CarpetProfiler.ProfilerToken tok = CarpetProfiler.start_entity_section(world_name, entity2);
              Entity entity3 = entity2.getRidingEntity();
  
              if (entity3 != null)
@@ -65,12 +65,12 @@
                  this.loadedEntityList.remove(i1--);
                  this.onEntityRemoved(entity2);
              }
-+            CarpetProfiler.end_current_entity_section();
++            CarpetProfiler.end_current_entity_section(tok);
  
              this.profiler.endSection();
          }
-+        CarpetProfiler.end_current_section();
-+        CarpetProfiler.start_section(world_name, "Tile Entities");
++        CarpetProfiler.end_current_section_concurrent(tok_entities);
++        tok_entities = CarpetProfiler.start_section_concurrent(world_name, "Tile Entities", this.isRemote);
  
 +
          this.profiler.endStartSection("blockEntities");
@@ -80,7 +80,7 @@
          while (iterator.hasNext())
          {
              TileEntity tileentity = iterator.next();
-+            CarpetProfiler.start_tileentity_section(world_name, tileentity);
++            CarpetProfiler.ProfilerToken tok = CarpetProfiler.start_tileentity_section(world_name, tileentity);
  
 +
              if (!tileentity.isRemoved() && tileentity.hasWorld())
@@ -97,7 +97,7 @@
                      this.getChunk(tileentity.getPos()).removeTileEntity(tileentity.getPos());
                  }
              }
-+            CarpetProfiler.end_current_entity_section();
++            CarpetProfiler.end_current_entity_section(tok);
          }
  
          this.processingLoadedTiles = false;
@@ -105,7 +105,7 @@
  
              this.addedTileEntityList.clear();
          }
-+        CarpetProfiler.end_current_section();
++        CarpetProfiler.end_current_section_concurrent(tok_entities);
  
          this.profiler.endSection();
          this.profiler.endSection();
