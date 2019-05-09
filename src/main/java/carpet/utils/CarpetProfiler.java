@@ -326,7 +326,6 @@ public class CarpetProfiler
             {
                 continue;
             }
-            CarpetSettings.LOG.error("section for: "+entry.getKey());
             String[] parts = entry.getKey().split("\\.");
             String dim = parts[1];
             String name = parts[2];
@@ -346,7 +345,6 @@ public class CarpetProfiler
             {
                 continue;
             }
-            CarpetSettings.LOG.error("section for: "+entry.getKey());
             String[] parts = entry.getKey().split("\\.");
             String dim = parts[1];
             String name = parts[2];
