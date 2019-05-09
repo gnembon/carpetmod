@@ -18,23 +18,20 @@
  import net.minecraft.item.ItemStack;
  import net.minecraft.nbt.NBTTagCompound;
  import net.minecraft.nbt.NBTUtil;
-@@ -37,6 +41,15 @@
+@@ -37,6 +41,12 @@
      private UUID owner;
      public float hoverStart = (float)(Math.random() * Math.PI * 2.0D);
  
-+    //CM
-+    @Override
-+    public String cm_name() { return "Item"; }
++    //CM required for entityinfo / scarpet API
 +    public int ssGetAge()
 +    {
 +        return this.age;
 +    }
 +
-+
      public EntityItem(World worldIn)
      {
          super(EntityType.ITEM, worldIn);
-@@ -225,10 +238,28 @@
+@@ -225,10 +235,28 @@
                      {
                          return other.combineItems(this);
                      }

@@ -4,7 +4,7 @@
      {
      }
  
-+    //CM
++    //CM stolen from client with different arg order for fake players
 +    public CPacketPlayerDigging(BlockPos posIn, EnumFacing facingIn, CPacketPlayerDigging.Action actionIn)
 +    {
 +        this.action = actionIn;

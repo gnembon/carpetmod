@@ -146,7 +146,7 @@ public class EntityValue extends Value
         put("motion_z", (e, a) -> new NumericValue(e.motionZ));
         put("name", (e, a) -> new StringValue(e.getDisplayName().getString()));
         put("custom_name", (e, a) -> e.hasCustomName()?new StringValue(e.getCustomName().getString()):Value.NULL);
-        put("type", (e, a) -> new StringValue(e.getType().getTranslationKey().replaceFirst("entity\\.minecraft\\.","")));
+        put("type", (e, a) -> new StringValue(IRegistry.field_212629_r.getKey(e.getType()).toString().replaceFirst("minecraft:","")));
         put("is_riding", (e, a) -> new NumericValue(e.isPassenger()));
         put("is_ridden", (e, a) -> new NumericValue(e.isBeingRidden()));
         put("passengers", (e, a) -> ListValue.wrap(e.getPassengers().stream().map(EntityValue::new).collect(Collectors.toList())));
@@ -189,24 +189,13 @@ public class EntityValue extends Value
             }
             return Value.NULL;
         });
-        put("sneaking", (e, a) -> {
-            if (e instanceof EntityPlayer)
+        put("sneaking", (e, a) -> e.isSneaking()?Value.TRUE:Value.FALSE);
+        put("sprinting", (e, a) -> e.isSprinting()?Value.TRUE:Value.FALSE);
+        put("swimming", (e, a) -> e.isSwimming()?Value.TRUE:Value.FALSE);
+        put("jumping", (e, a) -> {
+            if (e instanceof EntityLivingBase)
             {
-                return e.isSneaking()?Value.TRUE:Value.FALSE;
-            }
-            return Value.NULL;
-        });
-        put("sprinting", (e, a) -> {
-            if (e instanceof EntityPlayer)
-            {
-                return e.isSprinting()?Value.TRUE:Value.FALSE;
-            }
-            return Value.NULL;
-        });
-        put("swimming", (e, a) -> {
-            if (e instanceof EntityPlayer)
-            {
-                return e.isSwimming()?Value.TRUE:Value.FALSE;
+                return  ((EntityLivingBase) e).getJumping()?Value.TRUE:Value.FALSE;
             }
             return Value.NULL;
         });

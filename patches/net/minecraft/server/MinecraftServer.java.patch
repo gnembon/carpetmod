@@ -18,11 +18,8 @@
      @OnlyIn(Dist.CLIENT)
      private boolean worldIconSet;
      private final IReloadableResourceManager resourceManager = new SimpleReloadableResourceManager(ResourcePackType.SERVER_DATA);
-@@ -195,8 +200,12 @@
-     private boolean forceWorldUpgrade;
-     private float tickTime;
+@@ -197,6 +202,9 @@
  
-+
      public MinecraftServer(@Nullable File anvilFileIn, Proxy serverProxyIn, DataFixer dataFixerIn, Commands commandManagerIn, YggdrasilAuthenticationService authServiceIn, MinecraftSessionService sessionServiceIn, GameProfileRepository profileRepoIn, PlayerProfileCache profileCacheIn)
      {
 +        //CM
@@ -31,7 +28,7 @@
          this.serverProxy = serverProxyIn;
          this.commandManager = commandManagerIn;
          this.authService = authServiceIn;
-@@ -642,24 +651,46 @@
+@@ -642,24 +650,46 @@
              if (this.init())
              {
                  this.serverTime = Util.milliTime();
@@ -82,7 +79,7 @@
  
                      while (this.func_212379_aT())
                      {
-@@ -782,6 +813,12 @@
+@@ -782,6 +812,12 @@
      {
          long i = Util.nanoTime();
          ++this.tickCounter;
@@ -95,7 +92,7 @@
  
          if (this.startProfiling)
          {
-@@ -810,10 +847,12 @@
+@@ -810,10 +846,12 @@
  
          if (this.tickCounter % 900 == 0)
          {
@@ -108,7 +105,7 @@
          }
  
          this.profiler.startSection("snooper");
-@@ -834,6 +873,10 @@
+@@ -834,6 +872,10 @@
          this.tickTime = this.tickTime * 0.8F + (float)l / 1000000.0F * 0.19999999F;
          this.profiler.endSection();
          this.profiler.endSection();
@@ -119,7 +116,7 @@
      }
  
      public void updateTimeLightAndEntities(BooleanSupplier p_71190_1_)
-@@ -905,10 +948,12 @@
+@@ -905,10 +947,12 @@
              }))[this.tickCounter % 100] = Util.nanoTime() - i;
          }
  
@@ -132,7 +129,7 @@
          this.profiler.endStartSection("tickables");
  
          for (int j = 0; j < this.tickables.size(); ++j)
-@@ -1605,6 +1650,12 @@
+@@ -1605,6 +1649,12 @@
      {
          return this.serverTime;
      }

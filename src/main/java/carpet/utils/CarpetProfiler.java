@@ -4,6 +4,8 @@ import carpet.CarpetSettings;
 import net.minecraft.entity.Entity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.tileentity.TileEntityType;
+import net.minecraft.util.registry.IRegistry;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -19,7 +21,7 @@ public class CarpetProfiler
     private static long current_tick_start = 0;
     private static String [] GENERAL_SECTIONS = {"Network", "Autosave"};
     private static String [] DIMENSIONS = {"Overworld","The End","The Nether"};
-    private static String [] SECTIONS = {"Spawning","Blocks","Entities","Tile Entities","Villages"};
+    private static String [] SECTIONS = {"Spawning","Blocks","Entities","Tile Entities","Entities(client)","Tile Entities(client)","Villages"};
 
     public static void prepare_tick_report(int ticks)
     {
@@ -72,40 +74,73 @@ public class CarpetProfiler
         current_section_start = System.nanoTime();
     }
 
-    public static void start_entity_section(String dimension, Entity e)
+
+    public static class ProfilerToken
     {
-        if (tick_health_requested == 0L || test_type != 2)
+        public String section;
+        public long start;
+        public ProfilerToken(String name, long start)
         {
-            return;
+            this.section = name;
+            this.start = start;
         }
-        if (current_tick_start == 0L)
-        {
-            return;
-        }
-        if (current_section != null)
-        {
-            end_current_section();
-        }
-        current_section = dimension+"."+e.cm_name();
-        current_section_start = System.nanoTime();
     }
 
-    public static void start_tileentity_section(String dimension, TileEntity e)
+    public static ProfilerToken start_section_concurrent(String dimension, String name, boolean isRemote)
     {
-        if (tick_health_requested == 0L || test_type != 2)
+        if (tick_health_requested == 0L || test_type != 1)
         {
-            return;
+            return null;
         }
         if (current_tick_start == 0L)
         {
-            return;
+            return null;
         }
-        if (current_section != null)
+
+        String key = name;
+        if (dimension != null)
         {
-            end_current_section();
+            key = dimension+"."+name;
         }
-        current_section = dimension+"."+e.cm_name();
-        current_section_start = System.nanoTime();
+        if (isRemote) key += "(client)";
+        long time = System.nanoTime();
+        return new ProfilerToken(key, time);
+    }
+
+    public static ProfilerToken start_entity_section(String dimension, Entity e)
+    {
+        if (tick_health_requested == 0L || test_type != 2)
+        {
+            return null;
+        }
+        if (current_tick_start == 0L)
+        {
+            return null;
+        }
+        String section = dimension+"."+ IRegistry.field_212629_r.getKey(e.getType()).toString().replaceFirst("minecraft:","");
+        if (e.getEntityWorld().isRemote)
+            section += "(client)";
+        long section_start = System.nanoTime();
+        return new ProfilerToken(section, section_start);
+    }
+
+    public static ProfilerToken start_tileentity_section(String dimension, TileEntity e)
+    {
+        if (tick_health_requested == 0L || test_type != 2)
+        {
+            return null;
+        }
+        if (current_tick_start == 0L)
+        {
+            return null;
+        }
+        String section = dimension+"."+ TileEntityType.getId(e.getType()).toString().replaceFirst("minecraft:","");
+        if (e.getWorld() == null)
+            section += "??";
+        else if (e.getWorld().isRemote)
+            section += "(client)";
+        long section_start = System.nanoTime();
+        return new ProfilerToken(section, section_start);
     }
 
     public static void end_current_section()
@@ -130,7 +165,27 @@ public class CarpetProfiler
         current_section_start = 0;
     }
 
-    public static void end_current_entity_section()
+    public static void end_current_section_concurrent(ProfilerToken tok)
+    {
+        if (tick_health_requested == 0L || test_type != 1)
+        {
+            return;
+        }
+        long end_time = System.nanoTime();
+        if (current_tick_start == 0L)
+        {
+            return;
+        }
+        if (tok == null)
+        {
+            CarpetSettings.LOG.error("finishing section that hasn't started");
+            return;
+        }
+        //CarpetSettings.LOG.error("finishing section "+current_section);
+        time_repo.put(tok.section,time_repo.get(tok.section)+end_time-tok.start);
+    }
+
+    public static void end_current_entity_section(ProfilerToken tok)
     {
         if (tick_health_requested == 0L || test_type != 2)
         {
@@ -141,18 +196,15 @@ public class CarpetProfiler
         {
             return;
         }
-        if (current_section == null)
+        if (tok == null)
         {
-            CarpetSettings.LOG.error("finishing section that hasn't started");
+            CarpetSettings.LOG.error("finishing entity/TE section that hasn't started");
             return;
         }
-        //CarpetSettings.LOG.error("finishing section "+current_section);
-        String time_section = "t."+current_section;
-        String count_section = "c."+current_section;
-        time_repo.put(time_section,time_repo.getOrDefault(time_section,0L)+end_time-current_section_start);
+        String time_section = "t."+tok.section;
+        String count_section = "c."+tok.section;
+        time_repo.put(time_section,time_repo.getOrDefault(time_section,0L)+end_time-tok.start);
         time_repo.put(count_section,time_repo.getOrDefault(count_section,0L)+1);
-        current_section = null;
-        current_section_start = 0;
     }
 
     public static void start_tick_profiling()
@@ -241,7 +293,8 @@ public class CarpetProfiler
                 double amount = divider*time_repo.get(dimension+"."+section);
                 if (amount > 0.01)
                 {
-                    accumulated += time_repo.get(dimension+"."+section);
+                    if (!(section.endsWith("(client)")))
+                        accumulated += time_repo.get(dimension+"."+section);
                     Messenger.print_server_message(server, String.format(" - %s: %.3fms", section, amount));
                 }
             }
@@ -257,6 +310,7 @@ public class CarpetProfiler
         //print stats
         long total_tick_time = time_repo.get("tick");
         double divider = 1.0D/tick_health_requested/1000000;
+        double divider_1 = 1.0D/(tick_health_requested-1)/1000000;
         Messenger.print_server_message(server, String.format("Average tick time: %.3fms",divider*total_tick_time));
         time_repo.remove("tick");
         Messenger.print_server_message(server, "Top 10 counts:");
@@ -275,7 +329,8 @@ public class CarpetProfiler
             String[] parts = entry.getKey().split("\\.");
             String dim = parts[1];
             String name = parts[2];
-            Messenger.print_server_message(server, String.format(" - %s in %s: %.3f",name, dim, 1.0D*entry.getValue()/tick_health_requested));
+            int penalty = name.endsWith("(client)") ? 1 :0;
+            Messenger.print_server_message(server, String.format(" - %s in %s: %.3f",name, dim, 1.0D*entry.getValue()/(tick_health_requested-penalty)));
         }
         Messenger.print_server_message(server, "Top 10 grossing:");
         total = 0;
@@ -293,7 +348,8 @@ public class CarpetProfiler
             String[] parts = entry.getKey().split("\\.");
             String dim = parts[1];
             String name = parts[2];
-            Messenger.print_server_message(server, String.format(" - %s in %s: %.3fms",name, dim, divider*entry.getValue()));
+            double applicableDivider = name.endsWith("(client)") ? divider :divider_1;
+            Messenger.print_server_message(server, String.format(" - %s in %s: %.3fms",name, dim, applicableDivider*entry.getValue()));
         }
 
     }

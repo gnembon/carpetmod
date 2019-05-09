@@ -1,6 +1,6 @@
 --- a/net/minecraft/entity/item/EntityXPOrb.java
 +++ b/net/minecraft/entity/item/EntityXPOrb.java
-@@ -17,16 +17,25 @@
+@@ -17,11 +17,15 @@
  import net.minecraftforge.api.distmarker.Dist;
  import net.minecraftforge.api.distmarker.OnlyIn;
  
@@ -16,17 +16,7 @@
      private int xpOrbHealth = 5;
      private int xpValue;
      private EntityPlayer closestPlayer;
-     private int xpTargetColor;
- 
-+    //CM
-+    @Override
-+    public String cm_name() { return "XP Orb"; }
-+
-+
-     public EntityXPOrb(World worldIn, double x, double y, double z, int expValue)
-     {
-         super(EntityType.EXPERIENCE_ORB, worldIn);
-@@ -37,8 +46,26 @@
+@@ -37,8 +41,26 @@
          this.motionY = (double)((float)(Math.random() * 0.2D) * 2.0F);
          this.motionZ = (double)((float)(Math.random() * (double)0.2F - (double)0.1F) * 2.0F);
          this.xpValue = expValue;
@@ -53,7 +43,7 @@
      public EntityXPOrb(World worldIn)
      {
          super(EntityType.EXPERIENCE_ORB, worldIn);
-@@ -138,6 +165,21 @@
+@@ -138,6 +160,21 @@
          }
  
          this.move(MoverType.SELF, this.motionX, this.motionY, this.motionZ);
@@ -75,7 +65,7 @@
          float f = 0.98F;
  
          if (this.onGround)
-@@ -218,7 +260,8 @@
+@@ -218,7 +255,8 @@
      {
          if (!this.world.isRemote)
          {
@@ -85,7 +75,7 @@
              {
                  entityIn.xpCooldown = 2;
                  entityIn.onItemPickup(this, 1);
-@@ -251,6 +294,10 @@
+@@ -251,6 +289,10 @@
          return xp * 2;
      }
  
