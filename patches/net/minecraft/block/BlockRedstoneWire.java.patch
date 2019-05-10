@@ -77,28 +77,28 @@
  
 -            if (flag)
 -            {
--                l = this.func_212567_a(l, iblockstate1);
+-                l = this.maxSignal(l, iblockstate1);
 -            }
 +                if (flag) {
-+                    l = this.func_212567_a(l, iblockstate1);
++                    l = this.maxSignal(l, iblockstate1);
 +                }
  
 -            if (iblockstate1.isNormalCube() && !p_212568_1_.getBlockState(p_212568_2_.up()).isNormalCube())
 -            {
 -                if (flag && p_212568_2_.getY() >= p_212568_2_.getY())
 -                {
--                    l = this.func_212567_a(l, p_212568_1_.getBlockState(blockpos.up()));
+-                    l = this.maxSignal(l, p_212568_1_.getBlockState(blockpos.up()));
 +                if (iblockstate1.isNormalCube() && !p_212568_1_.getBlockState(p_212568_2_.up()).isNormalCube()) {
 +                    if (flag && p_212568_2_.getY() >= p_212568_2_.getY()) {
-+                        l = this.func_212567_a(l, p_212568_1_.getBlockState(blockpos.up()));
++                        l = this.maxSignal(l, p_212568_1_.getBlockState(blockpos.up()));
 +                    }
 +                } else if (!iblockstate1.isNormalCube() && flag && p_212568_2_.getY() <= p_212568_2_.getY()) {
-+                    l = this.func_212567_a(l, p_212568_1_.getBlockState(blockpos.down()));
++                    l = this.maxSignal(l, p_212568_1_.getBlockState(blockpos.down()));
                  }
              }
 -            else if (!iblockstate1.isNormalCube() && flag && p_212568_2_.getY() <= p_212568_2_.getY())
 -            {
--                l = this.func_212567_a(l, p_212568_1_.getBlockState(blockpos.down()));
+-                l = this.maxSignal(l, p_212568_1_.getBlockState(blockpos.down()));
 -            }
          }
  

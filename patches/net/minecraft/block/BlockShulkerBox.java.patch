@@ -15,7 +15,7 @@
                      ItemStack itemstack = new ItemStack(this);
 +                    if(!CarpetSettings.getBool("stackableShulkerBoxes") || !tileentityshulkerbox.isEmpty())
 +                    { // really don't need to set nbt if its empty
-                     itemstack.getOrCreateTag().setTag("BlockEntityTag", ((TileEntityShulkerBox)tileentity).saveToNbt(new NBTTagCompound()));
+                     itemstack.getOrCreateTag().put("BlockEntityTag", ((TileEntityShulkerBox)tileentity).saveToNbt(new NBTTagCompound()));
 +                    }
  
                      if (tileentityshulkerbox.hasCustomName())

@@ -13,10 +13,10 @@
          {
              for (int j1 = 0; j1 < blockpos.getX(); ++j1)
              {
--                l = Math.min(l, p_212245_1_.getHeight(Heightmap.Type.OCEAN_FLOOR_WG, p_212245_4_.getX() + i1 + j, p_212245_4_.getZ() + j1 + k));
-+                l = Math.min(l, p_212245_1_.getHeight(
+-                l = Math.min(l, worldIn.getHeight(Heightmap.Type.OCEAN_FLOOR_WG, pos.getX() + i1 + j, pos.getZ() + j1 + k));
++                l = Math.min(l, worldIn.getHeight(
 +                        CarpetSettings.skipGenerationChecks?Heightmap.Type.OCEAN_FLOOR:Heightmap.Type.OCEAN_FLOOR_WG,
-+                        p_212245_4_.getX() + i1 + j, p_212245_4_.getZ() + j1 + k));
++                        pos.getX() + i1 + j, pos.getZ() + j1 + k));
              }
          }
  

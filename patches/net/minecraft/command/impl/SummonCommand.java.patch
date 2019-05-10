@@ -23,39 +23,39 @@
  
  public class SummonCommand
 @@ -50,7 +54,35 @@
-         if (EntityType.getId(EntityType.LIGHTNING_BOLT).equals(p_198737_1_))
+         if (EntityType.getId(EntityType.LIGHTNING_BOLT).equals(type))
          {
-             Entity entity1 = new EntityLightningBolt(p_198737_0_.getWorld(), p_198737_2_.x, p_198737_2_.y, p_198737_2_.z, false);
--            p_198737_0_.getWorld().addWeatherEffect(entity1);
+             Entity entity1 = new EntityLightningBolt(source.getWorld(), pos.x, pos.y, pos.z, false);
+-            source.getWorld().addWeatherEffect(entity1);
 +            
 +            // [CM] SummonNaturalLightning - if statement around
 +            if (!CarpetSettings.getBool("summonNaturalLightning"))
 +            {
-+                p_198737_0_.getWorld().addWeatherEffect(entity1);
++                source.getWorld().addWeatherEffect(entity1);
 +            }
 +            else
 +            {
-+                BlockPos bp = ((WorldServer)p_198737_0_.getWorld()).adjustPosToNearbyEntity(new BlockPos(p_198737_2_.x, 0, p_198737_2_.z));
-+                if(p_198737_0_.getWorld().isRainingAt(bp)){
-+                    DifficultyInstance difficultyinstance = p_198737_0_.getWorld().getDifficultyForLocation(bp);
++                BlockPos bp = ((WorldServer)source.getWorld()).adjustPosToNearbyEntity(new BlockPos(pos.x, 0, pos.z));
++                if(source.getWorld().isRainingAt(bp)){
++                    DifficultyInstance difficultyinstance = source.getWorld().getDifficultyForLocation(bp);
 +        
-+                    if (p_198737_0_.getWorld().getGameRules().getBoolean("doMobSpawning") && p_198737_0_.getWorld().rand.nextDouble() < (double)difficultyinstance.getAdditionalDifficulty() * 0.01D)
++                    if (source.getWorld().getGameRules().getBoolean("doMobSpawning") && source.getWorld().rand.nextDouble() < (double)difficultyinstance.getAdditionalDifficulty() * 0.01D)
 +                    {
-+                        EntitySkeletonHorse entityskeletonhorse = new EntitySkeletonHorse(p_198737_0_.getWorld());
++                        EntitySkeletonHorse entityskeletonhorse = new EntitySkeletonHorse(source.getWorld());
 +                        entityskeletonhorse.setTrap(true);
 +                        entityskeletonhorse.setGrowingAge(0);
 +                        entityskeletonhorse.setPosition((double)bp.getX(), (double)bp.getY(), (double)bp.getZ());
-+                        p_198737_0_.getWorld().spawnEntity(entityskeletonhorse);
-+                        p_198737_0_.getWorld().addWeatherEffect(new EntityLightningBolt(p_198737_0_.getWorld(), (double)bp.getX(), (double)bp.getY(), (double)bp.getZ(), true));
++                        source.getWorld().spawnEntity(entityskeletonhorse);
++                        source.getWorld().addWeatherEffect(new EntityLightningBolt(source.getWorld(), (double)bp.getX(), (double)bp.getY(), (double)bp.getZ(), true));
 +                    }
 +                    else
 +                    {
-+                        p_198737_0_.getWorld().addWeatherEffect(new EntityLightningBolt(p_198737_0_.getWorld(), (double)bp.getX(), (double)bp.getY(), (double)bp.getZ(), false));
++                        source.getWorld().addWeatherEffect(new EntityLightningBolt(source.getWorld(), (double)bp.getX(), (double)bp.getY(), (double)bp.getZ(), false));
 +                    }
 +                }
 +            }
 +            // [CM] SummonNaturalLightning - End
 +            
-             p_198737_0_.sendFeedback(new TextComponentTranslation("commands.summon.success", entity1.getDisplayName()), true);
+             source.sendFeedback(new TextComponentTranslation("commands.summon.success", entity1.getDisplayName()), true);
              return 1;
          }

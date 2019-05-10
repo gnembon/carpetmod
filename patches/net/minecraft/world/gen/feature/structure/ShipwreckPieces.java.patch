@@ -13,16 +13,16 @@
  
                  for (BlockPos blockpos1 : BlockPos.getAllInBox(this.templatePosition, blockpos))
                  {
--                    int k = worldIn.getHeight(this.field_204757_f ? Heightmap.Type.WORLD_SURFACE_WG : Heightmap.Type.OCEAN_FLOOR_WG, blockpos1.getX(), blockpos1.getZ());
-+                    //int k = worldIn.getHeight(this.field_204757_f ? Heightmap.Type.WORLD_SURFACE_WG : Heightmap.Type.OCEAN_FLOOR_WG, blockpos1.getX(), blockpos1.getZ());
+-                    int k = worldIn.getHeight(this.isBeached ? Heightmap.Type.WORLD_SURFACE_WG : Heightmap.Type.OCEAN_FLOOR_WG, blockpos1.getX(), blockpos1.getZ());
++                    //int k = worldIn.getHeight(this.isBeached ? Heightmap.Type.WORLD_SURFACE_WG : Heightmap.Type.OCEAN_FLOOR_WG, blockpos1.getX(), blockpos1.getZ());
 +                    int k;
 +                    if (CarpetSettings.skipGenerationChecks)
 +                    {
-+                        k = worldIn.getHeight(this.field_204757_f ? Heightmap.Type.WORLD_SURFACE : Heightmap.Type.OCEAN_FLOOR, blockpos1.getX(), blockpos1.getZ());
++                        k = worldIn.getHeight(this.isBeached ? Heightmap.Type.WORLD_SURFACE : Heightmap.Type.OCEAN_FLOOR, blockpos1.getX(), blockpos1.getZ());
 +                    }
 +                    else
 +                    {
-+                        k = worldIn.getHeight(this.field_204757_f ? Heightmap.Type.WORLD_SURFACE_WG : Heightmap.Type.OCEAN_FLOOR_WG, blockpos1.getX(), blockpos1.getZ());
++                        k = worldIn.getHeight(this.isBeached ? Heightmap.Type.WORLD_SURFACE_WG : Heightmap.Type.OCEAN_FLOOR_WG, blockpos1.getX(), blockpos1.getZ());
 +                    }
                      j += k;
                      i = Math.min(i, k);

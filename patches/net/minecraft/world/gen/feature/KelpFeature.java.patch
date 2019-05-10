@@ -13,27 +13,27 @@
 @@ -23,14 +26,15 @@
              IBlockState iblockstate = Blocks.KELP.getDefaultState();
              IBlockState iblockstate1 = Blocks.KELP_PLANT.getDefaultState();
-             int k = 1 + p_212245_3_.nextInt(10);
+             int k = 1 + rand.nextInt(10);
 -
 +            final int x = CarpetSettings.getInt("kelpGenerationGrowLimit");
-+            Supplier<Integer> height = () -> 25-x+p_212245_3_.nextInt(Math.min(23,x+1));
++            Supplier<Integer> height = () -> 25-x+rand.nextInt(Math.min(23,x+1));
              for (int l = 0; l <= k; ++l)
              {
-                 if (p_212245_1_.getBlockState(blockpos).getBlock() == Blocks.WATER && p_212245_1_.getBlockState(blockpos.up()).getBlock() == Blocks.WATER && iblockstate1.isValidPosition(p_212245_1_, blockpos))
+                 if (worldIn.getBlockState(blockpos).getBlock() == Blocks.WATER && worldIn.getBlockState(blockpos.up()).getBlock() == Blocks.WATER && iblockstate1.isValidPosition(worldIn, blockpos))
                  {
                      if (l == k)
                      {
--                        p_212245_1_.setBlockState(blockpos, iblockstate.with(BlockKelpTop.AGE, Integer.valueOf(p_212245_3_.nextInt(23))), 2);
-+                        p_212245_1_.setBlockState(blockpos, iblockstate.with(BlockKelpTop.AGE, height.get()), 2);
+-                        worldIn.setBlockState(blockpos, iblockstate.with(BlockKelpTop.AGE, Integer.valueOf(rand.nextInt(23))), 2);
++                        worldIn.setBlockState(blockpos, iblockstate.with(BlockKelpTop.AGE, height.get()), 2);
                          ++i;
                      }
                      else
 @@ -44,7 +48,7 @@
  
-                     if (iblockstate.isValidPosition(p_212245_1_, blockpos1) && p_212245_1_.getBlockState(blockpos1.down()).getBlock() != Blocks.KELP)
+                     if (iblockstate.isValidPosition(worldIn, blockpos1) && worldIn.getBlockState(blockpos1.down()).getBlock() != Blocks.KELP)
                      {
--                        p_212245_1_.setBlockState(blockpos1, iblockstate.with(BlockKelpTop.AGE, Integer.valueOf(p_212245_3_.nextInt(23))), 2);
-+                        p_212245_1_.setBlockState(blockpos1, iblockstate.with(BlockKelpTop.AGE, height.get()), 2);
+-                        worldIn.setBlockState(blockpos1, iblockstate.with(BlockKelpTop.AGE, Integer.valueOf(rand.nextInt(23))), 2);
++                        worldIn.setBlockState(blockpos1, iblockstate.with(BlockKelpTop.AGE, height.get()), 2);
                          ++i;
                      }
  

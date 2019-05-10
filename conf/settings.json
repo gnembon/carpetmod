@@ -2,7 +2,7 @@
 	"modname": "carpetmod",
 	"modversion": "1.13.2",
 	"mcpconfig": "1.13.2-20190204.202708",
-	"mappings": "20180921-1.13",
+	"mappings": "20190509-1.13.2",
 	"mcversion": "1.13.2",
 	"pipeline": "joined",
 	"clientmain": "mcp.client.Start",

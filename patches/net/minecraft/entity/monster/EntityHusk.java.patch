@@ -19,11 +19,11 @@
  public class EntityHusk extends EntityZombie
 @@ -26,7 +29,8 @@
  
-     public boolean canSpawn(IWorld worldIn, boolean p_205020_2_)
+     public boolean canSpawn(IWorld worldIn, boolean fromSpawner)
      {
--        return super.canSpawn(worldIn, p_205020_2_) && (p_205020_2_ || worldIn.canSeeSky(new BlockPos(this)));
+-        return super.canSpawn(worldIn, fromSpawner) && (fromSpawner || worldIn.canSeeSky(new BlockPos(this)));
 +        BlockPos tmp = new BlockPos(this);
-+        return super.canSpawn(worldIn, p_205020_2_) && (p_205020_2_ || worldIn.canSeeSky(tmp) || (CarpetSettings.b_huskSpawningInTemples && Feature.DESERT_PYRAMID.isPositionInStructure(worldIn, tmp)));
++        return super.canSpawn(worldIn, fromSpawner) && (fromSpawner || worldIn.canSeeSky(tmp) || (CarpetSettings.b_huskSpawningInTemples && Feature.DESERT_PYRAMID.isPositionInStructure(worldIn, tmp)));
      }
  
      protected boolean shouldBurnInDay()

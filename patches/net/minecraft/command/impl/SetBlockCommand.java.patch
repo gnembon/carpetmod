@@ -11,19 +11,19 @@
                  flag = true;
              }
  
--            if (flag && !p_198683_2_.place(worldserver, p_198683_1_, 2))
-+            if (flag && !p_198683_2_.place(worldserver, p_198683_1_, 2 | (CarpetSettings.getBool("fillUpdates")?0:1024))) // [CM]
+-            if (flag && !state.place(worldserver, pos, 2))
++            if (flag && !state.place(worldserver, pos, 2 | (CarpetSettings.getBool("fillUpdates")?0:1024))) // [CM]
              {
-                 throw field_198689_a.create();
+                 throw FAILED_EXCEPTION.create();
              }
              else
              {
 +                // CM
 +                if (CarpetSettings.getBool("fillUpdates"))
 +                {
-                 worldserver.notifyNeighbors(p_198683_1_, p_198683_2_.getBlockState().getBlock());
+                 worldserver.notifyNeighbors(pos, state.getState().getBlock());
 +                }
 +                // CM end
-                 p_198683_0_.sendFeedback(new TextComponentTranslation("commands.setblock.success", p_198683_1_.getX(), p_198683_1_.getY(), p_198683_1_.getZ()), true);
+                 source.sendFeedback(new TextComponentTranslation("commands.setblock.success", pos.getX(), pos.getY(), pos.getZ()), true);
                  return 1;
              }

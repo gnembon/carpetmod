@@ -23,7 +23,7 @@
          this.profiler.startSection("spawner");
 +        CarpetProfiler.start_section(world_name, "Spawning");
  
-         if (this.getGameRules().getBoolean("doMobSpawning") && this.worldInfo.getTerrainType() != WorldType.DEBUG_ALL_BLOCK_STATES)
+         if (this.getGameRules().getBoolean("doMobSpawning") && this.worldInfo.getGenerator() != WorldType.DEBUG_ALL_BLOCK_STATES)
          {
              this.entitySpawner.findChunksForSpawning(this, this.spawnHostileMobs, this.spawnPeacefulMobs, this.worldInfo.getGameTime() % 400L == 0L);
              this.getChunkProvider().spawnMobs(this, this.spawnHostileMobs, this.spawnPeacefulMobs);
@@ -33,7 +33,7 @@
 +        // [CM] end extra indent
  
          this.profiler.endStartSection("chunkSource");
-         this.chunkProvider.tick(p_72835_1_);
+         this.chunkProvider.tick(hasTimeLeft);
 @@ -208,6 +222,8 @@
              this.setSkylightSubtracted(j);
          }
@@ -66,7 +66,7 @@
          this.villageSiege.tick();
 +        CarpetProfiler.end_current_section();
          this.profiler.endStartSection("portalForcer");
-         this.worldTeleporter.removeStalePortalLocations(this.getGameTime());
+         this.worldTeleporter.tick(this.getGameTime());
 +        }
          this.profiler.endSection();
          this.sendQueuedBlockEvents();
