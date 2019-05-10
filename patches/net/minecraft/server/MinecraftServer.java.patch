@@ -79,20 +79,21 @@
  
                      while (this.isAheadOfTime())
                      {
-@@ -782,6 +812,12 @@
+@@ -782,6 +812,13 @@
      {
          long i = Util.nanoTime();
          ++this.tickCounter;
 +        //[CM]
-+        CarpetServer.tick(this);
 +        if (CarpetProfiler.tick_health_requested != 0L)
 +        {
 +            CarpetProfiler.start_tick_profiling();
 +        }
++        CarpetServer.tick(this);
++        // [CM end]
  
          if (this.startProfiling)
          {
-@@ -810,10 +846,12 @@
+@@ -810,10 +847,12 @@
  
          if (this.tickCounter % 900 == 0)
          {
@@ -105,7 +106,7 @@
          }
  
          this.profiler.startSection("snooper");
-@@ -834,6 +872,10 @@
+@@ -834,6 +873,10 @@
          this.tickTime = this.tickTime * 0.8F + (float)l / 1000000.0F * 0.19999999F;
          this.profiler.endSection();
          this.profiler.endSection();
@@ -116,7 +117,7 @@
      }
  
      public void updateTimeLightAndEntities(BooleanSupplier hasTimeLeft)
-@@ -905,10 +947,12 @@
+@@ -905,10 +948,12 @@
              }))[this.tickCounter % 100] = Util.nanoTime() - i;
          }
  
@@ -129,7 +130,7 @@
          this.profiler.endStartSection("tickables");
  
          for (int j = 0; j < this.tickables.size(); ++j)
-@@ -1605,6 +1649,12 @@
+@@ -1605,6 +1650,12 @@
      {
          return this.serverTime;
      }
