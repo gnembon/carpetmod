@@ -27,7 +27,7 @@
 -public class BlockCoralPlant extends BlockCoralPlantBase
 +public class BlockCoralPlant extends BlockCoralPlantBase implements IGrowable
  {
-     private final Block field_212562_c;
+     private final Block deadBlock;
      protected static final VoxelShape SHAPE = Block.makeCuboidShape(2.0D, 0.0D, 2.0D, 14.0D, 15.0D, 14.0D);
 @@ -54,6 +64,45 @@
          }
@@ -35,7 +35,7 @@
  
 +    public boolean canGrow(IBlockReader worldIn, BlockPos pos, IBlockState state, boolean isClient)
 +    {
-+        return CarpetSettings.getBool("renewableCoral") && state.get(field_212560_b) && worldIn.getFluidState(pos.up()).isTagged(FluidTags.WATER);
++        return CarpetSettings.getBool("renewableCoral") && state.get(WATERLOGGED) && worldIn.getFluidState(pos.up()).isTagged(FluidTags.WATER);
 +    }
 +
 +    public boolean canUseBonemeal(World worldIn, Random rand, BlockPos pos, IBlockState state)
@@ -54,12 +54,12 @@
 +        else
 +            coral = new CoralMushroomFeature();
 +
-+        MaterialColor color = blockUnder.getMapColor(worldIn, pos);
++        MaterialColor color = blockUnder.getMaterialColor(worldIn, pos);
 +        IBlockState proper_block = blockUnder;
 +        for (Block block: BlockTags.CORAL_BLOCKS.getAllElements())
 +        {
 +            proper_block = block.getDefaultState();
-+            if (proper_block.getMapColor(worldIn,pos) == color)
++            if (proper_block.getMaterialColor(worldIn,pos) == color)
 +            {
 +                break;
 +            }

@@ -144,7 +144,7 @@
 +    public void clearHistoryCache()
 +    {
 +        MinecraftServer minecraftserver = this.world.getServer();
-+        minecraftserver.func_212370_w().forEach( (w) -> w.getDefaultTeleporter().removeAllCachedEntries());
++        minecraftserver.getWorlds().forEach( (w) -> w.getDefaultTeleporter().removeAllCachedEntries());
 +    }
 +
 +    //carpet mod portalCaching

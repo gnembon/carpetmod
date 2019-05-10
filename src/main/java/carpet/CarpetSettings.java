@@ -227,7 +227,7 @@ public class CarpetSettings
         }
         for (EntityPlayerMP entityplayermp : CarpetServer.minecraft_server.getPlayerList().getPlayers())
         {
-            CarpetServer.minecraft_server.getCommandManager().sendCommandListPacket(entityplayermp);
+            CarpetServer.minecraft_server.getCommandManager().send(entityplayermp);
         }
     }
 

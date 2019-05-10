@@ -459,7 +459,7 @@ public class SpawnReporter
                         }
                     }
                     
-                    String creature_name = IRegistry.field_212629_r.getKey(entityliving.getType()).toString().replaceFirst("minecraft:","");
+                    String creature_name = IRegistry.ENTITY_TYPE.getKey(entityliving.getType()).toString().replaceFirst("minecraft:","");
                     String pack_size = String.format("%d", entityliving.getMaxSpawnedInChunk());//String.format("%d-%d", animal.minGroupCount, animal.maxGroupCount);
                     int weight = animal.getItemWeight();
                     if (canspawn)

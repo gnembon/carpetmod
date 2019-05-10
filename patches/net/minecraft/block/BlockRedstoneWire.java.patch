@@ -19,9 +19,9 @@
 +    // [CM] FastRedstoneDust
 +    RedstoneWireTurbo wireTurbo = new RedstoneWireTurbo(this);
 +
-     public BlockRedstoneWire(Block.Properties builder)
+     public BlockRedstoneWire(Block.Properties properties)
      {
-         super(builder);
+         super(properties);
 @@ -176,8 +183,13 @@
          return iblockstate.isTopSolid() || iblockstate.getBlock() == Blocks.GLOWSTONE;
      }

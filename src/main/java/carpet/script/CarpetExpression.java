@@ -232,7 +232,7 @@ public class CarpetExpression
             return particle;
         try
         {
-            particle = ParticleArgument.func_197189_a(new StringReader(name));
+            particle = ParticleArgument.parseParticle(new StringReader(name));
         }
         catch (CommandSyntaxException e)
         {
@@ -657,7 +657,7 @@ public class CarpetExpression
                 genericStateTest(c, "power", lv, (s, p, w) -> new NumericValue(w.getRedstonePowerFromNeighbors(p))));
 
         this.expr.addLazyFunction("ticks_randomly", -1, (c, t, lv) ->
-                booleanStateTest(c, "ticks_randomly", lv, (s, p) -> s.needsRandomTick()));
+                booleanStateTest(c, "ticks_randomly", lv, (s, p) -> s.ticksRandomly()));
 
         this.expr.addLazyFunction("update", -1, (c, t, lv) ->
                 booleanStateTest(c, "update", lv, (s, p) ->
@@ -678,7 +678,7 @@ public class CarpetExpression
                 booleanStateTest(c, "random_tick", lv, (s, p) ->
                 {
                     World w = ((CarpetContext)c).s.getWorld();
-                    if (s.needsRandomTick() || s.getFluidState().getTickRandomly())
+                    if (s.ticksRandomly() || s.getFluidState().ticksRandomly())
                         s.randomTick(w, p, w.rand);
                     return true;
                 }));
@@ -733,7 +733,7 @@ public class CarpetExpression
 
         this.expr.addLazyFunction("map_colour", -1,  (c, t, lv) ->
                 stateStringQuery(c, "map_colour", lv, (s, p) ->
-                        BlockInfo.mapColourName.get(s.getMapColor(((CarpetContext)c).s.getWorld(), p))));
+                        BlockInfo.mapColourName.get(s.getMaterialColor(((CarpetContext)c).s.getWorld(), p))));
 
         this.expr.addLazyFunction("property", -1, (c, t, lv) ->
         {
@@ -1676,7 +1676,7 @@ public class CarpetExpression
             CarpetContext cc = (CarpetContext)c;
             ResourceLocation soundName = new ResourceLocation(lv.get(0).evalValue(c).getString());
             BlockValue.VectorLocator locator = BlockValue.locateVec(cc, lv, 1);
-            if (!(IRegistry.field_212633_v.func_212607_c(soundName)))
+            if (!(IRegistry.SOUND_EVENT.containsKey(soundName)))
                 throw new InternalExpressionException("No such sound: "+soundName.getPath());
             float volume = 1.0F;
             float pitch = 1.0F;

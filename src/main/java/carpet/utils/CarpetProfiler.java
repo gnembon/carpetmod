@@ -117,7 +117,7 @@ public class CarpetProfiler
         {
             return null;
         }
-        String section = dimension+"."+ IRegistry.field_212629_r.getKey(e.getType()).toString().replaceFirst("minecraft:","");
+        String section = dimension+"."+ IRegistry.ENTITY_TYPE.getKey(e.getType()).toString().replaceFirst("minecraft:","");
         if (e.getEntityWorld().isRemote)
             section += "(client)";
         long section_start = System.nanoTime();

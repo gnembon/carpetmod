@@ -101,14 +101,14 @@
  
      public NBTTagCompound write(NBTTagCompound compound)
 @@ -388,6 +432,13 @@
-         compound.setFloat("progress", this.lastProgress);
-         compound.setBoolean("extending", this.extending);
-         compound.setBoolean("source", this.shouldHeadBeRendered);
+         compound.putFloat("progress", this.lastProgress);
+         compound.putBoolean("extending", this.extending);
+         compound.putBoolean("source", this.shouldHeadBeRendered);
 +    
 +        // [CM] Movable TE's CARPET-DeadlyMC
 +        if(CarpetSettings.b_movableTileEntities && this.carriedTileEntity != null)
 +        {
-+            compound.setTag("carriedTileEntityCM", this.carriedTileEntity.write(new NBTTagCompound()));
++            compound.put("carriedTileEntityCM", this.carriedTileEntity.write(new NBTTagCompound()));
 +        }
 +        
          return compound;

@@ -35,10 +35,10 @@ public class BlockValue extends Value
         try
         {
             ResourceLocation blockId = ResourceLocation.read(new StringReader(str));
-            if (IRegistry.field_212618_g.func_212607_c(blockId))
+            if (IRegistry.BLOCK.containsKey(blockId))
             {
 
-                Block block = IRegistry.field_212618_g.get(blockId);
+                Block block = IRegistry.BLOCK.get(blockId);
                 return new BlockValue(block.getDefaultState(), null, null);
             }
         }
@@ -172,7 +172,7 @@ public class BlockValue extends Value
     @Override
     public String getString()
     {
-        return IRegistry.field_212618_g.getKey(getBlockState().getBlock()).getPath();
+        return IRegistry.BLOCK.getKey(getBlockState().getBlock()).getPath();
     }
 
     @Override

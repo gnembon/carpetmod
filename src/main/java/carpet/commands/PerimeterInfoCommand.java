@@ -48,7 +48,7 @@ public class PerimeterInfoCommand
         EntityLiving entityliving = null;
         if (mobId != null)
         {
-            nbttagcompound.setString("id", mobId);
+            nbttagcompound.putString("id", mobId);
             entityliving = (EntityLiving) AnvilChunkLoader.readWorldEntityPos(nbttagcompound, source.getWorld(), pos.getX()+0.5, pos.getY()+2, pos.getZ()+0.5, true);
             if (entityliving == null)
             {

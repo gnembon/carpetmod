@@ -146,7 +146,7 @@ public class EntityValue extends Value
         put("motion_z", (e, a) -> new NumericValue(e.motionZ));
         put("name", (e, a) -> new StringValue(e.getDisplayName().getString()));
         put("custom_name", (e, a) -> e.hasCustomName()?new StringValue(e.getCustomName().getString()):Value.NULL);
-        put("type", (e, a) -> new StringValue(IRegistry.field_212629_r.getKey(e.getType()).toString().replaceFirst("minecraft:","")));
+        put("type", (e, a) -> new StringValue(IRegistry.ENTITY_TYPE.getKey(e.getType()).toString().replaceFirst("minecraft:","")));
         put("is_riding", (e, a) -> new NumericValue(e.isPassenger()));
         put("is_ridden", (e, a) -> new NumericValue(e.isBeingRidden()));
         put("passengers", (e, a) -> ListValue.wrap(e.getPassengers().stream().map(EntityValue::new).collect(Collectors.toList())));
@@ -235,7 +235,7 @@ public class EntityValue extends Value
                 return ListValue.wrap(effects);
             }
             String effectName = a.getString();
-            Potion potion = IRegistry.field_212631_t.func_212608_b(new ResourceLocation(effectName));
+            Potion potion = IRegistry.MOB_EFFECT.get(new ResourceLocation(effectName));
             if (potion == null)
                 throw new Expression.InternalExpressionException("No such an effect: "+effectName);
             if (!((EntityLivingBase) e).isPotionActive(potion))
@@ -267,7 +267,7 @@ public class EntityValue extends Value
                 if (!itemstack.isEmpty())
                 {
                     return ListValue.of(
-                            new StringValue(IRegistry.field_212630_s.getKey(itemstack.getItem()).getPath()),
+                            new StringValue(IRegistry.ITEM.getKey(itemstack.getItem()).getPath()),
                             new NumericValue(itemstack.getCount()),
                             new StringValue(itemstack.write(new NBTTagCompound()).getString())
                     );
@@ -293,7 +293,7 @@ public class EntityValue extends Value
             String res = null;
             try
             {
-                res = path.func_197143_a(nbttagcompound).toFormattedComponent().getString();
+                res = path.get(nbttagcompound).toFormattedComponent().getString();
             }
             catch (CommandSyntaxException ignored) { }
             return new StringValue(res);

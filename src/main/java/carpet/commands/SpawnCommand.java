@@ -94,7 +94,7 @@ public class SpawnCommand
                         then(literal("set").
                                 then(argument("cap (hostile)", integer(1,1400)).
                                         executes( (c) -> setMobcaps(c.getSource(), getInteger(c, "cap (hostile)"))))).
-                        then(argument("dimension", DimensionArgument.func_212595_a()).
+                        then(argument("dimension", DimensionArgument.getDimension()).
                                 executes( (c)-> mobcapsForDimension(c.getSource(), DimensionArgument.func_212592_a(c, "dimension"))))).
                 then(literal("entities").
                         executes( (c) -> generalMobcaps(c.getSource()) ).

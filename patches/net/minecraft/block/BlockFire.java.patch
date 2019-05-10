@@ -19,6 +19,6 @@
 +                }
  
 +                if (!flag) {
-                     if (!this.func_196447_a(worldIn, pos))
+                     if (!this.areNeighborsFlammable(worldIn, pos))
                      {
                          if (!worldIn.getBlockState(pos.down()).isTopSolid() || i > 3)

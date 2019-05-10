@@ -46,15 +46,15 @@
      }
 @@ -423,6 +438,11 @@
  
-             compound.setTag("Leash", nbttagcompound2);
+             compound.put("Leash", nbttagcompound2);
          }
 +        // [CM] Lead fix - Makes sure the leashNBTTag data is preseved
 +        else if (CarpetSettings.getBool("leadFix") && leashNBTTag != null)
 +        {
-+            compound.setTag("Leash", leashNBTTag);
++            compound.put("Leash", leashNBTTag);
 +        }
  
-         compound.setBoolean("LeftHanded", this.isLeftHanded());
+         compound.putBoolean("LeftHanded", this.isLeftHanded());
  
 @@ -1447,10 +1467,16 @@
          float f = (float)this.getAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).getValue();

@@ -173,7 +173,7 @@ public class EntityInfo
         if (e instanceof EntityPainting)
         {
             EntityPainting ep = (EntityPainting)e;
-            lst.add(Messenger.c("w  - Art: ", "wb "+IRegistry.field_212620_i.getKey(ep.art).toString()));
+            lst.add(Messenger.c("w  - Art: ", "wb "+IRegistry.MOTIVE.getKey(ep.art).toString()));
         }
 
         if (e instanceof EntityLivingBase)

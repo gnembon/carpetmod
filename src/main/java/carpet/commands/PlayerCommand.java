@@ -125,7 +125,7 @@ public class PlayerCommand
                                                         then(argument("direction",RotationArgument.rotation()).
                                                                 executes(PlayerCommand::spawn).
                                                                 then(literal("in").
-                                                                        then(argument("dimension",DimensionArgument.func_212595_a()).
+                                                                        then(argument("dimension",DimensionArgument.getDimension()).
                                                                                 executes(PlayerCommand::spawn)))))))));
 
         dispatcher.register(literalargumentbuilder);
@@ -438,7 +438,7 @@ public class PlayerCommand
         }
         catch (IllegalArgumentException e)
         {
-            facing = context.getSource().getPitchYaw();
+            facing = context.getSource().getRotation();
         }
         try
         {

@@ -24,16 +24,16 @@ public class CameraModeCommand
         LiteralArgumentBuilder<CommandSource> camera = literal("c").
                 requires((player) -> CarpetSettings.getBool("commandCameramode")).
                 executes((c) -> cameraMode(c.getSource(), c.getSource().asPlayer())).
-                then(argument("player", EntityArgument.singlePlayer()).
-                        executes( (c) -> cameraMode(c.getSource(), EntityArgument.getOnePlayer(c, "player"))));
+                then(argument("player", EntityArgument.player()).
+                        executes( (c) -> cameraMode(c.getSource(), EntityArgument.getPlayer(c, "player"))));
 
         LiteralArgumentBuilder<CommandSource> survival = literal("s").
                 requires((player) -> CarpetSettings.getBool("commandCameramode")).
                 executes((c) -> survivalMode(
                         c.getSource(),
                         c.getSource().asPlayer())).
-                then(argument("player", EntityArgument.singlePlayer()).
-                        executes( (c) -> survivalMode(c.getSource(), EntityArgument.getOnePlayer(c, "player"))));
+                then(argument("player", EntityArgument.player()).
+                        executes( (c) -> survivalMode(c.getSource(), EntityArgument.getPlayer(c, "player"))));
 
         dispatcher.register(camera);
         dispatcher.register(survival);

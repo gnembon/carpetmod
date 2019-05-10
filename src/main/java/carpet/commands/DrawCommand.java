@@ -41,17 +41,17 @@ public class DrawCommand
                                                         c.getSource(),
                                                         BlockPosArgument.getBlockPos(c, "center"),
                                                         IntegerArgumentType.getInteger(c, "radius"),
-                                                        BlockStateArgument.getBlockStateInput(c,"block"),
+                                                        BlockStateArgument.getBlockState(c,"block"),
                                                         null
                                                         )
                                                 ).
                                                 then(literal("replace").
-                                                        then(argument("filter",BlockPredicateArgument.blockPredicateArgument())
+                                                        then(argument("filter",BlockPredicateArgument.blockPredicate())
                                                                 .executes((c)-> drawCircle(
                                                                         c.getSource(),
                                                                         BlockPosArgument.getBlockPos(c, "center"),
                                                                         IntegerArgumentType.getInteger(c, "radius"),
-                                                                        BlockStateArgument.getBlockStateInput(c,"block"),
+                                                                        BlockStateArgument.getBlockState(c,"block"),
                                                                         BlockPredicateArgument.getBlockPredicate(c,
                                                                                 "filter")
                                                                         ))))))));

@@ -12,7 +12,7 @@
 @@ -516,6 +518,9 @@
          this.mainWindow.updateVsyncFromGameSettings();
          this.mainWindow.setLogOnGlError();
-         this.renderGlobal.makeEntityOutlineShader();
+         this.worldRenderer.makeEntityOutlineShader();
 +
 +        //CM start game hook
 +        CarpetServer.onGameStarted();

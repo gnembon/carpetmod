@@ -40,7 +40,7 @@
  
 +        if (TickSpeed.process_entities)
 +        { // CM extra indent to skip processing of entities
-         this.worldInfo.setWorldTotalTime(this.worldInfo.getGameTime() + 1L);
+         this.worldInfo.setGameTime(this.worldInfo.getGameTime() + 1L);
  
          if (this.getGameRules().getBoolean("doDaylightCycle"))
 @@ -216,16 +232,27 @@

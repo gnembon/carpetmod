@@ -128,18 +128,18 @@ public class ScriptCommand
                                                                         BlockPosArgument.getBlockPos(c, "from"),
                                                                         BlockPosArgument.getBlockPos(c, "to"),
                                                                         StringArgumentType.getString(c, "expr"),
-                                                                        BlockStateArgument.getBlockStateInput(c, "block"),
+                                                                        BlockStateArgument.getBlockState(c, "block"),
                                                                         null, "solid"
                                                                 )).
                                                         then(literal("replace").
-                                                                then(argument("filter", BlockPredicateArgument.blockPredicateArgument())
+                                                                then(argument("filter", BlockPredicateArgument.blockPredicate())
                                                                         .executes((c) -> scriptFill(
                                                                                 c.getSource(),
                                                                                 BlockPosArgument.getBlockPos(c, "origin"),
                                                                                 BlockPosArgument.getBlockPos(c, "from"),
                                                                                 BlockPosArgument.getBlockPos(c, "to"),
                                                                                 StringArgumentType.getString(c, "expr"),
-                                                                                BlockStateArgument.getBlockStateInput(c, "block"),
+                                                                                BlockStateArgument.getBlockState(c, "block"),
                                                                                 BlockPredicateArgument.getBlockPredicate(c, "filter"),
                                                                                 "solid"
                                                                         )))))))))).
@@ -155,18 +155,18 @@ public class ScriptCommand
                                                                         BlockPosArgument.getBlockPos(c, "from"),
                                                                         BlockPosArgument.getBlockPos(c, "to"),
                                                                         StringArgumentType.getString(c, "expr"),
-                                                                        BlockStateArgument.getBlockStateInput(c, "block"),
+                                                                        BlockStateArgument.getBlockState(c, "block"),
                                                                         null, "outline"
                                                                 )).
                                                                 then(literal("replace").
-                                                                        then(argument("filter", BlockPredicateArgument.blockPredicateArgument())
+                                                                        then(argument("filter", BlockPredicateArgument.blockPredicate())
                                                                                 .executes((c) -> scriptFill(
                                                                                         c.getSource(),
                                                                                         BlockPosArgument.getBlockPos(c, "origin"),
                                                                                         BlockPosArgument.getBlockPos(c, "from"),
                                                                                         BlockPosArgument.getBlockPos(c, "to"),
                                                                                         StringArgumentType.getString(c, "expr"),
-                                                                                        BlockStateArgument.getBlockStateInput(c, "block"),
+                                                                                        BlockStateArgument.getBlockState(c, "block"),
                                                                                         BlockPredicateArgument.getBlockPredicate(c, "filter"),
                                                                                         "outline"
                                                                                 ))))))))));

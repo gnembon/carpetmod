@@ -79,7 +79,7 @@
 +                                                            ++local_spawns;
 +                                                            if (SpawnReporter.track_spawns > 0L)
 +                                                            {
-+                                                                String species = IRegistry.field_212629_r.getKey(entityliving.getType()).toString().replaceFirst("minecraft:","");
++                                                                String species = IRegistry.ENTITY_TYPE.getKey(entityliving.getType()).toString().replaceFirst("minecraft:","");
 +                                                                SpawnReporter.registerSpawn(entityliving, type_code, species, blockpos$mutableblockpos);
 +                                                            }
 +                                                            if (SpawnReporter.mock_spawns)

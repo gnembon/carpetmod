@@ -10,9 +10,9 @@
 @@ -216,7 +217,7 @@
              public boolean addComponentParts(IWorld worldIn, Random randomIn, MutableBoundingBox structureBoundingBoxIn, ChunkPos p_74875_4_)
              {
-                 this.placeSettings.setIntegrity(this.field_204037_e);
+                 this.placeSettings.setIntegrity(this.integrity);
 -                int i = worldIn.getHeight(Heightmap.Type.OCEAN_FLOOR_WG, this.templatePosition.getX(), this.templatePosition.getZ());
 +                int i = worldIn.getHeight(CarpetSettings.skipGenerationChecks?Heightmap.Type.OCEAN_FLOOR:Heightmap.Type.OCEAN_FLOOR_WG, this.templatePosition.getX(), this.templatePosition.getZ());
                  this.templatePosition = new BlockPos(this.templatePosition.getX(), i, this.templatePosition.getZ());
-                 BlockPos blockpos = Template.getTransformedPos(new BlockPos(this.template.getSize().getX() - 1, 0, this.template.getSize().getZ() - 1), Mirror.NONE, this.field_204039_g, new BlockPos(0, 0, 0)).add(this.templatePosition);
+                 BlockPos blockpos = Template.getTransformedPos(new BlockPos(this.template.getSize().getX() - 1, 0, this.template.getSize().getZ() - 1), Mirror.NONE, this.rotation, new BlockPos(0, 0, 0)).add(this.templatePosition);
                  this.templatePosition = new BlockPos(this.templatePosition.getX(), this.func_204035_a(this.templatePosition, worldIn, blockpos), this.templatePosition.getZ());

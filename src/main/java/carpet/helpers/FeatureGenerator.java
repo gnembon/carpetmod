@@ -51,7 +51,7 @@ public class FeatureGenerator
     {
         return (w, p) -> {
             CarpetSettings.skipGenerationChecks=true;
-            boolean res = feature.func_212245_a(w, w.getChunkProvider().getChunkGenerator(), w.rand, p, config);
+            boolean res = feature.place(w, w.getChunkProvider().getChunkGenerator(), w.rand, p, config);
             CarpetSettings.skipGenerationChecks=false;
             return res;
         };

@@ -150,9 +150,9 @@ public class BlockInfo
         List<ITextComponent> lst = new ArrayList<>();
         lst.add(Messenger.s(""));
         lst.add(Messenger.s("====================================="));
-        lst.add(Messenger.s(String.format("Block info for %s%s (id %d%s):",IRegistry.field_212618_g.getKey(block),metastring, IRegistry.field_212618_g.getId(block), metastring )));
+        lst.add(Messenger.s(String.format("Block info for %s%s (id %d%s):",IRegistry.BLOCK.getKey(block),metastring, IRegistry.BLOCK.getId(block), metastring )));
         lst.add(Messenger.s(String.format(" - Material: %s", materialName.get(material))));
-        lst.add(Messenger.s(String.format(" - Map colour: %s", mapColourName.get(state.getMapColor(world, pos)))));
+        lst.add(Messenger.s(String.format(" - Map colour: %s", mapColourName.get(state.getMaterialColor(world, pos)))));
         lst.add(Messenger.s(String.format(" - Sound type: %s", soundName.get(block.getSoundType()))));
         lst.add(Messenger.s(""));
         lst.add(Messenger.s(String.format(" - Full block: %s", state.isFullCube() )));
@@ -176,7 +176,7 @@ public class BlockInfo
         lst.add(Messenger.s(String.format(" - Requires a tool: %s", !material.isToolNotRequired())));
         lst.add(Messenger.s(String.format(" - Hardness: %.2f", state.getBlockHardness(world, pos))));
         lst.add(Messenger.s(String.format(" - Blast resistance: %.2f", block.getExplosionResistance())));
-        lst.add(Messenger.s(String.format(" - Ticks randomly: %s", block.getTickRandomly(state))));
+        lst.add(Messenger.s(String.format(" - Ticks randomly: %s", block.ticksRandomly(state))));
         lst.add(Messenger.s(""));
         lst.add(Messenger.s(String.format(" - Can provide power: %s", state.canProvidePower())));
         lst.add(Messenger.s(String.format(" - Strong power level: %d", world.getStrongPower(pos))));

@@ -115,7 +115,7 @@
 +        }
      }
  
-     public void updateTimeLightAndEntities(BooleanSupplier p_71190_1_)
+     public void updateTimeLightAndEntities(BooleanSupplier hasTimeLeft)
 @@ -905,10 +947,12 @@
              }))[this.tickCounter % 100] = Util.nanoTime() - i;
          }

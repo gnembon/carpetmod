@@ -46,7 +46,7 @@ public class InfoCommand
                                                         BlockPosArgument.getBlockPos(c, "block position"),
                                                         getString(c, "regexp"))))))).
                 then(literal("entity").
-                        then(argument("entity selector", EntityArgument.multipleEntities()).
+                        then(argument("entity selector", EntityArgument.entities()).
                                 executes( (c) -> infoEntities(
                                         c.getSource(), EntityArgument.getEntities(c,"entity selector"), null)).
                                 then(literal("grep").
