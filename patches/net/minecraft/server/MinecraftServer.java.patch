@@ -18,17 +18,16 @@
      @OnlyIn(Dist.CLIENT)
      private boolean worldIconSet;
      private final IReloadableResourceManager resourceManager = new SimpleReloadableResourceManager(ResourcePackType.SERVER_DATA);
-@@ -197,6 +202,9 @@
- 
-     public MinecraftServer(@Nullable File anvilFileIn, Proxy serverProxyIn, DataFixer dataFixerIn, Commands commandManagerIn, YggdrasilAuthenticationService authServiceIn, MinecraftSessionService sessionServiceIn, GameProfileRepository profileRepoIn, PlayerProfileCache profileCacheIn)
-     {
+@@ -212,6 +217,8 @@
+         this.resourceManager.addReloadListener(this.lootTableManager);
+         this.resourceManager.addReloadListener(this.functionManager);
+         this.resourceManager.addReloadListener(this.advancementManager);
 +        //CM
 +        CarpetServer.init(this);
-+
-         this.serverProxy = serverProxyIn;
-         this.commandManager = commandManagerIn;
-         this.authService = authServiceIn;
-@@ -642,24 +650,46 @@
+     }
+ 
+     public abstract boolean init() throws IOException;
+@@ -642,24 +649,46 @@
              if (this.init())
              {
                  this.serverTime = Util.milliTime();
@@ -79,7 +78,7 @@
  
                      while (this.isAheadOfTime())
                      {
-@@ -782,6 +812,12 @@
+@@ -782,6 +811,12 @@
      {
          long i = Util.nanoTime();
          ++this.tickCounter;
@@ -92,7 +91,7 @@
  
          if (this.startProfiling)
          {
-@@ -810,10 +846,12 @@
+@@ -810,10 +845,12 @@
  
          if (this.tickCounter % 900 == 0)
          {
@@ -105,7 +104,7 @@
          }
  
          this.profiler.startSection("snooper");
-@@ -834,6 +872,10 @@
+@@ -834,6 +871,10 @@
          this.tickTime = this.tickTime * 0.8F + (float)l / 1000000.0F * 0.19999999F;
          this.profiler.endSection();
          this.profiler.endSection();
@@ -116,7 +115,7 @@
      }
  
      public void updateTimeLightAndEntities(BooleanSupplier hasTimeLeft)
-@@ -905,10 +947,12 @@
+@@ -905,10 +946,12 @@
              }))[this.tickCounter % 100] = Util.nanoTime() - i;
          }
  
@@ -129,7 +128,7 @@
          this.profiler.endStartSection("tickables");
  
          for (int j = 0; j < this.tickables.size(); ++j)
-@@ -1605,6 +1649,12 @@
+@@ -1605,6 +1648,12 @@
      {
          return this.serverTime;
      }
