@@ -39,8 +39,8 @@ public class HUDController
     public static void clear_player(EntityPlayer player)
     {
         SPacketPlayerListHeaderFooter packet = new SPacketPlayerListHeaderFooter();
-        packet.header = new TextComponentString("");
-        packet.footer = new TextComponentString("");
+        packet.setFooter(new TextComponentString(""));
+        packet.setHeader(new TextComponentString(""));
         ((EntityPlayerMP)player).connection.sendPacket(packet);
     }
 
@@ -82,8 +82,8 @@ public class HUDController
         for (EntityPlayer player: player_huds.keySet())
         {
             SPacketPlayerListHeaderFooter packet = new SPacketPlayerListHeaderFooter();
-            packet.header = new TextComponentString("");
-            packet.footer = Messenger.c(player_huds.get(player).toArray(new Object[0]));
+            packet.setHeader(new TextComponentString(""));
+            packet.setFooter(Messenger.c(player_huds.get(player).toArray(new Object[0])));
             ((EntityPlayerMP)player).connection.sendPacket(packet);
         }
     }
