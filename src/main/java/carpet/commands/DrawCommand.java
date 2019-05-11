@@ -1,11 +1,9 @@
 package carpet.commands;
 
 import carpet.CarpetSettings;
-import carpet.script.CarpetExpression;
 import carpet.utils.Messenger;
 import com.google.common.collect.Lists;
 import com.mojang.brigadier.CommandDispatcher;
-import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import net.minecraft.block.Block;
@@ -18,7 +16,6 @@ import net.minecraft.command.arguments.BlockStateInput;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MutableBoundingBox;
 import net.minecraft.world.WorldServer;
 
 import java.util.List;
