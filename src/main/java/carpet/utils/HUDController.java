@@ -15,6 +15,7 @@ import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TextComponentString;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -116,7 +117,8 @@ public class HUDController
 
     private static ITextComponent [] send_counter_info(MinecraftServer server, String color)
     {
-        List <ITextComponent> res = HopperCounter.query_hopper_stats_for_color(server, color, false, true);
+        HopperCounter counter = HopperCounter.getCounter(color);
+        List <ITextComponent> res = counter == null ? Collections.emptyList() : counter.format(server, false, true);
         return new ITextComponent[]{ Messenger.c(res.toArray(new Object[0]))};
     }
     private static ITextComponent [] packetCounter()

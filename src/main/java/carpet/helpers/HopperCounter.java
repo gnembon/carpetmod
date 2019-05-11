@@ -1,157 +1,156 @@
 package carpet.helpers;
 
 import carpet.utils.Messenger;
+import com.google.common.collect.Maps;
+import it.unimi.dsi.fastutil.objects.Object2LongLinkedOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Object2LongMap;
 import net.minecraft.item.EnumDyeColor;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.Util;
 import net.minecraft.util.text.ITextComponent;
-import net.minecraft.world.World;
+import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraft.server.MinecraftServer;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class HopperCounter
 {
-    public static final Set<String> counterStringSet = new HashSet<>();
-    public static final HashMap<String, HashMap<String,Long>> hopper_counter = new HashMap<>();
-    public static final HashMap<String, Long> hopper_counter_start_tick = new HashMap<>();
-    public static final HashMap<String, Long> hopper_counter_start_millis = new HashMap<>();
+    public static final Map<EnumDyeColor, HopperCounter> COUNTERS;
 
-    static {
+    static
+    {
+        EnumMap<EnumDyeColor, HopperCounter> counterMap = new EnumMap<>(EnumDyeColor.class);
         for (EnumDyeColor color : EnumDyeColor.values())
         {
-            String col_str = color.toString();
-            counterStringSet.add(col_str);
-            hopper_counter.put(col_str, new HashMap<>());
-            hopper_counter_start_tick.put(col_str, 0L);
-            hopper_counter_start_millis.put(col_str, 0L);
+            counterMap.put(color, new HopperCounter(color));
+        }
+        COUNTERS = Maps.immutableEnumMap(counterMap);
+    }
+
+    public final EnumDyeColor color;
+    private final Object2LongMap<Item> counter = new Object2LongLinkedOpenHashMap<>();
+    private long startTick;
+    private long startMillis;
+    // private PubSubInfoProvider<Long> pubSubProvider;
+
+    private HopperCounter(EnumDyeColor color)
+    {
+        this.color = color;
+        // pubSubProvider = new PubSubInfoProvider<>(QuickCarpet.PUBSUB, "carpet.counter." + color.getName(), 0, this::getTotalItems);
+    }
+
+    public void add(MinecraftServer server, ItemStack stack)
+    {
+        if (startTick == 0)
+        {
+            startTick = server.getTickCounter();
+            startMillis = System.currentTimeMillis();
+        }
+        Item item = stack.getItem();
+        counter.put(item, counter.getLong(item) + stack.getCount());
+        // pubSubProvider.publish();
+    }
+
+    public void reset(MinecraftServer server)
+    {
+        counter.clear();
+        startTick = server.getTickCounter();
+        startMillis = System.currentTimeMillis();
+        // pubSubProvider.publish();
+    }
+
+    public static void resetAll(MinecraftServer server)
+    {
+        for (HopperCounter counter : COUNTERS.values())
+        {
+            counter.reset(server);
         }
     }
 
-    public static void count_hopper_items(World worldIn, EnumDyeColor color, ItemStack itemstack)
+    public static List<ITextComponent> formatAll(MinecraftServer server, boolean realtime)
     {
+        List<ITextComponent> text = new ArrayList<>();
 
-        String item_name = new ItemStack(itemstack.getItem(), 1).getDisplayName().getString();
-        int count = itemstack.getCount();
-        String color_string = color.toString();
-        if (hopper_counter_start_tick.get(color_string) == 0L)
+        for (HopperCounter counter : COUNTERS.values())
         {
-            hopper_counter_start_tick.put(color_string, (long)worldIn.getServer().getTickCounter());
-            hopper_counter_start_millis.put(color_string, Util.milliTime());
-        }
-
-        long curr_count = hopper_counter.get(color_string).getOrDefault(item_name, 0L);
-        hopper_counter.get(color_string).put(item_name, curr_count + count);
-
-
-    }
-
-    public static void reset_hopper_counter(MinecraftServer server, String color)
-    {
-        if (color == null)
-        {
-            for (EnumDyeColor clr : EnumDyeColor.values())
-            {
-
-                hopper_counter.put(clr.toString(), new HashMap<String, Long>());
-                hopper_counter_start_tick.put(clr.toString(), (long)server.getTickCounter());
-                hopper_counter_start_millis.put(clr.toString(), Util.milliTime());
-            }
-        }
-        else
-        {
-            hopper_counter.put(color, new HashMap<String, Long>());
-            hopper_counter_start_tick.put(color, (long) server.getTickCounter());
-            hopper_counter_start_millis.put(color, Util.milliTime());
-        }
-    }
-
-    public static List<ITextComponent> query_hopper_all_stats(MinecraftServer server, boolean realtime)
-    {
-        List<ITextComponent> lst = new ArrayList<>();
-
-        for (EnumDyeColor clr : EnumDyeColor.values())
-        {
-            List<ITextComponent> temp = query_hopper_stats_for_color(server, clr.toString(),realtime, false);
+            List<ITextComponent> temp = counter.format(server, realtime, false);
             if (temp.size() > 1)
             {
-                lst.addAll(temp);
-                lst.add(Messenger.s(""));
+                if (!text.isEmpty()) text.add(Messenger.s(""));
+                text.addAll(temp);
             }
         }
-        if (lst.size() == 0)
+        if (text.isEmpty())
         {
-            lst.add(Messenger.s("No items have been counted yet."));
+            text.add(Messenger.s("No items have been counted yet."));
         }
-        return lst;
+        return text;
     }
 
-    public static List<ITextComponent> query_hopper_stats_for_color(MinecraftServer server, String color, boolean realtime, boolean brief)
+    public List<ITextComponent> format(MinecraftServer server, boolean realTime, boolean brief)
     {
-        List<ITextComponent> lst = new ArrayList<>();
-        
-        if(hopper_counter.get(color) == null) return lst;
-        
-        if (hopper_counter.get(color).isEmpty())
+        if (counter.isEmpty())
         {
             if (brief)
             {
-                lst.add(Messenger.c("g "+color+": -, -/h, - min "));
+                return Collections.singletonList(Messenger.c("g "+color+": -, -/h, - min "));
             }
-            else
-            {
-                lst.add(Messenger.s(String.format("No items for %s yet", color)));
-            }
-            return lst;
+            return Collections.singletonList(Messenger.s(String.format("No items for %s yet", color.getName())));
         }
-        long total = 0L;
-        for (String item_name : hopper_counter.get(color).keySet() )
-        {
-            total += hopper_counter.get(color).get(item_name);
-        }
-        long total_ticks = 0L;
-        if (realtime)
-        {
-            total_ticks = (Util.milliTime()-hopper_counter_start_millis.get(color))/50L+1L;
-        }
-        else
-        {
-            total_ticks = (long)server.getTickCounter() - hopper_counter_start_tick.get(color)+1L;
-        }
-        if (total == 0L)
+        long total = getTotalItems();
+        long ticks = Math.max(realTime ? (System.currentTimeMillis() - startMillis) / 50 : server.getTickCounter() - startTick, 1);
+        if (total == 0)
         {
             if (brief)
             {
-                lst.add(Messenger.c(String.format("c %s: 0, 0/h, %.1f min ",color,total_ticks*1.0/(20*60))));
+                return Collections.singletonList(Messenger.c(String.format("c %s: 0, 0/h, %.1f min ", color, ticks / (20.0 * 60.0))));
             }
-            else
-            {
-                lst.add(Messenger.c(String.format("w No items for %s yet (%.2f min.%s)",
-                        color, total_ticks*1.0/(20*60), (realtime?" - real time":"")),
-                        "nb  [X]", "^g reset", "!/counter "+color+" reset"));
-            }
-            return lst;
+            return Collections.singletonList(Messenger.c(String.format("w No items for %s yet (%.2f min.%s)",
+                    color.getName(), ticks / (20.0 * 60.0), (realTime ? " - real time" : "")),
+                    "nb  [X]", "^g reset", "!/counter " + color.getName() +" reset"));
         }
+        if (brief)
+        {
+            return Collections.singletonList(Messenger.c(String.format("c %s: %d, %d/h, %.1f min ",
+                    color.getName(), total, total * (20 * 60 * 60) / ticks, ticks / (20.0 * 60.0))));
+        }
+        List<ITextComponent> items = new ArrayList<>();
+        items.add(Messenger.c(String.format("w Items for %s (%.2f min.%s), total: %d, (%.1f/h):",
+                color, ticks*1.0/(20*60), (realTime?" - real time":""), total, total*1.0*(20*60*60)/ticks),
+                "nb [X]", "^g reset", "!/counter "+color+" reset"
+        ));
+        items.addAll(counter.object2LongEntrySet().stream().map(e ->
+        {
+            ITextComponent itemName = new TextComponentTranslation(e.getKey().getTranslationKey());
+            long count = e.getLongValue();
+            return Messenger.c("w - ", itemName, String.format("w : %d, %.1f/h",
+                    count,
+                    count * (20.0 * 60.0 * 60.0) / ticks));
+        }).collect(Collectors.toList()));
+        return items;
+    }
 
-        if (!brief)
+    public static HopperCounter getCounter(String color)
+    {
+        try
         {
-            lst.add(Messenger.c(String.format("w Items for %s (%.2f min.%s), total: %d, (%.1f/h):",
-                            color, total_ticks*1.0/(20*60), (realtime?" - real time":""), total, total*1.0*(20*60*60)/total_ticks),
-                    "nb [X]", "^g reset", "!/counter "+color+" reset"
-                    ));
-            for (String item_name : hopper_counter.get(color).keySet())
-            {
-                lst.add(Messenger.s(String.format(" - %s: %d, %.1f/h",
-                        item_name,
-                        hopper_counter.get(color).get(item_name),
-                        hopper_counter.get(color).get(item_name) * 1.0 * (20 * 60 * 60) / total_ticks)));
-            }
+            EnumDyeColor colorEnum = EnumDyeColor.valueOf(color.toUpperCase(Locale.ROOT));
+            return COUNTERS.get(colorEnum);
         }
-        else
+        catch (IllegalArgumentException e)
         {
-            lst.add(Messenger.c(String.format("c %s: %d, %d/h, %.1f min ",
-                    color, total, total*(20*60*60)/total_ticks, total_ticks*1.0/(20*60))));
+            return null;
         }
-        return lst;
+    }
+
+    public long getTotalItems()
+    {
+        return counter.values().stream().mapToLong(Long::longValue).sum();
     }
 }

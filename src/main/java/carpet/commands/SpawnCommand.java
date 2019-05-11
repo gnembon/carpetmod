@@ -7,7 +7,6 @@ import carpet.utils.Messenger;
 import carpet.utils.SpawnReporter;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.BoolArgumentType;
-import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.command.CommandSource;
@@ -15,11 +14,9 @@ import net.minecraft.command.ISuggestionProvider;
 import net.minecraft.command.arguments.DimensionArgument;
 import net.minecraft.entity.EnumCreatureType;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.item.EnumDyeColor;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.dimension.Dimension;
 import net.minecraft.world.dimension.DimensionType;
-
-import javax.swing.*;
 
 import java.util.Arrays;
 
@@ -69,7 +66,7 @@ public class SpawnCommand
                                         getInteger(c, "ticks"),
                                         null)).
                                 then(argument("counter", word()).
-                                        suggests( (c, b) -> suggest(HopperCounter.counterStringSet,b)).
+                                        suggests( (c, b) -> suggest(Arrays.stream(EnumDyeColor.values()).map(EnumDyeColor::toString),b)).
                                         executes((c)-> runTest(
                                                 c.getSource(),
                                                 getInteger(c, "ticks"),
@@ -81,7 +78,7 @@ public class SpawnCommand
                         executes( (c) -> generalMobcaps(c.getSource())).
                         then(literal("reset").
                                 executes( (c) -> resetSpawnRates(c.getSource()))).
-                        then(argument("type", StringArgumentType.word()).
+                        then(argument("type", word()).
                                 suggests( (c, b) -> ISuggestionProvider.suggest(SpawnReporter.mob_groups,b)).
                                 then(argument("rounds", integer(0)).
                                         suggests( (c, b) -> ISuggestionProvider.suggest(new String[]{"1"},b)).
@@ -174,7 +171,17 @@ public class SpawnCommand
         //start tracking
         SpawnReporter.track_spawns = (long) source.getServer().getTickCounter();
         //counter reset
-        HopperCounter.reset_hopper_counter(source.getServer(), counter);
+        if (counter == null)
+        {
+            HopperCounter.resetAll(source.getServer());
+        }
+        else
+        {
+            HopperCounter hCounter = HopperCounter.getCounter(counter);
+            if (hCounter != null)
+                    hCounter.reset(source.getServer());
+        }
+
 
         // tick warp 0
         TickSpeed.tickrate_advance(null, 0, null, null);

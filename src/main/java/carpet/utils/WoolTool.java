@@ -70,7 +70,9 @@ public class WoolTool
                 {
                     EnumDyeColor under = getWoolColorAtPosition(worldIn, pos.down());
                     if (under == null) return;
-                    Messenger.send(placer, HopperCounter.query_hopper_stats_for_color(worldIn.getServer(), under.toString(), false, false));
+                    HopperCounter counter = HopperCounter.getCounter(under.toString());
+                    if (counter != null)
+                        Messenger.send(placer, counter.format(worldIn.getServer(), false, false));
                 }
 				break;
 			case RED:
@@ -78,7 +80,9 @@ public class WoolTool
                 {
                     EnumDyeColor under = getWoolColorAtPosition(worldIn, pos.down());
                     if (under == null) return;
-                    HopperCounter.reset_hopper_counter(placer.getServer(), under.toString());
+                    HopperCounter counter = HopperCounter.getCounter(under.toString());
+                    if (counter == null) return;
+                    counter.reset(placer.getServer());
                     List<ITextComponent> res = new ArrayList<>();
                     res.add(Messenger.s(String.format("%s counter reset",under.toString())));
                     Messenger.send(placer, res);
