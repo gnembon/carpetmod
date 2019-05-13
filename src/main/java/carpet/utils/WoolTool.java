@@ -61,10 +61,6 @@ public class WoolTool
                 if (CarpetSettings.getBool("commandInfo"))
                     Messenger.send(placer, BlockInfo.blockInfo(pos.down(), worldIn));
                 break;
-            case YELLOW:
-                if (CarpetSettings.getBool("commandInfo"))
-                    EntityInfo.issue_entity_info(placer);
-                break;
 			case GREEN:
                 if (CarpetSettings.getBool("hopperCounters"))
                 {
