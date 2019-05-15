@@ -1,4 +1,6 @@
-package carpet.script;
+package carpet.script.value;
+
+import carpet.script.exception.InternalExpressionException;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -64,7 +66,7 @@ public class ListValue extends Value
             }
             else
             {
-                throw new Expression.InternalExpressionException("Cannot subtract two lists of uneven sizes");
+                throw new InternalExpressionException("Cannot subtract two lists of uneven sizes");
             }
         }
         else
@@ -95,7 +97,7 @@ public class ListValue extends Value
             }
             else
             {
-                throw new Expression.InternalExpressionException("Cannot subtract two lists of uneven sizes");
+                throw new InternalExpressionException("Cannot subtract two lists of uneven sizes");
             }
         }
         else
@@ -128,7 +130,7 @@ public class ListValue extends Value
             }
             else
             {
-                throw new Expression.InternalExpressionException("Cannot subtract two lists of uneven sizes");
+                throw new InternalExpressionException("Cannot subtract two lists of uneven sizes");
             }
         }
         else
@@ -155,7 +157,7 @@ public class ListValue extends Value
             }
             else
             {
-                throw new Expression.InternalExpressionException("Cannot subtract two lists of uneven sizes");
+                throw new InternalExpressionException("Cannot subtract two lists of uneven sizes");
             }
         }
         else

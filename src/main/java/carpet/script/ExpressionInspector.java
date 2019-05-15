@@ -8,21 +8,13 @@ import java.util.List;
  */
 public class ExpressionInspector
 {
-    public static String Expression_getCodeString(Expression e)
-    {
-        return e.getCodeString();
-    }
-
-    public static List<String> Expression_getExpressionSnippet(Tokenizer.Token token, String expr)
+    public static List<String> Expression_getExpressionSnippet(Tokenizer.Token token, Expression expr)
     {
         return Expression.getExpressionSnippet(token, expr);
     }
 
-    public static class CarpetExpressionException extends Expression.ExpressionException
+    public static String Expression_getName(Expression e)
     {
-        CarpetExpressionException(String message)
-        {
-            super(message);
-        }
+        return e.getName();
     }
 }

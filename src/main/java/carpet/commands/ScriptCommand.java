@@ -3,8 +3,10 @@ package carpet.commands;
 import carpet.CarpetServer;
 import carpet.CarpetSettings;
 import carpet.script.CarpetExpression;
+import carpet.script.Expression;
 import carpet.script.ExpressionInspector;
 import carpet.script.Tokenizer;
+import carpet.script.exception.CarpetExpressionException;
 import carpet.utils.Messenger;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -189,7 +191,7 @@ public class ScriptCommand
         Messenger.m(source, "w Global functions:");
         for (String fname : getGlobalCalls())
         {
-            String expr = ExpressionInspector.Expression_getCodeString(CarpetServer.scriptServer.globalHost.getExpressionForFunction(fname));
+            Expression expr = CarpetServer.scriptServer.globalHost.getExpressionForFunction(fname);
             Tokenizer.Token tok = CarpetServer.scriptServer.globalHost.getTokenForFunction(fname);
             List<String> snippet = ExpressionInspector.Expression_getExpressionSnippet(tok, expr);
             Messenger.m(source, "w Function "+fname+" defined at: line "+(tok.lineno+1)+" pos "+(tok.linepos+1));
@@ -230,7 +232,7 @@ public class ScriptCommand
             }
             Messenger.m(source, "wi  = ", "wb "+result, "gi  ("+time+metric+")");
         }
-        catch (ExpressionInspector.CarpetExpressionException e)
+        catch (CarpetExpressionException e)
         {
             Messenger.m(source, "r Exception white evaluating expression at "+new BlockPos(source.getPos())+": "+e.getMessage());
         }
@@ -302,7 +304,7 @@ public class ScriptCommand
                 }
             }
         }
-        catch (ExpressionInspector.CarpetExpressionException exc)
+        catch (CarpetExpressionException exc)
         {
             Messenger.m(source, "r Error while processing command: "+exc);
             return 0;
@@ -343,7 +345,7 @@ public class ScriptCommand
                             volume[x-area.minX][y-area.minY][z-area.minZ]=true;
                         }
                     }
-                    catch (ExpressionInspector.CarpetExpressionException e)
+                    catch (CarpetExpressionException e)
                     {
                         Messenger.m(source, "r Exception while filling the area:\n","l "+e.getMessage());
                         return 0;

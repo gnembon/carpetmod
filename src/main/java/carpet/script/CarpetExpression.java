@@ -3,8 +3,11 @@ package carpet.script;
 import carpet.CarpetServer;
 import carpet.CarpetSettings;
 import carpet.helpers.FeatureGenerator;
-import carpet.script.Expression.ExpressionException;
-import carpet.script.Expression.InternalExpressionException;
+import carpet.script.exception.CarpetExpressionException;
+import carpet.script.exception.ExpressionException;
+import carpet.script.exception.InternalExpressionException;
+import carpet.script.Fluff.TriFunction;
+import carpet.script.value.*;
 import carpet.utils.BlockInfo;
 import carpet.utils.Messenger;
 import com.mojang.brigadier.StringReader;
@@ -36,7 +39,6 @@ import net.minecraft.world.gen.Heightmap;
 import net.minecraft.world.storage.SessionLockException;
 import org.apache.commons.lang3.tuple.Pair;
 
-import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -113,25 +115,6 @@ public class CarpetExpression
         //unused - accessed via CarpetScriptServer
     }
 
-    static class CarpetContext extends Context
-    {
-        public CommandSource s;
-        public BlockPos origin;
-        CarpetContext(ScriptHost host, CommandSource source, BlockPos origin)
-        {
-            super(host);
-            s = source;
-            this.origin = origin;
-        }
-
-        @Override
-        public Context recreate()
-        {
-            return new CarpetContext(this.host, this.s, this.origin);
-        }
-
-    }
-
     private LazyValue booleanStateTest(
             Context c,
             String name,
@@ -183,7 +166,7 @@ public class CarpetExpression
             Context c,
             String name,
             List<LazyValue> params,
-            Expression.TriFunction<IBlockState, BlockPos, World, Value> test
+            TriFunction<IBlockState, BlockPos, World, Value> test
     )
     {
         CarpetContext cc = (CarpetContext) c;
@@ -628,8 +611,8 @@ public class CarpetExpression
             }
             else
             {
-                x = (int)Expression.getNumericValue(lv.get(1).evalValue(c)).getLong();
-                z = (int)Expression.getNumericValue(lv.get(2).evalValue(c)).getLong();
+                x = (int) NumericValue.asNumber(lv.get(1).evalValue(c)).getLong();
+                z = (int) NumericValue.asNumber(lv.get(2).evalValue(c)).getLong();
             }
             Value retval = new NumericValue(((CarpetContext)c).s.getWorld().getChunk(x >> 4, z >> 4).getTopBlockY(htype, x & 15, z & 15) + 1);
             return (c_, t_) -> retval;
@@ -1063,14 +1046,14 @@ public class CarpetExpression
 
         this.expr.addLazyFunction("entity_area", 7, (c, t, lv) -> {
             BlockPos center = new BlockPos(
-                    Expression.getNumericValue(lv.get(1).evalValue(c)).getDouble(),
-                    Expression.getNumericValue(lv.get(2).evalValue(c)).getDouble(),
-                    Expression.getNumericValue(lv.get(3).evalValue(c)).getDouble()
+                    NumericValue.asNumber(lv.get(1).evalValue(c)).getDouble(),
+                    NumericValue.asNumber(lv.get(2).evalValue(c)).getDouble(),
+                    NumericValue.asNumber(lv.get(3).evalValue(c)).getDouble()
             );
             AxisAlignedBB area = new AxisAlignedBB(center).grow(
-                    Expression.getNumericValue(lv.get(4).evalValue(c)).getDouble(),
-                    Expression.getNumericValue(lv.get(5).evalValue(c)).getDouble(),
-                    Expression.getNumericValue(lv.get(6).evalValue(c)).getDouble()
+                    NumericValue.asNumber(lv.get(4).evalValue(c)).getDouble(),
+                    NumericValue.asNumber(lv.get(5).evalValue(c)).getDouble(),
+                    NumericValue.asNumber(lv.get(6).evalValue(c)).getDouble()
             );
             String who = lv.get(0).evalValue(c).getString();
             Pair<Class<? extends Entity>, Predicate<? super Entity>> pair = EntityValue.getPredicate(who);
@@ -1172,12 +1155,12 @@ public class CarpetExpression
             int lvsise = lv.size();
             if (lvsise != 7 && lvsise != 10)
                 throw new InternalExpressionException("scan takes 2, or 3 triples of coords, and the expression");
-            int cx = (int)Expression.getNumericValue(lv.get(0).evalValue(c)).getLong();
-            int cy = (int)Expression.getNumericValue(lv.get(1).evalValue(c)).getLong();
-            int cz = (int)Expression.getNumericValue(lv.get(2).evalValue(c)).getLong();
-            int xrange = (int)Expression.getNumericValue(lv.get(3).evalValue(c)).getLong();
-            int yrange = (int)Expression.getNumericValue(lv.get(4).evalValue(c)).getLong();
-            int zrange = (int)Expression.getNumericValue(lv.get(5).evalValue(c)).getLong();
+            int cx = (int) NumericValue.asNumber(lv.get(0).evalValue(c)).getLong();
+            int cy = (int) NumericValue.asNumber(lv.get(1).evalValue(c)).getLong();
+            int cz = (int) NumericValue.asNumber(lv.get(2).evalValue(c)).getLong();
+            int xrange = (int) NumericValue.asNumber(lv.get(3).evalValue(c)).getLong();
+            int yrange = (int) NumericValue.asNumber(lv.get(4).evalValue(c)).getLong();
+            int zrange = (int) NumericValue.asNumber(lv.get(5).evalValue(c)).getLong();
             int xprange = xrange;
             int yprange = yrange;
             int zprange = zrange;
@@ -1188,9 +1171,9 @@ public class CarpetExpression
             }
             else
             {
-                xprange = (int)Expression.getNumericValue(lv.get(6).evalValue(c)).getLong();
-                yprange = (int)Expression.getNumericValue(lv.get(7).evalValue(c)).getLong();
-                zprange = (int)Expression.getNumericValue(lv.get(8).evalValue(c)).getLong();
+                xprange = (int) NumericValue.asNumber(lv.get(6).evalValue(c)).getLong();
+                yprange = (int) NumericValue.asNumber(lv.get(7).evalValue(c)).getLong();
+                zprange = (int) NumericValue.asNumber(lv.get(8).evalValue(c)).getLong();
                 expr = lv.get(9);
             }
 
@@ -1233,12 +1216,12 @@ public class CarpetExpression
 
         this.expr.addLazyFunction("volume", 7, (c, t, lv) ->
         {
-            int xi = (int)Expression.getNumericValue(lv.get(0).evalValue(c)).getLong();
-            int yi = (int)Expression.getNumericValue(lv.get(1).evalValue(c)).getLong();
-            int zi = (int)Expression.getNumericValue(lv.get(2).evalValue(c)).getLong();
-            int xj = (int)Expression.getNumericValue(lv.get(3).evalValue(c)).getLong();
-            int yj = (int)Expression.getNumericValue(lv.get(4).evalValue(c)).getLong();
-            int zj = (int)Expression.getNumericValue(lv.get(5).evalValue(c)).getLong();
+            int xi = (int) NumericValue.asNumber(lv.get(0).evalValue(c)).getLong();
+            int yi = (int) NumericValue.asNumber(lv.get(1).evalValue(c)).getLong();
+            int zi = (int) NumericValue.asNumber(lv.get(2).evalValue(c)).getLong();
+            int xj = (int) NumericValue.asNumber(lv.get(3).evalValue(c)).getLong();
+            int yj = (int) NumericValue.asNumber(lv.get(4).evalValue(c)).getLong();
+            int zj = (int) NumericValue.asNumber(lv.get(5).evalValue(c)).getLong();
             int minx = min(xi, xj);
             int miny = min(yi, yj);
             int minz = min(zi, zj);
@@ -1683,10 +1666,10 @@ public class CarpetExpression
             float pitch = 1.0F;
             if (lv.size() > 0+locator.offset)
             {
-                volume = (float)Expression.getNumericValue(lv.get(0+locator.offset).evalValue(c)).getDouble();
+                volume = (float) NumericValue.asNumber(lv.get(0+locator.offset).evalValue(c)).getDouble();
                 if (lv.size() > 1+locator.offset)
                 {
-                    pitch = (float)Expression.getNumericValue(lv.get(1+locator.offset).evalValue(c)).getDouble();
+                    pitch = (float) NumericValue.asNumber(lv.get(1+locator.offset).evalValue(c)).getDouble();
                 }
             }
             Vec3d vec = locator.vec;
@@ -1714,13 +1697,13 @@ public class CarpetExpression
             EntityPlayerMP player = null;
             if (lv.size() > locator.offset)
             {
-                count = (int)Expression.getNumericValue(lv.get(locator.offset).evalValue(c)).getLong();
+                count = (int) NumericValue.asNumber(lv.get(locator.offset).evalValue(c)).getLong();
                 if (lv.size() > 1+locator.offset)
                 {
-                    spread = (float)Expression.getNumericValue(lv.get(1+locator.offset).evalValue(c)).getDouble();
+                    spread = (float) NumericValue.asNumber(lv.get(1+locator.offset).evalValue(c)).getDouble();
                     if (lv.size() > 2+locator.offset)
                     {
-                        speed = Expression.getNumericValue(lv.get(2 + locator.offset).evalValue(c)).getDouble();
+                        speed = NumericValue.asNumber(lv.get(2 + locator.offset).evalValue(c)).getDouble();
                         if (lv.size() > 3 + locator.offset) // should accept entity as well as long as it is player
                         {
                             player = ms.getPlayerList().getPlayerByUsername(lv.get(3 + locator.offset).evalValue(c).getString());
@@ -1757,7 +1740,7 @@ public class CarpetExpression
             BlockValue.VectorLocator pos1 = BlockValue.locateVec(cc, lv, 1);
             BlockValue.VectorLocator pos2 = BlockValue.locateVec(cc, lv, pos1.offset);
             int offset = pos2.offset;
-            double density = (lv.size() > offset)?Expression.getNumericValue(lv.get(offset).evalValue(c)).getDouble():1.0;
+            double density = (lv.size() > offset)? NumericValue.asNumber(lv.get(offset).evalValue(c)).getDouble():1.0;
             if (density <= 0)
             {
                 throw new InternalExpressionException("Particle density should be positive");
@@ -1778,7 +1761,7 @@ public class CarpetExpression
             double density = 1.0;
             if (lv.size() > offset)
             {
-                density = Expression.getNumericValue(lv.get(offset).evalValue(c)).getDouble();
+                density = NumericValue.asNumber(lv.get(offset).evalValue(c)).getDouble();
             }
             if (density <= 0)
             {
@@ -1865,7 +1848,7 @@ public class CarpetExpression
             s.getServer().dontPanic(); // optional not to freak out the watchdog
             if (lv.size()>0)
             {
-                long ms_total = Expression.getNumericValue(lv.get(0).evalValue(c)).getLong();
+                long ms_total = NumericValue.asNumber(lv.get(0).evalValue(c)).getLong();
                 long end_expected = CarpetServer.scriptServer.tickStart+ms_total*1000000L;
                 long wait = end_expected-System.nanoTime();
                 if (wait > 0L)
@@ -1987,11 +1970,11 @@ public class CarpetExpression
         }
         catch (ExpressionException e)
         {
-            throw new ExpressionInspector.CarpetExpressionException(e.getMessage());
+            throw new CarpetExpressionException(e.getMessage());
         }
         catch (ArithmeticException ae)
         {
-            throw new ExpressionInspector.CarpetExpressionException("math doesn't compute... "+ae.getMessage());
+            throw new CarpetExpressionException("math doesn't compute... "+ae.getMessage());
         }
     }
 
@@ -2032,11 +2015,11 @@ public class CarpetExpression
         }
         catch (ExpressionException e)
         {
-            throw new ExpressionInspector.CarpetExpressionException(e.getMessage());
+            throw new CarpetExpressionException(e.getMessage());
         }
         catch (ArithmeticException ae)
         {
-            throw new ExpressionInspector.CarpetExpressionException("math doesn't compute... "+ae.getMessage());
+            throw new CarpetExpressionException("math doesn't compute... "+ae.getMessage());
         }
     }
 

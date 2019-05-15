@@ -5,6 +5,10 @@ import carpet.CarpetSettings;
 import carpet.script.bundled.CameraPathModule;
 import carpet.script.bundled.FileModule;
 import carpet.script.bundled.ModuleInterface;
+import carpet.script.exception.ExpressionException;
+import carpet.script.value.NumericValue;
+import carpet.script.value.StringValue;
+import carpet.script.value.Value;
 import carpet.utils.Messenger;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -132,7 +136,7 @@ public class CarpetScriptServer
 
     public void setChatErrorSnooper(CommandSource source)
     {
-        Expression.ExpressionException.errorSnooper = (expr, token, message) ->
+        ExpressionException.errorSnooper = (expr, token, message) ->
         {
             try
             {
@@ -176,7 +180,7 @@ public class CarpetScriptServer
     }
     public void resetErrorSnooper()
     {
-        Expression.ExpressionException.errorSnooper=null;
+        ExpressionException.errorSnooper=null;
     }
 
     public String invokeGlobalFunctionCommand(CommandSource source, String call, List<Integer> coords, String arg)
@@ -185,7 +189,7 @@ public class CarpetScriptServer
         ScriptHost host = globalHost;
         if (stopAll)
             return "SCRIPTING PAUSED";
-        Expression.UserDefinedFunction acf = host.globalFunctions.get(call);
+        UserDefinedFunction acf = host.globalFunctions.get(call);
         if (acf == null)
             return "UNDEFINED";
         List<LazyValue> argv = new ArrayList<>();
@@ -263,14 +267,14 @@ public class CarpetScriptServer
         try
         {
             // TODO: this is just for now - invoke would be able to invoke other hosts scripts
-            Context context = new CarpetExpression.CarpetContext(host, source, BlockPos.ORIGIN);
+            Context context = new CarpetContext(host, source, BlockPos.ORIGIN);
             return Expression.evalValue(
                     () -> acf.lazyEval(context, Context.VOID, acf.expression, acf.token, argv),
                     context,
                     Context.VOID
             ).getString();
         }
-        catch (Expression.ExpressionException e)
+        catch (ExpressionException e)
         {
             return e.getMessage();
         }

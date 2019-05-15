@@ -1,12 +1,14 @@
 package carpet.script;
 
+import carpet.script.value.Value;
+
 import java.util.HashMap;
 import java.util.Map;
 
 public class ScriptHost
 {
 
-    public final Map<String, Expression.UserDefinedFunction> globalFunctions = new HashMap<>();
+    public final Map<String, UserDefinedFunction> globalFunctions = new HashMap<>();
 
     public final Map<String, LazyValue> globalVariables = new HashMap<>();
 

@@ -1,4 +1,6 @@
-package carpet.script;
+package carpet.script.value;
+
+import carpet.script.value.Value;
 
 public class GlobalValue extends Value
 {

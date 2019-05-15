@@ -1,5 +1,19 @@
 package carpet.script;
 
+import carpet.script.Fluff.AbstractFunction;
+import carpet.script.Fluff.AbstractLazyFunction;
+import carpet.script.Fluff.AbstractLazyOperator;
+import carpet.script.Fluff.AbstractOperator;
+import carpet.script.Fluff.AbstractUnaryOperator;
+import carpet.script.Fluff.ILazyFunction;
+import carpet.script.Fluff.ILazyOperator;
+import carpet.script.Fluff.QuadFunction;
+import carpet.script.Fluff.SexFunction;
+import carpet.script.Fluff.TriFunction;
+import carpet.script.exception.ExpressionException;
+import carpet.script.exception.InternalExpressionException;
+import carpet.script.value.*;
+
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -359,62 +373,6 @@ public class Expression implements Cloneable
         return copy;
     }
 
-    /* The expression evaluators exception class. */
-    static class ExpressionException extends RuntimeException
-    {
-        ExpressionException(String message)
-        {
-            super(message);
-        }
-
-        private static TriFunction<Expression, Tokenizer.Token, String, List<String>> errorMaker = (expr, token, errmessage) ->
-        {
-
-            List<String> snippet = getExpressionSnippet(token, expr.expression);
-            List<String> errMsg = new ArrayList<>(snippet);
-            if (snippet.size() != 1)
-            {
-                errmessage+= " at line "+(token.lineno+1)+", pos "+(token.linepos+1);
-            }
-            else
-            {
-                errmessage += " at pos "+(token.pos+1);
-            }
-            if (expr.name != null)
-            {
-                errmessage += " ("+expr.name+")";
-            }
-            errMsg.add(errmessage);
-            return errMsg;
-        };
-        static TriFunction<Expression, Tokenizer.Token, String, List<String>> errorSnooper = null;
-
-        static String makeMessage(Expression e, Tokenizer.Token t, String message) throws ExpressionException
-        {
-            if (errorSnooper != null)
-            {
-                List<String> alternative = errorSnooper.apply(e, t, message);
-                if (alternative!= null)
-                {
-                    return String.join("\n", alternative);
-                }
-            }
-            return String.join("\n", errorMaker.apply(e, t, message));
-        }
-
-        ExpressionException(Expression e, Tokenizer.Token t, String message)
-        {
-            super(makeMessage(e, t, message));
-        }
-    }
-    /* The internal expression evaluators exception class. */
-    static class InternalExpressionException extends ExpressionException
-    {
-        InternalExpressionException(String message)
-        {
-            super(message);
-        }
-    }
     /* Exception thrown to terminate execution mid expression (aka return statement) */
     static class ExitStatement extends RuntimeException
     {
@@ -441,17 +399,17 @@ public class Expression implements Cloneable
     }
 
 
-    static List<String> getExpressionSnippet(Tokenizer.Token token, String expr)
+    static List<String> getExpressionSnippet(Tokenizer.Token token, Expression expr)
     {
-
+        String code = expr.getCodeString();
         List<String> output = new ArrayList<>();
-        for (String line: getExpressionSnippetLeftContext(token, expr, 1))
+        for (String line: getExpressionSnippetLeftContext(token, code, 1))
         {
             output.add(line);
         }
-        List<String> context = getExpressionSnippetContext(token, expr);
+        List<String> context = getExpressionSnippetContext(token, code);
         output.add(context.get(0)+" HERE>> "+context.get(1));
-        for (String line: getExpressionSnippetRightContext(token, expr, 1))
+        for (String line: getExpressionSnippetRightContext(token, code, 1))
         {
             output.add(line);
         }
@@ -501,28 +459,6 @@ public class Expression implements Cloneable
     }
 
 
-    private static <T> T assertNotNull(T t)
-    {
-        if (t == null)
-            throw new InternalExpressionException("Operand may not be null");
-        return t;
-    }
-
-    private static <T> void assertNotNull(T t1, T t2)
-    {
-        if (t1 == null)
-            throw new InternalExpressionException("First operand may not be null");
-        if (t2 == null)
-            throw new InternalExpressionException("Second operand may not be null");
-    }
-
-    static NumericValue getNumericValue(Value v1)
-    {
-        if (!(v1 instanceof NumericValue))
-            throw new InternalExpressionException("Operand has to be of a numeric type");
-        return ((NumericValue) v1);
-    }
-
     private void addLazyUnaryOperator(String surface, int precedence, boolean leftAssoc,
                                        TriFunction<Context, Integer, LazyValue, LazyValue> lazyfun)
     {
@@ -537,7 +473,7 @@ public class Expression implements Cloneable
                     {
                         throw new ExpressionException(e, token, "Did not expect a second parameter for unary operator");
                     }
-                    assertNotNull(v);
+                    Value.assertNotNull(v);
                     return lazyfun.apply(c, t, v);
                 }
                 catch (InternalExpressionException exc)
@@ -563,7 +499,7 @@ public class Expression implements Cloneable
             {
                 try
                 {
-                    assertNotNull(v1, v2);
+                    Value.assertNotNull(v1, v2);
                     return lazyfun.apply(c, type, e, t, v1, v2);
                 }
                 catch (InternalExpressionException exc) // might not actually throw it
@@ -588,7 +524,7 @@ public class Expression implements Cloneable
             {
                 try
                 {
-                    assertNotNull(v1, v2);
+                    Value.assertNotNull(v1, v2);
                     return lazyfun.apply(c, t, v1, v2);
                 }
                 catch (InternalExpressionException exc)
@@ -610,7 +546,7 @@ public class Expression implements Cloneable
             @Override
             public Value evalUnary(Value v1)
             {
-                return fun.apply(assertNotNull(v1));
+                return fun.apply(Value.assertNotNull(v1));
             }
         });
     }
@@ -622,7 +558,7 @@ public class Expression implements Cloneable
             @Override
             public Value eval(Value v1, Value v2)
             {
-                assertNotNull(v1, v2);
+                Value.assertNotNull(v1, v2);
                 return fun.apply(v1, v2);
             }
         });
@@ -637,7 +573,7 @@ public class Expression implements Cloneable
             @Override
             public Value eval(List<Value> parameters)
             {
-                return fun.apply(assertNotNull(parameters.get(0)));
+                return fun.apply(Value.assertNotNull(parameters.get(0)));
             }
         });
     }
@@ -652,7 +588,7 @@ public class Expression implements Cloneable
             {
                 Value v1 = parameters.get(0);
                 Value v2 = parameters.get(1);
-                assertNotNull(v1, v2);
+                Value.assertNotNull(v1, v2);
                 return fun.apply(v1, v2);
             }
         });
@@ -667,7 +603,7 @@ public class Expression implements Cloneable
             public Value eval(List<Value> parameters)
             {
                 for (Value v: parameters)
-                    assertNotNull(v);
+                    Value.assertNotNull(v);
                 return fun.apply(parameters);
             }
         });
@@ -675,13 +611,13 @@ public class Expression implements Cloneable
 
     private void addMathematicalUnaryFunction(String name, Function<Double, Double> fun)
     {
-        addUnaryFunction(name, (v) -> new NumericValue(fun.apply(getNumericValue(v).getDouble())));
+        addUnaryFunction(name, (v) -> new NumericValue(fun.apply(NumericValue.asNumber(v).getDouble())));
     }
 
     private void addMathematicalBinaryFunction(String name, BiFunction<Double, Double, Double> fun)
     {
         addBinaryFunction(name, (w, v) ->
-                new NumericValue(fun.apply(getNumericValue(w).getDouble(), getNumericValue(v).getDouble())));
+                new NumericValue(fun.apply(NumericValue.asNumber(w).getDouble(), NumericValue.asNumber(v).getDouble())));
     }
 
 
@@ -1252,9 +1188,9 @@ public class Expression implements Cloneable
         addBinaryOperator("*", precedence.get("multiplication*/%"), true, Value::multiply);
         addBinaryOperator("/", precedence.get("multiplication*/%"), true, Value::divide);
         addBinaryOperator("%", precedence.get("multiplication*/%"), true, (v1, v2) ->
-                new NumericValue(getNumericValue(v1).getDouble() % getNumericValue(v2).getDouble()));
+                new NumericValue(NumericValue.asNumber(v1).getDouble() % NumericValue.asNumber(v2).getDouble()));
         addBinaryOperator("^", precedence.get("exponent^"), false, (v1, v2) ->
-                new NumericValue(Math.pow(getNumericValue(v1).getDouble(), getNumericValue(v2).getDouble())));
+                new NumericValue(Math.pow(NumericValue.asNumber(v1).getDouble(), NumericValue.asNumber(v2).getDouble())));
 
         addLazyBinaryOperator("&&", precedence.get("and&&"), false, (c, t, lv1, lv2) ->
         {
@@ -1393,9 +1329,9 @@ public class Expression implements Cloneable
             return (cc, tt) -> lval;
         });
 
-        addUnaryOperator("-",  false, (v) -> new NumericValue(-getNumericValue(v).getDouble()));
+        addUnaryOperator("-",  false, (v) -> new NumericValue(-NumericValue.asNumber(v).getDouble()));
 
-        addUnaryOperator("+", false, (v) -> new NumericValue(getNumericValue(v).getDouble()));
+        addUnaryOperator("+", false, (v) -> new NumericValue(NumericValue.asNumber(v).getDouble()));
 
         addLazyUnaryOperator("!", precedence.get("unary+-!"), false, (c, t, lv)-> lv.evalValue(c, Context.BOOLEAN).getBoolean() ? (cc, tt)-> Value.FALSE : (cc, tt) -> Value.TRUE); // might need context boolean
 
@@ -1485,7 +1421,7 @@ public class Expression implements Cloneable
 
         addUnaryFunction("fact", (v) ->
         {
-            long number = getNumericValue(v).getLong();
+            long number = NumericValue.asNumber(v).getLong();
             long factorial = 1;
             for (int i = 1; i <= number; i++)
             {
@@ -1532,9 +1468,9 @@ public class Expression implements Cloneable
         addMathematicalUnaryFunction("ceil", Math::ceil);
 
         addLazyFunction("mandelbrot", 3, (c, t, lv) -> {
-            double a0 = getNumericValue(lv.get(0).evalValue(c)).getDouble();
-            double b0 = getNumericValue(lv.get(1).evalValue(c)).getDouble();
-            long maxiter = getNumericValue(lv.get(2).evalValue(c)).getLong();
+            double a0 = NumericValue.asNumber(lv.get(0).evalValue(c)).getDouble();
+            double b0 = NumericValue.asNumber(lv.get(1).evalValue(c)).getDouble();
+            long maxiter = NumericValue.asNumber(lv.get(2).evalValue(c)).getLong();
             double a = 0.0D;
             double b = 0.0D;
             long iter = 0;
@@ -1825,10 +1761,10 @@ public class Expression implements Cloneable
             if (lv.size() != 2 && lv.size() != 3)
                 throw new InternalExpressionException("slice takes 2 or 3 arguments");
             Value hwat = lv.get(0);
-            long from = getNumericValue(lv.get(1)).getLong();
+            long from = NumericValue.asNumber(lv.get(1)).getLong();
             long to = -1;
             if (lv.size()== 3)
-                to = getNumericValue(lv.get(2)).getLong();
+                to = NumericValue.asNumber(lv.get(2)).getLong();
             return hwat.slice(from, to);
         });
 
@@ -1874,14 +1810,14 @@ public class Expression implements Cloneable
             int argsize = lv.size();
             if (argsize == 0 || argsize > 3)
                 throw new InternalExpressionException("range accepts from 1 to 3 arguments, not "+argsize);
-            to = getNumericValue(lv.get(0)).getLong();
+            to = NumericValue.asNumber(lv.get(0)).getLong();
             if (lv.size() > 1)
             {
                 from = to;
-                to = getNumericValue(lv.get(1)).getLong();
+                to = NumericValue.asNumber(lv.get(1)).getLong();
                 if (lv.size() > 2)
                 {
-                    step = getNumericValue(lv.get(2)).getLong();
+                    step = NumericValue.asNumber(lv.get(2)).getLong();
                 }
             }
             return LazyListValue.range(from, to, step);
@@ -1893,7 +1829,7 @@ public class Expression implements Cloneable
                 throw new InternalExpressionException("First argument of element should be a list");
             }
             List<Value> items = ((ListValue)v1).getItems();
-            long index = getNumericValue(v2).getLong();
+            long index = NumericValue.asNumber(v2).getLong();
             int numitems = items.size();
             long range = abs(index)/numitems;
             index += (range+2)*numitems;
@@ -1920,7 +1856,7 @@ public class Expression implements Cloneable
             }
             else
             {
-                ((ListValue) list).addAtIndex((int)getNumericValue(index).getLong(), lv.subList(2,size));
+                ((ListValue) list).addAtIndex((int) NumericValue.asNumber(index).getLong(), lv.subList(2,size));
             }
             return new NumericValue(size-2);
         });
@@ -1930,7 +1866,7 @@ public class Expression implements Cloneable
                 // while(cond, limit, expr) => ??
         addLazyFunction("while", 3, (c, t, lv) ->
         {
-            long limit = getNumericValue(lv.get(1).evalValue(c)).getLong();
+            long limit = NumericValue.asNumber(lv.get(1).evalValue(c)).getLong();
             LazyValue condition = lv.get(0);
             LazyValue expr = lv.get(2);
             long i = 0;
@@ -1960,7 +1896,7 @@ public class Expression implements Cloneable
             {
                 throw new InternalExpressionException("Incorrect number of attributes for loop, should be 2 or 3, not "+lv.size());
             }
-            long limit = getNumericValue(lv.get(0).evalValue(c)).getLong();
+            long limit = NumericValue.asNumber(lv.get(0).evalValue(c)).getLong();
             Value lastOne = Value.NULL;
             LazyValue expr = lv.get(1);
             LazyValue cond = null;
@@ -2506,11 +2442,11 @@ public class Expression implements Cloneable
             }
             if (t == Context.BOOLEAN)
             {
-                double rv = getNumericValue(argument).getDouble()*randomizer.nextFloat();
+                double rv = NumericValue.asNumber(argument).getDouble()*randomizer.nextFloat();
                 Value retval = rv<1.0D?Value.FALSE:Value.TRUE;
                 return (cc, tt) -> retval;
             }
-            Value retval = new NumericValue(getNumericValue(argument).getDouble()*randomizer.nextDouble());
+            Value retval = new NumericValue(NumericValue.asNumber(argument).getDouble()*randomizer.nextDouble());
             return (cc, tt) -> retval;
         });
 
@@ -2521,7 +2457,7 @@ public class Expression implements Cloneable
         });
         addUnaryFunction("sleep", (v) ->
         {
-            long time = getNumericValue(v).getLong();
+            long time = NumericValue.asNumber(v).getLong();
             try
             {
                 Thread.sleep(time);
@@ -2981,210 +2917,4 @@ public class Expression implements Cloneable
         }
     }
 
-    @FunctionalInterface
-    interface TriFunction<A, B, C, R> { R apply(A a, B b, C c); }
-    @FunctionalInterface
-    interface QuadFunction<A, B, C, D, R> { R apply(A a, B b, C c, D d);}
-    @FunctionalInterface
-    interface QuinnFunction<A, B, C, D, E, R> { R apply(A a, B b, C c, D d, E e);}
-    @FunctionalInterface
-    interface SexFunction<A, B, C, D, E, F, R> { R apply(A a, B b, C c, D d, E e, F f);}
-
-    private interface ILazyFunction
-    {
-        int getNumParams();
-
-        boolean numParamsVaries();
-
-        LazyValue lazyEval(Context c, Integer type, Expression expr, Tokenizer.Token token, List<LazyValue> lazyParams);
-        // lazy function has a chance to change execution based on contxt
-    }
-
-    private interface IFunction extends ILazyFunction
-    {
-        Value eval(List<Value> parameters);
-    }
-
-    private interface ILazyOperator
-    {
-        int getPrecedence();
-
-        boolean isLeftAssoc();
-
-        LazyValue lazyEval(Context c, Integer type, Expression e, Tokenizer.Token t, LazyValue v1, LazyValue v2);
-    }
-
-    private interface IOperator extends ILazyOperator
-    {
-        Value eval(Value v1, Value v2);
-    }
-
-    abstract static class UserDefinedFunction extends AbstractLazyFunction implements ILazyFunction
-    {
-        protected List<String> arguments;
-        protected Expression expression;
-        protected Tokenizer.Token token;
-        UserDefinedFunction(List<String> args, Expression expr, Tokenizer.Token t)
-        {
-            super(args.size());
-            arguments = args;
-            expression = expr;
-            token = t;
-        }
-        public List<String> getArguments()
-        {
-            return arguments;
-        }
-        public Expression getExpression()
-        {
-            return expression;
-        }
-        public Tokenizer.Token getToken()
-        {
-            return token;
-        }
-    }
-
-    private abstract static class AbstractLazyFunction implements ILazyFunction
-    {
-        protected String name;
-        int numParams;
-
-        AbstractLazyFunction(int numParams)
-        {
-            this.numParams = numParams;
-        }
-
-
-        public String getName() {
-            return name;
-        }
-
-        public int getNumParams() {
-            return numParams;
-        }
-
-        public boolean numParamsVaries() {
-            return numParams < 0;
-        }
-    }
-
-    private abstract static class AbstractFunction extends AbstractLazyFunction implements IFunction
-    {
-        AbstractFunction(int numParams) {
-            super(numParams);
-        }
-
-        @Override
-        public LazyValue lazyEval(Context cc, Integer type, Expression e, Tokenizer.Token t, final List<LazyValue> lazyParams)
-        {
-            try
-            {
-                return new LazyValue()
-                { // eager evaluation always ignores the required type and evals params by none default
-                    private List<Value> params;
-
-                    public Value evalValue(Context c, Integer type) {
-                        return AbstractFunction.this.eval(getParams(c));
-                    }
-
-                    private List<Value> getParams(Context c) {
-                        if (params == null) {
-                            params = new ArrayList<>();
-                            for (LazyValue lazyParam : lazyParams) {
-                                params.add(lazyParam.evalValue(c)); // none type default by design
-                            }
-                        }
-                        return params;
-                    }
-                };
-            }
-            catch (InternalExpressionException exc)
-            {
-                throw new ExpressionException(e, t, exc.getMessage());
-            }
-        }
-    }
-
-    private abstract static class AbstractLazyOperator implements ILazyOperator
-    {
-        int precedence;
-
-        boolean leftAssoc;
-
-        AbstractLazyOperator(int precedence, boolean leftAssoc) {
-            this.precedence = precedence;
-            this.leftAssoc = leftAssoc;
-        }
-
-        public int getPrecedence() {
-            return precedence;
-        }
-
-        public boolean isLeftAssoc() {
-            return leftAssoc;
-        }
-
-    }
-
-    private abstract static class AbstractOperator extends AbstractLazyOperator implements IOperator
-    {
-
-        AbstractOperator(int precedence, boolean leftAssoc) {
-            super(precedence, leftAssoc);
-        }
-
-        @Override
-        public LazyValue lazyEval(Context c_ignored, Integer type, Expression e, Tokenizer.Token t, final LazyValue v1, final LazyValue v2)
-        {
-            try
-            {
-                return (c, type_ignored) -> AbstractOperator.this.eval(v1.evalValue(c), v2.evalValue(c));
-            }
-            catch (InternalExpressionException exc)
-            {
-                throw new ExpressionException(e, t, exc.getMessage());
-            }
-            catch (ArithmeticException exc)
-            {
-                throw new ExpressionException(e, t, "Your math is wrong, "+exc.getMessage());
-            }
-        }
-    }
-
-    private abstract static class AbstractUnaryOperator extends AbstractOperator
-    {
-        AbstractUnaryOperator(int precedence, boolean leftAssoc) {
-            super(precedence, leftAssoc);
-        }
-
-        @Override
-        public LazyValue lazyEval(Context cc, Integer type, Expression e, Tokenizer.Token t, final LazyValue v1, final LazyValue v2)
-        {
-            try
-            {
-                if (v2 != null)
-                {
-                    throw new ExpressionException(e, t, "Did not expect a second parameter for unary operator");
-                }
-                return (c, ignored_type) -> AbstractUnaryOperator.this.evalUnary(v1.evalValue(c));
-            }
-            catch (InternalExpressionException exc) // might not actually throw it
-            {
-                throw new ExpressionException(e, t, exc.getMessage());
-            }
-            catch (ArithmeticException exc)
-            {
-                throw new ExpressionException(e, t, "Your math is wrong, "+exc.getMessage());
-            }
-        }
-
-        @Override
-        public Value eval(Value v1, Value v2)
-        {
-            throw new ExpressionException("Shouldn't end up here");
-        }
-
-        public abstract Value evalUnary(Value v1);
-    }
 }

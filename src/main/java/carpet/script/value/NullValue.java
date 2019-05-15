@@ -1,4 +1,4 @@
-package carpet.script;
+package carpet.script.value;
 
 public class NullValue extends NumericValue // TODO check nonsingleton code
 {

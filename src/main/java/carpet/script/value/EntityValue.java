@@ -1,5 +1,6 @@
-package carpet.script;
+package carpet.script.value;
 
+import carpet.script.exception.InternalExpressionException;
 import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.command.CommandSource;
@@ -18,7 +19,6 @@ import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.inventory.EntityEquipmentSlot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.network.play.server.SPacketEntityTeleport;
 import net.minecraft.network.play.server.SPacketEntityVelocity;
 import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionEffect;
@@ -64,7 +64,7 @@ public class EntityValue extends Value
         }
         catch (CommandSyntaxException e)
         {
-            throw new Expression.InternalExpressionException("Cannot select entities from "+selector);
+            throw new InternalExpressionException("Cannot select entities from "+selector);
         }
     }
 
@@ -121,7 +121,7 @@ public class EntityValue extends Value
     public Value get(String what, Value arg)
     {
         if (!(featureAccessors.containsKey(what)))
-            throw new Expression.InternalExpressionException("unknown feature of entity: "+what);
+            throw new InternalExpressionException("unknown feature of entity: "+what);
         return featureAccessors.get(what).apply(entity, arg);
     }
     private static Map<String, EntityEquipmentSlot> inventorySlots = new HashMap<String, EntityEquipmentSlot>(){{
@@ -237,7 +237,7 @@ public class EntityValue extends Value
             String effectName = a.getString();
             Potion potion = IRegistry.MOB_EFFECT.get(new ResourceLocation(effectName));
             if (potion == null)
-                throw new Expression.InternalExpressionException("No such an effect: "+effectName);
+                throw new InternalExpressionException("No such an effect: "+effectName);
             if (!((EntityLivingBase) e).isPotionActive(potion))
                 return Value.NULL;
             PotionEffect pe = ((EntityLivingBase) e).getActivePotionEffect(potion);
@@ -260,7 +260,7 @@ public class EntityValue extends Value
             if (a != null)
                 where = inventorySlots.get(a.getString());
             if (where == null)
-                throw new Expression.InternalExpressionException("Unknown inventory slot: "+a.getString());
+                throw new InternalExpressionException("Unknown inventory slot: "+a.getString());
             if (e instanceof EntityLivingBase)
             {
                 ItemStack itemstack = ((EntityLivingBase)e).getItemStackFromSlot(where);
@@ -288,7 +288,7 @@ public class EntityValue extends Value
             }
             catch (CommandSyntaxException exc)
             {
-                throw new Expression.InternalExpressionException("Incorrect path: "+a.getString());
+                throw new InternalExpressionException("Incorrect path: "+a.getString());
             }
             String res = null;
             try
@@ -316,59 +316,59 @@ public class EntityValue extends Value
     public void set(String what, Value toWhat)
     {
         if (!(featureModifiers.containsKey(what)))
-            throw new Expression.InternalExpressionException("unknown action on entity: " + what);
+            throw new InternalExpressionException("unknown action on entity: " + what);
         featureModifiers.get(what).accept(entity, toWhat);
     }
 
     private static Map<String, BiConsumer<Entity, Value>> featureModifiers = new HashMap<String, BiConsumer<Entity, Value>>() {{
         put("remove", (entity, value) -> entity.remove());
-        put("health", (e, v) -> { if (e instanceof EntityLivingBase) ((EntityLivingBase) e).setHealth((float)Expression.getNumericValue(v).getDouble()); });
+        put("health", (e, v) -> { if (e instanceof EntityLivingBase) ((EntityLivingBase) e).setHealth((float) NumericValue.asNumber(v).getDouble()); });
         put("kill", (e, v) -> e.onKillCommand());
         put("pos", (e, v) ->
         {
             if (!(v instanceof ListValue))
             {
-                throw new Expression.InternalExpressionException("expected a list of 3 parameters as second argument");
+                throw new InternalExpressionException("expected a list of 3 parameters as second argument");
             }
             List<Value> coords = ((ListValue) v).getItems();
-            e.posX = Expression.getNumericValue(coords.get(0)).getDouble();
-            e.posY = Expression.getNumericValue(coords.get(1)).getDouble();
-            e.posZ = Expression.getNumericValue(coords.get(2)).getDouble();
+            e.posX = NumericValue.asNumber(coords.get(0)).getDouble();
+            e.posY = NumericValue.asNumber(coords.get(1)).getDouble();
+            e.posZ = NumericValue.asNumber(coords.get(2)).getDouble();
             e.setPosition(e.posX, e.posY, e.posZ);
             if (e instanceof EntityPlayerMP)
                 ((EntityPlayerMP)e).connection.setPlayerLocation(e.posX, e.posY, e.posZ, e.rotationYaw, e.rotationPitch);
         });
         put("x", (e, v) ->
         {
-            e.posX = Expression.getNumericValue(v).getDouble();
+            e.posX = NumericValue.asNumber(v).getDouble();
             e.setPosition(e.posX, e.posY, e.posZ);
             if (e instanceof EntityPlayerMP)
                 ((EntityPlayerMP)e).connection.setPlayerLocation(e.posX, e.posY, e.posZ, e.rotationYaw, e.rotationPitch);
         });
         put("y", (e, v) ->
         {
-            e.posY = Expression.getNumericValue(v).getDouble();
+            e.posY = NumericValue.asNumber(v).getDouble();
             e.setPosition(e.posX, e.posY, e.posZ);
             if (e instanceof EntityPlayerMP)
                 ((EntityPlayerMP)e).connection.setPlayerLocation(e.posX, e.posY, e.posZ, e.rotationYaw, e.rotationPitch);
         });
         put("z", (e, v) ->
         {
-            e.posZ = Expression.getNumericValue(v).getDouble();
+            e.posZ = NumericValue.asNumber(v).getDouble();
             e.setPosition(e.posX, e.posY, e.posZ);
             if (e instanceof EntityPlayerMP)
                 ((EntityPlayerMP)e).connection.setPlayerLocation(e.posX, e.posY, e.posZ, e.rotationYaw, e.rotationPitch);
         });
         put("pitch", (e, v) ->
         {
-            e.rotationPitch = (float) Expression.getNumericValue(v).getDouble();
+            e.rotationPitch = (float) NumericValue.asNumber(v).getDouble();
             e.prevRotationPitch = e.rotationPitch;
             if (e instanceof EntityPlayerMP)
                 ((EntityPlayerMP)e).connection.setPlayerLocation(e.posX, e.posY, e.posZ, e.rotationYaw, e.rotationPitch);
         });
         put("yaw", (e, v) ->
         {
-            e.rotationYaw = (float) Expression.getNumericValue(v).getDouble();
+            e.rotationYaw = (float) NumericValue.asNumber(v).getDouble();
             e.prevRotationYaw = e.rotationYaw;
             if (e instanceof EntityPlayerMP)
                 ((EntityPlayerMP)e).connection.setPlayerLocation(e.posX, e.posY, e.posZ, e.rotationYaw, e.rotationPitch);
@@ -381,12 +381,12 @@ public class EntityValue extends Value
         {
             if (!(v instanceof ListValue))
             {
-                throw new Expression.InternalExpressionException("expected a list of 3 parameters as second argument");
+                throw new InternalExpressionException("expected a list of 3 parameters as second argument");
             }
             List<Value> coords = ((ListValue) v).getItems();
-            e.posX += Expression.getNumericValue(coords.get(0)).getDouble();
-            e.posY += Expression.getNumericValue(coords.get(1)).getDouble();
-            e.posZ += Expression.getNumericValue(coords.get(2)).getDouble();
+            e.posX += NumericValue.asNumber(coords.get(0)).getDouble();
+            e.posY += NumericValue.asNumber(coords.get(1)).getDouble();
+            e.posZ += NumericValue.asNumber(coords.get(2)).getDouble();
             e.setPosition(e.posX, e.posY, e.posZ);
             if (e instanceof EntityPlayerMP)
                 ((EntityPlayerMP)e).connection.setPlayerLocation(e.posX, e.posY, e.posZ, e.rotationYaw, e.rotationPitch);
@@ -396,30 +396,30 @@ public class EntityValue extends Value
         {
             if (!(v instanceof ListValue))
             {
-                throw new Expression.InternalExpressionException("expected a list of 3 parameters as second argument");
+                throw new InternalExpressionException("expected a list of 3 parameters as second argument");
             }
             List<Value> coords = ((ListValue) v).getItems();
-            e.motionX = Expression.getNumericValue(coords.get(0)).getDouble();
-            e.motionY = Expression.getNumericValue(coords.get(1)).getDouble();
-            e.motionZ = Expression.getNumericValue(coords.get(2)).getDouble();
+            e.motionX = NumericValue.asNumber(coords.get(0)).getDouble();
+            e.motionY = NumericValue.asNumber(coords.get(1)).getDouble();
+            e.motionZ = NumericValue.asNumber(coords.get(2)).getDouble();
             if (e instanceof EntityPlayerMP)
                 ((EntityPlayerMP)e).connection.sendPacket(new SPacketEntityVelocity(e));
         });
         put("motion_x", (e, v) ->
         {
-            e.motionX = Expression.getNumericValue(v).getDouble();
+            e.motionX = NumericValue.asNumber(v).getDouble();
             if (e instanceof EntityPlayerMP)
                 ((EntityPlayerMP)e).connection.sendPacket(new SPacketEntityVelocity(e));
         });
         put("motion_y", (e, v) ->
         {
-            e.motionY = Expression.getNumericValue(v).getDouble();
+            e.motionY = NumericValue.asNumber(v).getDouble();
             if (e instanceof EntityPlayerMP)
                 ((EntityPlayerMP)e).connection.sendPacket(new SPacketEntityVelocity(e));
         });
         put("motion_z", (e, v) ->
         {
-            e.motionZ = Expression.getNumericValue(v).getDouble();
+            e.motionZ = NumericValue.asNumber(v).getDouble();
             if (e instanceof EntityPlayerMP)
                 ((EntityPlayerMP)e).connection.sendPacket(new SPacketEntityVelocity(e));
         });
@@ -428,13 +428,13 @@ public class EntityValue extends Value
         {
             if (!(v instanceof ListValue))
             {
-                throw new Expression.InternalExpressionException("expected a list of 3 parameters as second argument");
+                throw new InternalExpressionException("expected a list of 3 parameters as second argument");
             }
             List<Value> coords = ((ListValue) v).getItems();
             e.addVelocity(
-                    Expression.getNumericValue(coords.get(0)).getDouble(),
-                    Expression.getNumericValue(coords.get(1)).getDouble(),
-                    Expression.getNumericValue(coords.get(2)).getDouble()
+                    NumericValue.asNumber(coords.get(0)).getDouble(),
+                    NumericValue.asNumber(coords.get(1)).getDouble(),
+                    NumericValue.asNumber(coords.get(2)).getDouble()
             );
             if (e instanceof EntityPlayerMP)
                 ((EntityPlayerMP)e).connection.sendPacket(new SPacketEntityVelocity(e));
@@ -456,7 +456,7 @@ public class EntityValue extends Value
         put("drop_passengers", (e, v) -> e.removePassengers());
         put("mount_passengers", (e, v) -> {
             if (v==null)
-                throw new Expression.InternalExpressionException("mount_passengers needs entities to ride");
+                throw new InternalExpressionException("mount_passengers needs entities to ride");
             if (v instanceof EntityValue)
                 ((EntityValue) v).getEntity().startRiding(e);
             else if (v instanceof ListValue)
@@ -466,7 +466,7 @@ public class EntityValue extends Value
         });
         put("tag", (e, v) -> {
             if (v==null)
-                throw new Expression.InternalExpressionException("tag requires parameters");
+                throw new InternalExpressionException("tag requires parameters");
             if (v instanceof ListValue)
                 for (Value element : ((ListValue) v).getItems()) e.addTag(element.getString());
             else
@@ -474,7 +474,7 @@ public class EntityValue extends Value
         });
         put("clear_tag", (e, v) -> {
             if (v==null)
-                throw new Expression.InternalExpressionException("clear_tag requires parameters");
+                throw new InternalExpressionException("clear_tag requires parameters");
             if (v instanceof ListValue)
                 for (Value element : ((ListValue) v).getItems()) e.removeTag(element.getString());
             else
@@ -500,7 +500,7 @@ public class EntityValue extends Value
                 return;
             EntityCreature ec = (EntityCreature)e;
             if (v == null)
-                throw new Expression.InternalExpressionException("home requires at least one position argument, and optional distance, or null to cancel");
+                throw new InternalExpressionException("home requires at least one position argument, and optional distance, or null to cancel");
             if (v instanceof NullValue)
             {
                 ec.detachHome();
@@ -515,7 +515,7 @@ public class EntityValue extends Value
             if (v instanceof BlockValue)
             {
                 pos = ((BlockValue) v).getPos();
-                if (pos == null) throw new Expression.InternalExpressionException("block is not positioned in the world");
+                if (pos == null) throw new InternalExpressionException("block is not positioned in the world");
             }
             else if (v instanceof ListValue)
             {
@@ -525,23 +525,23 @@ public class EntityValue extends Value
                     pos = ((BlockValue) lv.get(0)).getPos();
                     if (lv.size()>1)
                     {
-                        distance = (int)Expression.getNumericValue(lv.get(1)).getLong();
+                        distance = (int) NumericValue.asNumber(lv.get(1)).getLong();
                     }
                 }
                 else if (lv.size()>=3)
                 {
-                    pos = new BlockPos(Expression.getNumericValue(lv.get(0)).getLong(),
-                            Expression.getNumericValue(lv.get(1)).getLong(),
-                            Expression.getNumericValue(lv.get(2)).getLong());
+                    pos = new BlockPos(NumericValue.asNumber(lv.get(0)).getLong(),
+                            NumericValue.asNumber(lv.get(1)).getLong(),
+                            NumericValue.asNumber(lv.get(2)).getLong());
                     if (lv.size()>3)
                     {
-                        distance = (int)Expression.getNumericValue(lv.get(4)).getLong();
+                        distance = (int) NumericValue.asNumber(lv.get(4)).getLong();
                     }
                 }
-                else throw new Expression.InternalExpressionException("home requires at least one position argument, and optional distance");
+                else throw new InternalExpressionException("home requires at least one position argument, and optional distance");
 
             }
-            else throw new Expression.InternalExpressionException("home requires at least one position argument, and optional distance");
+            else throw new InternalExpressionException("home requires at least one position argument, and optional distance");
 
             ec.setHomePosAndDistance(pos, distance);
             if (!ec.temporaryTasks.containsKey("home"))
