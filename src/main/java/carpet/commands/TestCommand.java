@@ -3,6 +3,7 @@ package carpet.commands;
 import carpet.utils.Messenger;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.tree.LiteralCommandNode;
 import net.minecraft.command.CommandSource;
 
 import static com.mojang.brigadier.arguments.StringArgumentType.getString;
@@ -14,11 +15,54 @@ public class TestCommand
 {
     public static void register(CommandDispatcher<CommandSource> dispatcher)
     {
-        dispatcher.register(literal("test").
-                then(argument("first",word()).
-                        executes( (c)-> test(c, getString(c, "first")+" 1"))).
-                then(argument("second", word()).
-                        executes( (c)-> test(c, getString(c, "second")+" 2"))));
+        /*final LiteralCommandNode<CommandSource> execute = dispatcher.register(literal("test"));
+        dispatcher.register(
+                literal("test")
+                        .then(
+                                literal("as")
+                                        .then(
+                                                argument("name", word())
+                                                        .redirect(execute)
+                                        )
+                        )
+                        .then(
+                                literal("in")
+                                        .then(
+                                                argument("location", word())
+                                                        .redirect(execute)
+                                        )
+                        )
+                        .then(
+                                literal("first")
+                                        .executes((c)-> test(c, "called first"))
+                        ).
+                        then(
+                                literal("second")
+                                        .executes((c)-> test(c, "called second"))
+                        )
+                );
+        */
+        LiteralCommandNode<CommandSource> execute = dispatcher.register(literal("test")
+                        .then(
+                                literal("first")
+                                        .executes((c)-> test(c, "called first"))
+                        ).
+                        then(
+                                literal("second")
+                                        .executes((c)-> test(c, "called second"))
+                        )
+        );
+        dispatcher.register(literal("test").then(literal("in").then(argument("loc", word()).redirect(execute))));
+
+
+
+        //LiteralCommandNode<CommandSource> literalCommandNode_1 = dispatcher.register(literal("test").
+        //        then(literal("first").
+        //                executes( (c)-> test(c, "called first"))).
+        //        then(literal("second").
+        //                executes( (c)-> test(c, "called second"))));
+        //dispatcher.register(literal("test").then(literal("in").then(argument("context", word()).then(literalCommandNode_1.getChild("test")))));
+
     }
 
     private static int test(CommandContext<CommandSource> c, String term)

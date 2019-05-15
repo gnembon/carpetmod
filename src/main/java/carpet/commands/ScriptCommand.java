@@ -2,15 +2,14 @@ package carpet.commands;
 
 import carpet.CarpetServer;
 import carpet.CarpetSettings;
-import carpet.script.CarpetExpression;
-import carpet.script.Expression;
-import carpet.script.ExpressionInspector;
-import carpet.script.Tokenizer;
+import carpet.script.*;
 import carpet.script.exception.CarpetExpressionException;
 import carpet.utils.Messenger;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.tree.LiteralCommandNode;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.BlockWorldState;
 import net.minecraft.command.CommandSource;
@@ -23,6 +22,7 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MutableBoundingBox;
 import net.minecraft.world.WorldServer;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,20 +41,20 @@ public class ScriptCommand
     {
         LiteralArgumentBuilder<CommandSource> command = literal("script").
                 requires((player) -> CarpetSettings.getBool("commandScript")).
-                then(literal("globals").executes( (c) -> listGlobals(c.getSource()))).
+                then(literal("globals").executes( (c) -> listGlobals(c))).
                 then(literal("stop").executes( (c) -> { CarpetServer.scriptServer.stopAll = true; return 1;})).
                 then(literal("resume").executes( (c) -> { CarpetServer.scriptServer.stopAll = false; return 1;})).
                 then(literal("run").requires((player) -> player.hasPermissionLevel(2)).
                         then(argument("expr", StringArgumentType.greedyString()).
                                 executes((c) -> compute(
-                                        c.getSource(),
+                                        c,
                                         StringArgumentType.getString(c, "expr")
                                 )))).
 
                 then(literal("invoke").
-                        then(argument("call", StringArgumentType.word()).suggests( (c, b)->suggest(getGlobalCalls(),b)).
+                        then(argument("call", StringArgumentType.word()).suggests( (c, b)->suggest(getGlobalCalls(c),b)).
                                 executes( (c) -> invoke(
-                                        c.getSource(),
+                                        c,
                                         StringArgumentType.getString(c, "call"),
                                         null,
                                         null,
@@ -62,17 +62,17 @@ public class ScriptCommand
                                 )).
                                 then(argument("arguments", StringArgumentType.greedyString()).
                                         executes( (c) -> invoke(
-                                                c.getSource(),
+                                                c,
                                                 StringArgumentType.getString(c, "call"),
                                                 null,
                                                 null,
                                                 StringArgumentType.getString(c, "arguments")
                                         ))))).
                 then(literal("invokepoint").
-                        then(argument("call", StringArgumentType.word()).suggests( (c, b)->suggest(getGlobalCalls(),b)).
+                        then(argument("call", StringArgumentType.word()).suggests( (c, b)->suggest(getGlobalCalls(c),b)).
                                 then(argument("origin", BlockPosArgument.blockPos()).
                                         executes( (c) -> invoke(
-                                                c.getSource(),
+                                                c,
                                                 StringArgumentType.getString(c, "call"),
                                                 BlockPosArgument.getBlockPos(c, "origin"),
                                                 null,
@@ -80,18 +80,18 @@ public class ScriptCommand
                                         )).
                                         then(argument("arguments", StringArgumentType.greedyString()).
                                                 executes( (c) -> invoke(
-                                                        c.getSource(),
+                                                        c,
                                                         StringArgumentType.getString(c, "call"),
                                                         BlockPosArgument.getBlockPos(c, "origin"),
                                                         null,
                                                         StringArgumentType.getString(c, "arguments")
                                                 )))))).
                 then(literal("invokearea").
-                        then(argument("call", StringArgumentType.word()).suggests( (c, b)->suggest(getGlobalCalls(),b)).
+                        then(argument("call", StringArgumentType.word()).suggests( (c, b)->suggest(getGlobalCalls(c),b)).
                                 then(argument("from", BlockPosArgument.blockPos()).
                                         then(argument("to", BlockPosArgument.blockPos()).
                                                 executes( (c) -> invoke(
-                                                        c.getSource(),
+                                                        c,
                                                         StringArgumentType.getString(c, "call"),
                                                         BlockPosArgument.getBlockPos(c, "from"),
                                                         BlockPosArgument.getBlockPos(c, "to"),
@@ -99,7 +99,7 @@ public class ScriptCommand
                                                 )).
                                                 then(argument("arguments", StringArgumentType.greedyString()).
                                                         executes( (c) -> invoke(
-                                                                c.getSource(),
+                                                                c,
                                                                 StringArgumentType.getString(c, "call"),
                                                                 BlockPosArgument.getBlockPos(c, "from"),
                                                                 BlockPosArgument.getBlockPos(c, "to"),
@@ -111,7 +111,7 @@ public class ScriptCommand
                                         then(argument("to", BlockPosArgument.blockPos()).
                                                 then(argument("expr", StringArgumentType.greedyString()).
                                                         executes( (c) -> scriptScan(
-                                                                c.getSource(),
+                                                                c,
                                                                 BlockPosArgument.getBlockPos(c, "origin"),
                                                                 BlockPosArgument.getBlockPos(c, "from"),
                                                                 BlockPosArgument.getBlockPos(c, "to"),
@@ -124,7 +124,7 @@ public class ScriptCommand
                                                 then(argument("expr", StringArgumentType.string()).
                                                         then(argument("block", BlockStateArgument.blockState()).
                                                                 executes((c) -> scriptFill(
-                                                                        c.getSource(),
+                                                                        c,
                                                                         BlockPosArgument.getBlockPos(c, "origin"),
                                                                         BlockPosArgument.getBlockPos(c, "from"),
                                                                         BlockPosArgument.getBlockPos(c, "to"),
@@ -135,7 +135,7 @@ public class ScriptCommand
                                                         then(literal("replace").
                                                                 then(argument("filter", BlockPredicateArgument.blockPredicate())
                                                                         .executes((c) -> scriptFill(
-                                                                                c.getSource(),
+                                                                                c,
                                                                                 BlockPosArgument.getBlockPos(c, "origin"),
                                                                                 BlockPosArgument.getBlockPos(c, "from"),
                                                                                 BlockPosArgument.getBlockPos(c, "to"),
@@ -151,7 +151,7 @@ public class ScriptCommand
                                                 then(argument("expr", StringArgumentType.string()).
                                                         then(argument("block", BlockStateArgument.blockState()).
                                                                 executes((c) -> scriptFill(
-                                                                        c.getSource(),
+                                                                        c,
                                                                         BlockPosArgument.getBlockPos(c, "origin"),
                                                                         BlockPosArgument.getBlockPos(c, "from"),
                                                                         BlockPosArgument.getBlockPos(c, "to"),
@@ -162,7 +162,7 @@ public class ScriptCommand
                                                                 then(literal("replace").
                                                                         then(argument("filter", BlockPredicateArgument.blockPredicate())
                                                                                 .executes((c) -> scriptFill(
-                                                                                        c.getSource(),
+                                                                                        c,
                                                                                         BlockPosArgument.getBlockPos(c, "origin"),
                                                                                         BlockPosArgument.getBlockPos(c, "from"),
                                                                                         BlockPosArgument.getBlockPos(c, "to"),
@@ -180,16 +180,30 @@ public class ScriptCommand
                 );
 
 
-        dispatcher.register(command);
+        LiteralCommandNode<CommandSource> scriptCommand = dispatcher.register(command);
+        dispatcher.register(literal("script").
+                requires((player) -> CarpetSettings.getBool("commandScript")).
+                then(literal("in").
+                        then(argument("package", StringArgumentType.word()).
+                                suggests( (c, b) -> suggest(CarpetServer.scriptServer.listModules(), b)).redirect(scriptCommand))));
     }
-    private static Set<String> getGlobalCalls()
+    private static String getHost(CommandContext<CommandSource> context)
     {
-        return CarpetServer.scriptServer.globalHost.globalFunctions.keySet().stream().filter((s) -> !s.startsWith("_")).collect(Collectors.toSet());
+        String packageName = StringArgumentType.getString(context, "package");
+        return packageName;
     }
-    private static int listGlobals(CommandSource source)
+    private static Set<String> getGlobalCalls(CommandContext<CommandSource> c)
     {
+        CommandSource s = c.getSource();
+        return CarpetServer.scriptServer.globalHost.globalFunctions.keySet().stream().filter((str) -> !str.startsWith("_")).collect(Collectors.toSet());
+    }
+    private static int listGlobals(CommandContext<CommandSource> context)
+    {
+        String host = getHost(context);
+        CommandSource source = context.getSource();
+
         Messenger.m(source, "w Global functions:");
-        for (String fname : getGlobalCalls())
+        for (String fname : getGlobalCalls(context))
         {
             Expression expr = CarpetServer.scriptServer.globalHost.getExpressionForFunction(fname);
             Tokenizer.Token tok = CarpetServer.scriptServer.globalHost.getTokenForFunction(fname);
@@ -239,8 +253,9 @@ public class ScriptCommand
         CarpetServer.scriptServer.resetErrorSnooper();
     }
 
-    private static int invoke(CommandSource source, String call, BlockPos pos1, BlockPos pos2,  String args)
+    private static int invoke(CommandContext<CommandSource> context, String call, BlockPos pos1, BlockPos pos2,  String args)
     {
+        CommandSource source = context.getSource();
         if (call.startsWith("__"))
         {
             Messenger.m(source, "r Hidden functions are only callable in scripts");
@@ -266,8 +281,9 @@ public class ScriptCommand
     }
 
 
-    private static int compute(CommandSource source, String expr)
+    private static int compute(CommandContext<CommandSource> context, String expr)
     {
+        CommandSource source = context.getSource();
         handleCall(source, () -> {
             CarpetExpression ex = new CarpetExpression(expr, source, new BlockPos(0, 0, 0));
             return ex.scriptRunCommand(new BlockPos(source.getPos()));
@@ -275,8 +291,9 @@ public class ScriptCommand
         return 1;
     }
 
-    private static int scriptScan(CommandSource source, BlockPos origin, BlockPos a, BlockPos b, String expr)
+    private static int scriptScan(CommandContext<CommandSource> context, BlockPos origin, BlockPos a, BlockPos b, String expr)
     {
+        CommandSource source = context.getSource();
         MutableBoundingBox area = new MutableBoundingBox(a, b);
         CarpetExpression cexpr = new CarpetExpression(expr, source, origin);
         if (area.getXSize() * area.getYSize() * area.getZSize() > CarpetSettings.getInt("fillLimit"))
@@ -315,9 +332,10 @@ public class ScriptCommand
     }
 
 
-    private static int scriptFill(CommandSource source, BlockPos origin, BlockPos a, BlockPos b, String expr,
+    private static int scriptFill(CommandContext<CommandSource> context, BlockPos origin, BlockPos a, BlockPos b, String expr,
                                 BlockStateInput block, Predicate<BlockWorldState> replacement, String mode)
     {
+        CommandSource source = context.getSource();
         MutableBoundingBox area = new MutableBoundingBox(a, b);
         CarpetExpression cexpr = new CarpetExpression(expr, source, origin);
         if (area.getXSize() * area.getYSize() * area.getZSize() > CarpetSettings.getInt("fillLimit"))
