@@ -14,7 +14,7 @@ import carpet.commands.SpawnCommand;
 import carpet.commands.TestCommand;
 import carpet.commands.TickCommand;
 import carpet.logging.LoggerRegistry;
-import carpet.script.ExpressionInspector;
+import carpet.script.CarpetScriptServer;
 import carpet.utils.HUDController;
 
 import java.util.Random;
@@ -28,6 +28,7 @@ public class CarpetServer // static for now - easier to handle all around the co
 {
     public static final Random rand = new Random((int)((2>>16)*Math.random()));
     public static MinecraftServer minecraft_server;
+    public static CarpetScriptServer scriptServer;
     public static void init(MinecraftServer server) //aka constructor of this static singleton class
     {
         CarpetServer.minecraft_server = server;
@@ -35,7 +36,8 @@ public class CarpetServer // static for now - easier to handle all around the co
     public static void onServerLoaded(MinecraftServer server)
     {
         CarpetSettings.apply_settings_from_conf(server);
-        ExpressionInspector.CarpetExpression_resetExpressionEngine();
+        scriptServer = new CarpetScriptServer();
+        //ExpressionInspector.CarpetExpression_resetExpressionEngine();
     }
     // Separate from onServerLoaded, because a server can be loaded multiple times in singleplayer
     public static void onGameStarted() {

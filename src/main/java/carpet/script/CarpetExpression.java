@@ -1,5 +1,6 @@
 package carpet.script;
 
+import carpet.CarpetServer;
 import carpet.CarpetSettings;
 import carpet.helpers.FeatureGenerator;
 import carpet.script.Expression.ExpressionException;
@@ -109,7 +110,7 @@ public class CarpetExpression
      */
     public static void BreakExecutionOfAllScriptsWithCommands(boolean doStop)
     {
-        stopAll = doStop;
+        //unused - accessed via CarpetScriptServer
     }
 
     static class CarpetContext extends Context
@@ -1860,12 +1861,12 @@ public class CarpetExpression
 
         this.expr.addLazyFunction("game_tick", -1, (c, t, lv) -> {
             CommandSource s = ((CarpetContext)c).s;
-            s.getServer().tick( () -> System.nanoTime()-tickStart<50000000L);
+            s.getServer().tick( () -> System.nanoTime()- CarpetServer.scriptServer.tickStart<50000000L);
             s.getServer().dontPanic(); // optional not to freak out the watchdog
             if (lv.size()>0)
             {
                 long ms_total = Expression.getNumericValue(lv.get(0).evalValue(c)).getLong();
-                long end_expected = tickStart+ms_total*1000000L;
+                long end_expected = CarpetServer.scriptServer.tickStart+ms_total*1000000L;
                 long wait = end_expected-System.nanoTime();
                 if (wait > 0L)
                 {
@@ -1878,9 +1879,9 @@ public class CarpetExpression
                     }
                 }
             }
-            tickStart = System.nanoTime(); // for the next tick
+            CarpetServer.scriptServer.tickStart = System.nanoTime(); // for the next tick
             Thread.yield();
-            if(stopAll)
+            if(CarpetServer.scriptServer.stopAll)
                 throw new Expression.ExitStatement(Value.NULL);
             return (cc, tt) -> Value.TRUE;
         });
@@ -1899,26 +1900,6 @@ public class CarpetExpression
             return (c_, t_) -> new NumericValue(res);
         });
     }
-
-    static
-    {
-        setGlobals();
-    }
-    static void setGlobals()
-    {
-        ScriptHost.globalHost.globalVariables.put("_x", (c, t) -> Value.ZERO);
-        ScriptHost.globalHost.globalVariables.put("_y", (c, t) -> Value.ZERO);
-        ScriptHost.globalHost.globalVariables.put("_z", (c, t) -> Value.ZERO);
-    }
-    static void resetExpressionEngine()
-    {
-        ScriptHost.globalHost = new ScriptHost();
-        CarpetExpression.setGlobals();
-        CarpetExpression.tickStart = 0L;
-        CarpetExpression.stopAll = false;
-        CarpetExpression.resetErrorSnooper();
-    }
-
 
     /**
      * <h1>.</h1>
@@ -1982,11 +1963,11 @@ public class CarpetExpression
      */
     public boolean fillAndScanCommand(int x, int y, int z)
     {
-        if (stopAll)
+        if (CarpetServer.scriptServer.stopAll)
             return false;
         try
         {
-            Context context = new CarpetContext(ScriptHost.globalHost, source, origin).
+            Context context = new CarpetContext(CarpetServer.scriptServer.globalHost, source, origin).
                     with("x", (c, t) -> new NumericValue(x - origin.getX()).bindTo("x")).
                     with("y", (c, t) -> new NumericValue(y - origin.getY()).bindTo("y")).
                     with("z", (c, t) -> new NumericValue(z - origin.getZ()).bindTo("z")).
@@ -2028,11 +2009,11 @@ public class CarpetExpression
      */
     public String scriptRunCommand(BlockPos pos)
     {
-        if (stopAll)
+        if (CarpetServer.scriptServer.stopAll)
             return "SCRIPTING PAUSED";
         try
         {
-            Context context = new CarpetContext(ScriptHost.globalHost, source, origin).
+            Context context = new CarpetContext(CarpetServer.scriptServer.globalHost, source, origin).
                     with("x", (c, t) -> new NumericValue(pos.getX() - origin.getX()).bindTo("x")).
                     with("y", (c, t) -> new NumericValue(pos.getY() - origin.getY()).bindTo("y")).
                     with("z", (c, t) -> new NumericValue(pos.getZ() - origin.getZ()).bindTo("z"));
@@ -2103,147 +2084,6 @@ public class CarpetExpression
 
     public static String invokeGlobalFunctionCommand(CommandSource source, String call, List<Integer> coords, String arg)
     {
-        //will set a custom host when we have the other bits.
-        ScriptHost host = ScriptHost.globalHost;
-        if (stopAll)
-            return "SCRIPTING PAUSED";
-        Expression.UserDefinedFunction acf = host.globalFunctions.get(call);
-        if (acf == null)
-            return "UNDEFINED";
-        List<LazyValue> argv = new ArrayList<>();
-        for (Integer i: coords)
-            argv.add( (c, t) -> new NumericValue(i));
-        String sign = "";
-        for (Tokenizer.Token tok : Tokenizer.simplepass(arg))
-        {
-            switch (tok.type)
-            {
-                case VARIABLE:
-                    if (host.globalVariables.containsKey(tok.surface.toLowerCase(Locale.ROOT)))
-                    {
-                        argv.add(host.globalVariables.get(tok.surface.toLowerCase(Locale.ROOT)));
-                        break;
-                    }
-                case STRINGPARAM:
-                    argv.add((c, t) -> new StringValue(tok.surface));
-                    sign = "";
-                    break;
-
-                case LITERAL:
-                    try
-                    {
-                        String finalSign = sign;
-                        argv.add((c, t) ->new NumericValue(finalSign+tok.surface));
-                        sign = "";
-                    }
-                    catch (NumberFormatException exception)
-                    {
-                        return "Fail: "+sign+tok.surface+" seems like a number but it is not a number. Use quotes to ensure its a string";
-                    }
-                    break;
-                case HEX_LITERAL:
-                    try
-                    {
-                        String finalSign = sign;
-                        argv.add((c, t) -> new NumericValue(new BigInteger(finalSign+tok.surface.substring(2), 16).doubleValue()));
-                        sign = "";
-                    }
-                    catch (NumberFormatException exception)
-                    {
-                        return "Fail: "+sign+tok.surface+" seems like a number but it is not a number. Use quotes to ensure its a string";
-                    }
-                    break;
-                case OPERATOR:
-                case UNARY_OPERATOR:
-                    if ((tok.surface.equals("-") || tok.surface.equals("-u")) && sign.isEmpty())
-                    {
-                        sign = "-";
-                    }
-                    else
-                    {
-                        return "Fail: operators, like " + tok.surface + " are not allowed in invoke";
-                    }
-                    break;
-                case FUNCTION:
-                    return "Fail: passing functions like "+tok.surface+"() to invoke is not allowed";
-                case OPEN_PAREN:
-                case COMMA:
-                case CLOSE_PAREN:
-                    return "Fail: "+tok.surface+" is not allowed in invoke";
-            }
-        }
-        List<String> args = acf.getArguments();
-        if (argv.size() != args.size())
-        {
-            String error = "Fail: stored function "+call+" takes "+args.size()+" arguments, not "+argv.size()+ ":\n";
-            for (int i = 0; i < max(argv.size(), args.size()); i++)
-            {
-                error += (i<args.size()?args.get(i):"??")+" => "+(i<argv.size()?argv.get(i).evalValue(null).getString():"??")+"\n";
-            }
-            return error;
-        }
-        try
-        {
-            // TODO: this is just for now - invoke would be able to invoke other hosts scripts
-            Context context = new CarpetContext(host, source, BlockPos.ORIGIN);
-            return Expression.evalValue(
-                    () -> acf.lazyEval(context, Context.VOID, acf.expression, acf.token, argv),
-                    context,
-                    Context.VOID
-            ).getString();
-        }
-        catch (ExpressionException e)
-        {
-            return e.getMessage();
-        }
-    }
-
-    static void setChatErrorSnooper(CommandSource source)
-    {
-        ExpressionException.errorSnooper = (expr, token, message) ->
-        {
-            try
-            {
-                source.asPlayer();
-            }
-            catch (CommandSyntaxException e)
-            {
-                return null;
-            }
-            String[] lines = expr.getCodeString().split("\n");
-
-            String shebang = message;
-
-            if (lines.length > 1)
-            {
-                shebang += " at line "+(token.lineno+1)+", pos "+(token.linepos+1);
-            }
-            else
-            {
-                shebang += " at pos "+(token.pos+1);
-            }
-            if (expr.getName() != null)
-            {
-                shebang += " in "+expr.getName()+"";
-            }
-            Messenger.m(source, "r "+shebang);
-
-            if (lines.length > 1 && token.lineno > 0)
-            {
-                Messenger.m(source, "l "+lines[token.lineno-1]);
-            }
-            Messenger.m(source, "l "+lines[token.lineno].substring(0, token.linepos), "r  HERE>> ", "l "+
-                    lines[token.lineno].substring(token.linepos));
-
-            if (lines.length > 1 && token.lineno < lines.length-1)
-            {
-                Messenger.m(source, "l "+lines[token.lineno+1]);
-            }
-            return new ArrayList<>();
-        };
-    }
-    static void resetErrorSnooper()
-    {
-        ExpressionException.errorSnooper=null;
+        return CarpetServer.scriptServer.invokeGlobalFunctionCommand(source, call, coords, arg);
     }
 }

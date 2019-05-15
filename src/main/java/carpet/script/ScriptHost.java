@@ -5,8 +5,6 @@ import java.util.Map;
 
 public class ScriptHost
 {
-    //make static for now, but will change that later:
-    public static ScriptHost globalHost = new ScriptHost();
 
     public final Map<String, Expression.UserDefinedFunction> globalFunctions = new HashMap<>();
 
@@ -24,5 +22,13 @@ public class ScriptHost
         globalVariables.put("_", (c, t) -> Value.ZERO);
         globalVariables.put("_i", (c, t) -> Value.ZERO);
         globalVariables.put("_a", (c, t) -> Value.ZERO);
+    }
+    public Expression getExpressionForFunction(String name)
+    {
+        return globalFunctions.get(name).getExpression();
+    }
+    public Tokenizer.Token getTokenForFunction(String name)
+    {
+        return globalFunctions.get(name).getToken();
     }
 }

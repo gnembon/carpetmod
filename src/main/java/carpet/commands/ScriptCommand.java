@@ -1,9 +1,9 @@
 package carpet.commands;
 
+import carpet.CarpetServer;
 import carpet.CarpetSettings;
 import carpet.script.CarpetExpression;
 import carpet.script.ExpressionInspector;
-import carpet.script.ScriptHost;
 import carpet.script.Tokenizer;
 import carpet.utils.Messenger;
 import com.mojang.brigadier.CommandDispatcher;
@@ -23,7 +23,6 @@ import net.minecraft.util.math.MutableBoundingBox;
 import net.minecraft.world.WorldServer;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -41,8 +40,8 @@ public class ScriptCommand
         LiteralArgumentBuilder<CommandSource> command = literal("script").
                 requires((player) -> CarpetSettings.getBool("commandScript")).
                 then(literal("globals").executes( (c) -> listGlobals(c.getSource()))).
-                then(literal("stop").executes( (c) -> { CarpetExpression.BreakExecutionOfAllScriptsWithCommands(true); return 1;})).
-                then(literal("resume").executes( (c) -> { CarpetExpression.BreakExecutionOfAllScriptsWithCommands(false); return 1;})).
+                then(literal("stop").executes( (c) -> { CarpetServer.scriptServer.stopAll = true; return 1;})).
+                then(literal("resume").executes( (c) -> { CarpetServer.scriptServer.stopAll = false; return 1;})).
                 then(literal("run").requires((player) -> player.hasPermissionLevel(2)).
                         then(argument("expr", StringArgumentType.greedyString()).
                                 executes((c) -> compute(
@@ -169,21 +168,29 @@ public class ScriptCommand
                                                                                         BlockStateArgument.getBlockState(c, "block"),
                                                                                         BlockPredicateArgument.getBlockPredicate(c, "filter"),
                                                                                         "outline"
-                                                                                ))))))))));
+                                                                                )))))))))).
+                then(literal("load").requires( (player) -> player.hasPermissionLevel(2) ).
+                        then(argument("package", StringArgumentType.word()).
+                                suggests( (c, b) -> suggest(CarpetServer.scriptServer.listModules(),b)).
+                                executes((c) ->
+                                        CarpetServer.scriptServer.addScriptHost(StringArgumentType.getString(c, "package")))
+                        )
+                );
+
 
         dispatcher.register(command);
     }
     private static Set<String> getGlobalCalls()
     {
-        return ScriptHost.globalHost.globalFunctions.keySet().stream().filter((s) -> !s.startsWith("_")).collect(Collectors.toSet());
+        return CarpetServer.scriptServer.globalHost.globalFunctions.keySet().stream().filter((s) -> !s.startsWith("_")).collect(Collectors.toSet());
     }
     private static int listGlobals(CommandSource source)
     {
         Messenger.m(source, "w Global functions:");
         for (String fname : getGlobalCalls())
         {
-            String expr = ExpressionInspector.Expression_getCodeString(ExpressionInspector.Expression_globalFunctions_get_getExpression(fname));
-            Tokenizer.Token tok = ExpressionInspector.Expression_globalFunctions_get_getToken(fname);
+            String expr = ExpressionInspector.Expression_getCodeString(CarpetServer.scriptServer.globalHost.getExpressionForFunction(fname));
+            Tokenizer.Token tok = CarpetServer.scriptServer.globalHost.getTokenForFunction(fname);
             List<String> snippet = ExpressionInspector.Expression_getExpressionSnippet(tok, expr);
             Messenger.m(source, "w Function "+fname+" defined at: line "+(tok.lineno+1)+" pos "+(tok.linepos+1));
             for (String snippetLine: snippet)
@@ -195,9 +202,9 @@ public class ScriptCommand
         //Messenger.m(source, "w "+code);
         Messenger.m(source, "w Global Variables:");
 
-        for (String vname : ScriptHost.globalHost.globalVariables.keySet())
+        for (String vname : CarpetServer.scriptServer.globalHost.globalVariables.keySet())
         {
-            Messenger.m(source, "w Variable "+vname+": ", "wb "+ScriptHost.globalHost.globalVariables.get(vname).evalValue(null).getString());
+            Messenger.m(source, "w Variable "+vname+": ", "wb "+ CarpetServer.scriptServer.globalHost.globalVariables.get(vname).evalValue(null).getString());
         }
         return 1;
     }
@@ -206,7 +213,7 @@ public class ScriptCommand
     {
         try
         {
-            ExpressionInspector.CarpetExpression_setChatErrorSnooper(source);
+            CarpetServer.scriptServer.setChatErrorSnooper(source);
             long start = System.nanoTime();
             String result = call.get();
             long time = ((System.nanoTime()-start)/1000);
@@ -227,7 +234,7 @@ public class ScriptCommand
         {
             Messenger.m(source, "r Exception white evaluating expression at "+new BlockPos(source.getPos())+": "+e.getMessage());
         }
-        ExpressionInspector.CarpetExpression_resetErrorSnooper();
+        CarpetServer.scriptServer.resetErrorSnooper();
     }
 
     private static int invoke(CommandSource source, String call, BlockPos pos1, BlockPos pos2,  String args)
