@@ -83,11 +83,11 @@
          long i = Util.nanoTime();
          ++this.tickCounter;
 +        //[CM]
-+        CarpetServer.tick(this);
 +        if (CarpetProfiler.tick_health_requested != 0L)
 +        {
 +            CarpetProfiler.start_tick_profiling();
 +        }
++        // [CM end]
  
          if (this.startProfiling)
          {
