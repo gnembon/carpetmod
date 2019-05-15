@@ -91,7 +91,17 @@
  
          if (this.startProfiling)
          {
-@@ -810,10 +845,12 @@
+@@ -790,6 +825,9 @@
+         }
+ 
+         this.profiler.startSection("root");
++
++        CarpetServer.tick(this);
++
+         this.updateTimeLightAndEntities(hasTimeLeft);
+ 
+         if (i - this.nanoTimeSinceStatusRefresh >= 5000000000L)
+@@ -810,10 +848,12 @@
  
          if (this.tickCounter % 900 == 0)
          {
@@ -104,7 +114,7 @@
          }
  
          this.profiler.startSection("snooper");
-@@ -834,6 +871,10 @@
+@@ -834,6 +874,10 @@
          this.tickTime = this.tickTime * 0.8F + (float)l / 1000000.0F * 0.19999999F;
          this.profiler.endSection();
          this.profiler.endSection();
@@ -115,7 +125,7 @@
      }
  
      public void updateTimeLightAndEntities(BooleanSupplier hasTimeLeft)
-@@ -905,10 +946,12 @@
+@@ -905,10 +949,12 @@
              }))[this.tickCounter % 100] = Util.nanoTime() - i;
          }
  
@@ -128,7 +138,7 @@
          this.profiler.endStartSection("tickables");
  
          for (int j = 0; j < this.tickables.size(); ++j)
-@@ -1605,6 +1648,12 @@
+@@ -1605,6 +1651,12 @@
      {
          return this.serverTime;
      }
