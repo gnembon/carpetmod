@@ -4,8 +4,8 @@ import carpet.CarpetSettings;
 import carpet.helpers.HopperCounter;
 import carpet.utils.Messenger;
 import com.mojang.brigadier.CommandDispatcher;
-import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import net.minecraft.command.CommandException;
 import net.minecraft.command.CommandSource;
 import net.minecraft.command.Commands;
 import net.minecraft.item.EnumDyeColor;
@@ -39,7 +39,10 @@ public class CounterCommand
 
     private static int displayCounter(CommandSource source, String color, boolean realtime)
     {
-        for (ITextComponent message: HopperCounter.query_hopper_stats_for_color(source.getServer(), color, realtime, false))
+        HopperCounter counter = HopperCounter.getCounter(color);
+        if (counter == null) throw new CommandException(Messenger.s("Unknown wool color: "+color));
+
+        for (ITextComponent message: counter.format(source.getServer(), realtime, false))
         {
             source.sendFeedback(message, false);
         }
@@ -48,13 +51,16 @@ public class CounterCommand
 
     private static int resetCounter(CommandSource source, String color)
     {
-        HopperCounter.reset_hopper_counter(source.getServer(), color);
         if (color == null)
         {
+            HopperCounter.resetAll(source.getServer());
             Messenger.m(source, "w Restarted all counters");
         }
         else
         {
+            HopperCounter counter = HopperCounter.getCounter(color);
+            if (counter == null) throw new CommandException(Messenger.s("Unknown wool color"));
+            counter.reset(source.getServer());
             Messenger.m(source, "w Restarted "+color+" counter");
         }
         return 1;
@@ -62,7 +68,7 @@ public class CounterCommand
 
     private static int listAllCounters(CommandSource source, boolean realtime)
     {
-        for (ITextComponent message: HopperCounter.query_hopper_all_stats(source.getServer(), realtime))
+        for (ITextComponent message: HopperCounter.formatAll(source.getServer(), realtime))
         {
             source.sendFeedback(message, false);
         }

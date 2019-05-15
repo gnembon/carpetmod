@@ -6,10 +6,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -21,13 +17,9 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.FileNotFoundException;
 
-import carpet.helpers.SpawnChunks;
 import carpet.utils.Messenger;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.dedicated.DedicatedServer;
-import net.minecraft.util.math.ChunkPos;
-import net.minecraft.world.WorldServer;
-import net.minecraft.world.dimension.DimensionType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -176,34 +168,16 @@ public class CarpetSettings
                                     else
                                     {
                                         CarpetSettings.get(s).setForce("0");
-                                        Messenger.print_server_message(CarpetServer.minecraft_server, "view distance can only be changed on a server");
+                                        if (CarpetServer.minecraft_server != null)
+                                            Messenger.print_server_message(CarpetServer.minecraft_server, "view distance can only be changed on a server");
                                     }
                                 }),
   rule("disableSpawnChunks",      "creative", "Removes the spawn chunks.")
                                   .validate((s) -> {
                                       if (!CarpetSettings.getBool("disableSpawnChunks")) {
-                                          WorldServer overworld = CarpetServer.minecraft_server.getWorld(DimensionType.OVERWORLD);
-                                          if (overworld == null)
-                                              return;
+                                          if (CarpetServer.minecraft_server != null)
+                                              Messenger.print_server_message(CarpetServer.minecraft_server, "Spawn chunks re-enabled. Visit spawn to load it.");
 
-                                          List<ChunkPos> chunkList = SpawnChunks.listIncludedChunks(overworld);
-
-                                          // Reused from MinecraftServer initialWorldChunkLoad
-                                          CompletableFuture<?> completablefuture = overworld.getChunkProvider().loadChunks(chunkList, (c) -> {});
-                                          while (!completablefuture.isDone()) {
-                                              try {
-                                                  completablefuture.get(1L, TimeUnit.SECONDS);
-                                              } catch (InterruptedException interruptedexception) {
-                                                  throw new RuntimeException(interruptedexception);
-                                              } catch (ExecutionException executionexception) {
-                                                  if (executionexception.getCause() instanceof RuntimeException) {
-                                                      throw (RuntimeException) executionexception.getCause();
-                                                  }
-
-                                                  throw new RuntimeException(executionexception.getCause());
-                                              } catch (TimeoutException var22) {
-                                              }
-                                          }
                                       }
                                   }).boolAccelerate(),
   rule("kelpGenerationGrowLimit", "feature", "limits growth limit of newly naturally generated kelp to this amount of blocks")
@@ -221,7 +195,7 @@ public class CarpetSettings
 
     private static void notifyPlayersCommandsChanged()
     {
-        if (CarpetServer.minecraft_server == null)
+        if (CarpetServer.minecraft_server == null || CarpetServer.minecraft_server.getPlayerList() == null)
         {
             return;
         }

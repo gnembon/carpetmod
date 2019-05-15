@@ -484,27 +484,4 @@ public class SpawnReporter
         }
         return rep;
     }
-
-    public static boolean check_player_within_spawning_range(World worldServerIn, float x, float y, float z)
-    {
-
-        for (int i = 0; i < worldServerIn.playerEntities.size(); ++i)
-        {
-            EntityPlayer entityplayer = worldServerIn.playerEntities.get(i);
-
-            if (EntitySelectors.NOT_SPECTATING.test(entityplayer))
-            {
-                double d0 = entityplayer.getDistanceSq(x, y, z);
-
-                if ( d0 > 24.0*24.0 && d0 < 128.0*128.0)
-                {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
-
 }

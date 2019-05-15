@@ -19,7 +19,7 @@
  import net.minecraft.item.ItemStack;
  import net.minecraft.nbt.NBTTagCompound;
  import net.minecraft.util.EntitySelectors;
-@@ -197,6 +202,30 @@
+@@ -197,6 +202,29 @@
  
      private boolean transferItemsOut()
      {
@@ -30,15 +30,14 @@
 +                    getWorld(),
 +                    new BlockPos(getXPos(),getYPos(),getZPos() ).offset(this.getBlockState().get(BlockHopper.FACING)));
 +
-+
 +            if (wool_color != null)
 +            {
 +                for (int i = 0; i < this.getSizeInventory(); ++i)
 +                {
 +                    if (!this.getStackInSlot(i).isEmpty())
 +                    {
-+                        ItemStack itemstack = this.getStackInSlot(i);//.copy();
-+                        HopperCounter.count_hopper_items(this.getWorld(), wool_color, itemstack);
++                        ItemStack itemstack = this.getStackInSlot(i);
++                        HopperCounter.COUNTERS.get(wool_color).add(this.getWorld().getServer(), itemstack);
 +                        this.setInventorySlotContents(i, ItemStack.EMPTY);
 +                    }
 +                }

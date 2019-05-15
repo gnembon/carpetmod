@@ -3,7 +3,6 @@ package carpet.logging;
 import carpet.CarpetSettings;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.EnumDyeColor;
-import net.minecraft.server.MinecraftServer;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;

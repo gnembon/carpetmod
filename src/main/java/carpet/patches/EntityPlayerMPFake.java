@@ -94,6 +94,7 @@ public class EntityPlayerMPFake extends EntityPlayerMP
     public void onKillCommand()
     {
         //super.onKillCommand();
+        //check for 1.14compatibility
         this.getServer().getPlayerList().playerLoggedOut(this);
     }
 
@@ -112,6 +113,7 @@ public class EntityPlayerMPFake extends EntityPlayerMP
     @Override
     public void onDeath(DamageSource cause)
     {
+        //check for 1.14 compatibility
         super.onDeath(cause);
         getServer().getPlayerList().playerLoggedOut(this);
     }

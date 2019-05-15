@@ -74,9 +74,8 @@ public class EntityInfo
             for (Enchantment e: enchants.keySet())
             {
                 int level = enchants.get(e);
-                String enstring = e.getName();
-                stackname += enstring;
-                stackname += " ";
+                String enstring = e.getDisplayName(level).getString();
+                stackname += enstring+" ";
             }
             stackname += ")";
         }
@@ -338,16 +337,5 @@ public class EntityInfo
         }
 
         return lst;
-    }
-
-    static void issue_entity_info(EntityPlayer player)
-    {
-        try
-        {
-            player.getServer().getCommandManager().handleCommand (player.getCommandSource(), "info entity @e[type=!minecraft:player,distance=..5,limit=5]");
-        }
-        catch (Throwable ignored)
-        {
-        }
     }
 }

@@ -2,7 +2,6 @@ package carpet.logging;
 
 import carpet.utils.HUDController;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.text.ITextComponent;
 
 public class HUDLogger extends Logger
