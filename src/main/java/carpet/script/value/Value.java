@@ -60,6 +60,12 @@ public abstract class Value implements Comparable<Value>, Cloneable
 
     public abstract String getString();
 
+    public String getPrettyString()
+    {
+        return getString();
+    }
+
+
     public abstract boolean getBoolean();
 
     public Value add(Value o) {

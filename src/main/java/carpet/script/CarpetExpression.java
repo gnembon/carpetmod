@@ -1944,13 +1944,13 @@ public class CarpetExpression
      * @param z .
      * @return .
      */
-    public boolean fillAndScanCommand(int x, int y, int z)
+    public boolean fillAndScanCommand(ScriptHost host, int x, int y, int z)
     {
         if (CarpetServer.scriptServer.stopAll)
             return false;
         try
         {
-            Context context = new CarpetContext(CarpetServer.scriptServer.globalHost, source, origin).
+            Context context = new CarpetContext(host, source, origin).
                     with("x", (c, t) -> new NumericValue(x - origin.getX()).bindTo("x")).
                     with("y", (c, t) -> new NumericValue(y - origin.getY()).bindTo("y")).
                     with("z", (c, t) -> new NumericValue(z - origin.getZ()).bindTo("z")).
@@ -1990,13 +1990,13 @@ public class CarpetExpression
      * @param pos .
      * @return .
      */
-    public String scriptRunCommand(BlockPos pos)
+    public String scriptRunCommand(ScriptHost host, BlockPos pos)
     {
         if (CarpetServer.scriptServer.stopAll)
             return "SCRIPTING PAUSED";
         try
         {
-            Context context = new CarpetContext(CarpetServer.scriptServer.globalHost, source, origin).
+            Context context = new CarpetContext(host, source, origin).
                     with("x", (c, t) -> new NumericValue(pos.getX() - origin.getX()).bindTo("x")).
                     with("y", (c, t) -> new NumericValue(pos.getY() - origin.getY()).bindTo("y")).
                     with("z", (c, t) -> new NumericValue(pos.getZ() - origin.getZ()).bindTo("z"));
@@ -2058,15 +2058,11 @@ public class CarpetExpression
      * followed by the second set of coordinates, providing tab completion, with <code>looking at... </code> mechanics for convenience,
      * followed by any other required arguments</p>
      * </div>
-     * @param source .
-     * @param call .
-     * @param coords .
-     * @param arg .
      * @return .
      */
 
-    public static String invokeGlobalFunctionCommand(CommandSource source, String call, List<Integer> coords, String arg)
+    public static String invokeGlobalFunctionCommand()
     {
-        return CarpetServer.scriptServer.invokeGlobalFunctionCommand(source, call, coords, arg);
+        return "Yeah";
     }
 }

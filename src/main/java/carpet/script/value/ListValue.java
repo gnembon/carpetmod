@@ -21,6 +21,15 @@ public class ListValue extends Value
     }
 
     @Override
+    public String getPrettyString()
+    {
+        if (items.size()<8)
+            return "["+items.stream().map(Value::getPrettyString).collect(Collectors.joining(", "))+"]";
+        return "["+items.get(0).getPrettyString()+", "+items.get(1).getPrettyString()+", ..., "+
+                items.get(items.size()-2).getPrettyString()+", "+items.get(items.size()-1).getPrettyString()+"]";
+    }
+
+    @Override
     public boolean getBoolean() {
         return !items.isEmpty();
     }

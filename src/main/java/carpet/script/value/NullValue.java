@@ -9,6 +9,12 @@ public class NullValue extends NumericValue // TODO check nonsingleton code
     }
 
     @Override
+    public String getPrettyString()
+    {
+        return "null";
+    }
+
+    @Override
     public boolean getBoolean()
     {
         return false;

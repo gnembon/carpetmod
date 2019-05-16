@@ -5,26 +5,24 @@ import carpet.CarpetSettings;
 import carpet.script.bundled.CameraPathModule;
 import carpet.script.bundled.FileModule;
 import carpet.script.bundled.ModuleInterface;
+import carpet.script.exception.CarpetExpressionException;
 import carpet.script.exception.ExpressionException;
-import carpet.script.value.NumericValue;
-import carpet.script.value.StringValue;
 import carpet.script.value.Value;
 import carpet.utils.Messenger;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.command.CommandSource;
 import net.minecraft.util.math.BlockPos;
 
 import java.io.File;
-import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import static java.lang.Math.max;
+import static net.minecraft.command.Commands.argument;
 import static net.minecraft.command.Commands.literal;
 
 public class CarpetScriptServer
@@ -41,7 +39,7 @@ public class CarpetScriptServer
 
     public CarpetScriptServer()
     {
-        globalHost = createMinecraftScriptHost();
+        globalHost = createMinecraftScriptHost("");
         modules = new HashMap<>();
         tickStart = 0L;
         stopAll = false;
@@ -73,12 +71,13 @@ public class CarpetScriptServer
         return null;
     }
 
-    public List<String> listModules()
+    public List<String> listAvailableModules()
     {
         List<String> moduleNames = new ArrayList<>();
         for (ModuleInterface mi: bundledModuleData)
         {
-            moduleNames.add(mi.getName());
+            if (!modules.containsKey(mi.getName()))
+                moduleNames.add(mi.getName());
         }
         File folder = CarpetServer.minecraft_server.getActiveAnvilConverter().getFile(
                 CarpetServer.minecraft_server.getFolderName(), "scripts");
@@ -89,46 +88,107 @@ public class CarpetScriptServer
         {
             if (script.getName().endsWith(".sc"))
             {
-                moduleNames.add(script.getName().replaceFirst("\\.sc",""));
+                String name = script.getName().replaceFirst("\\.sc","").toLowerCase(Locale.ROOT);
+                if (!modules.containsKey(name))
+                    moduleNames.add(name);
             }
         }
         return moduleNames;
     }
 
 
-    private static ScriptHost createMinecraftScriptHost()
+    private static ScriptHost createMinecraftScriptHost(String name)
     {
-        ScriptHost host = new ScriptHost();
+        ScriptHost host = new ScriptHost(name);
         host.globalVariables.put("_x", (c, t) -> Value.ZERO);
         host.globalVariables.put("_y", (c, t) -> Value.ZERO);
         host.globalVariables.put("_z", (c, t) -> Value.ZERO);
         return host;
     }
 
-    public int addScriptHost(String name)
+    public boolean addScriptHost(CommandSource source, String name)
     {
-        ScriptHost newHost = createMinecraftScriptHost();
+        name = name.toLowerCase(Locale.ROOT);
+        ScriptHost newHost = createMinecraftScriptHost(name);
+        ModuleInterface module = getModule(name);
+        String code = module.getCode();
+        if (code == null)
+        {
+            Messenger.m(source, "r Unable to load the package - not found");
+            return false;
+        }
         // parse code and convert to expression
         // fill functions etc.
         // possibly add a command
-
+        try
+        {
+            setChatErrorSnooper(source);
+            CarpetExpression ex = new CarpetExpression(module.getCode(), source, new BlockPos(0, 0, 0));
+            ex.scriptRunCommand(newHost, new BlockPos(source.getPos()));
+        }
+        catch (CarpetExpressionException e)
+        {
+            Messenger.m(source, "r Exception white evaluating expression at "+new BlockPos(source.getPos())+": "+e.getMessage());
+            resetErrorSnooper();
+            return false;
+        }
         modules.put(name, newHost);
-        addCommand(name, Arrays.asList("a","b"));
-        return 1;
+
+        addCommand(name);
+        return true;
     }
 
 
 
-    public void addCommand(String hostName, List<String> calls)
+    public void addCommand(String hostName)
     {
-        LiteralArgumentBuilder<CommandSource> command = literal(hostName).
-                requires((player) -> CarpetServer.scriptServer.modules.containsKey(hostName)).
-                executes( (c) -> { Messenger.m(c.getSource(), "w Running ", "rb "+hostName); return 1; });
-        for (String call : calls)
+        ScriptHost host = modules.get(hostName);
+        if (host == null)
         {
-            command.then(literal(call).executes( (c) -> {
-                Messenger.m(c.getSource(), "w Running ", "lb "+call, "w  from ","rb "+hostName); return 1;
-            }));
+            return;
+        }
+        if (!host.globalFunctions.containsKey("__command"))
+        {
+            return;
+        }
+        LiteralArgumentBuilder<CommandSource> command = literal(hostName).
+                requires((player) -> modules.containsKey(hostName)).
+                executes( (c) ->
+                {
+                    Messenger.m(c.getSource(), "gi "+modules.get(hostName).call(c.getSource(),"__command", null, ""));
+                    return 1;
+                });
+
+        for (String function : host.getPublicFunctions())
+        {
+            command = command.
+                    then(literal(function).
+                            requires((player) -> modules.containsKey(hostName) && modules.get(hostName).getPublicFunctions().contains(function)).
+                            executes( (c) -> {
+                                Messenger.m(
+                                        c.getSource(),
+                                        "gi "+modules.get(hostName).call(
+                                                c.getSource(),
+                                                function,
+                                                null,
+                                                ""
+                                        )
+                                );
+                                return 1;
+                            }).
+                            then(argument("args...", StringArgumentType.greedyString()).
+                                    executes( (c) -> {
+                                        Messenger.m(
+                                                c.getSource(),
+                                                "gi "+modules.get(hostName).call(
+                                                        c.getSource(),
+                                                        function,
+                                                        null,
+                                                        StringArgumentType.getString(c, "args...")
+                                                )
+                                        );
+                                        return 1;
+                                    })));
         }
         CarpetServer.minecraft_server.getCommandManager().getDispatcher().register(command);
         CarpetSettings.notifyPlayersCommandsChanged();
@@ -183,100 +243,13 @@ public class CarpetScriptServer
         ExpressionException.errorSnooper=null;
     }
 
-    public String invokeGlobalFunctionCommand(CommandSource source, String call, List<Integer> coords, String arg)
+    public boolean removeScriptHost(String name)
     {
-        //will set a custom host when we have the other bits.
-        ScriptHost host = globalHost;
-        if (stopAll)
-            return "SCRIPTING PAUSED";
-        UserDefinedFunction acf = host.globalFunctions.get(call);
-        if (acf == null)
-            return "UNDEFINED";
-        List<LazyValue> argv = new ArrayList<>();
-        for (Integer i: coords)
-            argv.add( (c, t) -> new NumericValue(i));
-        String sign = "";
-        for (Tokenizer.Token tok : Tokenizer.simplepass(arg))
-        {
-            switch (tok.type)
-            {
-                case VARIABLE:
-                    if (host.globalVariables.containsKey(tok.surface.toLowerCase(Locale.ROOT)))
-                    {
-                        argv.add(host.globalVariables.get(tok.surface.toLowerCase(Locale.ROOT)));
-                        break;
-                    }
-                case STRINGPARAM:
-                    argv.add((c, t) -> new StringValue(tok.surface));
-                    sign = "";
-                    break;
-
-                case LITERAL:
-                    try
-                    {
-                        String finalSign = sign;
-                        argv.add((c, t) ->new NumericValue(finalSign+tok.surface));
-                        sign = "";
-                    }
-                    catch (NumberFormatException exception)
-                    {
-                        return "Fail: "+sign+tok.surface+" seems like a number but it is not a number. Use quotes to ensure its a string";
-                    }
-                    break;
-                case HEX_LITERAL:
-                    try
-                    {
-                        String finalSign = sign;
-                        argv.add((c, t) -> new NumericValue(new BigInteger(finalSign+tok.surface.substring(2), 16).doubleValue()));
-                        sign = "";
-                    }
-                    catch (NumberFormatException exception)
-                    {
-                        return "Fail: "+sign+tok.surface+" seems like a number but it is not a number. Use quotes to ensure its a string";
-                    }
-                    break;
-                case OPERATOR:
-                case UNARY_OPERATOR:
-                    if ((tok.surface.equals("-") || tok.surface.equals("-u")) && sign.isEmpty())
-                    {
-                        sign = "-";
-                    }
-                    else
-                    {
-                        return "Fail: operators, like " + tok.surface + " are not allowed in invoke";
-                    }
-                    break;
-                case FUNCTION:
-                    return "Fail: passing functions like "+tok.surface+"() to invoke is not allowed";
-                case OPEN_PAREN:
-                case COMMA:
-                case CLOSE_PAREN:
-                    return "Fail: "+tok.surface+" is not allowed in invoke";
-            }
-        }
-        List<String> args = acf.getArguments();
-        if (argv.size() != args.size())
-        {
-            String error = "Fail: stored function "+call+" takes "+args.size()+" arguments, not "+argv.size()+ ":\n";
-            for (int i = 0; i < max(argv.size(), args.size()); i++)
-            {
-                error += (i<args.size()?args.get(i):"??")+" => "+(i<argv.size()?argv.get(i).evalValue(null).getString():"??")+"\n";
-            }
-            return error;
-        }
-        try
-        {
-            // TODO: this is just for now - invoke would be able to invoke other hosts scripts
-            Context context = new CarpetContext(host, source, BlockPos.ORIGIN);
-            return Expression.evalValue(
-                    () -> acf.lazyEval(context, Context.VOID, acf.expression, acf.token, argv),
-                    context,
-                    Context.VOID
-            ).getString();
-        }
-        catch (ExpressionException e)
-        {
-            return e.getMessage();
-        }
+        name = name.toLowerCase(Locale.ROOT);
+        if (!modules.containsKey(name))
+            return false;
+        // stop all events associated with name
+        modules.remove(name);
+        return true;
     }
 }

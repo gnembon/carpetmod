@@ -9,7 +9,6 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
-import com.mojang.brigadier.tree.LiteralCommandNode;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.BlockWorldState;
 import net.minecraft.command.CommandSource;
@@ -22,14 +21,13 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MutableBoundingBox;
 import net.minecraft.world.WorldServer;
-import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
-import java.util.Set;
+import java.util.Locale;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import static net.minecraft.command.Commands.argument;
 import static net.minecraft.command.Commands.literal;
@@ -39,174 +37,197 @@ public class ScriptCommand
 {
     public static void register(CommandDispatcher<CommandSource> dispatcher)
     {
-        LiteralArgumentBuilder<CommandSource> command = literal("script").
-                requires((player) -> CarpetSettings.getBool("commandScript")).
-                then(literal("globals").executes( (c) -> listGlobals(c))).
-                then(literal("stop").executes( (c) -> { CarpetServer.scriptServer.stopAll = true; return 1;})).
-                then(literal("resume").executes( (c) -> { CarpetServer.scriptServer.stopAll = false; return 1;})).
-                then(literal("run").requires((player) -> player.hasPermissionLevel(2)).
-                        then(argument("expr", StringArgumentType.greedyString()).
-                                executes((c) -> compute(
-                                        c,
-                                        StringArgumentType.getString(c, "expr")
-                                )))).
-
-                then(literal("invoke").
-                        then(argument("call", StringArgumentType.word()).suggests( (c, b)->suggest(getGlobalCalls(c),b)).
-                                executes( (c) -> invoke(
-                                        c,
-                                        StringArgumentType.getString(c, "call"),
+        LiteralArgumentBuilder<CommandSource> b = literal("globals").
+                executes(ScriptCommand::listGlobals);
+        LiteralArgumentBuilder<CommandSource> o = literal("stop").
+                executes( (cc) -> { CarpetServer.scriptServer.stopAll = true; return 1;});
+        LiteralArgumentBuilder<CommandSource> u = literal("resume").
+                executes( (cc) -> { CarpetServer.scriptServer.stopAll = false; return 1;});
+        LiteralArgumentBuilder<CommandSource> l = literal("run").
+                requires((player) -> player.hasPermissionLevel(2)).
+                then(argument("expr", StringArgumentType.greedyString()).
+                        executes((cc) -> compute(
+                                cc,
+                                StringArgumentType.getString(cc, "expr"))));
+        LiteralArgumentBuilder<CommandSource> s = literal("invoke").
+                then(argument("call", StringArgumentType.word()).suggests( (cc, bb)->suggest(suggestFunctionCalls(cc),bb)).
+                        executes( (cc) -> invoke(
+                                cc,
+                                StringArgumentType.getString(cc, "call"),
+                                null,
+                                null,
+                                ""
+                        )).
+                        then(argument("arguments", StringArgumentType.greedyString()).
+                                executes( (cc) -> invoke(
+                                        cc,
+                                        StringArgumentType.getString(cc, "call"),
                                         null,
+                                        null,
+                                        StringArgumentType.getString(cc, "arguments")
+                                ))));
+        LiteralArgumentBuilder<CommandSource> c = literal("invokepoint").
+                then(argument("call", StringArgumentType.word()).suggests( (cc, bb)->suggest(suggestFunctionCalls(cc),bb)).
+                        then(argument("origin", BlockPosArgument.blockPos()).
+                                executes( (cc) -> invoke(
+                                        cc,
+                                        StringArgumentType.getString(cc, "call"),
+                                        BlockPosArgument.getBlockPos(cc, "origin"),
                                         null,
                                         ""
                                 )).
                                 then(argument("arguments", StringArgumentType.greedyString()).
-                                        executes( (c) -> invoke(
-                                                c,
-                                                StringArgumentType.getString(c, "call"),
+                                        executes( (cc) -> invoke(
+                                                cc,
+                                                StringArgumentType.getString(cc, "call"),
+                                                BlockPosArgument.getBlockPos(cc, "origin"),
                                                 null,
-                                                null,
-                                                StringArgumentType.getString(c, "arguments")
-                                        ))))).
-                then(literal("invokepoint").
-                        then(argument("call", StringArgumentType.word()).suggests( (c, b)->suggest(getGlobalCalls(c),b)).
-                                then(argument("origin", BlockPosArgument.blockPos()).
-                                        executes( (c) -> invoke(
-                                                c,
-                                                StringArgumentType.getString(c, "call"),
-                                                BlockPosArgument.getBlockPos(c, "origin"),
-                                                null,
+                                                StringArgumentType.getString(cc, "arguments")
+                                        )))));
+        LiteralArgumentBuilder<CommandSource> h = literal("invokearea").
+                then(argument("call", StringArgumentType.word()).suggests( (cc, bb)->suggest(suggestFunctionCalls(cc),bb)).
+                        then(argument("from", BlockPosArgument.blockPos()).
+                                then(argument("to", BlockPosArgument.blockPos()).
+                                        executes( (cc) -> invoke(
+                                                cc,
+                                                StringArgumentType.getString(cc, "call"),
+                                                BlockPosArgument.getBlockPos(cc, "from"),
+                                                BlockPosArgument.getBlockPos(cc, "to"),
                                                 ""
                                         )).
                                         then(argument("arguments", StringArgumentType.greedyString()).
-                                                executes( (c) -> invoke(
-                                                        c,
-                                                        StringArgumentType.getString(c, "call"),
-                                                        BlockPosArgument.getBlockPos(c, "origin"),
-                                                        null,
-                                                        StringArgumentType.getString(c, "arguments")
-                                                )))))).
-                then(literal("invokearea").
-                        then(argument("call", StringArgumentType.word()).suggests( (c, b)->suggest(getGlobalCalls(c),b)).
-                                then(argument("from", BlockPosArgument.blockPos()).
-                                        then(argument("to", BlockPosArgument.blockPos()).
-                                                executes( (c) -> invoke(
-                                                        c,
-                                                        StringArgumentType.getString(c, "call"),
-                                                        BlockPosArgument.getBlockPos(c, "from"),
-                                                        BlockPosArgument.getBlockPos(c, "to"),
-                                                        ""
-                                                )).
-                                                then(argument("arguments", StringArgumentType.greedyString()).
-                                                        executes( (c) -> invoke(
-                                                                c,
-                                                                StringArgumentType.getString(c, "call"),
-                                                                BlockPosArgument.getBlockPos(c, "from"),
-                                                                BlockPosArgument.getBlockPos(c, "to"),
-                                                                StringArgumentType.getString(c, "arguments")
-                                                        ))))))).
-                then(literal("scan").requires((player) -> player.hasPermissionLevel(2)).
-                        then(argument("origin", BlockPosArgument.blockPos()).
-                                then(argument("from", BlockPosArgument.blockPos()).
-                                        then(argument("to", BlockPosArgument.blockPos()).
-                                                then(argument("expr", StringArgumentType.greedyString()).
-                                                        executes( (c) -> scriptScan(
-                                                                c,
-                                                                BlockPosArgument.getBlockPos(c, "origin"),
-                                                                BlockPosArgument.getBlockPos(c, "from"),
-                                                                BlockPosArgument.getBlockPos(c, "to"),
-                                                                StringArgumentType.getString(c, "expr")
-                                                        ))))))).
-                then(literal("fill").requires((player) -> player.hasPermissionLevel(2)).
-                        then(argument("origin", BlockPosArgument.blockPos()).
-                                then(argument("from", BlockPosArgument.blockPos()).
-                                        then(argument("to", BlockPosArgument.blockPos()).
-                                                then(argument("expr", StringArgumentType.string()).
-                                                        then(argument("block", BlockStateArgument.blockState()).
-                                                                executes((c) -> scriptFill(
-                                                                        c,
-                                                                        BlockPosArgument.getBlockPos(c, "origin"),
-                                                                        BlockPosArgument.getBlockPos(c, "from"),
-                                                                        BlockPosArgument.getBlockPos(c, "to"),
-                                                                        StringArgumentType.getString(c, "expr"),
-                                                                        BlockStateArgument.getBlockState(c, "block"),
-                                                                        null, "solid"
-                                                                )).
+                                                executes( (cc) -> invoke(
+                                                        cc,
+                                                        StringArgumentType.getString(cc, "call"),
+                                                        BlockPosArgument.getBlockPos(cc, "from"),
+                                                        BlockPosArgument.getBlockPos(cc, "to"),
+                                                        StringArgumentType.getString(cc, "arguments")
+                                                ))))));
+        LiteralArgumentBuilder<CommandSource> i = literal("scan").requires((player) -> player.hasPermissionLevel(2)).
+                then(argument("origin", BlockPosArgument.blockPos()).
+                        then(argument("from", BlockPosArgument.blockPos()).
+                                then(argument("to", BlockPosArgument.blockPos()).
+                                        then(argument("expr", StringArgumentType.greedyString()).
+                                                executes( (cc) -> scriptScan(
+                                                        cc,
+                                                        BlockPosArgument.getBlockPos(cc, "origin"),
+                                                        BlockPosArgument.getBlockPos(cc, "from"),
+                                                        BlockPosArgument.getBlockPos(cc, "to"),
+                                                        StringArgumentType.getString(cc, "expr")
+                                                ))))));
+        LiteralArgumentBuilder<CommandSource> e = literal("fill").requires((player) -> player.hasPermissionLevel(2)).
+                then(argument("origin", BlockPosArgument.blockPos()).
+                        then(argument("from", BlockPosArgument.blockPos()).
+                                then(argument("to", BlockPosArgument.blockPos()).
+                                        then(argument("expr", StringArgumentType.string()).
+                                                then(argument("block", BlockStateArgument.blockState()).
+                                                        executes((cc) -> scriptFill(
+                                                                cc,
+                                                                BlockPosArgument.getBlockPos(cc, "origin"),
+                                                                BlockPosArgument.getBlockPos(cc, "from"),
+                                                                BlockPosArgument.getBlockPos(cc, "to"),
+                                                                StringArgumentType.getString(cc, "expr"),
+                                                                BlockStateArgument.getBlockState(cc, "block"),
+                                                                null, "solid"
+                                                        )).
                                                         then(literal("replace").
                                                                 then(argument("filter", BlockPredicateArgument.blockPredicate())
-                                                                        .executes((c) -> scriptFill(
-                                                                                c,
-                                                                                BlockPosArgument.getBlockPos(c, "origin"),
-                                                                                BlockPosArgument.getBlockPos(c, "from"),
-                                                                                BlockPosArgument.getBlockPos(c, "to"),
-                                                                                StringArgumentType.getString(c, "expr"),
-                                                                                BlockStateArgument.getBlockState(c, "block"),
-                                                                                BlockPredicateArgument.getBlockPredicate(c, "filter"),
+                                                                        .executes((cc) -> scriptFill(
+                                                                                cc,
+                                                                                BlockPosArgument.getBlockPos(cc, "origin"),
+                                                                                BlockPosArgument.getBlockPos(cc, "from"),
+                                                                                BlockPosArgument.getBlockPos(cc, "to"),
+                                                                                StringArgumentType.getString(cc, "expr"),
+                                                                                BlockStateArgument.getBlockState(cc, "block"),
+                                                                                BlockPredicateArgument.getBlockPredicate(cc, "filter"),
                                                                                 "solid"
-                                                                        )))))))))).
-                then(literal("outline").requires((player) -> player.hasPermissionLevel(2)).
-                        then(argument("origin", BlockPosArgument.blockPos()).
-                                then(argument("from", BlockPosArgument.blockPos()).
-                                        then(argument("to", BlockPosArgument.blockPos()).
-                                                then(argument("expr", StringArgumentType.string()).
-                                                        then(argument("block", BlockStateArgument.blockState()).
-                                                                executes((c) -> scriptFill(
-                                                                        c,
-                                                                        BlockPosArgument.getBlockPos(c, "origin"),
-                                                                        BlockPosArgument.getBlockPos(c, "from"),
-                                                                        BlockPosArgument.getBlockPos(c, "to"),
-                                                                        StringArgumentType.getString(c, "expr"),
-                                                                        BlockStateArgument.getBlockState(c, "block"),
-                                                                        null, "outline"
-                                                                )).
-                                                                then(literal("replace").
-                                                                        then(argument("filter", BlockPredicateArgument.blockPredicate())
-                                                                                .executes((c) -> scriptFill(
-                                                                                        c,
-                                                                                        BlockPosArgument.getBlockPos(c, "origin"),
-                                                                                        BlockPosArgument.getBlockPos(c, "from"),
-                                                                                        BlockPosArgument.getBlockPos(c, "to"),
-                                                                                        StringArgumentType.getString(c, "expr"),
-                                                                                        BlockStateArgument.getBlockState(c, "block"),
-                                                                                        BlockPredicateArgument.getBlockPredicate(c, "filter"),
-                                                                                        "outline"
-                                                                                )))))))))).
-                then(literal("load").requires( (player) -> player.hasPermissionLevel(2) ).
-                        then(argument("package", StringArgumentType.word()).
-                                suggests( (c, b) -> suggest(CarpetServer.scriptServer.listModules(),b)).
-                                executes((c) ->
-                                        CarpetServer.scriptServer.addScriptHost(StringArgumentType.getString(c, "package")))
-                        )
+                                                                        )))))))));
+        LiteralArgumentBuilder<CommandSource> t = literal("outline").requires((player) -> player.hasPermissionLevel(2)).
+                then(argument("origin", BlockPosArgument.blockPos()).
+                        then(argument("from", BlockPosArgument.blockPos()).
+                                then(argument("to", BlockPosArgument.blockPos()).
+                                        then(argument("expr", StringArgumentType.string()).
+                                                then(argument("block", BlockStateArgument.blockState()).
+                                                        executes((cc) -> scriptFill(
+                                                                cc,
+                                                                BlockPosArgument.getBlockPos(cc, "origin"),
+                                                                BlockPosArgument.getBlockPos(cc, "from"),
+                                                                BlockPosArgument.getBlockPos(cc, "to"),
+                                                                StringArgumentType.getString(cc, "expr"),
+                                                                BlockStateArgument.getBlockState(cc, "block"),
+                                                                null, "outline"
+                                                        )).
+                                                        then(literal("replace").
+                                                                then(argument("filter", BlockPredicateArgument.blockPredicate())
+                                                                        .executes((cc) -> scriptFill(
+                                                                                cc,
+                                                                                BlockPosArgument.getBlockPos(cc, "origin"),
+                                                                                BlockPosArgument.getBlockPos(cc, "from"),
+                                                                                BlockPosArgument.getBlockPos(cc, "to"),
+                                                                                StringArgumentType.getString(cc, "expr"),
+                                                                                BlockStateArgument.getBlockState(cc, "block"),
+                                                                                BlockPredicateArgument.getBlockPredicate(cc, "filter"),
+                                                                                "outline"
+                                                                        )))))))));
+        LiteralArgumentBuilder<CommandSource> a = literal("load").requires( (player) -> player.hasPermissionLevel(2) ).
+                then(argument("package", StringArgumentType.word()).
+                        suggests( (cc, bb) -> suggest(CarpetServer.scriptServer.listAvailableModules(),bb)).
+                        executes((cc) ->
+                        {
+                            boolean success = CarpetServer.scriptServer.addScriptHost(cc.getSource(), StringArgumentType.getString(cc, "package"));
+                            Messenger.m(cc.getSource(), success?"w Successfully added a module":"r Failed to add a module");
+                            return success?1:0;
+                        })
                 );
+        LiteralArgumentBuilder<CommandSource> f = literal("unload").requires( (player) -> player.hasPermissionLevel(2) ).
+                then(argument("package", StringArgumentType.word()).
+                        suggests( (cc, bb) -> suggest(CarpetServer.scriptServer.modules.keySet(),bb)).
+                        executes((cc) ->
+                        {
+                            boolean success =CarpetServer.scriptServer.removeScriptHost(StringArgumentType.getString(cc, "package"));
+                            Messenger.m(cc.getSource(), success?"w Successfully added a module":"r Failed to add a module");
+                            return success?1:0;
+                        }));
 
-
-        LiteralCommandNode<CommandSource> scriptCommand = dispatcher.register(command);
+        dispatcher.register(literal("script").
+                requires((player) -> CarpetSettings.getBool("commandScript")).
+                then(b).then(u).then(o).then(l).then(s).then(c).then(h).then(i).then(e).then(t).then(a).then(f));
         dispatcher.register(literal("script").
                 requires((player) -> CarpetSettings.getBool("commandScript")).
                 then(literal("in").
                         then(argument("package", StringArgumentType.word()).
-                                suggests( (c, b) -> suggest(CarpetServer.scriptServer.listModules(), b)).redirect(scriptCommand))));
+                                suggests( (cc, bb) -> suggest(CarpetServer.scriptServer.modules.keySet(), bb)).
+                                then(b).then(u).then(o).then(l).then(s).then(c).then(h).then(i).then(e).then(t))));
     }
-    private static String getHost(CommandContext<CommandSource> context)
+    private static ScriptHost getHost(CommandContext<CommandSource> context)
     {
-        String packageName = StringArgumentType.getString(context, "package");
-        return packageName;
+        try
+        {
+            String name = StringArgumentType.getString(context, "package").toLowerCase(Locale.ROOT);
+            return CarpetServer.scriptServer.modules.getOrDefault(name, CarpetServer.scriptServer.globalHost);
+
+        }
+        catch (IllegalArgumentException ignored)
+        {
+            return CarpetServer.scriptServer.globalHost;
+        }
     }
-    private static Set<String> getGlobalCalls(CommandContext<CommandSource> c)
+    private static Collection<String> suggestFunctionCalls(CommandContext<CommandSource> c)
     {
         CommandSource s = c.getSource();
-        return CarpetServer.scriptServer.globalHost.globalFunctions.keySet().stream().filter((str) -> !str.startsWith("_")).collect(Collectors.toSet());
+        ScriptHost host = getHost(c);
+        return host.getPublicFunctions();
     }
     private static int listGlobals(CommandContext<CommandSource> context)
     {
-        String host = getHost(context);
+        ScriptHost host = getHost(context);
         CommandSource source = context.getSource();
 
-        Messenger.m(source, "w Global functions:");
-        for (String fname : getGlobalCalls(context))
+        Messenger.m(source, "w Global functions"+((host == CarpetServer.scriptServer.globalHost)?":":" in "+host.getName()+":"));
+        for (String fname : host.getAvailableFunctions())
         {
-            Expression expr = CarpetServer.scriptServer.globalHost.getExpressionForFunction(fname);
-            Tokenizer.Token tok = CarpetServer.scriptServer.globalHost.getTokenForFunction(fname);
+            Expression expr = host.getExpressionForFunction(fname);
+            Tokenizer.Token tok = host.getTokenForFunction(fname);
             List<String> snippet = ExpressionInspector.Expression_getExpressionSnippet(tok, expr);
             Messenger.m(source, "w Function "+fname+" defined at: line "+(tok.lineno+1)+" pos "+(tok.linepos+1));
             for (String snippetLine: snippet)
@@ -218,14 +239,14 @@ public class ScriptCommand
         //Messenger.m(source, "w "+code);
         Messenger.m(source, "w Global Variables:");
 
-        for (String vname : CarpetServer.scriptServer.globalHost.globalVariables.keySet())
+        for (String vname : host.globalVariables.keySet())
         {
-            Messenger.m(source, "w Variable "+vname+": ", "wb "+ CarpetServer.scriptServer.globalHost.globalVariables.get(vname).evalValue(null).getString());
+            Messenger.m(source, "w Variable "+vname+": ", "wb "+ host.globalVariables.get(vname).evalValue(null).getPrettyString());
         }
         return 1;
     }
 
-    private static void handleCall(CommandSource source, Supplier<String> call)
+    public static void handleCall(CommandSource source, Supplier<String> call)
     {
         try
         {
@@ -256,6 +277,7 @@ public class ScriptCommand
     private static int invoke(CommandContext<CommandSource> context, String call, BlockPos pos1, BlockPos pos2,  String args)
     {
         CommandSource source = context.getSource();
+        ScriptHost host = getHost(context);
         if (call.startsWith("__"))
         {
             Messenger.m(source, "r Hidden functions are only callable in scripts");
@@ -276,7 +298,7 @@ public class ScriptCommand
         }
         //if (!(args.trim().isEmpty()))
         //    arguments.addAll(Arrays.asList(args.trim().split("\\s+")));
-        handleCall(source, () -> CarpetExpression.invokeGlobalFunctionCommand(source, call,positions, args.trim()));
+        handleCall(source, () ->  host.call(source, call, positions, args));
         return 1;
     }
 
@@ -284,9 +306,10 @@ public class ScriptCommand
     private static int compute(CommandContext<CommandSource> context, String expr)
     {
         CommandSource source = context.getSource();
+        ScriptHost host = getHost(context);
         handleCall(source, () -> {
             CarpetExpression ex = new CarpetExpression(expr, source, new BlockPos(0, 0, 0));
-            return ex.scriptRunCommand(new BlockPos(source.getPos()));
+            return ex.scriptRunCommand(host, new BlockPos(source.getPos()));
         });
         return 1;
     }
@@ -294,6 +317,7 @@ public class ScriptCommand
     private static int scriptScan(CommandContext<CommandSource> context, BlockPos origin, BlockPos a, BlockPos b, String expr)
     {
         CommandSource source = context.getSource();
+        ScriptHost host = getHost(context);
         MutableBoundingBox area = new MutableBoundingBox(a, b);
         CarpetExpression cexpr = new CarpetExpression(expr, source, origin);
         if (area.getXSize() * area.getYSize() * area.getZSize() > CarpetSettings.getInt("fillLimit"))
@@ -312,7 +336,7 @@ public class ScriptCommand
                     {
                         try
                         {
-                            if (cexpr.fillAndScanCommand(x, y, z)) successCount++;
+                            if (cexpr.fillAndScanCommand(host, x, y, z)) successCount++;
                         }
                         catch (ArithmeticException ignored)
                         {
@@ -336,6 +360,7 @@ public class ScriptCommand
                                 BlockStateInput block, Predicate<BlockWorldState> replacement, String mode)
     {
         CommandSource source = context.getSource();
+        ScriptHost host = getHost(context);
         MutableBoundingBox area = new MutableBoundingBox(a, b);
         CarpetExpression cexpr = new CarpetExpression(expr, source, origin);
         if (area.getXSize() * area.getYSize() * area.getZSize() > CarpetSettings.getInt("fillLimit"))
@@ -358,7 +383,7 @@ public class ScriptCommand
                 {
                     try
                     {
-                        if (cexpr.fillAndScanCommand(x, y, z))
+                        if (cexpr.fillAndScanCommand(host, x, y, z))
                         {
                             volume[x-area.minX][y-area.minY][z-area.minZ]=true;
                         }

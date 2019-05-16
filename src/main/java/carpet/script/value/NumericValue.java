@@ -34,6 +34,19 @@ public class NumericValue extends Value
     }
 
     @Override
+    public String getPrettyString()
+    {
+        if (getDouble() == (double)getLong())
+        {
+            return Long.toString(getLong());
+        }
+        else
+        {
+            return String.format("%.3f..", getDouble());
+        }
+    }
+
+    @Override
     public boolean getBoolean()
     {
         return value != null && abs(value) > epsilon;

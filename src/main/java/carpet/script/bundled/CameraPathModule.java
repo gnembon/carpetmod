@@ -11,186 +11,211 @@ public class CameraPathModule implements ModuleInterface
     @Override
     public String getCode()
     {
-        return  "$ start_path() -> \n" +
+        return  "$ __command() ->\n" +
+                "$ (\n" +
+                "$   print('Camera path module.');\n" +
+                "$   print(' \"/camera start\" - set the starting point');\n" +
+                "$   print(' \"/camera add <delay>\" - add another point <delay> frames later');\n" +
+                "$   print(' \"/camera select_interpolation <linear|gauss_<N>|gauss_auto\"');\n" +
+                "$   print('    Select interpolation between points:');\n" +
+                "$   print('    - linear: straight paths between points');\n" +
+                "$   print('    - gauss_auto: automatic smooth transitions between point');\n" +
+                "$   print('    - gauss_<number>: custom fixed variance (in points) for special effects');\n" +
+                "$   print(' \"/camera repeat <N> <last_delay>\" - ');\n" +
+                "$   print('    Repeat existing points configuration n-times');\n" +
+                "$   print('      using <last_delay> points to link path ends');\n" +
+                "$   print(' \"/camera speed <factor> - change number of frames between points');\n" +
+                "$   print('    From 25 -> 4 times faster (less points),');\n" +
+                "$   print('      to 400 -> 4 times slower (more points)');\n" +
+                "$   print(' \"/camera play <fps>: run a path with a player');\n" +
+                "$   print('    <fps> needs to be multiples of 20, (20 tps)');\n" +
+                "$   print(' \"/camera show\": shows current path for a moment');\n" +
+                "$   print(' \"/script in camera invoke _show_path_tick <particle> <particles_per_tick>\":');\n" +
+                "$   print('    place this in a repeating commandblock');\n" +
+                "$   print('      to display path continuously');\n" +
+                "$   print('      example: \\'dust 0.9 0.1 0.1 1\\' 100 ');\n" +
+                "$   ''\n" +
+                "$ );\n" +
+                "$ start() -> \n" +
                 "$(\n" +
-                "$\tp = player();\n" +
-                "$\tglobal_points = l(l(l(p~'x',p~'y',p~'z',p~'pitch',p~'yaw'),0,'sharp'));\n" +
-                "$\tundef('global_path_precalculated');\n" +
-                "$\tstr('Started path at %.1f %.1f %.1f', p~'x', p~'y', p~'z')\n" +
+                "$   p = player();\n" +
+                "$   global_points = l(l(l(p~'x',p~'y',p~'z',p~'pitch',p~'yaw'),0,'sharp'));\n" +
+                "$   undef('global_path_precalculated');\n" +
+                "$   str('Started path at %.1f %.1f %.1f', p~'x', p~'y', p~'z')\n" +
                 "$);\n" +
                 "$\n" +
-                "$ add_point(delay) -> \n" +
+                "$ add(delay) -> \n" +
                 "$( \n" +
-                "$\tp = player(); \n" +
-                "$\tmode = 'sharp';\n" +
-                "$\t'mode is currently unused, run_path does always sharp, gauss interpolator is always smooth';\n" +
-                "$\t' but this option could be used could be used at some point by more robust interpolators';\n" +
-                "$\tvector = l(p~'x',p~'y',p~'z', p~'pitch', p~'yaw');\n" +
-                "$\t__add_path_segment(vector, delay, mode);\n" +
-                "$\tstr('Added point %d: %.1f %.1f %.1f', length(global_points), p~'x', p~'y', p~'z')\n" +
+                "$   p = player(); \n" +
+                "$   mode = 'sharp';\n" +
+                "$   'mode is currently unused, run_path does always sharp, gauss interpolator is always smooth';\n" +
+                "$   ' but this option could be used could be used at some point by more robust interpolators';\n" +
+                "$   vector = l(p~'x',p~'y',p~'z', p~'pitch', p~'yaw');\n" +
+                "$   __add_path_segment(vector, delay, mode);\n" +
+                "$   str('Added point %d: %.1f %.1f %.1f', length(global_points), p~'x', p~'y', p~'z')\n" +
                 "$);\n" +
                 "$\n" +
                 "$ __add_path_segment(vector, duration, mode) -> \n" +
                 "$(\n" +
-                "$\tundef('global_path_precalculated');\n" +
-                "$\tif ( (l('sharp','smooth') ~ mode) == null, exit('use smooth or sharp point'));\t\n" +
-                "$\tif(!global_points, exit('Cannot add point to path that didn\\'t started yet!'));\n" +
-                "$\tl(v, end_time, m) = element(global_points, -1);\n" +
+                "$   undef('global_path_precalculated');\n" +
+                "$   if ( (l('sharp','smooth') ~ mode) == null, exit('use smooth or sharp point'));  \n" +
+                "$   if(!global_points, exit('Cannot add point to path that didn\\'t started yet!'));\n" +
+                "$   l(v, end_time, m) = element(global_points, -1);\n" +
                 "$   put(vector,-1, __adjusted_rot(element(v, -1), element(vector, -1)));\n" +
-                "$\tglobal_points += l(vector, end_time+duration, mode)\n" +
+                "$   global_points += l(vector, end_time+duration, mode)\n" +
                 "$);\n" +
                 "$\n" +
                 "$'adjusts current rotation so we don\\'t spin around like crazy';\n" +
                 "$ __adjusted_rot(previous_rot, current_rot) -> \n" +
                 "$(\n" +
-                "$\twhile( abs(previous_rot-current_rot) > 180, 1000,\n" +
-                "$\t\tcurrent_rot += if(previous_rot < current_rot, -360, 360)\n" +
-                "$\t);\n" +
-                "$\tcurrent_rot\n" +
+                "$   while( abs(previous_rot-current_rot) > 180, 1000,\n" +
+                "$       current_rot += if(previous_rot < current_rot, -360, 360)\n" +
+                "$   );\n" +
+                "$   current_rot\n" +
                 "$);\n" +
                 "$\n" +
                 "$\n" +
-                "$ loop_path(times, last_section_duration) -> \n" +
+                "$ repeat(times, last_section_duration) -> \n" +
                 "$(\n" +
-                "$\tundef('global_path_precalculated');\n" +
-                "$\tpositions = map(global_points, k = element(_, 0));\n" +
-                "$\tmodes = map(global_points, element(_, -1));\n" +
-                "$\tdurations = map(global_points, element(element(global_points, _i+1), 1)-element(_, 1));\n" +
-                "$\tput(durations, -1, last_section_duration);\n" +
-                "$\tloop(times,\n" +
-                "$\t\tloop( length(positions),\n" +
-                "$\t\t\t__add_path_segment(element(positions, _), element(durations, _), element(modes, _))\n" +
-                "$\t\t)\n" +
-                "$\t);\n" +
-                "$\tstr('Add %d points %d times', length(positions), times)\n" +
+                "$   undef('global_path_precalculated');\n" +
+                "$   positions = map(global_points, k = element(_, 0));\n" +
+                "$   modes = map(global_points, element(_, -1));\n" +
+                "$   durations = map(global_points, element(element(global_points, _i+1), 1)-element(_, 1));\n" +
+                "$   put(durations, -1, last_section_duration);\n" +
+                "$   loop(times,\n" +
+                "$       loop( length(positions),\n" +
+                "$           __add_path_segment(element(positions, _), element(durations, _), element(modes, _))\n" +
+                "$       )\n" +
+                "$   );\n" +
+                "$   str('Add %d points %d times', length(positions), times)\n" +
                 "$);\n" +
                 "$\n" +
-                "$ adjust_speed_percentage(percentage) ->\n" +
+                "$ speed(percentage) ->\n" +
                 "$(\n" +
-                "$\tundef('global_path_precalculated');\n" +
-                "$\tif (percentage < 25 || percentage > 400, \n" +
-                "$\t\texit('path speed can only be speed, or slowed down 4 times. Recall command for larger changes')\n" +
-                "$\t);\n" +
-                "$\tratio = percentage/100;\n" +
-                "$\tprevious_path_length = element(element(global_points, -1),1);\n" +
-                "$\tfor(global_points, put(_, 1, element(_, 1)*ratio ) );\n" +
-                "$\tundef('global_path_precalculated');\n" +
-                "$\tstr('path %d from %d to %d ticks',\n" +
-                "$\t\tif(ratio<1,'shortened','extended'),\n" +
-                "$\t\tprevious_path_length,\n" +
-                "$\t\telement(element(global_points, -1),1)\n" +
-                "$\t)\n" +
+                "$   undef('global_path_precalculated');\n" +
+                "$   if (percentage < 25 || percentage > 400, \n" +
+                "$       exit('path speed can only be speed, or slowed down 4 times. Recall command for larger changes')\n" +
+                "$   );\n" +
+                "$   ratio = percentage/100;\n" +
+                "$   previous_path_length = element(element(global_points, -1),1);\n" +
+                "$   for(global_points, put(_, 1, element(_, 1)*ratio ) );\n" +
+                "$   undef('global_path_precalculated');\n" +
+                "$   str('path %d from %d to %d ticks',\n" +
+                "$       if(ratio<1,'shortened','extended'),\n" +
+                "$       previous_path_length,\n" +
+                "$       element(element(global_points, -1),1)\n" +
+                "$   )\n" +
                 "$);\n" +
                 "$\n" +
                 "$ select_interpolation(method) ->\n" +
                 "$(\n" +
-                "$\tundef('global_path_precalculated');\n" +
-                "$\t__prepare_path_if_needed() -> __prepare_path_if_needed_generic();\n" +
-                "$\t'each supported method needs to specify its __find_position_for_point to trace the path';\n" +
-                "$\t'accepting segment number, and position in the segment';\n" +
-                "$\t'or optionally __prepare_path_if_needed, if path is inefficient to compute point by point';\n" +
-                "$\tif (\n" +
-                "$\t\tmethod == 'linear',\n" +
-                "$\t\t(\n" +
-                "$\t\t\t__find_position_for_point(s, p) -> __find_position_for_linear(s, p)\n" +
-                "$\t\t),\n" +
-                "$\t\tmethod ~ '^gauss_',\n" +
-                "$\t\t(\n" +
-                "$\t\t\ttype = method - 'gauss_';\n" +
-                "$\t\t\tglobal_interpol_option = if(type=='auto',0,number(type));\n" +
-                "$\t\t\t__find_position_for_point(s, p) -> __find_position_for_gauss(s, p)\n" +
-                "$\t\t),\n" +
-                "$\t\tmethod ~ '^bungee_',\n" +
-                "$\t\t(\n" +
-                "$\t\t\texit('unsupported / planned');\n" +
-                "$\t\t\ttype = method - 'bungee_';\n" +
-                "$\t\t\tglobal_interpol_option = if(type=='auto',80,number(type));\n" +
-                "$\t\t\t__prepare_path_if_needed() -> __prepare_path_if_needed_bungee()\n" +
-                "$\t\t),\n" +
-                "$\t\t\n" +
-                "$\t\texit('Choose one of the following methods: linear, gauss:auto, gauss:<deviation>')\n" +
-                "$\t);\n" +
-                "$\t'Ok'\n" +
+                "$   undef('global_path_precalculated');\n" +
+                "$   __prepare_path_if_needed() -> __prepare_path_if_needed_generic();\n" +
+                "$   'each supported method needs to specify its __find_position_for_point to trace the path';\n" +
+                "$   'accepting segment number, and position in the segment';\n" +
+                "$   'or optionally __prepare_path_if_needed, if path is inefficient to compute point by point';\n" +
+                "$   if (\n" +
+                "$       method == 'linear',\n" +
+                "$       (\n" +
+                "$           __find_position_for_point(s, p) -> __find_position_for_linear(s, p)\n" +
+                "$       ),\n" +
+                "$       method ~ '^gauss_',\n" +
+                "$       (\n" +
+                "$           type = method - 'gauss_';\n" +
+                "$           global_interpol_option = if(type=='auto',0,number(type));\n" +
+                "$           __find_position_for_point(s, p) -> __find_position_for_gauss(s, p)\n" +
+                "$       ),\n" +
+                "$       method ~ '^bungee_',\n" +
+                "$       (\n" +
+                "$           exit('unsupported / planned');\n" +
+                "$           type = method - 'bungee_';\n" +
+                "$           global_interpol_option = if(type=='auto',80,number(type));\n" +
+                "$           __prepare_path_if_needed() -> __prepare_path_if_needed_bungee()\n" +
+                "$       ),\n" +
+                "$       \n" +
+                "$       exit('Choose one of the following methods: linear, gauss:auto, gauss:<deviation>')\n" +
+                "$   );\n" +
+                "$   'Ok'\n" +
                 "$);\n" +
                 "$\n" +
                 "$ select_interpolation('linear');\n" +
                 "$\n" +
                 "$ __assert_valid_for_motion() ->\n" +
                 "$(\n" +
-                "$\tif(!global_points, exit('Path not defined yet'));\n" +
-                "$\tif(length(global_points)<2, exit('Path not complete - add more points'));\n" +
-                "$\tnull\t\n" +
+                "$   if(!global_points, exit('Path not defined yet'));\n" +
+                "$   if(length(global_points)<2, exit('Path not complete - add more points'));\n" +
+                "$   null    \n" +
                 "$);\n" +
                 "$\n" +
                 "$ __get_path_at(segment, start, index) ->\n" +
                 "$(\n" +
-                "$\tv = element(global_path_precalculated, start+index);\n" +
-                "$\tif(v == null,\n" +
-                "$\t\tv = __find_position_for_point(segment, index);\n" +
-                "$\t\tput(global_path_precalculated, start+index, v)\n" +
-                "\t);\n" +
-                "\tv\n" +
+                "$   v = element(global_path_precalculated, start+index);\n" +
+                "$   if(v == null,\n" +
+                "$       v = __find_position_for_point(segment, index);\n" +
+                "$       put(global_path_precalculated, start+index, v)\n" +
+                "    );\n" +
+                "    v\n" +
                 "$);\n" +
                 "$\n" +
                 "$ __invalidate_points_cache() -> global_path_precalculated = map(range(element(element(global_points, -1),1)), null);\n" +
                 "$\n" +
-                "$ show_path() -> \n" +
+                "$ show() -> \n" +
                 "$(\n" +
-                "$\tloop(100,\n" +
-                "$\t\t_show_path_tick('dust 0.9 0.1 0.1 1', 100);\n" +
-                "$\t\tgame_tick(50)\n" +
-                "$\t);\n" +
-                "$\t'Done!'\n" +
+                "$   loop(100,\n" +
+                "$       _show_path_tick('dust 0.9 0.1 0.1 1', 100);\n" +
+                "$       game_tick(50)\n" +
+                "$   );\n" +
+                "$   'Done!'\n" +
                 "$);\n" +
                 "$\n" +
                 "$\n" +
-                "$ run_path(fps) -> \n" +
+                "$ play(fps) -> \n" +
                 "$(\n" +
-                "$\tp = player();\n" +
-                "$\t__assert_valid_for_motion();\n" +
-                "$\t__prepare_path_if_needed();\n" +
-                "$\tloop( length(global_points)-1,\n" +
-                "$\t\tsegment = _;\n" +
-                "$\t\tstart = element(element(global_points, segment),1);\n" +
-                "$\t\tend = element(element(global_points, segment+1),1);\n" +
-                "$\t\tloop(end-start,\n" +
-                "$\t\t\tv = __get_path_at(segment, start, _);\n" +
-                "$\t\t\tmodify(p, 'pos', slice(v,0,3));\n" +
-                "$\t\t\tmodify(p, 'pitch', element(v,3));\n" +
-                "$\t\t\tmodify(p, 'yaw', element(v,4));\n" +
-                "$\t\t\tgame_tick(1000/fps)\n" +
-                "$\t\t)\n" +
-                "$\t);\n" +
-                "$\tgame_tick(1000);\n" +
-                "$\t'Done!'\n" +
+                "$   p = player();\n" +
+                "$   __assert_valid_for_motion();\n" +
+                "$   __prepare_path_if_needed();\n" +
+                "$   loop( length(global_points)-1,\n" +
+                "$       segment = _;\n" +
+                "$       start = element(element(global_points, segment),1);\n" +
+                "$       end = element(element(global_points, segment+1),1);\n" +
+                "$       loop(end-start,\n" +
+                "$           v = __get_path_at(segment, start, _);\n" +
+                "$           modify(p, 'pos', slice(v,0,3));\n" +
+                "$           modify(p, 'pitch', element(v,3));\n" +
+                "$           modify(p, 'yaw', element(v,4));\n" +
+                "$           game_tick(1000/fps)\n" +
+                "$       )\n" +
+                "$   );\n" +
+                "$   game_tick(1000);\n" +
+                "$   'Done!'\n" +
                 "$);\n" +
                 "$\n" +
                 "$ _show_path_tick(particle_type, total) -> (\n" +
-                "$\t__assert_valid_for_motion();\n" +
-                "$\t__prepare_path_if_needed();\n" +
-                "$\tloop(total,\n" +
-                "$\t\tsegment = floor(rand(length(global_points)-1));\n" +
-                "$\t\tstart = element(element(global_points, segment),1);\n" +
-                "$\t\tend = element(element(global_points, segment+1),1);\n" +
-                "$\t\tindex = floor(rand(end-start));\n" +
-                "$\t\tl(x, y, z) = slice(__get_path_at(segment, start, index), 0, 3);\n" +
-                "$\t\tparticle(particle_type, x, y, z, 1, 0, 0)\n" +
-                "$\t);\n" +
-                "$\tnull\n" +
+                "$   __assert_valid_for_motion();\n" +
+                "$   __prepare_path_if_needed();\n" +
+                "$   loop(total,\n" +
+                "$       segment = floor(rand(length(global_points)-1));\n" +
+                "$       start = element(element(global_points, segment),1);\n" +
+                "$       end = element(element(global_points, segment+1),1);\n" +
+                "$       index = floor(rand(end-start));\n" +
+                "$       l(x, y, z) = slice(__get_path_at(segment, start, index), 0, 3);\n" +
+                "$       particle(particle_type, x, y, z, 1, 0, 0)\n" +
+                "$   );\n" +
+                "$   null\n" +
                 "$);\n" +
                 "$\n" +
                 "$ __prepare_path_if_needed_generic() ->\n" +
                 "$(\n" +
-                "$\tif(!global_path_precalculated, __invalidate_points_cache())\n" +
+                "$   if(!global_path_precalculated, __invalidate_points_cache())\n" +
                 ");\n" +
                 "\n" +
                 "__find_position_for_linear(segment, point) ->\n" +
                 "(\n" +
-                "$\tl(va, start, mode_a) = element(global_points,segment);\n" +
-                "$\tl(vb, end, mode_b)   = element(global_points,segment+1);\n" +
-                "$\tsection = end-start;\n" +
-                "$\tdt = point/section;\n" +
-                "$\tdt*vb+(1-dt)*va\n" +
+                "$   l(va, start, mode_a) = element(global_points,segment);\n" +
+                "$   l(vb, end, mode_b)   = element(global_points,segment+1);\n" +
+                "$   section = end-start;\n" +
+                "$   dt = point/section;\n" +
+                "$   dt*vb+(1-dt)*va\n" +
                 ");\n" +
                 "\n" +
                 "\n" +
@@ -200,75 +225,75 @@ public class CameraPathModule implements ModuleInterface
                 "$\n" +
                 "$ __find_position_for_gauss(from_index, point) -> \n" +
                 "$(\n" +
-                "$\tdev = global_interpol_option;\n" +
-                "$\tcomponents = l();\n" +
-                "$\tpath_point = element(element(global_points, from_index),1);\n" +
-                "$\t\n" +
-                "$\ttry(\n" +
-                "$\t\tfor(range(from_index+1, length(global_points)),\n" +
-                "$\t\t\tl(v,ptime,mode) = element(global_points, _);\n" +
-                "$\t\t\tdev = if (global_interpol_option > 0, global_interpol_option, \n" +
-                "$\t\t\t\tdevs = l();\n" +
-                "$\t\t\t\tif (_+1 < length(global_points), devs += element(element(global_points, _+1),1)-ptime);\n" +
-                "$\t\t\t\tif (_-1 >= 0, devs += ptime-element(element(global_points, _-1),1));\n" +
-                "$\t\t\t\t0.6*reduce(devs, _a+_, 0)/length(devs)\n" +
-                "$\t\t\t);\n" +
-                "$\t\t\timpact = __norm_prob(path_point+point, ptime, dev);\n" +
-                "$\t\t\tif(rtotal && impact < 0.000001*rtotal, throw(null));\n" +
-                "$\t\t\tcomponents += l(v, impact);\n" +
-                "$\t\t\trtotal += impact\n" +
-                "$\t\t)\n" +
-                "$\t\t,null\n" +
-                "$\t);\n" +
-                "$\ttry(\n" +
-                "$\t\tfor(range(from_index, -1, -1),\n" +
-                "$\t\t\tl(v,ptime,mode) = element(global_points, _);\n" +
-                "$\t\t\tdev = if (global_interpol_option > 0, global_interpol_option, \n" +
-                "$\t\t\t\tdevs = l();\n" +
-                "$\t\t\t\tif (_+1 < length(global_points), devs += element(element(global_points, _+1),1)-ptime);\n" +
-                "$\t\t\t\tif (_-1 >= 0, devs += ptime-element(element(global_points, _-1),1));\n" +
-                "$\t\t\t\t0.6*reduce(devs, _a+_, 0)/length(devs)\n" +
-                "$\t\t\t);\n" +
-                "$\t\t\timpact = __norm_prob(path_point+point, ptime, dev);\n" +
-                "$\t\t\tif(ltotal && impact < 0.000001*ltotal, throw(null));\n" +
-                "$\t\t\tcomponents += l(v, impact);\n" +
-                "$\t\t\tltotal += impact\n" +
-                "$\t\t)\n" +
-                "$\t\t,null\n" +
-                "$\t);\n" +
-                "$\ttotal = rtotal+ltotal;\n" +
-                "$\treduce(components, _a+element(_,0)*(element(_,1)/total), l(0,0,0,0,0))\n" +
+                "$   dev = global_interpol_option;\n" +
+                "$   components = l();\n" +
+                "$   path_point = element(element(global_points, from_index),1);\n" +
+                "$   \n" +
+                "$   try(\n" +
+                "$       for(range(from_index+1, length(global_points)),\n" +
+                "$           l(v,ptime,mode) = element(global_points, _);\n" +
+                "$           dev = if (global_interpol_option > 0, global_interpol_option, \n" +
+                "$               devs = l();\n" +
+                "$               if (_+1 < length(global_points), devs += element(element(global_points, _+1),1)-ptime);\n" +
+                "$               if (_-1 >= 0, devs += ptime-element(element(global_points, _-1),1));\n" +
+                "$               0.6*reduce(devs, _a+_, 0)/length(devs)\n" +
+                "$           );\n" +
+                "$           impact = __norm_prob(path_point+point, ptime, dev);\n" +
+                "$           if(rtotal && impact < 0.000001*rtotal, throw(null));\n" +
+                "$           components += l(v, impact);\n" +
+                "$           rtotal += impact\n" +
+                "$       )\n" +
+                "$       ,null\n" +
+                "$   );\n" +
+                "$   try(\n" +
+                "$       for(range(from_index, -1, -1),\n" +
+                "$           l(v,ptime,mode) = element(global_points, _);\n" +
+                "$           dev = if (global_interpol_option > 0, global_interpol_option, \n" +
+                "$               devs = l();\n" +
+                "$               if (_+1 < length(global_points), devs += element(element(global_points, _+1),1)-ptime);\n" +
+                "$               if (_-1 >= 0, devs += ptime-element(element(global_points, _-1),1));\n" +
+                "$               0.6*reduce(devs, _a+_, 0)/length(devs)\n" +
+                "$           );\n" +
+                "$           impact = __norm_prob(path_point+point, ptime, dev);\n" +
+                "$           if(ltotal && impact < 0.000001*ltotal, throw(null));\n" +
+                "$           components += l(v, impact);\n" +
+                "$           ltotal += impact\n" +
+                "$       )\n" +
+                "$       ,null\n" +
+                "$   );\n" +
+                "$   total = rtotal+ltotal;\n" +
+                "$   reduce(components, _a+element(_,0)*(element(_,1)/total), l(0,0,0,0,0))\n" +
                 "$);\n" +
                 "\n" +
                 "\n" +
                 "$ __prepare_path_if_needed_bungee(fps) ->\n" +
                 "$(\n" +
-                "$\texit('not ready!');\n" +
-                "$\tif(!global_points, exit('Cannot show path that doesn\\'t exist'));\n" +
-                "$\tif(length(global_points)<2, exit('Path not complete - add more points'));\n" +
-                "$\tv = element(element(global_points, 0),0);\n" +
-                "$\tmodify(p, 'pos', slice(v,0,3));\n" +
-                "$\tmodify(p, 'pitch', element(v,3));\n" +
-                "$\tmodify(p, 'yaw', element(v,4));\n" +
-                "$\tcurrent_target = element(element(global_points, 1),0);\n" +
-                "$\tcurrent_hook = 1;\n" +
-                "$\tloop(length(global_points)-1, \n" +
-                "$\t\tcurrent_base = _;\n" +
-                "$\t\tl(va, start, mode_a) = element(global_points,_);\n" +
-                "$\t\tl(vb, end, mode_b)   = element(global_points,_+1);\n" +
-                "$\t\tsection = end-start;\n" +
+                "$   exit('not ready!');\n" +
+                "$   if(!global_points, exit('Cannot show path that doesn\\'t exist'));\n" +
+                "$   if(length(global_points)<2, exit('Path not complete - add more points'));\n" +
+                "$   v = element(element(global_points, 0),0);\n" +
+                "$   modify(p, 'pos', slice(v,0,3));\n" +
+                "$   modify(p, 'pitch', element(v,3));\n" +
+                "$   modify(p, 'yaw', element(v,4));\n" +
+                "$   current_target = element(element(global_points, 1),0);\n" +
+                "$   current_hook = 1;\n" +
+                "$   loop(length(global_points)-1, \n" +
+                "$       current_base = _;\n" +
+                "$       l(va, start, mode_a) = element(global_points,_);\n" +
+                "$       l(vb, end, mode_b)   = element(global_points,_+1);\n" +
+                "$       section = end-start;\n" +
                 "$       loop(section,\n" +
-                "$\t\t\tdt = _/section;\n" +
+                "$           dt = _/section;\n" +
                 "\n" +
-                "$\t\t\tv = dt*vb+(1-dt)*va;\n" +
-                "$\t\t\tmodify(p, 'pos', slice(v,0,3));\n" +
-                "$\t\t\tmodify(p, 'pitch', element(v,3));\n" +
-                "$\t\t\tmodify(p, 'yaw', element(v,4));\n" +
-                "$\t\t\tgame_tick(1000/fps)\n" +
-                "$\t\t)\n" +
-                "$\t);\n" +
-                "$\tgame_tick(1000);\n" +
-                "$\t'Done!'\n" +
+                "$           v = dt*vb+(1-dt)*va;\n" +
+                "$           modify(p, 'pos', slice(v,0,3));\n" +
+                "$           modify(p, 'pitch', element(v,3));\n" +
+                "$           modify(p, 'yaw', element(v,4));\n" +
+                "$           game_tick(1000/fps)\n" +
+                "$       )\n" +
+                "$   );\n" +
+                "$   game_tick(1000);\n" +
+                "$   'Done!'\n" +
                 "$)\n" +
                 "$";
     }
