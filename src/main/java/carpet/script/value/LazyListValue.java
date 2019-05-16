@@ -1,4 +1,6 @@
-package carpet.script;
+package carpet.script.value;
+
+import carpet.script.exception.InternalExpressionException;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -13,7 +15,7 @@ public abstract class LazyListValue extends ListValue implements Iterator<Value>
         {
             {
                 if (step == 0)
-                    throw new Expression.InternalExpressionException("range will never end with zero step");
+                    throw new InternalExpressionException("range will never end with zero step");
                 this.current = from;
                 this.limit = to;
                 this.stepp = step;
@@ -95,7 +97,7 @@ public abstract class LazyListValue extends ListValue implements Iterator<Value>
     @Override
     public Value add(Value other)
     {
-        throw new Expression.InternalExpressionException("Cannot add to iterators");
+        throw new InternalExpressionException("Cannot add to iterators");
     }
 
 }

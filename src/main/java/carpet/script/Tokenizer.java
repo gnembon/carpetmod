@@ -1,5 +1,8 @@
 package carpet.script;
 
+import carpet.script.exception.ExpressionException;
+import carpet.script.exception.InternalExpressionException;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -122,7 +125,7 @@ public class Tokenizer implements Iterator<Tokenizer.Token>
             {
                 token.type = Token.TokenType.STRINGPARAM;
                 if (expression != null)
-                    throw new Expression.ExpressionException(this.expression, token, "Program truncated");
+                    throw new ExpressionException(this.expression, token, "Program truncated");
             }
             ch = input.charAt(pos);
             while (ch != '\'')
@@ -135,7 +138,7 @@ public class Tokenizer implements Iterator<Tokenizer.Token>
                     {
                         token.type = Token.TokenType.STRINGPARAM;
                         if (expression != null)
-                            throw new Expression.ExpressionException(this.expression, token, "Program truncated");
+                            throw new ExpressionException(this.expression, token, "Program truncated");
                     }
                 }
                 token.append(input.charAt(pos++));
@@ -193,9 +196,9 @@ public class Tokenizer implements Iterator<Tokenizer.Token>
             if (expression != null && previousToken != null && previousToken.type == Token.TokenType.OPERATOR && (ch == ')' || ch == ',')  )
             {
                 if (previousToken.surface.equalsIgnoreCase(";"))
-                    throw new Expression.ExpressionException(this.expression, previousToken,
+                    throw new ExpressionException(this.expression, previousToken,
                             "Cannot have semicolon at the end of the expression");
-                throw new Expression.ExpressionException(this.expression, previousToken,
+                throw new ExpressionException(this.expression, previousToken,
                         "Can't have operator "+previousToken.surface+" at the end of a subexpression");
             }
         }
@@ -258,7 +261,7 @@ public class Tokenizer implements Iterator<Tokenizer.Token>
             )
         )
         {
-            throw new Expression.ExpressionException(this.expression, previousToken, "'"+token.surface +"' is not allowed after '"+previousToken.surface+"'");
+            throw new ExpressionException(this.expression, previousToken, "'"+token.surface +"' is not allowed after '"+previousToken.surface+"'");
         }
         return previousToken = token;
     }
@@ -266,7 +269,7 @@ public class Tokenizer implements Iterator<Tokenizer.Token>
     @Override
     public void remove()
     {
-        throw new Expression.InternalExpressionException("remove() not supported");
+        throw new InternalExpressionException("remove() not supported");
     }
 
     public static class Token

@@ -1,4 +1,6 @@
-package carpet.script;
+package carpet.script.value;
+
+import carpet.script.exception.InternalExpressionException;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -11,6 +13,21 @@ public abstract class Value implements Comparable<Value>, Cloneable
     public static Value NULL = new NullValue();
 
     public String boundVariable;
+
+    public static <T> T assertNotNull(T t)
+    {
+        if (t == null)
+            throw new InternalExpressionException("Operand may not be null");
+        return t;
+    }
+
+    public static <T> void assertNotNull(T t1, T t2)
+    {
+        if (t1 == null)
+            throw new InternalExpressionException("First operand may not be null");
+        if (t2 == null)
+            throw new InternalExpressionException("Second operand may not be null");
+    }
 
     public boolean isBound()
     {
@@ -42,6 +59,12 @@ public abstract class Value implements Comparable<Value>, Cloneable
     }
 
     public abstract String getString();
+
+    public String getPrettyString()
+    {
+        return getString();
+    }
+
 
     public abstract boolean getBoolean();
 
@@ -103,9 +126,9 @@ public abstract class Value implements Comparable<Value>, Cloneable
         {
             if (boundVariable != null)
             {
-                throw new Expression.InternalExpressionException(boundVariable+ " cannot be assigned a new value");
+                throw new InternalExpressionException(boundVariable+ " cannot be assigned a new value");
             }
-            throw new Expression.InternalExpressionException(getString()+ " is not a variable");
+            throw new InternalExpressionException(getString()+ " is not a variable");
 
         }
     }

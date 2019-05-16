@@ -1,5 +1,6 @@
-package carpet.script;
+package carpet.script.value;
 
+import carpet.script.exception.InternalExpressionException;
 import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;
@@ -10,6 +11,13 @@ public class NumericValue extends Value
 {
     private Double value;
     final static double epsilon = 1024*Double.MIN_VALUE;
+
+    public static NumericValue asNumber(Value v1)
+    {
+        if (!(v1 instanceof NumericValue))
+            throw new InternalExpressionException("Operand has to be of a numeric type");
+        return ((NumericValue) v1);
+    }
 
 
     @Override
@@ -22,6 +30,19 @@ public class NumericValue extends Value
         catch (NumberFormatException exc)
         {
             throw new ArithmeticException("Incorrect number format for "+value);
+        }
+    }
+
+    @Override
+    public String getPrettyString()
+    {
+        if (getDouble() == (double)getLong())
+        {
+            return Long.toString(getLong());
+        }
+        else
+        {
+            return String.format("%.3f..", getDouble());
         }
     }
 

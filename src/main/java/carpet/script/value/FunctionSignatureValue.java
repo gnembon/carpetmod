@@ -1,4 +1,7 @@
-package carpet.script;
+package carpet.script.value;
+
+import carpet.script.exception.ExpressionException;
+import carpet.script.value.Value;
 
 import java.util.List;
 
@@ -11,19 +14,19 @@ public class FunctionSignatureValue extends Value
     @Override
     public String getString()
     {
-        throw new Expression.ExpressionException("Function "+identifier+" is not defined yet");
+        throw new ExpressionException("Function "+identifier+" is not defined yet");
     }
 
     @Override
     public boolean getBoolean()
     {
-        throw new Expression.ExpressionException("Function "+identifier+" is not defined yet");
+        throw new ExpressionException("Function "+identifier+" is not defined yet");
     }
 
     @Override
     public Value clone()
     {
-        throw new Expression.ExpressionException("Function "+identifier+" is not defined yet");
+        throw new ExpressionException("Function "+identifier+" is not defined yet");
     }
     public FunctionSignatureValue(String name, List<String> args, List<String> globals)
     {

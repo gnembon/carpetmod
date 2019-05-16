@@ -1,4 +1,6 @@
-package carpet.script;
+package carpet.script.value;
+
+import carpet.script.exception.InternalExpressionException;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -16,6 +18,15 @@ public class ListValue extends Value
     public String getString()
     {
         return "["+items.stream().map(Value::getString).collect(Collectors.joining(", "))+"]";
+    }
+
+    @Override
+    public String getPrettyString()
+    {
+        if (items.size()<8)
+            return "["+items.stream().map(Value::getPrettyString).collect(Collectors.joining(", "))+"]";
+        return "["+items.get(0).getPrettyString()+", "+items.get(1).getPrettyString()+", ..., "+
+                items.get(items.size()-2).getPrettyString()+", "+items.get(items.size()-1).getPrettyString()+"]";
     }
 
     @Override
@@ -64,7 +75,7 @@ public class ListValue extends Value
             }
             else
             {
-                throw new Expression.InternalExpressionException("Cannot subtract two lists of uneven sizes");
+                throw new InternalExpressionException("Cannot subtract two lists of uneven sizes");
             }
         }
         else
@@ -95,7 +106,7 @@ public class ListValue extends Value
             }
             else
             {
-                throw new Expression.InternalExpressionException("Cannot subtract two lists of uneven sizes");
+                throw new InternalExpressionException("Cannot subtract two lists of uneven sizes");
             }
         }
         else
@@ -128,7 +139,7 @@ public class ListValue extends Value
             }
             else
             {
-                throw new Expression.InternalExpressionException("Cannot subtract two lists of uneven sizes");
+                throw new InternalExpressionException("Cannot subtract two lists of uneven sizes");
             }
         }
         else
@@ -155,7 +166,7 @@ public class ListValue extends Value
             }
             else
             {
-                throw new Expression.InternalExpressionException("Cannot subtract two lists of uneven sizes");
+                throw new InternalExpressionException("Cannot subtract two lists of uneven sizes");
             }
         }
         else
