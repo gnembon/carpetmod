@@ -137,6 +137,7 @@ public class EntityValue extends Value
         put("uuid",(e, a) -> new StringValue(e.getCachedUniqueIdString()));
         put("id",(e, a) -> new NumericValue(e.getEntityId()));
         put("pos", (e, a) -> ListValue.of(new NumericValue(e.posX), new NumericValue(e.posY), new NumericValue(e.posZ)));
+        put("location", (e, a) -> ListValue.of(new NumericValue(e.posX), new NumericValue(e.posY), new NumericValue(e.posZ), new NumericValue(e.rotationYaw), new NumericValue(e.rotationPitch)));
         put("x", (e, a) -> new NumericValue(e.posX));
         put("y", (e, a) -> new NumericValue(e.posY));
         put("z", (e, a) -> new NumericValue(e.posZ));
@@ -334,6 +335,24 @@ public class EntityValue extends Value
             e.posX = NumericValue.asNumber(coords.get(0)).getDouble();
             e.posY = NumericValue.asNumber(coords.get(1)).getDouble();
             e.posZ = NumericValue.asNumber(coords.get(2)).getDouble();
+            e.setPosition(e.posX, e.posY, e.posZ);
+            if (e instanceof EntityPlayerMP)
+                ((EntityPlayerMP)e).connection.setPlayerLocation(e.posX, e.posY, e.posZ, e.rotationYaw, e.rotationPitch);
+        });
+        put("location", (e, v) ->
+        {
+            if (!(v instanceof ListValue))
+            {
+                throw new InternalExpressionException("expected a list of 5 parameters as second argument");
+            }
+            List<Value> coords = ((ListValue) v).getItems();
+            e.posX = NumericValue.asNumber(coords.get(0)).getDouble();
+            e.posY = NumericValue.asNumber(coords.get(1)).getDouble();
+            e.posZ = NumericValue.asNumber(coords.get(2)).getDouble();
+            e.rotationPitch = (float) NumericValue.asNumber(coords.get(4)).getDouble();
+            e.prevRotationPitch = e.rotationPitch;
+            e.rotationYaw = (float) NumericValue.asNumber(coords.get(3)).getDouble();
+            e.prevRotationYaw = e.rotationYaw;
             e.setPosition(e.posX, e.posY, e.posZ);
             if (e instanceof EntityPlayerMP)
                 ((EntityPlayerMP)e).connection.setPlayerLocation(e.posX, e.posY, e.posZ, e.rotationYaw, e.rotationPitch);
