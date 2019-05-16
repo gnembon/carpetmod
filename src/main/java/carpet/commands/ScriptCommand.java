@@ -2,7 +2,11 @@ package carpet.commands;
 
 import carpet.CarpetServer;
 import carpet.CarpetSettings;
-import carpet.script.*;
+import carpet.script.CarpetExpression;
+import carpet.script.Expression;
+import carpet.script.ExpressionInspector;
+import carpet.script.ScriptHost;
+import carpet.script.Tokenizer;
 import carpet.script.exception.CarpetExpressionException;
 import carpet.utils.Messenger;
 import com.mojang.brigadier.CommandDispatcher;

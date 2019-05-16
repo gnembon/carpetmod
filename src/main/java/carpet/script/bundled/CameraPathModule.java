@@ -14,25 +14,36 @@ public class CameraPathModule implements ModuleInterface
         return  "$ __command() ->\n" +
                 "$ (\n" +
                 "$   print('Camera path module.');\n" +
+                "$   print('-------------------');\n" +
                 "$   print(' \"/camera start\" - set the starting point');\n" +
-                "$   print(' \"/camera add <delay>\" - add another point <delay> frames later');\n" +
-                "$   print(' \"/camera select_interpolation <linear|gauss_<N>|gauss_auto\"');\n" +
+                "$   print('');\n" +
+                "$   print(' \"/camera add <N>\" - add another point <N> frames later');\n" +
+                "$   print('');\n" +
+                "$   print(' \"/camera select_interpolation < linear | gauss_? >\"');\n" +
                 "$   print('    Select interpolation between points:');\n" +
-                "$   print('    - linear: straight paths between points');\n" +
-                "$   print('    - gauss_auto: automatic smooth transitions between point');\n" +
-                "$   print('    - gauss_<number>: custom fixed variance (in points) for special effects');\n" +
+                "$   print('    - linear: straight paths between points.');\n" +
+                "$   print('    - gauss_auto: automatic smooth transitions.');\n" +
+                "$   print('    - gauss_<number>: custom fixed variance ');\n" +
+                "$   print('            (in points) for special effects.');\n" +
+                "$   print('');\n" +
                 "$   print(' \"/camera repeat <N> <last_delay>\" - ');\n" +
                 "$   print('    Repeat existing points configuration n-times');\n" +
                 "$   print('      using <last_delay> points to link path ends');\n" +
-                "$   print(' \"/camera speed <factor> - change number of frames between points');\n" +
-                "$   print('    From 25 -> 4 times faster (less points),');\n" +
+                "$   print('');\n" +
+                "$   print(' \"/camera speed <factor> - ');\n" +
+                "$   print('    Change number of frames between points');\n" +
+                "$   print('      from 25 -> 4 times faster (less points),');\n" +
                 "$   print('      to 400 -> 4 times slower (more points)');\n" +
+                "$   print('');\n" +
                 "$   print(' \"/camera play <fps>: run a path with a player');\n" +
                 "$   print('    <fps> needs to be multiples of 20, (20 tps)');\n" +
+                "$   print('');\n" +
                 "$   print(' \"/camera show\": shows current path for a moment');\n" +
-                "$   print(' \"/script in camera invoke _show_path_tick <particle> <particles_per_tick>\":');\n" +
+                "$   print('');\n" +
+                "$   print(' \"/script in camera invoke _show_path_tick <particle> <ppt>\":');\n" +
                 "$   print('    place this in a repeating commandblock');\n" +
                 "$   print('      to display path continuously');\n" +
+                "$   print('      with set particle and number of particles per tick');\n" +
                 "$   print('      example: \\'dust 0.9 0.1 0.1 1\\' 100 ');\n" +
                 "$   ''\n" +
                 "$ );\n" +

@@ -12,7 +12,13 @@ import carpet.script.Fluff.SexFunction;
 import carpet.script.Fluff.TriFunction;
 import carpet.script.exception.ExpressionException;
 import carpet.script.exception.InternalExpressionException;
-import carpet.script.value.*;
+import carpet.script.value.FunctionSignatureValue;
+import carpet.script.value.GlobalValue;
+import carpet.script.value.LazyListValue;
+import carpet.script.value.ListValue;
+import carpet.script.value.NumericValue;
+import carpet.script.value.StringValue;
+import carpet.script.value.Value;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
