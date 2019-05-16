@@ -293,7 +293,7 @@ public class EntityValue extends Value
             String res = null;
             try
             {
-                res = path.get(nbttagcompound).toFormattedComponent().getString();
+                res = path.get(nbttagcompound).toFormattedComponent().getString(); // watch in 1.14 -returns list, not tag
             }
             catch (CommandSyntaxException ignored) { }
             return new StringValue(res);
