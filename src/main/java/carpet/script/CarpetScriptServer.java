@@ -111,6 +111,11 @@ public class CarpetScriptServer
         name = name.toLowerCase(Locale.ROOT);
         ScriptHost newHost = createMinecraftScriptHost(name);
         ModuleInterface module = getModule(name);
+        if (module == null)
+        {
+            Messenger.m(source, "r Unable to load the package - not found");
+            return false;
+        }
         String code = module.getCode();
         if (code == null)
         {
