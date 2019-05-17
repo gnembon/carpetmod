@@ -29,21 +29,19 @@
                      {
                          int i = flags & -2;
                          iblockstate.updateDiagonalNeighbors(this, pos, i);
-@@ -1231,7 +1236,13 @@
-                 this.weatherEffects.remove(i--);
-             }
-         }
+@@ -1199,6 +1204,11 @@
+     {
+         this.profiler.startSection("entities");
+         this.profiler.startSection("global");
 +        /// CM profiler
 +        int did = this.dimension.getType().getId();
 +        String world_name = (did==0)?"Overworld":((did<0?"The Nether":"The End"));
 +        CarpetProfiler.ProfilerToken tok_entities = CarpetProfiler.start_section_concurrent(world_name, "Entities", this.isRemote);
 +        // end
  
-+
-         this.profiler.endStartSection("remove");
-         this.loadedEntityList.removeAll(this.unloadedEntityList);
- 
-@@ -1259,6 +1270,7 @@
+         for (int i = 0; i < this.weatherEffects.size(); ++i)
+         {
+@@ -1259,6 +1269,7 @@
          for (int i1 = 0; i1 < this.loadedEntityList.size(); ++i1)
          {
              Entity entity2 = this.loadedEntityList.get(i1);
@@ -51,7 +49,7 @@
              Entity entity3 = entity2.getRidingEntity();
  
              if (entity3 != null)
-@@ -1273,7 +1285,8 @@
+@@ -1273,7 +1284,8 @@
  
              this.profiler.startSection("tick");
  
@@ -61,7 +59,7 @@
              {
                  try
                  {
-@@ -1304,10 +1317,14 @@
+@@ -1304,10 +1316,14 @@
                  this.loadedEntityList.remove(i1--);
                  this.onEntityRemoved(entity2);
              }
@@ -76,7 +74,7 @@
          this.profiler.endStartSection("blockEntities");
  
          if (!this.tileEntitiesToBeRemoved.isEmpty())
-@@ -1323,12 +1340,15 @@
+@@ -1323,12 +1339,15 @@
          while (iterator.hasNext())
          {
              TileEntity tileentity = iterator.next();
@@ -93,7 +91,7 @@
                  {
                      try
                      {
-@@ -1359,6 +1379,7 @@
+@@ -1359,6 +1378,7 @@
                      this.getChunk(tileentity.getPos()).removeTileEntity(tileentity.getPos());
                  }
              }
@@ -101,7 +99,7 @@
          }
  
          this.processingLoadedTiles = false;
-@@ -1389,6 +1410,7 @@
+@@ -1389,6 +1409,7 @@
  
              this.addedTileEntityList.clear();
          }
@@ -109,7 +107,7 @@
  
          this.profiler.endSection();
          this.profiler.endSection();
-@@ -1514,7 +1536,8 @@
+@@ -1514,7 +1535,8 @@
                  this.getChunk(entityIn.chunkCoordX, entityIn.chunkCoordZ).removeEntityAtIndex(entityIn, entityIn.chunkCoordY);
              }
  
