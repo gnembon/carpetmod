@@ -19,7 +19,6 @@ public class CtrlQCrafting {
         {
             ItemStack itemstack1 = slot.getStack();
             itemstack = itemstack1.copy();
-            EntityEquipmentSlot entityequipmentslot = EntityLiving.getSlotForItemStack(itemstack);
 
             if (index == 0)
             {
