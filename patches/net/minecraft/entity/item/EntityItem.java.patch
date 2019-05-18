@@ -1,16 +1,17 @@
 --- a/net/minecraft/entity/item/EntityItem.java
 +++ b/net/minecraft/entity/item/EntityItem.java
-@@ -2,6 +2,9 @@
+@@ -2,6 +2,10 @@
  
  import java.util.UUID;
  import javax.annotation.Nullable;
 +
 +import carpet.CarpetSettings;
++import carpet.helpers.InventoryHelper;
 +import net.minecraft.block.BlockShulkerBox;
  import net.minecraft.entity.Entity;
  import net.minecraft.entity.EntityType;
  import net.minecraft.entity.MoverType;
-@@ -9,6 +12,7 @@
+@@ -9,6 +13,7 @@
  import net.minecraft.init.Items;
  import net.minecraft.init.SoundEvents;
  import net.minecraft.item.Item;
@@ -18,7 +19,7 @@
  import net.minecraft.item.ItemStack;
  import net.minecraft.nbt.NBTTagCompound;
  import net.minecraft.nbt.NBTUtil;
-@@ -37,6 +41,12 @@
+@@ -37,6 +42,12 @@
      private UUID owner;
      public float hoverStart = (float)(Math.random() * Math.PI * 2.0D);
  
@@ -31,25 +32,37 @@
      public EntityItem(World worldIn)
      {
          super(EntityType.ITEM, worldIn);
-@@ -225,10 +235,28 @@
+@@ -57,6 +68,15 @@
+     {
+         this(worldIn, x, y, z);
+         this.setItem(stack);
++
++        if (CarpetSettings.b_stackableShulkerBoxes
++                && stack.getItem() instanceof ItemBlock
++                && ((ItemBlock)stack.getItem()).getBlock() instanceof BlockShulkerBox)
++        {
++            if (InventoryHelper.cleanUpShulkerBoxTag(stack)) {
++                this.setItem(stack);
++            }
++        }
+     }
+ 
+     protected boolean canTriggerWalking()
+@@ -205,8 +225,12 @@
+             {
+                 if (this.age != -32768 && other.age != -32768)
+                 {
+-                    if (itemstack1.getItem() != itemstack.getItem())
++                    if (this.tryStackShulkerBoxes(other))
                      {
-                         return other.combineItems(this);
-                     }
-+                    else if ( // case of two shulkerbox items, both with no tag. We know its same item and both have same tag
-+                         (itemstack1.getItem() instanceof ItemBlock) &&
-+                         (CarpetSettings.getBool("stackableShulkerBoxes")) &&
-+                         (((ItemBlock) itemstack1.getItem()).getBlock() instanceof BlockShulkerBox) &&
-+                         (!itemstack1.hasTag() )
-+                    )
-+                    {
-+                        itemstack1.grow(itemstack.getCount());
-+                        other.pickupDelay = Math.max(other.pickupDelay, this.pickupDelay);
-+                        other.age = Math.min(other.age, this.age);
-+                        other.setItem(itemstack1);
-+                        this.remove();
 +                        return true;
 +                    }
-                     else if (itemstack1.getCount() + itemstack.getCount() > itemstack1.getMaxStackSize())
++                    else if (itemstack1.getItem() != itemstack.getItem())
++                    {
+                         return false;
+                     }
+                     else if (itemstack1.hasTag() ^ itemstack.hasTag())
+@@ -229,6 +253,10 @@
                      {
                          return false;
                      }
@@ -60,3 +73,48 @@
                      else
                      {
                          itemstack1.grow(itemstack.getCount());
+@@ -460,4 +488,44 @@
+         this.setInfinitePickupDelay();
+         this.age = 5999;
+     }
++
++    // CM start
++    private boolean tryStackShulkerBoxes(EntityItem other)
++    {
++        ItemStack selfStack = this.getItem().copy();
++        if (!CarpetSettings.b_stackableShulkerBoxes
++                || !(selfStack.getItem() instanceof ItemBlock)
++                || !(((ItemBlock)selfStack.getItem()).getBlock() instanceof BlockShulkerBox))
++        {
++            return false;
++        }
++
++        ItemStack otherStack = other.getItem().copy();
++        if (selfStack.getItem() == otherStack.getItem()
++                && !InventoryHelper.shulkerBoxHasItems(selfStack)
++                && selfStack.hasTag() == otherStack.hasTag()
++                && selfStack.getCount() + otherStack.getCount() <= CarpetSettings.SHULKERBOX_MAX_STACK_AMOUNT)
++        {
++            int amount = Math.min(otherStack.getCount(), CarpetSettings.SHULKERBOX_MAX_STACK_AMOUNT - selfStack.getCount());
++
++            selfStack.grow(amount);
++            this.setItem(selfStack);
++
++            this.pickupDelay = Math.max(other.pickupDelay, this.pickupDelay);
++            this.age = Math.min(other.age, this.age);
++
++            otherStack.shrink(amount);
++            if (otherStack.isEmpty())
++            {
++                other.remove();
++            }
++            else
++            {
++                other.setItem(otherStack);
++            }
++            return true;
++        }
++
++        return false;
++    }
+ }
