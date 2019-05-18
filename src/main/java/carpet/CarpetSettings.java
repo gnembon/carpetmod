@@ -20,6 +20,7 @@ import java.io.FileNotFoundException;
 import carpet.utils.Messenger;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.dedicated.DedicatedServer;
+import net.minecraft.util.text.TextComponentString;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -143,7 +144,7 @@ public class CarpetSettings
                                 .choices("100","0 10 50 100").setNotStrict(),
   rule("customMOTD",            "creative","Sets a different motd message on client trying to connect to the server")
                                 .extraInfo("use '_' to use the startup setting from server.properties")
-                                .choices("_","_").setNotStrict(),
+                                .choices("_","_").setNotStrict().validate((s) -> CarpetServer.minecraft_server.checkMOTD()),
   rule("rotatorBlock",          "experimental", "Cactus in dispensers rotates blocks.")
                                 .extraInfo("Cactus in a dispenser gives the dispenser the ability to rotate the blocks " +
                                            "that are in front of it anti-clockwise if possible."),
