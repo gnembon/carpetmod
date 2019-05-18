@@ -27,16 +27,13 @@
      }
  
      public abstract boolean init() throws IOException;
-@@ -642,24 +649,46 @@
+@@ -642,24 +649,43 @@
              if (this.init())
              {
                  this.serverTime = Util.milliTime();
 -                this.statusResponse.setServerDescription(new TextComponentString(this.motd));
 +                // [CM] if statement around -- CustomMOTD
-+                if ("_".equals(CarpetSettings.getString("customMOTD")))
-+                    this.statusResponse.setServerDescription(new TextComponentString(this.motd));
-+                else
-+                    this.statusResponse.setServerDescription(new TextComponentString(CarpetSettings.getString("customMOTD")));
++                checkMOTD();
 +                // [CM] End -- CustomMOTD
                  this.statusResponse.setVersion(new ServerStatusResponse.Version("1.13.2", 404));
                  this.applyServerIconToResponse(this.statusResponse);
@@ -78,7 +75,7 @@
  
                      while (this.isAheadOfTime())
                      {
-@@ -782,6 +811,12 @@
+@@ -782,6 +808,12 @@
      {
          long i = Util.nanoTime();
          ++this.tickCounter;
@@ -91,7 +88,7 @@
  
          if (this.startProfiling)
          {
-@@ -790,6 +825,9 @@
+@@ -790,6 +822,9 @@
          }
  
          this.profiler.startSection("root");
@@ -101,7 +98,7 @@
          this.updateTimeLightAndEntities(hasTimeLeft);
  
          if (i - this.nanoTimeSinceStatusRefresh >= 5000000000L)
-@@ -810,10 +848,12 @@
+@@ -810,10 +845,12 @@
  
          if (this.tickCounter % 900 == 0)
          {
@@ -114,7 +111,7 @@
          }
  
          this.profiler.startSection("snooper");
-@@ -834,6 +874,10 @@
+@@ -834,6 +871,10 @@
          this.tickTime = this.tickTime * 0.8F + (float)l / 1000000.0F * 0.19999999F;
          this.profiler.endSection();
          this.profiler.endSection();
@@ -125,7 +122,7 @@
      }
  
      public void updateTimeLightAndEntities(BooleanSupplier hasTimeLeft)
-@@ -905,10 +949,12 @@
+@@ -905,10 +946,12 @@
              }))[this.tickCounter % 100] = Util.nanoTime() - i;
          }
  
@@ -138,7 +135,7 @@
          this.profiler.endStartSection("tickables");
  
          for (int j = 0; j < this.tickables.size(); ++j)
-@@ -1605,6 +1651,12 @@
+@@ -1605,6 +1648,12 @@
      {
          return this.serverTime;
      }
@@ -151,3 +148,16 @@
  
      public Thread getServerThread()
      {
+@@ -1825,4 +1874,12 @@
+             return 0;
+         }
+     }
++    public void checkMOTD()
++    {
++        if ("_".equals(CarpetSettings.getString("customMOTD")))
++            this.statusResponse.setServerDescription(new TextComponentString(this.motd));
++        else
++            this.statusResponse.setServerDescription(new TextComponentString(CarpetSettings.getString("customMOTD")));
++
++    }
+ }
