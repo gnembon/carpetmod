@@ -19,10 +19,11 @@ public class XPcombine
     }
 
     private static long tone = 0L;
+    private static int lastTickCombine = 0;
     private static boolean combineItems(EntityXPOrb first, EntityXPOrb other)
     {
         if (
-                first == other || first.world.isRemote
+                first == other || first.world.isRemote || first.getServer().getTickCounter() == lastTickCombine
                 || !first.isAlive() || !other.isAlive()
                 || first.delayBeforeCanPickup == 32767 || other.delayBeforeCanPickup == 32767
                 || first.xpOrbAge == -32768 || other.xpOrbAge == -32768
@@ -55,14 +56,17 @@ public class XPcombine
         newOrb.motionY = first.motionY+first.world.rand.nextDouble()*0.5D;
         newOrb.motionZ = first.motionZ+first.world.rand.nextDouble()*1.0D-0.5D;
 
-        double pitch = Math.pow(2.0D, (tone%13)/12.0D )/2.0;
+        float pitch = (float)Math.pow(2.0D, (tone%13)/12.0D )/2.0F;
         tone+=2;
         if(tone%13 == 0 || tone%13 == 1 || tone%13 == 6) tone --;
+        lastTickCombine = newOrb.getServer().getTickCounter();
         for (EntityPlayer p : newOrb.world.getPlayers(EntityPlayer.class, (p) -> p.getDistanceSq(newOrb) < 256.0D))
         {
             ((EntityPlayerMP)p).connection.sendPacket(new SPacketCustomSound(
                         IRegistry.SOUND_EVENT.getKey(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP),
-                        SoundCategory.BLOCKS, newOrb.getPositionVector(), 1.0F, (float)pitch));
+                        SoundCategory.PLAYERS, newOrb.getPositionVector(),
+                        pitch-newOrb.world.rand.nextFloat()/2f,
+                        pitch));
         }
         return true;
     }
