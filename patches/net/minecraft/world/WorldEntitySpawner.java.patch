@@ -71,29 +71,29 @@
                          label158:
  
                          for (ChunkPos chunkpos1 : this.eligibleChunksForSpawning)
-@@ -175,8 +210,22 @@
+@@ -175,7 +210,21 @@
                                                              {
                                                                  ++j2;
                                                                  ++i4;
-+                                                            //CM replacing //worldServerIn.spawnEntity(entityliving)
-+                                                            ++local_spawns;
-+                                                            if (SpawnReporter.track_spawns > 0L)
-+                                                            {
-+                                                                String species = IRegistry.ENTITY_TYPE.getKey(entityliving.getType()).toString().replaceFirst("minecraft:","");
-+                                                                SpawnReporter.registerSpawn(entityliving, type_code, species, blockpos$mutableblockpos);
-+                                                            }
-+                                                            if (SpawnReporter.mock_spawns)
-+                                                            {
-+                                                                entityliving.remove();
-+                                                            }
-+                                                            else
-+                                                            {
-                                                                 worldServerIn.spawnEntity(entityliving);
+-                                                                worldServerIn.spawnEntity(entityliving);
++                                                                //CM replacing //worldServerIn.spawnEntity(entityliving)
++                                                                ++local_spawns;
++                                                                if (SpawnReporter.track_spawns > 0L)
++                                                                {
++                                                                    String species = IRegistry.ENTITY_TYPE.getKey(entityliving.getType()).toString().replaceFirst("minecraft:","");
++                                                                    SpawnReporter.registerSpawn(entityliving, type_code, species, blockpos$mutableblockpos);
++                                                                }
++                                                                if (SpawnReporter.mock_spawns)
++                                                                {
++                                                                    entityliving.remove();
++                                                                }
++                                                                else
++                                                                {
++                                                                    worldServerIn.spawnEntity(entityliving);
++                                                                }
                                                              }
-+                                                            }
                                                              else
                                                              {
-                                                                 entityliving.remove();
 @@ -202,7 +251,30 @@
                                  }
                              }
