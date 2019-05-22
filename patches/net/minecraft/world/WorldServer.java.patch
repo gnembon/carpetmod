@@ -71,57 +71,30 @@
          this.profiler.endSection();
          this.sendQueuedBlockEvents();
          this.insideTick = false;
-@@ -269,8 +296,18 @@
-                     ++j;
+@@ -270,7 +297,7 @@
                  }
              }
--
+ 
 -            this.allPlayersSleeping = j > 0 && j >= this.playerEntities.size() - i;
-+            // [CM] Added variable int & Conditional statement -- SleepingThreshold
-+            int sleepingThreshold = CarpetSettings.getInt("sleepingThreshold");
-+            if (sleepingThreshold < 100)
-+            {
-+                // Custom Amount
-+                this.allPlayersSleeping = j > 0;
-+            }
-+            else
-+            {
-+                // Vanilla Amount
-+                this.allPlayersSleeping = j > 0 && j >= this.playerEntities.size() - i;
-+            }
++            this.allPlayersSleeping = j > 0 && (CarpetSettings.getBool("onePlayerSleeping") || j >= this.playerEntities.size() - i);
          }
      }
  
-@@ -306,6 +343,28 @@
+@@ -306,6 +333,13 @@
      {
          if (this.allPlayersSleeping && !this.isRemote)
          {
-+            // [CM] Added variable int and conditional statement -- SleepingThreshold
-+            int sleepingThreshold = CarpetSettings.getInt("sleepingThreshold");
-+            if (sleepingThreshold < 100)
++            if (CarpetSettings.getBool("onePlayerSleeping"))
 +            {
-+                float numberOfPlayers = 0;
-+                float sleepingPlayerCount = 0;
-+
 +                for (EntityPlayer entityplayer : this.playerEntities)
-+                {
-+                    if (!entityplayer.isSpectator())
-+                    {
-+                        numberOfPlayers++;
-+                        if (entityplayer.isPlayerFullyAsleep())
-+                        {
-+                            sleepingPlayerCount++;
-+                        }
-+                    }
-+                }
-+                return sleepingThreshold <= (int) ((sleepingPlayerCount / numberOfPlayers) * 100);
++                    if (!entityplayer.isSpectator() && entityplayer.isPlayerFullyAsleep())
++                        return true;
++                return false;
 +            }
-+
-+            // [CM] end
              for (EntityPlayer entityplayer : this.playerEntities)
              {
                  if (!entityplayer.isSpectator() && !entityplayer.isPlayerFullyAsleep())
-@@ -407,6 +466,13 @@
+@@ -407,6 +441,13 @@
                  chunk.enqueueRelightChecks();
                  this.profiler.endStartSection("tickChunk");
                  chunk.tick(false);
@@ -135,7 +108,7 @@
                  this.profiler.endStartSection("thunder");
  
                  if (flag && flag1 && this.rand.nextInt(100000) == 0)
-@@ -499,7 +565,7 @@
+@@ -499,7 +540,7 @@
          }
      }
  

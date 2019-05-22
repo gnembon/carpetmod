@@ -184,7 +184,7 @@ public class EntityValue extends Value
             return Value.NULL;
         });
         put("home", (e, a) -> {
-            if (e instanceof EntityCreature)
+            if (e instanceof EntityCreature) // moved to EntityLiving in 1.14
             {
                 return ((EntityCreature) e).hasHome()?new BlockValue(null, e.getEntityWorld(), ((EntityCreature) e).getHomePosition()):Value.FALSE;
             }

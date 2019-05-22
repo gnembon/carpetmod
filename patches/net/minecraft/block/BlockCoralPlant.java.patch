@@ -29,7 +29,7 @@
  {
      private final Block deadBlock;
      protected static final VoxelShape SHAPE = Block.makeCuboidShape(2.0D, 0.0D, 2.0D, 14.0D, 15.0D, 14.0D);
-@@ -54,6 +64,45 @@
+@@ -54,6 +64,56 @@
          }
      }
  
@@ -68,7 +68,18 @@
 +
 +        if (!coral.growSpecific(worldIn, random, pos, proper_block))
 +        {
-+            worldIn.setBlockState(pos, blockUnder, 4);
++            worldIn.setBlockState(pos, blockUnder, 3);
++        }
++        else
++        {
++            if (worldIn.rand.nextInt(10)==0)
++            {
++                BlockPos randomPos = pos.add(worldIn.rand.nextInt(16)-8,worldIn.rand.nextInt(8),worldIn.rand.nextInt(16)-8  );
++                if (BlockTags.CORAL_BLOCKS.contains(worldIn.getBlockState(randomPos).getBlock()))
++                {
++                    worldIn.setBlockState(pos, Blocks.WET_SPONGE.getDefaultState(), 3);
++                }
++            }
 +        }
 +    }
 +

@@ -142,9 +142,7 @@ public class CarpetSettings
   //                              .choices("false","false true clientAndServer"),
   //???rule("waterFlow",             "optimizations", "fixes water flowing issues")
   //                              .choices("vanilla","vanilla optimized correct"),
-  rule("sleepingThreshold",     "experimental", "The percentage of required sleeping players to skip the night")
-                                .extraInfo("Use values from 0 to 100, 100 for default (all players needed)")
-                                .choices("100","0 10 50 100").setNotStrict(),
+  rule("onePlayerSleeping",     "survival", "One player is required on the server to cause night to pass"),
   rule("customMOTD",            "creative","Sets a different motd message on client trying to connect to the server")
                                 .extraInfo("use '_' to use the startup setting from server.properties")
                                 .choices("_","_").setNotStrict().validate((s) -> CarpetServer.minecraft_server.checkMOTD()),
