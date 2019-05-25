@@ -110,7 +110,7 @@ public class CarpetCommand
 
     private static int setRule(CommandSource source, CarpetSettingEntry rule, String newValue)
     {
-        CarpetSettings.set(rule.getName(), newValue);
+        CarpetSettings.set(source, rule.getName(), newValue);
         Messenger.m(source, "w "+rule.toString()+", ", "c [change permanently?]",
                 "^w Click to keep the settings in carpet.conf to save across restarts",
                 "?/carpet setDefault "+rule.getName()+" "+rule.getStringValue());
@@ -118,13 +118,13 @@ public class CarpetCommand
     }
     private static int setDefault(CommandSource source, CarpetSettingEntry rule, String defaultValue)
     {
-        CarpetSettings.setDefaultRule(source.getServer(), rule.getName(), defaultValue);
+        CarpetSettings.setDefaultRule(source, rule.getName(), defaultValue);
         Messenger.m(source ,"gi rule "+ rule.getName()+" will now default to "+ defaultValue);
         return 1;
     }
     private static int removeDefault(CommandSource source, CarpetSettingEntry rule)
     {
-        CarpetSettings.removeDefaultRule(source.getServer(), rule.getName());
+        CarpetSettings.removeDefaultRule(source, rule.getName());
         Messenger.m(source ,"gi rule "+ rule.getName()+" defaults to Vanilla");
         return 1;
     }
