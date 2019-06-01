@@ -1,13 +1,27 @@
 --- a/net/minecraft/server/management/PlayerInteractionManager.java
 +++ b/net/minecraft/server/management/PlayerInteractionManager.java
-@@ -1,5 +1,6 @@
+@@ -1,5 +1,7 @@
  package net.minecraft.server.management;
  
++import carpet.CarpetServer;
 +import carpet.helpers.BlockRotator;
  import net.minecraft.block.Block;
  import net.minecraft.block.BlockChest;
  import net.minecraft.block.BlockCommandBlock;
-@@ -401,11 +402,20 @@
+@@ -241,6 +243,12 @@
+         {
+             iblockstate.getBlock().onPlayerDestroy(this.world, pos, iblockstate);
+         }
++        //CM
++        if(flag)
++        {
++            CarpetServer.scriptServer.events.onBlockBroken(player, world, pos, iblockstate);
++        }
++        // end CM
+ 
+         return flag;
+     }
+@@ -401,11 +409,20 @@
              boolean flag = !player.getHeldItemMainhand().isEmpty() || !player.getHeldItemOffhand().isEmpty();
              boolean flag1 = player.isSneaking() && flag;
  

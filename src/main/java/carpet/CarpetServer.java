@@ -48,6 +48,7 @@ public class CarpetServer // static for now - easier to handle all around the co
     {
         TickSpeed.tick(server);
         HUDController.update_hud(server);
+        scriptServer.events.tick(); // in 1.14 make sure its called in the aftertick
     }
 
     public static void registerCarpetCommands(CommandDispatcher<CommandSource> dispatcher)

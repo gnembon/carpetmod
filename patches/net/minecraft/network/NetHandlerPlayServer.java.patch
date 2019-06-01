@@ -1,26 +1,28 @@
 --- a/net/minecraft/network/NetHandlerPlayServer.java
 +++ b/net/minecraft/network/NetHandlerPlayServer.java
-@@ -1,5 +1,7 @@
+@@ -1,5 +1,8 @@
  package net.minecraft.network;
  
++import carpet.CarpetServer;
 +import carpet.CarpetSettings;
 +import carpet.helpers.TickSpeed;
  import com.google.common.primitives.Doubles;
  import com.google.common.primitives.Floats;
  import com.google.common.util.concurrent.Futures;
-@@ -296,6 +298,11 @@
+@@ -296,6 +299,12 @@
      {
          PacketThreadUtil.checkThreadAndEnqueue(packetIn, this, this.player.getServerWorld());
          this.player.setEntityActionState(packetIn.getStrafeSpeed(), packetIn.getForwardSpeed(), packetIn.isJumping(), packetIn.isSneaking());
 +        //CM checking if player is moving, for commandTick
 +        if (packetIn.getStrafeSpeed() != 0.0F || packetIn.getForwardSpeed() != 0.0F || packetIn.isJumping() || packetIn.isSneaking())
 +        {
++            CarpetServer.scriptServer.events.onMountControls(player, packetIn.getStrafeSpeed(), packetIn.getForwardSpeed(), packetIn.isJumping(), packetIn.isSneaking());
 +            TickSpeed.reset_player_active_timeout();
 +        }
      }
  
      private static boolean isMovePlayerPacketInvalid(CPacketPlayer packetIn)
-@@ -831,6 +838,12 @@
+@@ -831,6 +840,12 @@
                          double d10 = this.player.motionX * this.player.motionX + this.player.motionY * this.player.motionY + this.player.motionZ * this.player.motionZ;
                          double d11 = d7 * d7 + d8 * d8 + d9 * d9;
  
@@ -33,7 +35,7 @@
                          if (this.player.isPlayerSleeping())
                          {
                              if (d11 > 1.0D)
-@@ -849,7 +862,8 @@
+@@ -849,7 +864,8 @@
                                  i = 1;
                              }
  
@@ -43,3 +45,95 @@
                              {
                                  float f2 = this.player.isElytraFlying() ? 300.0F : 100.0F;
  
+@@ -869,6 +885,8 @@
+                             if (this.player.onGround && !packetIn.isOnGround() && d8 > 0.0D)
+                             {
+                                 this.player.jump();
++                                //CM
++                                CarpetServer.scriptServer.events.onPlayerJumped(player);
+                             }
+ 
+                             this.player.move(MoverType.PLAYER, d7, d8, d9);
+@@ -1006,6 +1024,9 @@
+                     {
+                         if (!this.server.isBlockProtected(worldserver, blockpos, this.player) && worldserver.getWorldBorder().contains(blockpos))
+                         {
++                            // CM event hook
++                            CarpetServer.scriptServer.events.onBlockClicked(player, blockpos, packetIn.getFacing());
++                            //
+                             this.player.interactionManager.startDestroyBlock(blockpos, packetIn.getFacing());
+                         }
+                         else
+@@ -1052,6 +1073,8 @@
+         {
+             if (this.targetPos == null && this.player.getDistanceSq((double)blockpos.getX() + 0.5D, (double)blockpos.getY() + 0.5D, (double)blockpos.getZ() + 0.5D) < 64.0D && !this.server.isBlockProtected(worldserver, blockpos, this.player) && worldserver.getWorldBorder().contains(blockpos))
+             {
++                //CM
++                CarpetServer.scriptServer.events.onRightClickBlock(this.player, itemstack, enumhand, blockpos, enumfacing, new Vec3d( packetIn.getFacingX(), packetIn.getFacingY(), packetIn.getFacingZ()));
+                 this.player.interactionManager.processRightClickBlock(this.player, worldserver, itemstack, enumhand, blockpos, enumfacing, packetIn.getFacingX(), packetIn.getFacingY(), packetIn.getFacingZ());
+             }
+         }
+@@ -1073,6 +1096,9 @@
+         ItemStack itemstack = this.player.getHeldItem(enumhand);
+         this.player.markPlayerActive();
+ 
++        //CM
++        CarpetServer.scriptServer.events.onRightClick(player, itemstack, enumhand);
++
+         if (!itemstack.isEmpty())
+         {
+             this.player.interactionManager.processRightClick(this.player, worldserver, itemstack, enumhand);
+@@ -1250,19 +1276,25 @@
+         switch (packetIn.getAction())
+         {
+             case START_SNEAKING:
++                CarpetServer.scriptServer.events.onStartSneaking(player);
+                 this.player.setSneaking(true);
+                 break;
+             case STOP_SNEAKING:
++                CarpetServer.scriptServer.events.onStopSneaking(player);
+                 this.player.setSneaking(false);
+                 break;
+             case START_SPRINTING:
++                CarpetServer.scriptServer.events.onStartSprinting(player);
+                 this.player.setSprinting(true);
+                 break;
+             case STOP_SPRINTING:
++                CarpetServer.scriptServer.events.onStopSprinting(player);
+                 this.player.setSprinting(false);
+                 break;
+             case STOP_SLEEPING:
+ 
++                CarpetServer.scriptServer.events.onOutOfBed(player);
++
+                 if (this.player.isPlayerSleeping())
+                 {
+                     this.player.wakeUpPlayer(false, true, true);
+@@ -1303,6 +1335,8 @@
+                 break;
+             case START_FALL_FLYING:
+ 
++                CarpetServer.scriptServer.events.onElytraDeploy(player);
++
+                 if (!this.player.onGround && this.player.motionY < 0.0D && !this.player.isElytraFlying() && !this.player.isInWater())
+                 {
+                     ItemStack itemstack = this.player.getItemStackFromSlot(EntityEquipmentSlot.CHEST);
+@@ -1345,6 +1379,9 @@
+                 if (packetIn.getAction() == CPacketUseEntity.Action.INTERACT)
+                 {
+                     EnumHand enumhand = packetIn.getHand();
++                    //
++                    CarpetServer.scriptServer.events.onEntityInteracted(player, entity, enumhand);
++                    //
+                     this.player.interactOn(entity, enumhand);
+                 }
+                 else if (packetIn.getAction() == CPacketUseEntity.Action.INTERACT_AT)
+@@ -1360,6 +1397,8 @@
+                         this.server.logWarning("Player " + this.player.getName().getString() + " tried to attack an invalid entity");
+                         return;
+                     }
++                    //
++                    CarpetServer.scriptServer.events.onEntityAttacked(player, entity);
+ 
+                     this.player.attackTargetEntityWithCurrentItem(entity);
+                 }
