@@ -38,3 +38,12 @@
          for (EnumDyeColor enumdyecolor : EnumDyeColor.values())
          {
              BlockDispenser.registerDispenseBehavior(BlockShulkerBox.getBlockByColor(enumdyecolor).asItem(), new Bootstrap.BehaviorDispenseShulkerBox());
+@@ -642,7 +666,7 @@
+                     EnumFacing enumfacing1 = source.getWorld().isAirBlock(blockpos.down()) ? enumfacing : EnumFacing.UP;
+                     this.successful = ((ItemBlock)item).tryPlace(new Bootstrap.DispensePlaceContext(source.getWorld(), blockpos, enumfacing, stack, enumfacing1)) == EnumActionResult.SUCCESS;
+ 
+-                    if (this.successful)
++                    if (this.successful && !CarpetSettings.b_stackableShulkerBoxes)
+                     {
+                         stack.shrink(1);
+                     }
