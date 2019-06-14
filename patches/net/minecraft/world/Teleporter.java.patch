@@ -57,22 +57,23 @@
              BlockPos blockpos3 = new BlockPos(entityIn);
  
              for (int i1 = -128; i1 <= 128; ++i1)
-@@ -128,6 +148,14 @@
+@@ -128,6 +148,15 @@
                  this.destinationCoordinateCache.put(l, new Teleporter.PortalPosition(blockpos, this.world.getGameTime()));
              }
  
 +            /* carpet mod */
-+            if (CarpetSettings.getBool("portalCaching") && (flag || flag_cm))
++            if (CarpetSettings.getBool("portalCaching"))
 +            {
 +                //its timeless
 +                this.destinationHistoryCache.put(l, new Teleporter.PortalPosition(blockpos, 0L));
++                this.destinationCoordinateCache.put(l, new Teleporter.PortalPosition(blockpos, this.world.getGameTime()));
 +            }
 +            /* carpet mod end */
 +
              double d5 = (double)blockpos.getX() + 0.5D;
              double d7 = (double)blockpos.getZ() + 0.5D;
              BlockPattern.PatternHelper blockpattern$patternhelper = BLOCK_NETHER_PORTAL.createPatternHelper(this.world, blockpos);
-@@ -139,14 +167,35 @@
+@@ -139,14 +168,35 @@
              {
                  ++d2;
              }
@@ -111,7 +112,7 @@
              }
  
              float f = 0.0F;
-@@ -394,6 +443,13 @@
+@@ -394,6 +444,13 @@
              }
          }
  
@@ -125,7 +126,7 @@
          return true;
      }
  
-@@ -413,9 +469,31 @@
+@@ -413,9 +470,31 @@
                      objectiterator.remove();
                  }
              }
