@@ -43,7 +43,7 @@
                      this.successful = ((ItemBlock)item).tryPlace(new Bootstrap.DispensePlaceContext(source.getWorld(), blockpos, enumfacing, stack, enumfacing1)) == EnumActionResult.SUCCESS;
  
 -                    if (this.successful)
-+                    if (this.successful && !CarpetSettings.b_stackableShulkerBoxes)
++                    if (this.successful && !CarpetSettings.b_stackableShulkerBoxes) // remove in 1.14.3
                      {
                          stack.shrink(1);
                      }
