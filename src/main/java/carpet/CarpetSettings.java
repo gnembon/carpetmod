@@ -127,7 +127,6 @@ public class CarpetSettings
   rule("carpets",               "survival", "Placing carpets may issue carpet commands for non-op players"),
   rule("missingTools",          "survival", "Pistons, Glass and Sponge can be broken faster with their appropriate tools"),
   rule("portalCaching",         "survival experimental", "Alternative, persistent caching strategy for nether portals"),
-  rule("calmNetherFires",       "experimental", "Permanent fires don't schedule random updates"),
   rule("fillUpdates",           "creative", "fill/clone/setblock and structure blocks cause block updates").defaultTrue(),
   rule("pushLimit",             "creative","Customizable piston push limit")
                                 .choices("12","10 12 14 100").setNotStrict().numAccelerate(),
@@ -485,7 +484,6 @@ public class CarpetSettings
         set(s, "watchdogFix","true");
         set(s, "unloadedEntityFix","true");
         set(s, "hopperDuplicationFix","true");
-        set(s, "calmNetherFires","true");
     }
 
     public static class CarpetSettingEntry 
