@@ -3,7 +3,7 @@
 @@ -1,5 +1,6 @@
  package net.minecraft.command;
  
-+import carpet.CarpetSettings;
++import carpet.settings.CarpetSettings;
  import com.google.common.collect.Maps;
  import com.google.common.io.Files;
  import com.google.gson.GsonBuilder;
@@ -29,7 +29,7 @@
                  ITextComponent itextcomponent = textcomponentstring;
  
 -                if (LOGGER.isDebugEnabled())
-+                if (LOGGER.isDebugEnabled() || CarpetSettings.getBool("superSecretSetting"))
++                if (LOGGER.isDebugEnabled() || CarpetSettings.superSecretSetting)
                  {
                      StackTraceElement[] astacktraceelement = exception.getStackTrace();
  
