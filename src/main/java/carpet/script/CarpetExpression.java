@@ -10,6 +10,7 @@ import carpet.script.value.BlockValue;
 import carpet.script.value.EntityValue;
 import carpet.script.value.LazyListValue;
 import carpet.script.value.ListValue;
+import carpet.script.value.NullValue;
 import carpet.script.value.NumericValue;
 import carpet.script.value.StringValue;
 import carpet.script.value.Value;
@@ -23,8 +24,10 @@ import net.minecraft.block.state.IBlockState;
 import net.minecraft.command.CommandSource;
 import net.minecraft.command.arguments.ParticleArgument;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.item.EntityArmorStand;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.inventory.EntityEquipmentSlot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.play.server.SPacketCustomSound;
 import net.minecraft.particles.IParticleData;
@@ -37,8 +40,10 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.SoundCategory;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Rotations;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.registry.IRegistry;
+import net.minecraft.util.text.TextComponentString;
 import net.minecraft.world.EnumLightType;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
@@ -1850,6 +1855,62 @@ public class CarpetExpression
             pc += drawParticleLine(world, particle, new Vec3d(bx, ay, az), new Vec3d(bx, ay, bz), density);
             int particleCount = pc;
             return (c_, t_) -> new NumericValue(particleCount);
+        });
+
+        this.expr.addLazyFunction("create_marker", -1, (c, t, lv) ->{
+            CarpetContext cc = (CarpetContext)c;
+            IBlockState targetBlock = null;
+            BlockValue.VectorLocator pointLocator;
+            String name;
+            try
+            {
+                Value nameValue = lv.get(0).evalValue(c);
+                name = nameValue instanceof NullValue ? "" : nameValue.getString();
+                pointLocator = BlockValue.locateVec(cc, lv, 1, true);
+                if (lv.size()>pointLocator.offset)
+                    targetBlock = BlockValue.fromParams(cc, lv, pointLocator.offset, true).block.getBlockState();
+
+            }
+            catch (IndexOutOfBoundsException e)
+            {
+                throw new InternalExpressionException("create_marker requires a name and three coordinates, with optional direction, and optional block on its head");
+            }
+
+            EntityArmorStand armorstand = new EntityArmorStand(cc.s.getWorld());
+            armorstand.setPositionAndRotation(
+                    pointLocator.vec.x,
+                    pointLocator.vec.y - ((targetBlock==null)?(armorstand.height+0.41):(armorstand.height-0.3)),
+                    pointLocator.vec.z,
+                    (float)pointLocator.yaw,
+                    (float) pointLocator.pitch
+            );
+            armorstand.addTag("__scarpet_marker");
+            if (targetBlock != null)
+                armorstand.setItemStackToSlot(EntityEquipmentSlot.HEAD, new ItemStack(targetBlock.getBlock().asItem()));
+            if (!name.isEmpty())
+            {
+                armorstand.setCustomName(new TextComponentString(name));
+                armorstand.setCustomNameVisible(true);
+            }
+            armorstand.setHeadRotation(new Rotations((int)pointLocator.pitch,0,0));
+            armorstand.setNoGravity(true);
+            armorstand.setInvisible(true);
+            armorstand.setInvulnerable(true);
+            cc.s.getWorld().spawnEntity(armorstand);
+            EntityValue result = new EntityValue(armorstand);
+            return (_c, _t) -> result;
+        });
+
+        this.expr.addLazyFunction("remove_all_markers", 0, (c, t, lv) -> {
+            CarpetContext cc = (CarpetContext)c;
+            int total = 0;
+            for (Entity e : cc.s.getWorld().getEntities(EntityArmorStand.class, (as) -> as.getTags().contains("__scarpet_marker")))
+            {
+                total ++;
+                e.remove();
+            }
+            int finalTotal = total;
+            return (_cc, _tt) -> new NumericValue(finalTotal);
         });
 
         //"overridden" native call that prints to stderr
