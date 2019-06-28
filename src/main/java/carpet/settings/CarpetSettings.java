@@ -218,9 +218,6 @@ public class CarpetSettings
     @Rule(desc = "Alternative, persistent caching strategy for nether portals", category = {SURVIVAL, CREATIVE})
     public static boolean portalCaching = false;
 
-    @Rule(desc = "Permanent fires don't schedule random updates", category = OPTIMIZATION)
-    public static boolean calmNetherFires = false;
-
     @Rule(desc = "fill/clone/setblock and structure blocks cause block updates", category = CREATIVE)
     public static boolean fillUpdates = true;
 
@@ -390,7 +387,4 @@ public class CarpetSettings
             category = BUGFIX
     )
     public static boolean leadFix = false;
-
-    @Rule(desc = "Spawning requires much less CPU and Memory", category = OPTIMIZATION)
-    public static boolean lagFreeSpawning = false;
 }
