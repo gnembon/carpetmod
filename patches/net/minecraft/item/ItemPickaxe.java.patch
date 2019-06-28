@@ -3,7 +3,7 @@
 @@ -1,5 +1,6 @@
  package net.minecraft.item;
  
-+import carpet.CarpetSettings;
++import carpet.settings.CarpetSettings;
  import com.google.common.collect.Sets;
  import java.util.Set;
  import net.minecraft.block.Block;
@@ -13,6 +13,6 @@
          Material material = state.getMaterial();
 -        return material != Material.IRON && material != Material.ANVIL && material != Material.ROCK ? super.getDestroySpeed(stack, state) : this.efficiency;
 +        //[CM] Added Missing Tools For Piston And Glass
-+        return material != Material.IRON && material != Material.ANVIL && material != Material.ROCK && (!CarpetSettings.getBool("missingTools") || (material != Material.PISTON && material != Material.GLASS)) ? super.getDestroySpeed(stack, state) : this.efficiency;
++        return material != Material.IRON && material != Material.ANVIL && material != Material.ROCK && (!CarpetSettings.missingTools || (material != Material.PISTON && material != Material.GLASS)) ? super.getDestroySpeed(stack, state) : this.efficiency;
      }
  }

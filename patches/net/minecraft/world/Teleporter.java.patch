@@ -3,7 +3,7 @@
 @@ -1,5 +1,6 @@
  package net.minecraft.world;
  
-+import carpet.CarpetSettings;
++import carpet.settings.CarpetSettings;
  import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
  import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
  import it.unimi.dsi.fastutil.objects.ObjectIterator;
@@ -37,7 +37,7 @@
              flag = false;
          }
 -        else
-+        else if (CarpetSettings.getBool("portalCaching") && this.destinationHistoryCache.containsKey(l)) // potential best candidate for linkage.
++        else if (CarpetSettings.portalCaching && this.destinationHistoryCache.containsKey(l)) // potential best candidate for linkage.
          {
 +            Teleporter.PortalPosition teleporter$portalposition_cm = (Teleporter.PortalPosition)this.destinationHistoryCache.get(l);
 +            if (this.world.getBlockState(teleporter$portalposition_cm).getBlock() == Blocks.NETHER_PORTAL)
@@ -62,7 +62,7 @@
              }
  
 +            /* carpet mod */
-+            if (CarpetSettings.getBool("portalCaching"))
++            if (CarpetSettings.portalCaching)
 +            {
 +                //its timeless
 +                this.destinationHistoryCache.put(l, new Teleporter.PortalPosition(blockpos, 0L));
@@ -81,7 +81,7 @@
 +    
 +            // [CM] portalSuffocationFix - removed offset calculation outside of the if statement
 +            double offset = (1.0D - entityIn.getLastPortalVec().x) * (double)blockpattern$patternhelper.getWidth() * (double)blockpattern$patternhelper.getForwards().rotateY().getAxisDirection().getOffset();
-+            if (CarpetSettings.getBool("portalSuffocationFix"))
++            if (CarpetSettings.portalSuffocationFix)
 +            {
 +                double entity_corrected_radius = 1.02*(double)entityIn.width/2;
 +                if (entity_corrected_radius >= (double)blockpattern$patternhelper.getWidth()-entity_corrected_radius)
@@ -117,7 +117,7 @@
          }
  
 +        /* carpet mod */
-+        if (CarpetSettings.getBool("portalCaching"))
++        if (CarpetSettings.portalCaching)
 +        {
 +            clearHistoryCache();
 +        }
@@ -133,7 +133,7 @@
 +            /* carpet mod */
 +            //failsafe - arbitrary, but will never happen in normal circumstances,
 +            //but who knows these freekin players.
-+            if (CarpetSettings.getBool("portalCaching") && this.destinationHistoryCache.size()> 65000 )
++            if (CarpetSettings.portalCaching && this.destinationHistoryCache.size()> 65000 )
 +            {
 +                removeAllCachedEntries();
 +            }

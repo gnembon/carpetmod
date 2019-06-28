@@ -4,8 +4,8 @@
  package net.minecraft.network;
  
 +import carpet.CarpetServer;
-+import carpet.CarpetSettings;
 +import carpet.helpers.TickSpeed;
++import carpet.settings.CarpetSettings;
  import com.google.common.primitives.Doubles;
  import com.google.common.primitives.Floats;
  import com.google.common.util.concurrent.Futures;
@@ -41,7 +41,7 @@
  
 -                            if (!this.player.isInvulnerableDimensionChange() && (!this.player.getServerWorld().getGameRules().getBoolean("disableElytraMovementCheck") || !this.player.isElytraFlying()))
 +                            //[CM] Added AntiCheatSpeed
-+                            if (!CarpetSettings.getBool("antiCheatSpeed") && !this.player.isInvulnerableDimensionChange() && (!this.player.getServerWorld().getGameRules().getBoolean("disableElytraMovementCheck") || !this.player.isElytraFlying()))
++                            if (!CarpetSettings.antiCheatSpeed && !this.player.isInvulnerableDimensionChange() && (!this.player.getServerWorld().getGameRules().getBoolean("disableElytraMovementCheck") || !this.player.isElytraFlying()))
                              {
                                  float f2 = this.player.isElytraFlying() ? 300.0F : 100.0F;
  

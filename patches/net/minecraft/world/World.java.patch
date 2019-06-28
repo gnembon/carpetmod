@@ -3,8 +3,8 @@
 @@ -1,5 +1,8 @@
  package net.minecraft.world;
  
-+import carpet.CarpetSettings;
 +import carpet.helpers.TickSpeed;
++import carpet.settings.CarpetSettings;
 +import carpet.utils.CarpetProfiler;
  import com.google.common.base.MoreObjects;
  import com.google.common.collect.Lists;
@@ -113,7 +113,7 @@
  
 -            if (!entityIn.setPositionNonDirty() && !this.isChunkLoaded(l, j1, true))
 +            // [CM] Faster entities can move into unloaded chunks and can get stuck in memory lagging the server. This fixes it
-+            if (!CarpetSettings.getBool("unloadedEntityFix") && !entityIn.setPositionNonDirty() && !this.isChunkLoaded(l, j1, true))
++            if (!CarpetSettings.unloadedEntityFix && !entityIn.setPositionNonDirty() && !this.isChunkLoaded(l, j1, true))
              {
                  entityIn.addedToChunk = false;
              }

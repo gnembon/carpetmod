@@ -9,12 +9,14 @@
  @OnlyIn(Dist.CLIENT)
  public class IntegratedServer extends MinecraftServer
  {
-@@ -101,6 +103,8 @@
-         this.setAllowFlight(true);
-         LOGGER.info("Generating keypair");
+@@ -103,6 +105,10 @@
          this.setKeyPair(CryptManager.generateKeyPair());
-+        //CM init - all stuff loaded from the server, just before worlds loading
-+        CarpetServer.onServerLoaded(this);
          this.loadAllWorlds(this.getFolderName(), this.getWorldName(), this.worldSettings.getSeed(), this.worldSettings.getTerrainType(), this.worldSettings.getGeneratorOptions());
          this.setMOTD(this.getServerOwner() + " - " + this.getWorld(DimensionType.OVERWORLD).getWorldInfo().getWorldName());
++        //CM init - all stuff loaded from the server, just before worlds loading
++        CarpetServer.onServerLoaded(this);
++        //CM start game hook
++        CarpetServer.onGameStarted();
          return true;
+     }
+ 

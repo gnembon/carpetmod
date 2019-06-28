@@ -5,7 +5,7 @@
  
  import javax.annotation.Nullable;
 +
-+import carpet.CarpetSettings;
++import carpet.settings.CarpetSettings;
  import net.minecraft.entity.Entity;
  import net.minecraft.entity.EntityLivingBase;
  import net.minecraft.entity.EntityType;
@@ -23,7 +23,7 @@
      {
 -        return super.canSpawn(worldIn, fromSpawner) && (fromSpawner || worldIn.canSeeSky(new BlockPos(this)));
 +        BlockPos tmp = new BlockPos(this);
-+        return super.canSpawn(worldIn, fromSpawner) && (fromSpawner || worldIn.canSeeSky(tmp) || (CarpetSettings.b_huskSpawningInTemples && Feature.DESERT_PYRAMID.isPositionInStructure(worldIn, tmp)));
++        return super.canSpawn(worldIn, fromSpawner) && (fromSpawner || worldIn.canSeeSky(tmp) || (CarpetSettings.huskSpawningInTemples && Feature.DESERT_PYRAMID.isPositionInStructure(worldIn, tmp)));
      }
  
      protected boolean shouldBurnInDay()

@@ -1,7 +1,6 @@
 package carpet.commands;
 
 import carpet.CarpetServer;
-import carpet.CarpetSettings;
 import carpet.script.CarpetEventServer;
 import carpet.script.CarpetExpression;
 import carpet.script.Expression;
@@ -9,6 +8,7 @@ import carpet.script.ExpressionInspector;
 import carpet.script.ScriptHost;
 import carpet.script.Tokenizer;
 import carpet.script.exception.CarpetExpressionException;
+import carpet.settings.CarpetSettings;
 import carpet.utils.Messenger;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -226,10 +226,10 @@ public class ScriptCommand
 
 
         dispatcher.register(literal("script").
-                requires((player) -> CarpetSettings.getBool("commandScript")).
+                requires((player) -> CarpetSettings.commandScript).
                 then(b).then(u).then(o).then(l).then(s).then(c).then(h).then(i).then(e).then(t).then(a).then(f).then(q));
         dispatcher.register(literal("script").
-                requires((player) -> CarpetSettings.getBool("commandScript")).
+                requires((player) -> CarpetSettings.commandScript).
                 then(literal("in").
                         then(argument("package", StringArgumentType.word()).
                                 suggests( (cc, bb) -> suggest(CarpetServer.scriptServer.modules.keySet(), bb)).
@@ -375,7 +375,7 @@ public class ScriptCommand
         ScriptHost host = getHost(context);
         MutableBoundingBox area = new MutableBoundingBox(a, b);
         CarpetExpression cexpr = new CarpetExpression(expr, source, origin);
-        if (area.getXSize() * area.getYSize() * area.getZSize() > CarpetSettings.getInt("fillLimit"))
+        if (area.getXSize() * area.getYSize() * area.getZSize() > CarpetSettings.fillLimit)
         {
             Messenger.m(source, "r too many blocks to evaluate: " + area.getXSize() * area.getYSize() * area.getZSize());
             return 1;
@@ -418,7 +418,7 @@ public class ScriptCommand
         ScriptHost host = getHost(context);
         MutableBoundingBox area = new MutableBoundingBox(a, b);
         CarpetExpression cexpr = new CarpetExpression(expr, source, origin);
-        if (area.getXSize() * area.getYSize() * area.getZSize() > CarpetSettings.getInt("fillLimit"))
+        if (area.getXSize() * area.getYSize() * area.getZSize() > CarpetSettings.fillLimit)
         {
             Messenger.m(source, "r too many blocks to evaluate: "+ area.getXSize() * area.getYSize() * area.getZSize());
             return 1;
@@ -505,7 +505,7 @@ public class ScriptCommand
                             if (block.place(
                                     world,
                                     mbpos,
-                                    2 | (CarpetSettings.getBool("fillUpdates") ?0:1024)
+                                    2 | (CarpetSettings.fillUpdates ?0:1024)
                             ))
                             {
                                 ++affected;
@@ -515,7 +515,7 @@ public class ScriptCommand
                 }
             }
         }
-        if (CarpetSettings.getBool("fillUpdates") && block != null)
+        if (CarpetSettings.fillUpdates && block != null)
         {
             for (int x = 0; x <= maxx; x++)
             {

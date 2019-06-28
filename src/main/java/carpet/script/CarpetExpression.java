@@ -1,7 +1,6 @@
 package carpet.script;
 
 import carpet.CarpetServer;
-import carpet.CarpetSettings;
 import carpet.helpers.FeatureGenerator;
 import carpet.script.exception.CarpetExpressionException;
 import carpet.script.exception.ExpressionException;
@@ -14,6 +13,7 @@ import carpet.script.value.ListValue;
 import carpet.script.value.NumericValue;
 import carpet.script.value.StringValue;
 import carpet.script.value.Value;
+import carpet.settings.CarpetSettings;
 import carpet.utils.BlockInfo;
 import carpet.utils.Messenger;
 import com.mojang.brigadier.StringReader;
@@ -700,7 +700,7 @@ public class CarpetExpression
             if (sourceBlockState == targetBlockState)
                 return (c_, t_) -> Value.FALSE;
 
-            cc.s.getWorld().setBlockState(targetLocator.block.getPos(), sourceBlockState, 2 | (CarpetSettings.getBool("fillUpdates") ? 0 : 1024));
+            cc.s.getWorld().setBlockState(targetLocator.block.getPos(), sourceBlockState, 2 | (CarpetSettings.fillUpdates ? 0 : 1024));
             Value retval = new BlockValue(sourceBlockState, world, targetLocator.block.getPos());
             return (c_, t_) -> retval;
         });

@@ -1,6 +1,6 @@
 package carpet.commands;
 
-import carpet.CarpetSettings;
+import carpet.settings.CarpetSettings;
 import carpet.utils.Messenger;
 import com.google.common.collect.Lists;
 import com.mojang.brigadier.CommandDispatcher;
@@ -29,7 +29,7 @@ public class DrawCommand
     public static void register(CommandDispatcher<CommandSource> dispatcher)
     {
         LiteralArgumentBuilder<CommandSource> command = literal("draw").
-                requires((player) -> CarpetSettings.getBool("commandDraw")).
+                requires((player) -> CarpetSettings.commandDraw).
                 then(literal("sphere").
                         then(argument("center",BlockPosArgument.blockPos()).
                                 then(argument("radius",IntegerArgumentType.integer(1)).
@@ -132,7 +132,7 @@ public class DrawCommand
                                     if (block.place(
                                             world,
                                             mbpos,
-                                            2 | (CarpetSettings.getBool("fillUpdates") ?0:1024)
+                                            2 | (CarpetSettings.fillUpdates ?0:1024)
                                     ))
                                     {
                                         list.add(mbpos.toImmutable());
@@ -145,7 +145,7 @@ public class DrawCommand
                 }
             }
         }
-        if (CarpetSettings.getBool("fillUpdates"))
+        if (CarpetSettings.fillUpdates)
         {
 
             for (BlockPos blockpos1 : list)

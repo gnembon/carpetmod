@@ -3,8 +3,8 @@
 @@ -1,7 +1,11 @@
  package net.minecraft.entity;
  
-+import carpet.CarpetSettings;
 +import carpet.logging.logHelpers.DamageReporter;
++import carpet.settings.CarpetSettings;
  import com.google.common.collect.Maps;
 +
  import java.util.Arrays;
@@ -49,7 +49,7 @@
              compound.put("Leash", nbttagcompound2);
          }
 +        // [CM] Lead fix - Makes sure the leashNBTTag data is preseved
-+        else if (CarpetSettings.getBool("leadFix") && leashNBTTag != null)
++        else if (CarpetSettings.leadFix && leashNBTTag != null)
 +        {
 +            compound.put("Leash", leashNBTTag);
 +        }

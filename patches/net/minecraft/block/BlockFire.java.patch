@@ -3,7 +3,7 @@
 @@ -1,5 +1,6 @@
  package net.minecraft.block;
  
-+import carpet.CarpetSettings;
++import carpet.settings.CarpetSettings;
  import it.unimi.dsi.fastutil.objects.Object2IntMap;
  import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
  import java.util.Map;
@@ -13,7 +13,7 @@
  
 -                if (!flag)
 +                // [CM] Added if statement around
-+                if (!flag || !CarpetSettings.getBool("calmNetherFires"))
++                if (!flag || !CarpetSettings.calmNetherFires)
                  {
                      worldIn.getPendingBlockTicks().scheduleTick(pos, this, this.tickRate(worldIn) + random.nextInt(10));
 +                }

@@ -5,6 +5,7 @@
  import java.util.function.Predicate;
  import javax.annotation.Nullable;
 +
++import carpet.settings.CarpetSettings;
  import net.minecraft.entity.CreatureAttribute;
  import net.minecraft.entity.Entity;
  import net.minecraft.entity.EntityLivingBase;
@@ -12,7 +13,6 @@
  import net.minecraft.entity.MoverType;
  import net.minecraft.entity.SharedMonsterAttributes;
 +import net.minecraft.entity.IEntityLivingData;
-+import carpet.CarpetSettings;
  import net.minecraft.entity.ai.EntityAIBase;
  import net.minecraft.entity.ai.EntityAILookIdle;
  import net.minecraft.entity.ai.EntityAIMoveTowardsRestriction;
@@ -40,7 +40,7 @@
 +    // [CM] Renewable Elder Guardians - added code for guardians struck by lightning
 +    public void onStruckByLightning(EntityLightningBolt lightningBolt)
 +    {
-+        if (!this.world.isRemote && !this.removed && CarpetSettings.getBool("renewableSponges"))
++        if (!this.world.isRemote && !this.removed && CarpetSettings.renewableSponges)
 +        {
 +            EntityElderGuardian entityguardian = new EntityElderGuardian(this.world);
 +            entityguardian.setLocationAndAngles(this.posX, this.posY, this.posZ, this.rotationYaw, this.rotationPitch);

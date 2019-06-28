@@ -1,7 +1,6 @@
 package carpet.script;
 
 import carpet.CarpetServer;
-import carpet.CarpetSettings;
 import carpet.script.bundled.CameraPathModule;
 import carpet.script.bundled.FileModule;
 import carpet.script.bundled.ModuleInterface;
@@ -9,6 +8,7 @@ import carpet.script.exception.CarpetExpressionException;
 import carpet.script.exception.ExpressionException;
 import carpet.script.exception.InvalidCallbackException;
 import carpet.script.value.Value;
+import carpet.settings.CarpetSettings;
 import carpet.utils.Messenger;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -242,7 +242,7 @@ public class CarpetScriptServer
         }
         Messenger.m(source, "gi Package "+hostName+" loaded with /"+hostName+" command");
         CarpetServer.minecraft_server.getCommandManager().getDispatcher().register(command);
-        CarpetSettings.notifyPlayersCommandsChanged();
+        CarpetServer.settingsManager.notifyPlayersCommandsChanged();
     }
 
     public void setChatErrorSnooper(CommandSource source)
@@ -304,7 +304,7 @@ public class CarpetScriptServer
         }
         // stop all events associated with name
         modules.remove(name);
-        CarpetSettings.notifyPlayersCommandsChanged();
+        CarpetServer.settingsManager.notifyPlayersCommandsChanged();
         Messenger.m(source, "w Removed host "+name);
         return true;
     }

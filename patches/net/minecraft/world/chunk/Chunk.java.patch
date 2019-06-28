@@ -3,7 +3,7 @@
 @@ -1,5 +1,6 @@
  package net.minecraft.world.chunk;
  
-+import carpet.CarpetSettings;
++import carpet.settings.CarpetSettings;
  import com.google.common.collect.Maps;
  import com.google.common.collect.Queues;
  import com.google.common.collect.Sets;
@@ -42,7 +42,7 @@
 +                    TileEntity tileentity1; // = this.getTileEntity(pos, Chunk.EnumCreateEntityType.CHECK);
 +    
 +                    // [CM] Movable TE's CARPET-DeadlyMC
-+                    if(CarpetSettings.b_movableTileEntities)
++                    if(CarpetSettings.movableTileEntities)
 +                    {  //this.getTileEntity(...) doesn't check pending TileEntities
 +                        tileentity1 = this.world.getTileEntity(pos);
 +                    }

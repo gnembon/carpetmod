@@ -5,9 +5,9 @@
  
  import javax.annotation.Nullable;
 +
-+import carpet.CarpetSettings;
 +import carpet.logging.LoggerRegistry;
 +import carpet.logging.logHelpers.TNTLogHelper;
++import carpet.settings.CarpetSettings;
  import net.minecraft.entity.Entity;
  import net.minecraft.entity.EntityLivingBase;
  import net.minecraft.entity.EntityType;
@@ -52,7 +52,7 @@
 -        this.motionY = (double)0.2F;
 -        this.motionZ = (double)(-((float)Math.cos((double)f)) * 0.02F);
 +        // [CM] Changed value of float 'f' and if statement around vanilla code.
-+        if(!CarpetSettings.getBool("tntPrimerMomentumRemoved")) {
++        if(!CarpetSettings.tntPrimerMomentumRemoved) {
 +            float f = (float) (Math.random() * (double) ((float) Math.PI * 2F));
 +            this.motionX = (double) (-((float) Math.sin((double) f)) * 0.02F);
 +            this.motionY = (double) 0.2F;

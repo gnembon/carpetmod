@@ -1,6 +1,6 @@
 package carpet.helpers;
 
-import carpet.CarpetSettings;
+import carpet.settings.CarpetSettings;
 import com.google.common.base.Predicate;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockCommandBlock;

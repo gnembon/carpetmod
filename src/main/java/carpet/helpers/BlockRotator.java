@@ -1,11 +1,10 @@
 package carpet.helpers;
 
-import carpet.CarpetSettings;
+import carpet.settings.CarpetSettings;
 import net.minecraft.block.*;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.dispenser.IBlockSource;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.BlockItemUseContext;
@@ -25,7 +24,7 @@ public class BlockRotator
 {
     public static boolean flipBlockWithCactus(World worldIn, BlockPos pos, IBlockState state, EntityPlayer playerIn, EnumHand hand, EnumFacing facing, float hitX, float hitY, float hitZ)
     {
-        if (!playerIn.abilities.allowEdit || !CarpetSettings.getBool("flippinCactus") || !player_holds_cactus_mainhand(playerIn))
+        if (!playerIn.abilities.allowEdit || !CarpetSettings.flippinCactus || !player_holds_cactus_mainhand(playerIn))
         {
             return false;
         }
@@ -247,7 +246,7 @@ public class BlockRotator
     }
     public static boolean flippinEligibility(Entity entity)
     {
-        if (CarpetSettings.getBool("flippinCactus")
+        if (CarpetSettings.flippinCactus
                 && (entity instanceof EntityPlayer))
         {
             EntityPlayer player = (EntityPlayer)entity;

@@ -3,7 +3,7 @@
 @@ -1,5 +1,6 @@
  package net.minecraft.command.impl;
  
-+import carpet.CarpetSettings;
++import carpet.settings.CarpetSettings;
  import com.google.common.collect.Lists;
  import com.mojang.brigadier.CommandDispatcher;
  import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -12,10 +12,10 @@
          int i = area.getXSize() * area.getYSize() * area.getZSize();
  
 -        if (i > 32768)
-+        if (i > CarpetSettings.getInt("fillLimit")) // [CM] replaces 32768
++        if (i > CarpetSettings.fillLimit) // [CM] replaces 32768
          {
 -            throw TOO_BIG_EXCEPTION.create(32768, i);
-+            throw TOO_BIG_EXCEPTION.create(CarpetSettings.getInt("fillLimit"), i);
++            throw TOO_BIG_EXCEPTION.create(CarpetSettings.fillLimit, i);
          }
          else
          {
@@ -24,7 +24,7 @@
                          }
  
 -                        if (blockstateinput.place(worldserver, blockpos, 2))
-+                        if (blockstateinput.place(worldserver, blockpos, 2 | (CarpetSettings.getBool("fillUpdates")?0:1024))) // [CM]
++                        if (blockstateinput.place(worldserver, blockpos, 2 | (CarpetSettings.fillUpdates?0:1024))) // [CM]
                          {
                              list.add(blockpos.toImmutable());
                              ++j;
@@ -33,7 +33,7 @@
                  }
              }
 +            /*carpet mod */
-+            if (CarpetSettings.getBool("fillUpdates"))
++            if (CarpetSettings.fillUpdates)
 +            { /*carpet mod end EXTRA INDENT*/
  
              for (BlockPos blockpos1 : list)

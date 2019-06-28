@@ -1,13 +1,11 @@
 package carpet.commands;
 
-import carpet.CarpetSettings;
+import carpet.settings.CarpetSettings;
 import carpet.utils.DistanceCalculator;
-import carpet.utils.Messenger;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.minecraft.command.CommandSource;
 import net.minecraft.command.arguments.Vec3Argument;
-import net.minecraft.util.math.Vec3d;
 
 import static net.minecraft.command.Commands.argument;
 import static net.minecraft.command.Commands.literal;
@@ -17,7 +15,7 @@ public class DistanceCommand
     public static void register(CommandDispatcher<CommandSource> dispatcher)
     {
         LiteralArgumentBuilder<CommandSource> command = literal("distance").
-                requires((player) -> CarpetSettings.getBool("commandDistance")).
+                requires((player) -> CarpetSettings.commandDistance).
                 then(literal("from").
                         executes( (c) -> DistanceCalculator.setStart(c.getSource(), c.getSource().getPos())).
                         then(argument("from", Vec3Argument.vec3()).

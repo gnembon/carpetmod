@@ -1,12 +1,12 @@
 package carpet.script;
 
 import carpet.CarpetServer;
-import carpet.CarpetSettings;
 import carpet.script.exception.ExpressionException;
 import carpet.script.exception.InvalidCallbackException;
 import carpet.script.value.NumericValue;
 import carpet.script.value.StringValue;
 import carpet.script.value.Value;
+import carpet.settings.CarpetSettings;
 import net.minecraft.command.CommandSource;
 import net.minecraft.util.math.BlockPos;
 

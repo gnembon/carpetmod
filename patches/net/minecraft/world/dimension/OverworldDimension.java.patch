@@ -3,7 +3,7 @@
 @@ -1,5 +1,6 @@
  package net.minecraft.world.dimension;
  
-+import carpet.CarpetSettings;
++import carpet.settings.CarpetSettings;
  import com.google.gson.JsonArray;
  import com.google.gson.JsonElement;
  import com.google.gson.JsonObject;
@@ -15,7 +15,7 @@
 +        // CM Changed to support disabling spawn chunks
 +        // return !this.world.isSpawnChunk(x, z) && super.canDropChunk(x, z);
 +        if (this.world.isSpawnChunk(x, z))
-+            return CarpetSettings.b_disableSpawnChunks && super.canDropChunk(x, z);
++            return CarpetSettings.disableSpawnChunks && super.canDropChunk(x, z);
 +
 +        return super.canDropChunk(x, z);
      }

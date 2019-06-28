@@ -3,7 +3,7 @@
 @@ -1,5 +1,6 @@
  package net.minecraft.block;
  
-+import carpet.CarpetSettings;
++import carpet.settings.CarpetSettings;
  import net.minecraft.block.state.IBlockState;
  import net.minecraft.state.BooleanProperty;
  import net.minecraft.state.EnumProperty;
@@ -13,7 +13,7 @@
      {
 -        if (p_176566_5_ >= 8)
 +        // [CM] Changed if statement values -- RailPowerLimit, defaults to 8
-+        if (p_176566_5_ >= CarpetSettings.railPowerLimitAdjusted)
++        if (p_176566_5_ >= CarpetSettings.railPowerLimit-1)
          {
              return false;
          }

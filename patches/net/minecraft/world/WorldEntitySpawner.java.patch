@@ -1,14 +1,13 @@
 --- a/net/minecraft/world/WorldEntitySpawner.java
 +++ b/net/minecraft/world/WorldEntitySpawner.java
-@@ -1,5 +1,7 @@
+@@ -1,5 +1,6 @@
  package net.minecraft.world;
  
-+import carpet.CarpetSettings;
 +import carpet.utils.SpawnReporter;
  import com.google.common.collect.Sets;
  import java.util.List;
  import java.util.Random;
-@@ -20,10 +22,12 @@
+@@ -20,10 +21,12 @@
  import net.minecraft.server.management.PlayerChunkMapEntry;
  import net.minecraft.tags.BlockTags;
  import net.minecraft.tags.FluidTags;
@@ -21,7 +20,7 @@
  import net.minecraft.world.biome.Biome;
  import net.minecraft.world.chunk.Chunk;
  import net.minecraft.world.gen.Heightmap;
-@@ -84,16 +88,47 @@
+@@ -84,16 +87,47 @@
              int k4 = 0;
              BlockPos blockpos1 = worldServerIn.getSpawnPoint();
  
@@ -71,7 +70,7 @@
                          label158:
  
                          for (ChunkPos chunkpos1 : this.eligibleChunksForSpawning)
-@@ -175,7 +210,21 @@
+@@ -175,7 +209,21 @@
                                                              {
                                                                  ++j2;
                                                                  ++i4;
@@ -94,7 +93,7 @@
                                                              }
                                                              else
                                                              {
-@@ -202,7 +251,30 @@
+@@ -202,7 +250,30 @@
                                  }
                              }
                          }

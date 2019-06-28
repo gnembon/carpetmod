@@ -3,7 +3,7 @@
 @@ -1,6 +1,8 @@
  package net.minecraft.item;
  
-+import carpet.CarpetSettings;
++import carpet.settings.CarpetSettings;
  import net.minecraft.block.Block;
 +import net.minecraft.block.material.Material;
  import net.minecraft.block.state.IBlockState;
@@ -15,7 +15,7 @@
  
 -        if (block != Blocks.COBWEB && !state.isIn(BlockTags.LEAVES))
 +        // [CM] Added Missing Tool For Sponge
-+        if (block != Blocks.COBWEB && !state.isIn(BlockTags.LEAVES) && (!CarpetSettings.getBool("missingTools") || state.getMaterial() != Material.SPONGE))
++        if (block != Blocks.COBWEB && !state.isIn(BlockTags.LEAVES) && (!CarpetSettings.missingTools || state.getMaterial() != Material.SPONGE))
          {
              return block.isIn(BlockTags.WOOL) ? 5.0F : super.getDestroySpeed(stack, state);
          }

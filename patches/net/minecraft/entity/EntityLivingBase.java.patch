@@ -3,8 +3,8 @@
 @@ -1,5 +1,7 @@
  package net.minecraft.entity;
  
-+import carpet.CarpetSettings;
 +import carpet.logging.logHelpers.DamageReporter;
++import carpet.settings.CarpetSettings;
  import com.google.common.base.Objects;
  import com.google.common.collect.Maps;
  import java.util.Collection;
@@ -111,9 +111,9 @@
 +    
 +            // [CM] Tweaked code for max entity collisions
 +            int limit = list.size();
-+            if (CarpetSettings.getInt("maxEntityCollisions") > 0)
++            if (CarpetSettings.maxEntityCollisions > 0)
              {
-+                limit = Math.min(limit,CarpetSettings.getInt("maxEntityCollisions"));
++                limit = Math.min(limit,CarpetSettings.maxEntityCollisions);
 +            }
 +            for (int l = 0; l < limit; ++l)
 +            {
