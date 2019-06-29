@@ -3,7 +3,7 @@
 @@ -1,5 +1,6 @@
  package net.minecraft.world.chunk;
  
-+import carpet.CarpetSettings;
++import carpet.settings.CarpetSettings;
  import it.unimi.dsi.fastutil.longs.LongSet;
  import java.util.BitSet;
  import java.util.List;

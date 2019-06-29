@@ -5,8 +5,8 @@
  import java.util.Random;
  import java.util.function.Function;
 +
-+import carpet.CarpetSettings;
 +import carpet.helpers.BlockRotator;
++import carpet.settings.CarpetSettings;
  import net.minecraft.block.Block;
  import net.minecraft.block.BlockCarvedPumpkin;
  import net.minecraft.block.BlockDispenser;
@@ -24,7 +24,7 @@
 +             */
 +            protected ItemStack dispenseStack(IBlockSource source, ItemStack stack)
 +            {
-+                if(CarpetSettings.getBool("rotatorBlock"))
++                if(CarpetSettings.rotatorBlock)
 +                {
 +                    return BlockRotator.dispenserRotate(source, stack);
 +                }
@@ -43,7 +43,7 @@
                      this.successful = ((ItemBlock)item).tryPlace(new Bootstrap.DispensePlaceContext(source.getWorld(), blockpos, enumfacing, stack, enumfacing1)) == EnumActionResult.SUCCESS;
  
 -                    if (this.successful)
-+                    if (this.successful && !CarpetSettings.b_stackableShulkerBoxes) // remove in 1.14.3
++                    if (this.successful && !CarpetSettings.stackableShulkerBoxes) // remove in 1.14.3
                      {
                          stack.shrink(1);
                      }

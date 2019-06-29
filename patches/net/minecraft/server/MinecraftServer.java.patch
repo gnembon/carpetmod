@@ -4,8 +4,8 @@
  package net.minecraft.server;
  
 +import carpet.CarpetServer;
-+import carpet.CarpetSettings;
 +import carpet.helpers.TickSpeed;
++import carpet.settings.CarpetSettings;
 +import carpet.utils.CarpetProfiler;
  import com.google.common.base.Stopwatch;
  import com.google.common.collect.Lists;
@@ -162,10 +162,10 @@
      }
 +    public void checkMOTD()
 +    {
-+        if ("_".equals(CarpetSettings.getString("customMOTD")))
++        if ("_".equals(CarpetSettings.customMOTD))
 +            this.statusResponse.setServerDescription(new TextComponentString(this.motd));
 +        else
-+            this.statusResponse.setServerDescription(new TextComponentString(CarpetSettings.getString("customMOTD")));
++            this.statusResponse.setServerDescription(new TextComponentString(CarpetSettings.customMOTD));
 +
 +    }
  }

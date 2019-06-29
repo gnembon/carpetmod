@@ -3,7 +3,7 @@
 @@ -1,5 +1,6 @@
  package net.minecraft.world.gen.feature.structure;
  
-+import carpet.CarpetSettings;
++import carpet.settings.CarpetSettings;
  import com.google.common.collect.Lists;
  import java.util.List;
  import java.util.Random;

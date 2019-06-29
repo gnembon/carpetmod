@@ -3,7 +3,7 @@
 @@ -1,5 +1,6 @@
  package net.minecraft.command.impl;
  
-+import carpet.CarpetSettings;
++import carpet.settings.CarpetSettings;
  import com.mojang.brigadier.CommandDispatcher;
  import com.mojang.brigadier.exceptions.CommandSyntaxException;
  import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
@@ -12,14 +12,14 @@
              }
  
 -            if (flag && !state.place(worldserver, pos, 2))
-+            if (flag && !state.place(worldserver, pos, 2 | (CarpetSettings.getBool("fillUpdates")?0:1024))) // [CM]
++            if (flag && !state.place(worldserver, pos, 2 | (CarpetSettings.fillUpdates?0:1024))) // [CM]
              {
                  throw FAILED_EXCEPTION.create();
              }
              else
              {
 +                // CM
-+                if (CarpetSettings.getBool("fillUpdates"))
++                if (CarpetSettings.fillUpdates)
 +                {
                  worldserver.notifyNeighbors(pos, state.getState().getBlock());
 +                }

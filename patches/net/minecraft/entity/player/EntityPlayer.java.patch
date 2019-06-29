@@ -3,11 +3,11 @@
 @@ -1,5 +1,10 @@
  package net.minecraft.entity.player;
  
-+import carpet.CarpetSettings;
 +import carpet.helpers.PortalHelper;
 +import carpet.logging.LoggerRegistry;
 +import carpet.logging.logHelpers.DamageReporter;
 +import carpet.logging.logHelpers.KillLogHelper;
++import carpet.settings.CarpetSettings;
  import com.google.common.collect.Lists;
  import com.mojang.authlib.GameProfile;
  import java.nio.charset.StandardCharsets;
@@ -18,7 +18,7 @@
 -        return this.abilities.disableDamage ? 1 : 80;
 +        //return this.abilities.disableDamage ? 1 : 80;
 +        if (!this.abilities.disableDamage) return 80;
-+        if (CarpetSettings.getBool("portalCreativeDelay"))
++        if (CarpetSettings.portalCreativeDelay)
 +        {
 +            if ( PortalHelper.player_holds_obsidian(this))
 +            {
@@ -37,7 +37,7 @@
 -        if (!this.world.isRemote && (this.fallDistance > 0.5F || this.isInWater() || this.isPassenger()) || this.abilities.isFlying)
 -        {
 +        //[CM] Conditions For Persistent Parrots
-+        boolean parrots_will_drop = !CarpetSettings.getBool("persistentParrots") || this.abilities.disableDamage;
++        boolean parrots_will_drop = !CarpetSettings.persistentParrots || this.abilities.disableDamage;
 +        if (!this.world.isRemote && ((parrots_will_drop && this.fallDistance > 0.5F) || this.isInWater() || (parrots_will_drop && this.isPassenger()) ) || this.abilities.isFlying ) {
              this.spawnShoulderEntities();
          }
@@ -49,7 +49,7 @@
 -                this.spawnShoulderEntities();
 +                // this.spawnShoulderEntities();     // [CM] Removed line
 +                // [CM] PersistentParrots - Optionally Dismount Parrots
-+                if (CarpetSettings.getBool("persistentParrots") && !this.isSneaking())
++                if (CarpetSettings.persistentParrots && !this.isSneaking())
 +                {
 +                    if (this.rand.nextFloat() < ((amount)/15.0) )
 +                    {

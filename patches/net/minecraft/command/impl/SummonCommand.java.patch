@@ -3,7 +3,7 @@
 @@ -1,5 +1,6 @@
  package net.minecraft.command.impl;
  
-+import carpet.CarpetSettings;
++import carpet.settings.CarpetSettings;
  import com.mojang.brigadier.CommandDispatcher;
  import com.mojang.brigadier.exceptions.CommandSyntaxException;
  import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
@@ -29,7 +29,7 @@
 -            source.getWorld().addWeatherEffect(entity1);
 +            
 +            // [CM] SummonNaturalLightning - if statement around
-+            if (!CarpetSettings.getBool("summonNaturalLightning"))
++            if (!CarpetSettings.summonNaturalLightning)
 +            {
 +                source.getWorld().addWeatherEffect(entity1);
 +            }

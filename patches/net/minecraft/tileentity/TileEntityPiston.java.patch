@@ -5,7 +5,7 @@
  
  import java.util.List;
 +
-+import carpet.CarpetSettings;
++import carpet.settings.CarpetSettings;
  import net.minecraft.block.Block;
  import net.minecraft.block.BlockPistonBase;
  import net.minecraft.block.BlockPistonExtension;
@@ -28,7 +28,7 @@
                              }
 +
 +                            // [CM] Added UnloadedEntityFix
-+                            if (CarpetSettings.getBool("unloadedEntityFix"))
++                            if (CarpetSettings.unloadedEntityFix)
 +                            {
 +                                world.tickEntity(entity, false);
 +                            }
@@ -45,7 +45,7 @@
 -                this.world.neighborChanged(this.pos, iblockstate.getBlock(), this.pos);
 +    
 +                // [CM] Movable TE's CARPET-DeadlyMC
-+                if (!CarpetSettings.b_movableTileEntities)
++                if (!CarpetSettings.movableTileEntities)
 +                {
 +                    this.world.setBlockState(this.pos, iblockstate, 3);
 +                    this.world.neighborChanged(this.pos, iblockstate.getBlock(), this.pos);
@@ -56,7 +56,7 @@
 +                }
              }
 +            // [CM] Movable TE's CARPET-DeadlyMC
-+            else if (CarpetSettings.b_movableTileEntities)
++            else if (CarpetSettings.movableTileEntities)
 +            {
 +                if (this.carriedTileEntity != null && this.world.getBlockState(this.pos).getBlock() == Blocks.AIR) {
 +                    this.placeBlock();
@@ -72,7 +72,7 @@
  
 -                    this.world.setBlockState(this.pos, iblockstate, 67);
 -                    this.world.neighborChanged(this.pos, iblockstate.getBlock(), this.pos);
-+                    if (!CarpetSettings.b_movableTileEntities)
++                    if (!CarpetSettings.movableTileEntities)
 +                    {
 +                        this.world.setBlockState(this.pos, iblockstate, 67);
 +                        this.world.neighborChanged(this.pos, iblockstate.getBlock(), this.pos);
@@ -90,7 +90,7 @@
          this.shouldHeadBeRendered = compound.getBoolean("source");
 +    
 +        // [CM] Movable TE's CARPET-DeadlyMC
-+        if(CarpetSettings.b_movableTileEntities && compound.contains("carriedTileEntityCM", 10))
++        if(CarpetSettings.movableTileEntities && compound.contains("carriedTileEntityCM", 10))
 +        {
 +            if(this.pistonState.getBlock() instanceof ITileEntityProvider)
 +                this.carriedTileEntity = ((ITileEntityProvider)(this.pistonState.getBlock())).createNewTileEntity(this.world);
@@ -106,7 +106,7 @@
          compound.putBoolean("source", this.shouldHeadBeRendered);
 +    
 +        // [CM] Movable TE's CARPET-DeadlyMC
-+        if(CarpetSettings.b_movableTileEntities && this.carriedTileEntity != null)
++        if(CarpetSettings.movableTileEntities && this.carriedTileEntity != null)
 +        {
 +            compound.put("carriedTileEntityCM", this.carriedTileEntity.write(new NBTTagCompound()));
 +        }

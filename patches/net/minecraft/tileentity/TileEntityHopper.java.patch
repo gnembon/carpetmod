@@ -5,8 +5,8 @@
  import java.util.stream.Collectors;
  import javax.annotation.Nullable;
 +
-+import carpet.CarpetSettings;
 +import carpet.helpers.HopperCounter;
++import carpet.settings.CarpetSettings;
 +import carpet.utils.WoolTool;
  import net.minecraft.block.Block;
  import net.minecraft.block.BlockChest;
@@ -24,7 +24,7 @@
      private boolean transferItemsOut()
      {
 +        /* carpet mod */
-+        if (CarpetSettings.b_hopperCounters)
++        if (CarpetSettings.hopperCounters)
 +        {
 +            EnumDyeColor wool_color = WoolTool.getWoolColorAtPosition(
 +                    getWorld(),

@@ -1,17 +1,16 @@
 --- a/net/minecraft/pathfinding/PathNavigate.java
 +++ b/net/minecraft/pathfinding/PathNavigate.java
-@@ -1,6 +1,10 @@
+@@ -1,6 +1,9 @@
  package net.minecraft.pathfinding;
  
  import javax.annotation.Nullable;
 +
-+import carpet.CarpetSettings;
 +import carpet.logging.LoggerRegistry;
 +import carpet.logging.logHelpers.PathfindingVisualizer;
  import net.minecraft.block.Block;
  import net.minecraft.block.state.IBlockState;
  import net.minecraft.entity.Entity;
-@@ -105,6 +109,11 @@
+@@ -105,6 +108,11 @@
          }
          else
          {
@@ -23,7 +22,7 @@
              this.targetPos = pos;
              float f = this.getPathSearchRange();
              this.world.profiler.startSection("pathfind");
-@@ -113,6 +122,15 @@
+@@ -113,6 +121,15 @@
              IBlockReader iblockreader = new Region(this.world, blockpos.add(-i, -i, -i), blockpos.add(i, i, i), 0);
              Path path = this.pathFinder.findPath(iblockreader, this.entity, this.targetPos, f);
              this.world.profiler.endSection();
@@ -39,7 +38,7 @@
              return path;
          }
      }
-@@ -134,6 +152,11 @@
+@@ -134,6 +151,11 @@
              }
              else
              {
@@ -51,7 +50,7 @@
                  this.targetPos = blockpos;
                  float f = this.getPathSearchRange();
                  this.world.profiler.startSection("pathfind");
-@@ -142,6 +165,15 @@
+@@ -142,6 +164,15 @@
                  IBlockReader iblockreader = new Region(this.world, blockpos1.add(-i, -i, -i), blockpos1.add(i, i, i), 0);
                  Path path = this.pathFinder.findPath(iblockreader, this.entity, entityIn, f);
                  this.world.profiler.endSection();

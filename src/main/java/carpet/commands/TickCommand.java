@@ -1,17 +1,13 @@
 package carpet.commands;
 
-import carpet.CarpetSettings;
 import carpet.helpers.TickSpeed;
+import carpet.settings.CarpetSettings;
 import carpet.utils.CarpetProfiler;
 import carpet.utils.Messenger;
 import com.mojang.brigadier.CommandDispatcher;
-import com.mojang.brigadier.arguments.FloatArgumentType;
-import com.mojang.brigadier.arguments.IntegerArgumentType;
-import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.command.CommandSource;
-import net.minecraft.command.Commands;
 import net.minecraft.command.ISuggestionProvider;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.text.ITextComponent;
@@ -26,7 +22,7 @@ public class TickCommand
     public static void register(CommandDispatcher<CommandSource> dispatcher)
     {
         LiteralArgumentBuilder<CommandSource> literalargumentbuilder = literal("tick").
-                requires((player) -> CarpetSettings.getBool("commandTick")).
+                requires((player) -> CarpetSettings.commandTick).
                 then(literal("rate").
                         executes((c) -> queryTps(c.getSource())).
                         then(argument("rate", floatArg(0.1F, 500.0F)).

@@ -1,7 +1,7 @@
 package carpet.commands;
 
-import carpet.CarpetSettings;
 import carpet.helpers.HopperCounter;
+import carpet.settings.CarpetSettings;
 import carpet.utils.Messenger;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -17,7 +17,7 @@ public class CounterCommand
     {
         LiteralArgumentBuilder<CommandSource> literalargumentbuilder = Commands.literal("counter").executes((context)
          -> listAllCounters(context.getSource(), false)).requires((player) ->
-                CarpetSettings.getBool("hopperCounters"));
+                CarpetSettings.hopperCounters);
 
         literalargumentbuilder.
                 then((Commands.literal("reset").executes( (p_198489_1_)->

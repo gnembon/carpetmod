@@ -1,10 +1,16 @@
 --- a/net/minecraft/entity/item/EntityXPOrb.java
 +++ b/net/minecraft/entity/item/EntityXPOrb.java
-@@ -17,11 +17,15 @@
+@@ -1,5 +1,6 @@
+ package net.minecraft.entity.item;
+ 
++import carpet.settings.CarpetSettings;
+ import net.minecraft.enchantment.EnchantmentHelper;
+ import net.minecraft.entity.Entity;
+ import net.minecraft.entity.EntityType;
+@@ -17,11 +18,14 @@
  import net.minecraftforge.api.distmarker.Dist;
  import net.minecraftforge.api.distmarker.OnlyIn;
  
-+import carpet.CarpetSettings;
 +import carpet.helpers.XPcombine;
 +
  public class EntityXPOrb extends Entity
@@ -49,7 +55,7 @@
          this.move(MoverType.SELF, this.motionX, this.motionY, this.motionZ);
 +
 +        //Adding code here for combining XP orbs. [CM]
-+        if (CarpetSettings.getBool("combineXPOrbs"))
++        if (CarpetSettings.combineXPOrbs)
 +        {
 +            if (this.delayBeforeCombine > 0)
 +            {
@@ -71,7 +77,7 @@
          {
 -            if (this.delayBeforeCanPickup == 0 && entityIn.xpCooldown == 0)
 +            // [CM] added ORed condition
-+            if (this.delayBeforeCanPickup == 0 && (entityIn.xpCooldown == 0 || CarpetSettings.getBool("xpNoCooldown")))
++            if (this.delayBeforeCanPickup == 0 && (entityIn.xpCooldown == 0 || CarpetSettings.xpNoCooldown))
              {
                  entityIn.xpCooldown = 2;
                  entityIn.onItemPickup(this, 1);

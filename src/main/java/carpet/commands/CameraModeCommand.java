@@ -1,19 +1,16 @@
 package carpet.commands;
 
-import carpet.CarpetSettings;
+import carpet.settings.CarpetSettings;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.command.CommandSource;
-import net.minecraft.command.ISuggestionProvider;
 import net.minecraft.command.arguments.EntityArgument;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.MobEffects;
 import net.minecraft.potion.PotionEffect;
 import net.minecraft.world.GameType;
 
-import static com.mojang.brigadier.arguments.StringArgumentType.getString;
-import static com.mojang.brigadier.arguments.StringArgumentType.word;
 import static net.minecraft.command.Commands.argument;
 import static net.minecraft.command.Commands.literal;
 
@@ -22,13 +19,13 @@ public class CameraModeCommand
     public static void register(CommandDispatcher<CommandSource> dispatcher)
     {
         LiteralArgumentBuilder<CommandSource> camera = literal("c").
-                requires((player) -> CarpetSettings.getBool("commandCameramode")).
+                requires((player) -> CarpetSettings.commandCameramode).
                 executes((c) -> cameraMode(c.getSource(), c.getSource().asPlayer())).
                 then(argument("player", EntityArgument.player()).
                         executes( (c) -> cameraMode(c.getSource(), EntityArgument.getPlayer(c, "player"))));
 
         LiteralArgumentBuilder<CommandSource> survival = literal("s").
-                requires((player) -> CarpetSettings.getBool("commandCameramode")).
+                requires((player) -> CarpetSettings.commandCameramode).
                 executes((c) -> survivalMode(
                         c.getSource(),
                         c.getSource().asPlayer())).

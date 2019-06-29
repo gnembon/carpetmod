@@ -5,7 +5,7 @@
  import java.util.function.Predicate;
  import javax.annotation.Nullable;
 +
-+import carpet.CarpetSettings;
++import carpet.settings.CarpetSettings;
  import net.minecraft.entity.Entity;
  import net.minecraft.entity.EntityCreature;
  import net.minecraft.entity.EntityLivingBase;
@@ -28,7 +28,7 @@
 +                //this.targetEntity = list.get(0);
 +                //return true;
 +                //CM replaced with
-+                if (!CarpetSettings.getBool("invisibilityFix") || !(list.get(0) instanceof EntityPlayer))
++                if (!CarpetSettings.invisibilityFix || !(list.get(0) instanceof EntityPlayer))
 +                {
 +                    this.targetEntity = list.get(0);
 +                    return true;

@@ -5,7 +5,7 @@
  
  import javax.annotation.Nullable;
 +
-+import carpet.CarpetSettings;
++import carpet.settings.CarpetSettings;
  import net.minecraft.block.state.IBlockState;
  import net.minecraft.entity.Entity;
  import net.minecraft.entity.EntityLivingBase;
@@ -14,7 +14,7 @@
          if (oldState.getBlock() != state.getBlock())
          {
 -            if (worldIn.isBlockPowered(pos))
-+            if (!CarpetSettings.getBool("TNTDoNotUpdate") && worldIn.isBlockPowered(pos))
++            if (!CarpetSettings.tntDoNotUpdate && worldIn.isBlockPowered(pos))
              {
                  this.explode(worldIn, pos);
                  worldIn.removeBlock(pos);
