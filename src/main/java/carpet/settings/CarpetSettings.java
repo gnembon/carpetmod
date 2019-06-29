@@ -312,6 +312,10 @@ public class CarpetSettings
     {
         @Override public Integer validate(CommandSource source, ParsedRule<Integer> currentRule, Integer newValue, String string)
         {
+            if (currentRule.get().equals(newValue))
+            {
+                return newValue;
+            }
             if (newValue < 0 || newValue > 32)
             {
                 Messenger.m(source, "r view distance has to be between 0 and 32");

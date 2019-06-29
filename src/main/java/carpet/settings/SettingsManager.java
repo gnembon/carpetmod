@@ -7,6 +7,7 @@ import net.minecraft.server.MinecraftServer;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.util.TriConsumer;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -25,7 +26,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 public class SettingsManager
@@ -34,7 +34,7 @@ public class SettingsManager
     private static Map<String, ParsedRule<?>> rules = new HashMap<>();
     public boolean locked;
     private MinecraftServer server;
-    private static List<BiConsumer<ParsedRule<?>, String>> observers = new ArrayList<>();
+    private static List<TriConsumer<CommandSource, ParsedRule<?>, String>> observers = new ArrayList<>(); // unused, since jarmod is not extendable
 
     public SettingsManager(MinecraftServer server)
     {
@@ -53,14 +53,14 @@ public class SettingsManager
         }
     }
 
-    public static void addRuleObserver(BiConsumer<ParsedRule<?>, String> observer)
+    public static void addRuleObserver(TriConsumer<CommandSource, ParsedRule<?>, String> observer) // unused in jarmod
     {
         observers.add(observer);
     }
 
-    static void notifyRuleChanged(ParsedRule<?> rule, String userTypedValue)
+    static void notifyRuleChanged(CommandSource source, ParsedRule<?> rule, String userTypedValue) // unused in jarmod
     {
-        observers.forEach(observer -> observer.accept(rule, userTypedValue));
+        observers.forEach(observer -> observer.accept(source, rule, userTypedValue));
     }
 
     public static Iterable<String> getCategories()
@@ -71,17 +71,14 @@ public class SettingsManager
     }
 
 
-    public ParsedRule getRule(String name)
+    public static ParsedRule<?> getRule(String name)
     {
         return rules.get(name);
     }
 
     public static Collection<ParsedRule<?>> getRules()
     {
-        CarpetSettings.LOG.error("grabbing rules");
-        List<ParsedRule<?>> r = rules.values().stream().sorted().collect(Collectors.toList());
-        CarpetSettings.LOG.error("Got: "+r.size()+" rules");
-        return r;
+        return rules.values().stream().sorted().collect(Collectors.toList());
     }
 
     public Collection<ParsedRule<?>> findStartupOverrides()
