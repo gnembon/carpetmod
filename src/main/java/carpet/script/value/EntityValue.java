@@ -23,6 +23,7 @@ import net.minecraft.network.play.server.SPacketEntityVelocity;
 import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionEffect;
 import net.minecraft.util.EntitySelectors;
+import net.minecraft.util.EnumFacing;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.registry.IRegistry;
@@ -98,6 +99,21 @@ public class EntityValue extends Value
     @Override
     public Value in(Value v)
     {
+        if (v instanceof ListValue)
+        {
+            List<Value> values = ((ListValue) v).getItems();
+            String what = values.get(0).getString();
+            Value arg = null;
+            if (values.size() == 2)
+            {
+                arg = values.get(1);
+            }
+            else if (values.size() > 2)
+            {
+                arg = ListValue.wrap(values.subList(1,values.size()));
+            }
+            return this.get(what, arg);
+        }
         String what = v.getString();
         return this.get(what, null);
     }
@@ -133,6 +149,7 @@ public class EntityValue extends Value
         put("feet", EntityEquipmentSlot.FEET);
     }};
     private static Map<String, BiFunction<Entity, Value, Value>> featureAccessors = new HashMap<String, BiFunction<Entity, Value, Value>>() {{
+        //put("test", (e, a) -> a == null ? Value.NULL : new StringValue(a.getString()));
         put("removed", (entity, arg) -> new NumericValue(entity.removed));
         put("uuid",(e, a) -> new StringValue(e.getCachedUniqueIdString()));
         put("id",(e, a) -> new NumericValue(e.getEntityId()));
@@ -263,19 +280,24 @@ public class EntityValue extends Value
             if (where == null)
                 throw new InternalExpressionException("Unknown inventory slot: "+a.getString());
             if (e instanceof EntityLivingBase)
-            {
-                ItemStack itemstack = ((EntityLivingBase)e).getItemStackFromSlot(where);
-                if (!itemstack.isEmpty())
-                {
-                    return ListValue.of(
-                            new StringValue(IRegistry.ITEM.getKey(itemstack.getItem()).getPath()),
-                            new NumericValue(itemstack.getCount()),
-                            new StringValue(itemstack.write(new NBTTagCompound()).getString())
-                    );
-                }
-            }
+                return ListValue.fromItemStack(((EntityLivingBase)e).getItemStackFromSlot(where));
             return Value.NULL;
+        });
 
+        put("selected_slot", (e, a) -> {
+            if (e instanceof EntityPlayer)
+                return new NumericValue(((EntityPlayer) e).inventory.currentItem);
+            return null;
+        });
+
+        put("facing", (e, a) -> {
+            int index = 0;
+            if (a != null)
+                index = (6+(int)NumericValue.asNumber(a).getLong())%6;
+            if (index < 0 || index > 5)
+                throw new InternalExpressionException("facing order should be between -6 and 5");
+
+            return new StringValue(EnumFacing.getFacingDirections(e)[index].getName());
         });
 
         put("nbt",(e, a) -> {

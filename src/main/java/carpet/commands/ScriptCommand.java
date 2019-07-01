@@ -14,6 +14,8 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.suggestion.Suggestions;
+import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.BlockWorldState;
 import net.minecraft.command.CommandSource;
@@ -31,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
@@ -40,6 +43,29 @@ import static net.minecraft.command.ISuggestionProvider.suggest;
 
 public class ScriptCommand
 {
+
+    private static CompletableFuture<Suggestions> suggestCode(
+            CommandContext<CommandSource> context,
+            SuggestionsBuilder suggestionsBuilder
+    )
+    {
+        ScriptHost currentHost = getHost(context);
+        String previous = suggestionsBuilder.getRemaining().toLowerCase(Locale.ROOT);
+        int strlen = previous.length();
+        StringBuilder lastToken = new StringBuilder();
+        for (int idx = strlen-1; idx >=0; idx--)
+        {
+            char ch = previous.charAt(idx);
+            if (Character.isLetterOrDigit(ch) || ch == '_') lastToken.append(ch); else break;
+        }
+        if (lastToken.length() == 0)
+            return suggestionsBuilder.buildFuture();
+        String prefix = lastToken.reverse().toString();
+        String previousString =  previous.substring(0,previous.length()-prefix.length()) ;
+        ExpressionInspector.suggestFunctions(currentHost, previousString, prefix).forEach(text -> suggestionsBuilder.suggest(previousString+text));
+        return suggestionsBuilder.buildFuture();
+    }
+
     public static void register(CommandDispatcher<CommandSource> dispatcher)
     {
         LiteralArgumentBuilder<CommandSource> b = literal("globals").
@@ -50,7 +76,7 @@ public class ScriptCommand
                 executes( (cc) -> { CarpetServer.scriptServer.stopAll = false; return 1;});
         LiteralArgumentBuilder<CommandSource> l = literal("run").
                 requires((player) -> player.hasPermissionLevel(2)).
-                then(argument("expr", StringArgumentType.greedyString()).
+                then(argument("expr", StringArgumentType.greedyString()).suggests((cc, bb) -> suggestCode(cc, bb)).
                         executes((cc) -> compute(
                                 cc,
                                 StringArgumentType.getString(cc, "expr"))));
@@ -113,6 +139,7 @@ public class ScriptCommand
                         then(argument("from", BlockPosArgument.blockPos()).
                                 then(argument("to", BlockPosArgument.blockPos()).
                                         then(argument("expr", StringArgumentType.greedyString()).
+                                                suggests((cc, bb) -> suggestCode(cc, bb)).
                                                 executes( (cc) -> scriptScan(
                                                         cc,
                                                         BlockPosArgument.getBlockPos(cc, "origin"),

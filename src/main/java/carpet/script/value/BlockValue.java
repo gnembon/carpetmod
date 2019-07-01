@@ -9,15 +9,24 @@ import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.command.arguments.BlockStateParser;
 import net.minecraft.init.Blocks;
+import net.minecraft.item.BlockItemUseContext;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.ItemUseContext;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.EnumFacing;
+import net.minecraft.util.EnumHand;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.registry.IRegistry;
 import net.minecraft.world.World;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class BlockValue extends Value
 {
@@ -26,6 +35,7 @@ public class BlockValue extends Value
     private IBlockState blockState;
     private BlockPos pos;
     private World world;
+    private NBTTagCompound data;
 
     public static BlockValue fromCoords(CarpetContext c, int x, int y, int z)
     {
@@ -43,7 +53,10 @@ public class BlockValue extends Value
             BlockStateParser blockstateparser = (new BlockStateParser(new StringReader(str), false)).parse(true);
             if (blockstateparser.getState() != null)
             {
-                bv = new BlockValue(blockstateparser.getState(), null, null);
+                NBTTagCompound bd = blockstateparser.getNbt();
+                if (bd == null)
+                    bd = new NBTTagCompound();
+                bv = new BlockValue(blockstateparser.getState(), null, null, bd );
                 if (bvCache.size()>10000)
                     bvCache.clear();
                 bvCache.put(str, bv);
@@ -177,11 +190,45 @@ public class BlockValue extends Value
         throw new InternalExpressionException("Attemted to fetch blockstate without world or stored blockstate");
     }
 
+    public NBTTagCompound getData()
+    {
+        if (data != null)
+        {
+            if (data.isEmpty())
+                return null;
+            return data;
+        }
+        if (world != null && pos != null)
+        {
+            TileEntity be = world.getTileEntity(pos);
+            NBTTagCompound tag = new NBTTagCompound();
+            if (be == null)
+            {
+                data = tag;
+                return null;
+            }
+            data = be.write(tag);
+            return data;
+        }
+        throw new InternalExpressionException("Attemted to fetch block data without world or stored block data");
+    }
+
+
+
     public BlockValue(IBlockState state, World world, BlockPos position)
     {
         this.world = world;
         blockState = state;
         pos = position;
+        data = null;
+    }
+
+    public BlockValue(IBlockState state, World world, BlockPos position, NBTTagCompound nbt)
+    {
+        this.world = world;
+        blockState = state;
+        pos = position;
+        data = nbt;
     }
 
 
@@ -239,6 +286,115 @@ public class BlockValue extends Value
             offset = o;
             yaw = y;
             pitch = p;
+        }
+    }
+
+
+    public enum SpecificDirection {
+        UP("up",0.5, 0.0, 0.5, EnumFacing.UP),
+
+        UPNORTH ("up-north", 0.5, 0.0, 0.4, EnumFacing.UP),
+        UPSOUTH ("up-south", 0.5, 0.0, 0.6, EnumFacing.UP),
+        UPEAST("up-east", 0.6, 0.0, 0.5, EnumFacing.UP),
+        UPWEST("up-west", 0.4, 0.0, 0.5, EnumFacing.UP),
+
+        DOWN("down", 0.5, 1.0, 0.5, EnumFacing.DOWN),
+
+        DOWNNORTH ("down-north", 0.5, 1.0, 0.4, EnumFacing.DOWN),
+        DOWNSOUTH ("down-south", 0.5, 1.0, 0.6, EnumFacing.DOWN),
+        DOWNEAST("down-east", 0.6, 1.0, 0.5, EnumFacing.DOWN),
+        DOWNWEST("down-west", 0.4, 1.0, 0.5, EnumFacing.DOWN),
+
+
+        NORTH ("north", 0.5, 0.4, 1.0, EnumFacing.NORTH),
+        SOUTH ("south", 0.5, 0.4, 0.0, EnumFacing.SOUTH),
+        EAST("east", 0.0, 0.4, 0.5, EnumFacing.EAST),
+        WEST("west", 1.0, 0.4, 0.5, EnumFacing.WEST),
+
+        NORTHUP ("north-up", 0.5, 0.6, 1.0, EnumFacing.NORTH),
+        SOUTHUP ("south-up", 0.5, 0.6, 0.0, EnumFacing.SOUTH),
+        EASTUP("east-up", 0.0, 0.6, 0.5, EnumFacing.EAST),
+        WESTUP("west-up", 1.0, 0.6, 0.5, EnumFacing.WEST);
+
+        public String name;
+        public Vec3d hitOffset;
+        public EnumFacing facing;
+
+        private static final Map<String, SpecificDirection> DIRECTION_MAP = Arrays.stream(values()).collect(Collectors.toMap(SpecificDirection::getName, d -> d));
+
+
+        SpecificDirection(String name, double hitx, double hity, double hitz, EnumFacing blockFacing)
+        {
+            this.name = name;
+            this.hitOffset = new Vec3d(hitx, hity, hitz);
+            this.facing = blockFacing;
+        }
+        private String getName()
+        {
+            return name;
+        }
+    }
+
+    public static class PlacementContext extends BlockItemUseContext
+    {
+        private final EnumFacing facing;
+        private final boolean sneakPlace;
+
+        public static PlacementContext from(World world, BlockPos pos, String direction, boolean sneakPlace, ItemStack itemStack)
+        {
+            SpecificDirection dir = SpecificDirection.DIRECTION_MAP.get(direction);
+            if (dir == null)
+                throw new InternalExpressionException("unknown block placement direction: "+direction);
+            return new PlacementContext(world, dir.facing, pos, sneakPlace, itemStack, (float) dir.hitOffset.x, (float) dir.hitOffset.y, (float) dir.hitOffset.z);
+        }
+        private PlacementContext(World world_1, EnumFacing direction_1, BlockPos pos, boolean sneakPlace, ItemStack itemStack_1, float hitXIn, float hitYIn, float hitZIn) {
+            super(world_1, null, itemStack_1, pos, direction_1, hitXIn, hitYIn, hitZIn);
+            this.facing = direction_1;
+            this.sneakPlace = sneakPlace;
+        }
+
+        @Override
+        public BlockPos getPos() {
+            return this.pos;
+        }
+
+        @Override
+        public EnumFacing getNearestLookingDirection() {
+            return facing.getOpposite();
+        }
+
+        @Override
+        public EnumFacing[] getNearestLookingDirections() {
+            switch(this.facing) {
+                case DOWN:
+                default:
+                    return new EnumFacing[]{EnumFacing.DOWN, EnumFacing.NORTH, EnumFacing.EAST, EnumFacing.SOUTH, EnumFacing.WEST, EnumFacing.UP};
+                case UP:
+                    return new EnumFacing[]{EnumFacing.DOWN, EnumFacing.UP, EnumFacing.NORTH, EnumFacing.EAST, EnumFacing.SOUTH, EnumFacing.WEST};
+                case NORTH:
+                    return new EnumFacing[]{EnumFacing.DOWN, EnumFacing.NORTH, EnumFacing.EAST, EnumFacing.WEST, EnumFacing.UP, EnumFacing.SOUTH};
+                case SOUTH:
+                    return new EnumFacing[]{EnumFacing.DOWN, EnumFacing.SOUTH, EnumFacing.EAST, EnumFacing.WEST, EnumFacing.UP, EnumFacing.NORTH};
+                case WEST:
+                    return new EnumFacing[]{EnumFacing.DOWN, EnumFacing.WEST, EnumFacing.SOUTH, EnumFacing.UP, EnumFacing.NORTH, EnumFacing.EAST};
+                case EAST:
+                    return new EnumFacing[]{EnumFacing.DOWN, EnumFacing.EAST, EnumFacing.SOUTH, EnumFacing.UP, EnumFacing.NORTH, EnumFacing.WEST};
+            }
+        }
+
+        @Override
+        public EnumFacing getPlacementHorizontalFacing() {
+            return this.facing.getAxis() == EnumFacing.Axis.Y ? EnumFacing.NORTH : this.facing;
+        }
+
+        @Override
+        public boolean isPlacerSneaking() {
+            return sneakPlace;
+        }
+
+        @Override
+        public float getPlacementYaw() {
+            return (float)(this.facing.getHorizontalIndex() * 90);
         }
     }
 }
