@@ -334,6 +334,15 @@ public class Expression implements Cloneable
     private String expression;
     String getCodeString() {return expression;}
 
+    private boolean allowNewlineSubstitutions = true;
+    private boolean allowComments = false;
+
+    void asAModule()
+    {
+        allowNewlineSubstitutions = false;
+        allowComments = true;
+    }
+
     private String name;
     String getName() {return name;}
     Expression withName(String alias)
@@ -2576,9 +2585,9 @@ public class Expression implements Cloneable
      */
     public Expression(String expression)
     {
-        expression = expression.trim().replaceAll(";+$", "");
-        this.expression = expression.replaceAll("\\$", "\n").trim();
-        VariablesAndConstants();
+        this.expression = expression.trim().
+                replaceAll("\\r\\n?", "\n").
+                replaceAll(";+$", "");VariablesAndConstants();
         UserDefinedFunctionsAndControlFlow();
         Operators();
         ArithmeticOperations();
@@ -2586,12 +2595,12 @@ public class Expression implements Cloneable
         ListsLoopsAndHigherOrderFunctions();
     }
 
-    private List<Tokenizer.Token> shuntingYard(String expression)
+    private List<Tokenizer.Token> shuntingYard()
     {
         List<Tokenizer.Token> outputQueue = new ArrayList<>();
         Stack<Tokenizer.Token> stack = new Stack<>();
 
-        Tokenizer tokenizer = new Tokenizer(this, expression);
+        Tokenizer tokenizer = new Tokenizer(this, expression, allowComments, allowNewlineSubstitutions);
 
         Tokenizer.Token lastFunction = null;
         Tokenizer.Token previousToken = null;
@@ -2724,8 +2733,16 @@ public class Expression implements Cloneable
                     {
                         outputQueue.add(stack.pop());
                     }
+                case MARKER:
+                    if ("$".equals(token.surface))
+                    {
+                        StringBuilder sb = new StringBuilder(expression);
+                        sb.setCharAt(token.pos, '\n');
+                        expression = sb.toString();
+                    }
+                    break;
             }
-            previousToken = token;
+            if (token.type != Tokenizer.Token.TokenType.MARKER) previousToken = token;
         }
 
         while (!stack.isEmpty())
@@ -2794,7 +2811,7 @@ public class Expression implements Cloneable
     private LazyValue getAST()
     {
         Stack<LazyValue> stack = new Stack<>();
-        List<Tokenizer.Token> rpn = shuntingYard(this.expression);
+        List<Tokenizer.Token> rpn = shuntingYard();
         validate(rpn);
         for (final Tokenizer.Token token : rpn)
         {
