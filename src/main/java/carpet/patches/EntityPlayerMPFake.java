@@ -1,5 +1,6 @@
 package carpet.patches;
 
+ import net.minecraft.entity.Entity;
  import net.minecraft.network.play.server.SPacketEntityHeadLook;
  import net.minecraft.network.play.server.SPacketEntityTeleport;
  import net.minecraft.network.play.server.SPacketPlayerListItem;
@@ -61,6 +62,7 @@ public class EntityPlayerMPFake extends EntityPlayerMP
         server.getPlayerList().sendPacketToAllPlayersInDimension(new SPacketEntityHeadLook(instance, (byte)(instance.rotationYawHead * 256 / 360) ),instance.dimension);
         server.getPlayerList().sendPacketToAllPlayersInDimension(new SPacketEntityTeleport(instance),instance.dimension);
         server.getPlayerList().serverUpdateMovingPlayer(instance);
+        instance.dataManager.set(PLAYER_MODEL_FLAG, (byte) 0x7f); // show all model layers (incl. capes)
         return instance;
     }
     public static EntityPlayerMPFake createShadow(MinecraftServer server, EntityPlayerMP player)
@@ -95,7 +97,7 @@ public class EntityPlayerMPFake extends EntityPlayerMP
     {
         //super.onKillCommand();
         //check for 1.14compatibility
-        this.getServer().getPlayerList().playerLoggedOut(this);
+        this.getServer().addScheduledTask( () -> this.getServer().getPlayerList().playerLoggedOut(this) );
     }
 
     @Override
@@ -115,6 +117,14 @@ public class EntityPlayerMPFake extends EntityPlayerMP
     {
         //check for 1.14 compatibility
         super.onDeath(cause);
-        getServer().getPlayerList().playerLoggedOut(this);
+        this.getServer().addScheduledTask( () -> this.getServer().getPlayerList().playerLoggedOut(this) );
+    }
+
+    @Override
+    public Entity changeDimension(DimensionType p_212321_1_)
+    {
+        Entity res = super.changeDimension(p_212321_1_);
+        this.getServer().addScheduledTask( () -> clearInvulnerableDimensionChange());
+        return res;
     }
 }

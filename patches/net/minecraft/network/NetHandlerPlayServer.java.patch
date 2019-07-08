@@ -9,6 +9,24 @@
  import com.google.common.primitives.Doubles;
  import com.google.common.primitives.Floats;
  import com.google.common.util.concurrent.Futures;
+@@ -185,7 +188,7 @@
+ 
+         if (this.floating)
+         {
+-            if (++this.floatingTickCount > 80)
++            if (!CarpetSettings.antiCheatDisabled && ++this.floatingTickCount > 80)
+             {
+                 LOGGER.warn("{} was kicked for floating too long!", (Object)this.player.getName().getString());
+                 this.disconnect(new TextComponentTranslation("multiplayer.disconnect.flying"));
+@@ -211,7 +214,7 @@
+ 
+             if (this.vehicleFloating && this.player.getLowestRidingEntity().getControllingPassenger() == this.player)
+             {
+-                if (++this.vehicleFloatingTickCount > 80)
++                if (!CarpetSettings.antiCheatDisabled && ++this.vehicleFloatingTickCount > 80)
+                 {
+                     LOGGER.warn("{} was kicked for floating a vehicle too long!", (Object)this.player.getName().getString());
+                     this.disconnect(new TextComponentTranslation("multiplayer.disconnect.flying"));
 @@ -296,6 +299,12 @@
      {
          PacketThreadUtil.checkThreadAndEnqueue(packetIn, this, this.player.getServerWorld());
@@ -22,6 +40,15 @@
      }
  
      private static boolean isMovePlayerPacketInvalid(CPacketPlayer packetIn)
+@@ -344,7 +353,7 @@
+                 double d9 = entity.motionX * entity.motionX + entity.motionY * entity.motionY + entity.motionZ * entity.motionZ;
+                 double d10 = d6 * d6 + d7 * d7 + d8 * d8;
+ 
+-                if (d10 - d9 > 100.0D && (!this.server.isSinglePlayer() || !this.server.getServerOwner().equals(entity.getName().getString())))
++                if (d10 - d9 > 100.0D && (!CarpetSettings.antiCheatDisabled) && (!this.server.isSinglePlayer() || !this.server.getServerOwner().equals(entity.getName().getString())))
+                 {
+                     LOGGER.warn("{} (vehicle of {}) moved too quickly! {},{},{}", entity.getName().getString(), this.player.getName().getString(), d6, d7, d8);
+                     this.netManager.sendPacket(new SPacketMoveVehicle(entity));
 @@ -831,6 +840,12 @@
                          double d10 = this.player.motionX * this.player.motionX + this.player.motionY * this.player.motionY + this.player.motionZ * this.player.motionZ;
                          double d11 = d7 * d7 + d8 * d8 + d9 * d9;
@@ -41,7 +68,7 @@
  
 -                            if (!this.player.isInvulnerableDimensionChange() && (!this.player.getServerWorld().getGameRules().getBoolean("disableElytraMovementCheck") || !this.player.isElytraFlying()))
 +                            //[CM] Added AntiCheatSpeed
-+                            if (!CarpetSettings.antiCheatSpeed && !this.player.isInvulnerableDimensionChange() && (!this.player.getServerWorld().getGameRules().getBoolean("disableElytraMovementCheck") || !this.player.isElytraFlying()))
++                            if (!CarpetSettings.antiCheatDisabled && !this.player.isInvulnerableDimensionChange() && (!this.player.getServerWorld().getGameRules().getBoolean("disableElytraMovementCheck") || !this.player.isElytraFlying()))
                              {
                                  float f2 = this.player.isElytraFlying() ? 300.0F : 100.0F;
  

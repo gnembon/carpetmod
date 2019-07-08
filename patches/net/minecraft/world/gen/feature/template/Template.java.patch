@@ -20,6 +20,15 @@
                              {
                                  i = Math.min(i, blockpos.getX());
                                  j = Math.min(j, blockpos.getY());
+@@ -329,7 +330,7 @@
+                     }
+                 }
+ 
+-                if (i <= l)
++                if (i <= l && CarpetSettings.fillUpdates)
+                 {
+                     VoxelShapePart voxelshapepart = new VoxelShapePartBitSet(l - i + 1, i1 - j + 1, j1 - k + 1);
+                     int k1 = i;
 @@ -374,9 +375,15 @@
                          {
                              worldIn.setBlockState(blockpos3, iblockstate3, flags & -2 | 16);

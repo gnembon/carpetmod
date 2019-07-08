@@ -114,7 +114,7 @@ public class CarpetSettings
             extra = "Puts more trust in clients positioning",
             category = {CREATIVE, SURVIVAL}
     )
-    public static boolean antiCheatSpeed = false;
+    public static boolean antiCheatDisabled = false;
 
     @Rule(desc = "Pistons, droppers and dispensers react if block above them is powered", category = CREATIVE)
     public static boolean quasiConnectivity = true;
