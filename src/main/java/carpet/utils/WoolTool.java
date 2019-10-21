@@ -30,16 +30,15 @@ public class WoolTool
 
     public static void carpetPlacedAction(EnumDyeColor color, EntityPlayer placer, BlockPos pos, World worldIn)
     {
-		if (!CarpetSettings.carpets)
-		{
-			return;
-		}
+        if (!CarpetSettings.carpets)
+        {
+            return;
+        }
         switch (color)
         {
             case PINK:
                 if (CarpetSettings.commandSpawn)
                     Messenger.send(placer, SpawnReporter.report(pos, worldIn));
-
                 break;
             case BLACK:
                 if (CarpetSettings.commandSpawn)
@@ -61,7 +60,7 @@ public class WoolTool
                 if (CarpetSettings.commandInfo)
                     Messenger.send(placer, BlockInfo.blockInfo(pos.down(), worldIn));
                 break;
-			case GREEN:
+            case GREEN:
                 if (CarpetSettings.hopperCounters)
                 {
                     EnumDyeColor under = getWoolColorAtPosition(worldIn, pos.down());
@@ -70,8 +69,8 @@ public class WoolTool
                     if (counter != null)
                         Messenger.send(placer, counter.format(worldIn.getServer(), false, false));
                 }
-				break;
-			case RED:
+                break;
+            case RED:
                 if (CarpetSettings.hopperCounters)
                 {
                     EnumDyeColor under = getWoolColorAtPosition(worldIn, pos.down());
@@ -83,7 +82,7 @@ public class WoolTool
                     res.add(Messenger.s(String.format("%s counter reset",under.toString())));
                     Messenger.send(placer, res);
                 }
-			    break;
+                break;
         }
     }
 
