@@ -1,4 +1,8 @@
 # CarpetMod for Minecraft 1.13.2
+:ghost: This repository is deprecated as is Minecraft 1.13 by itself and no longer will be maintained. 
+
+To get updated version of carpet for 1.14 and above, check :arrow_forward: https://github.com/gnembon/fabric-carpet project, that uses fabric framework. 
+
 The most comprehensive and convoluted mod for carpets evar. Built based on jarmod-buildsystem-2 by Earthcomputer using Forge Gradle system by Minecraft Forge team. See Earthcomputer's repo for details on the build system.
 
 ## Gimme, gimme, I just wanna play
